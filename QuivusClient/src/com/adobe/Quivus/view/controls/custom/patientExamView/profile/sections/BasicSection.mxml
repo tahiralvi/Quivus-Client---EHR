@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:CollapsiblePanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 title="Personal Details" width="100%"
+		 hasChange="{model.patientProfileDTO._PatientDTO.QuivusId.length >0 ? true:false}" xmlns:components1="com.gazuntite.controls.extended.components.*">
+	<fx:Metadata>
+		[Event(name="EditProfile", type="flash.events.Event")]
+	</fx:Metadata>
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.patientProfile.LoadPatientProfileEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.Quivus.view.controls.registeration.PhoneNumberAddMoreTitleWindow;
+			import com.adobe.Quivus.view.controls.registeration.PhoneNumberTitleWindow;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.TransparentCollapsiblePanelSkin;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.dto.AllergDTO;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.BitmapAsset;
+			import mx.core.Container;
+			import mx.core.IVisualElement;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			import spark.components.supportClasses.GroupBase;
+			
+			import valueObjects.PatientAllergyDTO;
+			import valueObjects.PatientDTO;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			[Bindable]
+			private var phoneNumberAddMorePopUp:PhoneNumberTitleWindow;
+			
+			[Embed(source="com/adobe/Quivus/view/controls/skins/assets/sampleuser.png")]
+			[Bindable]
+			public var dummyImg:Class;
+			
+			protected function group2_clickHandler(event:MouseEvent):void
+			{
+				var evt:Event = new Event("EditProfile", true, true);
+				dispatchEvent( evt );
+			}
+			
+			protected function id_btnPhoneNo_clickHandler(event:MouseEvent):void
+			{
+				
+				if (phoneNumberAddMorePopUp && phoneNumberAddMorePopUp._isPhoneNumberPopUpShown)
+				{
+					phoneNumberAddMorePopUp.hide();
+					//id_MorePhone.selected = false;
+					phoneNumberAddMorePopUp._isPhoneNumberPopUpShown= false;
+					return;
+				}
+				
+				phoneNumberAddMorePopUp = new PhoneNumberTitleWindow();
+				
+				var btn:spark.components.ToggleButton = spark.components.ToggleButton(event.currentTarget);
+				
+				var pt:Point = btn.parent.localToGlobal(new Point(btn.x, btn.y));
+				
+				pt.x += btn.width/2 + 138;
+				pt.y += btn.height - 3;
+				phoneNumberAddMorePopUp.display(this, pt);
+				
+				event.stopImmediatePropagation();
+			}
+
+			[Bindable]
+			public function get allergiesCollection():ArrayCollection
+			{
+				return _allergiesCollection;
+			}
+
+			public function set allergiesCollection(value:ArrayCollection):void
+			{
+				_allergiesCollection = value;
+				if(_allergiesCollection.length != -1)
+				{
+					allergyRecord = _allergiesCollection.getItemAt(0) as AllergDTO;
+				}
+			}
+
+			[Bindable]
+			public function get allergyRecord():AllergDTO
+			{
+				return _allergyRecord;
+			}
+
+			public function set allergyRecord(value:AllergDTO):void
+			{
+				_allergyRecord = value;
+			}
+
+
+			private var _allergiesCollection:ArrayCollection;
+			private var _allergyRecord:AllergDTO;
+			
+		]]>
+	</fx:Script>
+	<fx:Binding source="model.QIAllergyDTOList" destination="allergiesCollection" />
+	<fx:Declarations>
+		<mx:DateFormatter id="id_dateformater" formatString="MM-DD-YY" />
+	</fx:Declarations>
+	
+	<components1:layout >
+		<s:VerticalLayout paddingBottom="5" paddingLeft="5" paddingRight="5" gap="0"  paddingTop="8" />
+	</components1:layout >
+	
+	<s:HGroup id="id_maincontents" width="100%" gap="0" verticalAlign="top" paddingBottom="5" paddingRight="5" paddingLeft="5">
+		<s:Group buttonMode="true" toolTip="Edit Patient Profile" click="group2_clickHandler(event)"  >
+			<s:Rect height="55" radiusX="5" width="55" x="0" y="3">
+				<s:fill>
+					<s:LinearGradient rotation="90">
+						<s:GradientEntry alpha="1.0" color="#94A0B2" ratio="0"/>
+						<s:GradientEntry alpha="1.0" color="#A6B4C0" ratio="1"/>
+					</s:LinearGradient>
+				</s:fill>
+				<s:filters>
+					<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+				</s:filters>
+			</s:Rect>
+			<s:BitmapImage smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/picbgtransparent.png')" x="1" y="1"/>
+			<mx:Image id="id_ProfileImage" x="5" y="5" width="50" height="52" maintainAspectRatio="false" 
+					  source="{model.patientRegImageDTO.ImageData.length > 0 ? AppUtils.getByteArray(model.patientRegImageDTO.ImageData):dummyImg as BitmapAsset}"/>
+			<s:Rect height="12" radiusX="0.550801" radiusY="0.550801" width="55"  y="61">
+				<s:fill>
+					<s:SolidColor id="id_p_rect" color="#666666"/>
+				</s:fill>
+			</s:Rect>
+			<s:RichText color="#FFFFFF" fontFamily="Calibri" fontSize="12" tabStops="S0" text="Edit Profile"  y="63" x="0"/>
+		</s:Group>
+		
+		<mx:Spacer width="2" />
+		<s:SkinnableContainer width="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.patientProfileColumnBG">
+			<s:layout>
+				<s:HorizontalLayout paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5" gap="20"/>
+			</s:layout>	
+			<s:VGroup width="100%" maxWidth="50"  horizontalAlign="left" gap="7">
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" text="GID:"  />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" text="External ID: "  />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" text="SSN / ID:"  />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" text="DOB:"  />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" text="Gender:"  />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" text="Phone:"  />
+			</s:VGroup>
+			<!-- values -->
+			<s:VGroup width="100%" horizontalAlign="left" paddingRight="2" gap="7">
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" text="{model.patientProfileDTO._PatientDTO.QuivusId}" toolTip="{model.patientProfileDTO._PatientDTO.QuivusId}"  maxDisplayedLines="1" maxWidth="95" />
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" text="{model.basicUserDTO.EIN}" toolTip="{model.basicUserDTO.EIN}"  maxDisplayedLines="1" maxWidth="95"/>
+				<s:RichText id="id_ssn" color="#000000" fontFamily="Calibri" fontSize="12"	text="{model.patientSSN}" toolTip="{model.patientSSN}"  maxDisplayedLines="1" maxWidth="70"/>
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" text="{id_dateformater.format( model.patientProfileDTO._PatientDTO.DateOfBirth )}" toolTip="{id_dateformater.format( model.patientProfileDTO._PatientDTO.DateOfBirth )}"  maxDisplayedLines="1" maxWidth="95"/>
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" text="{model.patientProfileDTO.UserDTO.Gender.GenderName}" toolTip="{model.patientProfileDTO.UserDTO.Gender.GenderName}"  maxDisplayedLines="1" maxWidth="95"/>
+				<s:HGroup width="100%" verticalAlign="top">
+					<s:RichText color="#000000"  fontFamily="Calibri" fontSize="12" text="{ValidationUtils.setPhoneNumberMasking(model.patientPrimaryPhoneDTO.PhoneNumber)}"  
+								toolTip="{ValidationUtils.setPhoneNumberMasking(model.patientPrimaryPhoneDTO.PhoneNumber)}"  maxDisplayedLines="1" maxWidth="85"/>
+					
+					<s:HGroup width="100%" paddingTop="-2">						
+					<s:ToggleButton id="id_MorePhone" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.MorePhoneButtonSkin" toolTip="Click here to see more Phone No" buttonMode="true" useHandCursor="true"
+									click="id_btnPhoneNo_clickHandler(event)"  height="20"  selected="{phoneNumberAddMorePopUp._isPhoneNumberPopUpShown}" />
+					</s:HGroup>
+				</s:HGroup>
+			</s:VGroup>
+		</s:SkinnableContainer>	
+		<s:SkinnableContainer width="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.patientProfileColumnBG">
+			<s:layout>
+				<s:HorizontalLayout paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5" />
+			</s:layout>
+			<s:VGroup width="100%" horizontalAlign="left" gap="7">
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" text="Insurance:"  />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" text="Policy #" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" text="Expiry Date:"  />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" text="Type:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" text="Ins. Balance:"  />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" text="Eligible:"  />
+			</s:VGroup>
+			<!-- values -->
+			<s:VGroup width="100%"  horizontalAlign="left" paddingRight="2" gap="7">
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" tabStops="S0 S50" text="{model.primaryInsurance.InsuranceOrganization.InsuranceOrganizationName}" toolTip="{model.primaryInsurance.InsuranceOrganization.InsuranceOrganizationName}"  maxDisplayedLines="1" maxWidth="70" />
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" tabStops="S0 S50" text="{model.primaryInsurance.PolicyNumber}" toolTip="{model.primaryInsurance.PatientInsuranceId}" maxDisplayedLines="1" maxWidth="70"/>
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" tabStops="S0 S50" text="{id_dateformater.format( model.primaryInsurance.EndDate ) }" toolTip="{id_dateformater.format( model.primaryInsurance.EndDate ) }"  maxDisplayedLines="1" maxWidth="70"/>
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" tabStops="S0 S50" text="{model.primaryInsurance.InsuranceType.InsuranceTypeName}" toolTip="{model.primaryInsurance.InsuranceType.InsuranceTypeName}"  maxDisplayedLines="1" maxWidth="70"/>
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" tabStops="S0 S50" text="{model.patientProfileDTO.PatientBalance}" toolTip="{model.patientProfileDTO.PatientBalance}"  maxDisplayedLines="1" maxWidth="70"/>
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" tabStops="S0 S50" text="{model.primaryInsurance.IsEligible}"   maxDisplayedLines="1" maxWidth="70"/>
+			</s:VGroup>
+		</s:SkinnableContainer>
+		<s:SkinnableContainer width="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.patientProfileColumnBG">
+			<s:layout>
+				<s:HorizontalLayout paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5" />
+			</s:layout>
+			<s:VGroup width="100%" horizontalAlign="left" gap="7" >
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" text="Rejected Claims:"  />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" text="Patient Balance:"  />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" text="Claims Overdue:"  />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" text="Allergies:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" text="Chronic Diagnosis:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" text="Pri. Care Provider:"  />
+			</s:VGroup>
+			
+			<!-- values -->
+			<s:VGroup width="100%" horizontalAlign="left" paddingRight="2" gap="7">
+				<s:RichText color="#EE0202" fontFamily="Calibri Bold" fontSize="12" text="--" toolTip="{model.patientProfileDTO.RejectedClaims}"   maxDisplayedLines="1" maxWidth="70"/>
+				<s:RichText color="#EE0202" fontFamily="Calibri Bold" fontSize="12" text="--"  maxDisplayedLines="1" maxWidth="70"/>
+				<s:RichText color="#EE0202" fontFamily="Calibri Bold" fontSize="12" text="--" toolTip="{model.patientProfileDTO.ClaimsOverDue}"  maxDisplayedLines="1" maxWidth="70"/>
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" text="{model.ThirdSectionLabel}" toolTip="{model.ThirdSectionLabel}"  maxDisplayedLines="1" maxWidth="70" />
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" text="--" />
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" text="--" />
+			</s:VGroup>
+		</s:SkinnableContainer>
+	</s:HGroup>	
+</components1:CollapsiblePanel>

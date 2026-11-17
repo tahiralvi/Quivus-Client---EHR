@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt">
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect height="19" width="23" y="0" visible.up="false" visible.disabled="false" visible.overAndSelected="false" visible.downAndSelected="false" visible.disabledAndSelected="false" visible.upAndSelected="false" x="0">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="22.5" id="rect8" width="24" x="1" y="1" radiusX="0" visible.up="false" visible.over="false" visible.down="false" visible.disabled="false">
+		<s:fill>
+			<s:LinearGradient rotation="90" rotation.overAndSelected="270">
+				<s:GradientEntry ratio="0" color="#A1A3C3" alpha="1.0"/>
+				<s:GradientEntry ratio="1" color="#FFFFFF" alpha="1.0" color.overAndSelected="#D9DCFF" ratio.upAndSelected="0.7215686274509804" ratio.downAndSelected="0.7215686274509804" ratio.disabledAndSelected="0.7372549019607844"/>
+			</s:LinearGradient>
+		</s:fill>
+		<!--<s:filters>
+		<s:DropShadowFilter blurX="1" blurY="1" distance="1" hideObject="false" color="#FFFFFF" inner="true" strength="1" alpha="0.5" quality="3" knockout="false" angle="90"/>
+		<s:DropShadowFilter blurX="2" blurY="2" distance="2" hideObject="false" color="0x000000" inner="false" strength="1" alpha="0.5" quality="3" knockout="false" angle="90"/>
+		</s:filters>-->
+	</s:Rect>
+	<s:Rect height="25" includeIn="down,over,overAndSelected,up" radiusX="3" visible.down="false" visible.over="false" visible.up="false" width="26" width.overAndSelected="24" y="0" x="0">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#A1A3C3" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#D9DCFF" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:BitmapImage smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/prescription.png')" y="4" visible.over="false" visible.down="false" visible.disabled="false" visible.overAndSelected="false" visible.downAndSelected="false" visible.disabledAndSelected="false" visible.upAndSelected="false" y.up="3" x="6">
+		<s:filters>
+			<s:DropShadowFilter alpha="1" angle="90" blurX="0" blurY="0" color="#14302F" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:BitmapImage>
+	<s:BitmapImage includeIn="disabledAndSelected,down,downAndSelected,over,overAndSelected,upAndSelected" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/prescription_hover.png')" y.over="3" y.down="3" y.upAndSelected="4" y.overAndSelected="4" y.downAndSelected="4" x="5" y.disabledAndSelected="4"/>
+	<s:BitmapImage includeIn="disabled" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/prescription_disabled.png')" x="4" y="3"/>
+</s:Skin>

@@ -1,0 +1,667 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:quickInput="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.*"
+		 xmlns:allergies="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.allergies.*" 
+		 xmlns:medication="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.medication.*" 
+		 xmlns:history="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.history.*" 
+		 xmlns:immunization="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.immunization.*" 
+		 xmlns:VBImmunization="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbPMH.VBImmunization.*" 
+		 xmlns:VBAllergies="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbPMH.VBAllergies.*" 
+		 xmlns:VBHistory="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbPMH.VBHistory.*" 
+		 xmlns:VBMedication="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbPMH.VBMedication.*" 
+		 xmlns:vitals="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbPhysical.vitals.*" 
+		 xmlns:cc="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbPhysical.cc.*" 
+		 xmlns:ros="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbPhysical.ros.*" 
+		 xmlns:physical="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbPhysical.physical.*" 
+		 xmlns:lab="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbPhysical.lab.*" 
+		 xmlns:Plan="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbAssessment.Plan.*" 
+		 xmlns:treatment="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbAssessment.treatment.treatment.*" 
+		 xmlns:diagnosis="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbAssessment.diagnosis.*"
+
+		 width="100%"
+		 creationComplete="group1_creationCompleteHandler(event)" 
+		 >
+	
+	<s:layout>
+		<s:VerticalLayout gap="0" horizontalAlign="right" verticalAlign="top"  paddingBottom="3" paddingLeft="3" paddingRight="3" paddingTop="3"/>
+	</s:layout>
+	
+	<fx:Metadata>
+		[Event(name="selectSection", type="com.adobe.Quivus.view.events.SelectSection")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.utils.slideout.SlideoutUtils;
+			import com.adobe.Quivus.view.controls.custom.SlideOutPanel;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBTopNav;
+			import com.adobe.Quivus.view.events.SelectSection;
+			
+			import flashx.textLayout.factory.TruncationOptions;
+			
+			import mx.events.FlexEvent;
+			public var currentIndex:int = 0;
+			
+			private var slideoutManager:SlideoutUtils = new SlideoutUtils();;
+			
+			public function ScrollUp():void
+			{
+				/* id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition + 15;
+				trace("Scrolling UP: "+id_Scroller.viewport.verticalScrollPosition.toString());*/
+			} 
+			
+			public function ScrollDown():void
+			{
+				/* id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition - 15;
+				trace("Scrolling down: "+id_Scroller.viewport.verticalScrollPosition.toString()); */
+			}
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				slideoutManager.currentExpandedPanel = id_VBAlergiesGridPanel;
+				currentIndex++;
+				SelectNextByIndex();
+			}
+			private function ShowPanel(event:MouseEvent):void
+			{
+				event.currentTarget.selected = true;
+				
+				//	setSelectedById( event.currentTarget.id )
+				
+			}
+			private function setSelectedById(tabId:String):void
+			{
+				//DeSelectAllNavButton();
+				
+				switch( tabId )
+				{
+					case "id_VBAllergiesBtn":
+					case "id_VBAlergiesGridPanel":
+						
+						//id_VBAllergiesBtn.selected				= true;
+						id_VBAlergiesGridPanel.ExpandedView 	= true;						
+						id_VBAlergiesGridPanel.visible			= true;
+						
+						currentIndex							= 1;
+						
+						//id_VBAllergiesBtn.setStyle("skinClass", QIAllergiesBtn);
+						
+						break;
+					
+					/* case "id_VBHistoryBtn":
+					case "id_history":
+						
+						//id_VBHistoryBtn.selected		= true;
+						id_history.ExpandedView 		= true;						
+						id_history.visible		 		= true;
+						
+						
+						//id_VBHistoryBtn.setStyle("skinClass", QIComprehensiveHistoryBtn);
+						currentIndex							= 2;
+						break; */
+					
+					case "id_VBMedicationBtn":
+					case "id_QIMedicationPanel":
+						
+						//id_VBMedicationBtn.selected		= true;
+						id_medication.ExpandedView 		= true;						
+						id_medication.visible		 	= true;						
+						
+						
+						//id_VBMedicationBtn.setStyle("skinClass", QIChronicMedicationBtn);
+						currentIndex							= 3;
+						break;
+					
+					case "id_VBImmunizationBtn":
+					case "id_VBImGridP":
+						
+						//id_VBImmunizationBtn.selected	= true;
+						id_VBImGridP.ExpandedView 		= true;						
+						id_VBImGridP.visible		 	= true;						
+						
+						
+						//id_VBImmunizationBtn.setStyle("skinClass", QIImmunizationBtn);
+						currentIndex							= 4;
+						break;
+					
+				}
+				trace( "selected index", currentIndex );
+			}
+			
+			public function SelectNextByIndex():void
+			{
+				if( currentIndex == 0 )
+					currentIndex = 1;
+				
+				switch( currentIndex )
+				{
+					case 1:
+						showAllergiesPanel();
+						break;
+					case 2:
+					case 3:
+						showPastMedicalHXPanel();
+						break;
+						/* showHistoryPanel();			
+						break; */
+					case 4:
+						showMedicationPanel();
+						break;
+					case 5:
+						showImmunizationPanel();
+						break;
+					case 6:
+						showVitalsPanel();
+						break;
+					case 7:
+						showHpiPanel();
+						break;
+					case 8:
+						showROSPanel();
+						break;
+					case 9:
+						showPhysicalPanel();
+						break;
+					case 10:
+						showLabPanel();
+						break;
+					case 11:
+						showDiagnosisPanel();
+						break;
+					case 12:
+						showPrescriptionPanel();
+						break;
+					case 13:
+						showTreatmentPanel();
+						break;
+					case 14:
+						showPlanPanel();
+						break;
+					case 15:
+						showFollowUpPanel();
+						break;
+					
+					default:
+						break;
+				}
+			}
+			
+			
+			private function DeSelectAllNavButton():void
+			{
+				/* id_VBAllergiesBtn.selected			=	false;
+				id_VBHistoryBtn.selected			=	false;
+				id_VBMedicationBtn.selected			=	false;
+				id_VBImmunizationBtn.selected		=	false; */
+				
+				id_VBAlergiesGridPanel.id_header.setHeaderCapitalCase( false );
+				//id_history.id_header.setHeaderCapitalCase( false );
+				id_medication.id_header.setHeaderCapitalCase( false );
+				id_VBImGridP.id_header.setHeaderCapitalCase( false );
+			}
+			
+			
+			
+			
+			public function checkPanels():void
+			{
+				trace("Check panels");
+				/* DeSelectAllNavButton();
+				if(id_VBAlergiesGridPanel.ExpandedView == true)
+				{					
+				id_VBAllergiesBtn.selected = true;
+				id_VBAlergiesGridPanel.id_header.setHeaderCapitalCase( true );
+				}
+				if(id_history.ExpandedView == true)
+				{					
+				id_VBHistoryBtn.selected = true;
+				id_history.id_header.setHeaderCapitalCase( true );
+				}
+				if(id_medication.ExpandedView == true)
+				{
+				id_VBMedicationBtn.selected = true;
+				id_medication.id_header.setHeaderCapitalCase( true );
+				}
+				if(id_VBImGridP.ExpandedView == true)
+				{
+				id_VBImmunizationBtn.selected = true;
+				id_VBImGridP.id_header.setHeaderCapitalCase( true );
+				} */
+			}
+			
+			public function hidePanels():void
+			{
+				//scaleEffectX.play();
+				if(!id_VBAlergiesGridPanel.isSlideOut)
+				{
+					id_VBAlergiesGridPanel.includeInLayout 	= false;
+					id_VBAlergiesGridPanel.visible 			= false;
+				}
+				
+				if(!id_medicalHX.isSlideOut)
+				{
+					id_medicalHX.includeInLayout 			= false;
+					id_medicalHX.visible					= false;
+				}
+				
+				/* if(!id_history.isSlideOut)
+				{
+					id_history.includeInLayout 				= false;
+					id_history.visible 						= false;
+				} */
+				
+				if(!id_medication.isSlideOut)
+				{
+					id_medication.includeInLayout 			= false;
+					id_medication.visible 					= false;
+				}
+				
+				id_VBImGridP.includeInLayout 			= false;
+				id_VBImGridP.visible 					= false;
+				
+				id_VBVitalsGridPanel.includeInLayout 	= false;
+				id_VBVitalsGridPanel.visible 			= false;
+				
+				id_hpi.includeInLayout 					= false;
+				id_hpi.visible 							= false;
+				
+				id_ros.includeInLayout 					= false;
+				id_ros.visible 							= false;
+				
+				id_physical.includeInLayout 			= false;
+				id_physical.visible 					= false;
+				
+				id_lab.includeInLayout 					= false;
+				id_lab.visible 							= false;
+				
+				id_VBDiagnosisGridPanel.includeInLayout = false;
+				id_VBDiagnosisGridPanel.visible 		= false;
+				
+				
+				id_prescription.includeInLayout 		= false;
+				id_prescription.visible 				= false;
+				
+				id_treatment.includeInLayout 			= false;
+				id_treatment.visible		 			= false;
+				
+				id_plan.includeInLayout 				= false;
+				id_plan.visible 						= false;
+				
+				id_followUp.includeInLayout				= false;
+				id_followUp.visible 					= false;
+				
+				
+				id_allergiesBtn.selected 			= false;
+				id_medicationBtn.selected  			= false;
+				id_historyBtn.selected  			= false;	
+				id_immunizationBtn.selected  		= false;
+				id_vitalsBtn.selected  				= false;
+				id_hpiBtn.selected  				= false;
+				id_rosBtn.selected  				= false;
+				id_physicalBtn.selected  			= false;
+				id_labBtn.selected  				= false;
+				id_diagnosisBtn.selected  			= false;
+				id_treatmentBtn.selected  			= false;
+				id_planBtn.selected  				= false;
+				id_medicalHXBtn.selected  			= false;
+				id_prescriptionBtn.selected  		= false;
+				id_followUpBtn.selected  			= false;
+				
+			}
+			
+			public function showAllergiesPanel():void
+			{
+				hidePanels();
+				id_VBAlergiesGridPanel.includeInLayout 	= true;
+				id_VBAlergiesGridPanel.visible 			= true;
+				id_allergiesBtn.selected 				= true;
+				id_sectionName.text = "Allergies";
+				currentIndex 					= 1;
+			}
+			public function showPastMedicalHXPanel():void
+			{
+				hidePanels();
+				id_medicalHX.includeInLayout 	= true;
+				id_medicalHX.visible 			= true;
+				id_medicalHXBtn.selected  		= true;
+				id_sectionName.text = "Past Medical HX";
+				currentIndex 					= 2;
+			}
+			
+			/* public function showHistoryPanel():void
+			{
+				hidePanels();
+				id_history.includeInLayout 	= true;
+				id_history.visible 			= true;
+				id_historyBtn.selected  	= true;	
+				id_sectionName.text = "Social History";
+				currentIndex 					= 3;
+			} */
+			
+			public function showMedicationPanel():void
+			{
+				hidePanels();
+				id_medication.includeInLayout 	= true;
+				id_medication.visible 			= true;
+				id_medicationBtn.selected 		= true;
+				id_sectionName.text = "Chronic Medication";
+				currentIndex 					= 4;
+			}
+			
+			public function showImmunizationPanel():void
+			{
+				hidePanels();
+				id_VBImGridP.includeInLayout 	= true;
+				id_VBImGridP.visible 			= true;	
+				id_immunizationBtn.selected  	= true;
+				id_sectionName.text = "Immunization";
+				currentIndex 					= 5;
+			}
+			public function showVitalsPanel():void
+			{
+				hidePanels();
+				id_VBVitalsGridPanel.includeInLayout 	= true;
+				id_VBVitalsGridPanel.visible 			= true;		
+				id_vitalsBtn.selected  					= true;
+				id_sectionName.text = "Vitals";
+				currentIndex 					= 6;
+			}
+			public function showHpiPanel():void
+			{
+				hidePanels();
+				id_hpi.includeInLayout 	= true;
+				id_hpi.visible 			= true;
+				id_hpiBtn.selected  	= true;
+				id_sectionName.text = "HPI";
+				currentIndex 					= 7;
+			}
+			public function showROSPanel():void
+			{
+				hidePanels();
+				id_ros.includeInLayout 	= true;
+				id_ros.visible 			= true;		
+				id_rosBtn.selected  	= true;
+				id_sectionName.text = "ROS";
+				currentIndex 					= 8;
+			}
+			public function showPhysicalPanel():void
+			{
+				hidePanels();
+				id_physical.includeInLayout 	= true;
+				id_physical.visible 			= true;		
+				id_physicalBtn.selected  		= true;
+				id_sectionName.text = "Physical";
+				currentIndex 					= 9;
+			}
+			public function showLabPanel():void
+			{
+				hidePanels();
+				id_lab.includeInLayout 	= true;
+				id_lab.visible 			= true;	
+				id_labBtn.selected  	= true;
+				id_sectionName.text = "Lab";
+				currentIndex 					= 10;
+			}
+			public function showDiagnosisPanel():void
+			{
+				hidePanels();
+				id_VBDiagnosisGridPanel.includeInLayout 	= true;
+				id_VBDiagnosisGridPanel.visible 			= true;		
+				id_diagnosisBtn.selected  					= true;
+				id_sectionName.text = "Diagnosis";
+				currentIndex 					= 11;
+			}
+			public function showPrescriptionPanel():void
+			{
+				hidePanels();
+				id_prescription.includeInLayout 	= true;
+				id_prescription.visible 			= true;		
+				id_prescriptionBtn.selected  		= true;
+				id_sectionName.text = "Prescription";
+				currentIndex 					= 12;
+			}
+			public function showTreatmentPanel():void
+			{
+				hidePanels();
+				id_treatment.includeInLayout 	= true;
+				id_treatment.visible 			= true;		
+				id_treatmentBtn.selected  		= true;
+				id_sectionName.text = "Procedure";
+				currentIndex 					= 13;
+			}
+			public function showFollowUpPanel():void
+			{
+				hidePanels();
+				id_followUp.includeInLayout 	= true;
+				id_followUp.visible 			= true;		
+				id_followUpBtn.selected  		= true;
+				id_sectionName.text = "FollowUp";
+				currentIndex 					= 15;
+			}
+			public function showPlanPanel():void
+			{
+				hidePanels();
+				id_plan.includeInLayout 	= true;
+				id_plan.visible 			= true;		
+				id_planBtn.selected  		= true;
+				id_sectionName.text = "Recommendation";
+				currentIndex 					= 14;
+			}
+			
+			
+			protected function id_prevBtn_clickHandler(event:MouseEvent):void
+			{
+				if(currentIndex > 1)
+				{
+					currentIndex -= 1 ;
+					
+					hidePanels();
+					SelectNextByIndex();
+				}
+			}
+			
+			
+			protected function id_nextBtn_clickHandler(event:MouseEvent):void
+			{
+				if(currentIndex < 16)
+				{
+					currentIndex += 1 ;
+					hidePanels();
+					SelectNextByIndex();
+				}
+			}
+			
+			private function ShowRespectivePanel(event:MouseEvent):void
+			{
+				var panelName:String = event.currentTarget.id;
+				var spe:SelectSection = new SelectSection( "selectSection", panelName, true, false );
+				dispatchEvent( spe );
+				
+				(event.currentTarget).setFocus();
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!--<s:Fade target="{id_sheetView}" id="fadeEffect" duration="600" alphaFrom="0" alphaTo="1" />-->
+		<!--<s:Resize target="{id_sheetView}" id="resizeEffect" repeatCount="1"  duration="2000" heightFrom="20" heightTo="500" />--> 
+		
+		<!--<s:Animate id="scaleEffectX" repeatCount="1" target="{id_Scroller}" duration="400">
+			
+			<s:SimpleMotionPath property="scaleY" valueFrom="1" valueTo="0" />
+			
+		</s:Animate>-->
+	</fx:Declarations>
+	
+	
+	<!--	<s:HGroup width="100%" horizontalAlign="center" height="40" verticalAlign="middle">
+	<s:Button id="id_prevBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBPMHPrevBtn" buttonMode="true" toolTip="Previous Section" click="id_prevBtn_clickHandler(event)"  />		
+	<s:ToggleButton id="id_VBAllergiesBtn" width="110" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBPMHButtonSkin" selected="true" label="ALLERGIES" buttonMode="true" click="ShowPanel(event)"/>
+	<s:ToggleButton id="id_VBHistoryBtn" width="160" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBPMHButtonSkin" label="COMPREHENSIVE HISTORY" buttonMode="true" click="ShowPanel(event)"/>
+	<s:ToggleButton id="id_VBMedicationBtn" width="150" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBPMHButtonSkin" label="CHRONIC MEDICATION" buttonMode="true" click="ShowPanel(event)"/>
+	<s:ToggleButton id="id_VBImmunizationBtn" width="110" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBPMHButtonSkin" label="IMMUNIZATION" buttonMode="true" click="ShowPanel(event)" />
+	<s:Button id="id_nextBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBPMHNextBtn" buttonMode="true" toolTip="Next Section" click="id_nextBtn_clickHandler(event)" />
+	</s:HGroup>
+	
+	-->
+	<!--<s:SkinnableContainer skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBPMHBGSkin" width="100%">
+	
+	<s:layout>
+	<s:VerticalLayout paddingTop="0" horizontalAlign="left" gap="1" />
+	</s:layout>-->
+	
+	<s:SkinnableContainer skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBTopNav" width="174" height="26">
+		<s:layout>
+			<s:HorizontalLayout verticalAlign="middle" horizontalAlign="center" paddingRight="3" paddingLeft="3" gap="1" />
+		</s:layout>									
+		<s:Button id="id_prevBtn" click="id_prevBtn_clickHandler(event)" toolTip="Previous"  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QIHistoryHeader_prevBtn" buttonMode="true" />
+		<s:Label id="id_sectionName" text="ALLERGIES" color="#ffffff" fontFamily="Calibri" width="132" textAlign="center" />
+		<s:Button id="id_nextBtn" click="id_nextBtn_clickHandler(event)" toolTip="Next"  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QIHistoryHeader_nextBtn" buttonMode="true"/> 		
+	</s:SkinnableContainer>
+	<s:VGroup width="100%" paddingTop="0" horizontalAlign="right" gap="0">
+		
+		
+		
+		<s:Group width="100%" height="100%" >
+			<s:layout>
+				<s:VerticalLayout paddingTop="2" horizontalAlign="center" gap="1" clipAndEnableScrolling="true"/>
+			</s:layout>
+			<VBAllergies:VBAlergiesGridPanel name="p1" id="id_VBAlergiesGridPanel" width="100%" ExpandedView="true" allowSlideOut="true"
+											 SlideOutXOffset="35" SlideOutYOffset="0"
+											 QSSlideStateChange="slideoutManager.QSAutoSlideChangeHandler(event)" 
+											 QSViewStateChange="slideoutManager.QSAutoCollapseHandler(event); checkPanels()" slideoutPanelName="Allergies"									
+											 />
+			<VBHistory:VBMedicalHXPanel width="100%" ExpandedView="true" id="id_medicalHX" allowSlideOut="true"
+										SlideOutXOffset="35" SlideOutYOffset="0"
+										QSSlideStateChange="slideoutManager.QSAutoSlideChangeHandler(event)" 
+										QSViewStateChange="slideoutManager.QSAutoCollapseHandler(event); checkPanels()"
+										includeInLayout="false" visible="false" slideoutPanelName="Medical HX"
+										/>			
+			
+			<!--<VBHistory:VBHistroyGridPanel width="100%" ExpandedView="true" id="id_history" allowSlideOut="true"
+										  SlideOutXOffset="35" SlideOutYOffset="0"
+										  QSSlideStateChange="slideoutManager.QSAutoSlideChangeHandler(event)" 
+										  QSViewStateChange="slideoutManager.QSAutoCollapseHandler(event); checkPanels()"
+										  includeInLayout="false" visible="false" slideoutPanelName="History"
+										  />-->
+			<VBMedication:VBMedicationGridPanel  width="100%" ExpandedView="true" id="id_medication" allowSlideOut="true"
+												 SlideOutXOffset="35" SlideOutYOffset="0"
+												 QSSlideStateChange="slideoutManager.QSAutoSlideChangeHandler(event)" 
+												 QSViewStateChange="slideoutManager.QSAutoCollapseHandler(event); checkPanels()"
+												 includeInLayout="false" visible="false" slideoutPanelName="Medication"
+												 />
+			<VBImmunization:VBImmunizationGridPanel width="100%" ExpandedView="true" id="id_VBImGridP" allowSlideOut="true"
+													SlideOutXOffset="35" SlideOutYOffset="0"
+													QSSlideStateChange="slideoutManager.QSAutoSlideChangeHandler(event)" 
+													QSViewStateChange="slideoutManager.QSAutoCollapseHandler(event); checkPanels()"
+													includeInLayout="false" visible="false" slideoutPanelName="Immunization"
+													/>
+			
+			<vitals:VBVitalsGridPanel id="id_VBVitalsGridPanel" width="100%" ExpandedView="true"  allowSlideOut="false"
+									  SlideOutXOffset="35" SlideOutYOffset="0"
+									  QSSlideStateChange="slideoutManager.QSAutoSlideChangeHandler(event)"
+									  QSViewStateChange="slideoutManager.QSAutoCollapseHandler(event); checkPanels()"
+									  includeInLayout="false" visible="false"
+									  />
+			<cc:VBCCHPIGridPanle width="100%" ExpandedView="true" id="id_hpi" allowSlideOut="false"
+								 SlideOutXOffset="35" SlideOutYOffset="0"
+								 QSSlideStateChange="slideoutManager.QSAutoSlideChangeHandler(event)"
+								 QSViewStateChange="slideoutManager.QSAutoCollapseHandler(event); checkPanels()"
+								 includeInLayout="false" visible="false"
+								 />
+			<ros:VBROSGridPanel width="100%" ExpandedView="true" id="id_ros" allowSlideOut="false"
+								SlideOutXOffset="35" SlideOutYOffset="0"
+								QSSlideStateChange="slideoutManager.QSAutoSlideChangeHandler(event)"
+								QSViewStateChange="slideoutManager.QSAutoCollapseHandler(event); checkPanels()"
+								includeInLayout="false" visible="false"
+								/>
+			<physical:VBPhysicalGridView width="100%" ExpandedView="true" id="id_physical" allowSlideOut="false"
+										 SlideOutXOffset="35" SlideOutYOffset="0"
+										 QSSlideStateChange="slideoutManager.QSAutoSlideChangeHandler(event)"
+										 QSViewStateChange="slideoutManager.QSAutoCollapseHandler(event); checkPanels()"
+										 includeInLayout="false" visible="false"
+										 />
+			
+			<lab:VBLabViewPanel width="100%" ExpandedView="true" id="id_lab" allowSlideOut="false"
+								SlideOutXOffset="35" SlideOutYOffset="0"
+								QSSlideStateChange="slideoutManager.QSAutoSlideChangeHandler(event)"
+								QSViewStateChange="slideoutManager.QSAutoCollapseHandler(event); checkPanels()"
+								includeInLayout="false" visible="false"
+								/>
+			
+			<diagnosis:VBDiagnosisGridPanel id="id_VBDiagnosisGridPanel" width="100%" ExpandedView="true" allowSlideOut="false"
+											SlideOutXOffset="35" SlideOutYOffset="0"
+											QSSlideStateChange="slideoutManager.QSAutoSlideChangeHandler(event)"
+											QSViewStateChange="slideoutManager.QSAutoCollapseHandler(event); checkPanels()"
+											includeInLayout="false" visible="false"
+											/>
+			<treatment:VBPrescriptionPanel width="100%" ExpandedView="true"  id="id_prescription" allowSlideOut="false"
+										   SlideOutXOffset="35" SlideOutYOffset="0"
+										   QSSlideStateChange="slideoutManager.QSAutoSlideChangeHandler(event)"
+										   QSViewStateChange="slideoutManager.QSAutoCollapseHandler(event); checkPanels()"
+										   includeInLayout="false" visible="false"
+										   />		
+			
+			<treatment:VBTreatmentPanel width="100%" ExpandedView="true"  id="id_treatment" allowSlideOut="false"
+										SlideOutXOffset="35" SlideOutYOffset="0"
+										QSSlideStateChange="slideoutManager.QSAutoSlideChangeHandler(event)"
+										QSViewStateChange="slideoutManager.QSAutoCollapseHandler(event); checkPanels()"
+										includeInLayout="false" visible="false"
+										/>
+			<Plan:VBPlanView width="100%" ExpandedView="true" id="id_plan" allowSlideOut="false"
+							 SlideOutXOffset="35" SlideOutYOffset="0"
+							 QSSlideStateChange="slideoutManager.QSAutoSlideChangeHandler(event)"
+							 QSViewStateChange="slideoutManager.QSAutoCollapseHandler(event); checkPanels()"
+							 includeInLayout="false" visible="false"
+							 />
+			
+			<Plan:VBFollowUpPanel width="100%" ExpandedView="true" id="id_followUp" allowSlideOut="false"
+								  SlideOutXOffset="35" SlideOutYOffset="0"
+								  QSSlideStateChange="slideoutManager.QSAutoSlideChangeHandler(event)"
+								  QSViewStateChange="slideoutManager.QSAutoCollapseHandler(event); checkPanels()"
+								  includeInLayout="false" visible="false"
+								  />		
+			
+			
+			
+			
+			<s:VGroup width="100%">
+				<s:HGroup width="100%">
+					<s:ToggleButton id="id_allergiesBtn" width="100%" label="Allergies" click="ShowRespectivePanel(event)" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBallergiesTB" useHandCursor="true" buttonMode="true"/>
+					<s:ToggleButton id="id_medicalHXBtn" width="100%" label="Past Medical HX" click="ShowRespectivePanel(event)" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBPastMedicalTB" useHandCursor="true" buttonMode="true"/>
+					<s:ToggleButton id="id_historyBtn" width="100%" label="Social History" click="ShowRespectivePanel(event)" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBHistoryTB" useHandCursor="true" buttonMode="true"/>
+					<s:ToggleButton id="id_medicationBtn" width="100%" label="Chronic Medication" click="ShowRespectivePanel(event)" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBMedicationTB" useHandCursor="true" buttonMode="true" />
+				</s:HGroup>
+				<s:HGroup width="100%">							
+					<s:ToggleButton id="id_immunizationBtn" width="100%" label="Immunization" click="ShowRespectivePanel(event)" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBImmunizationTB" useHandCursor="true" buttonMode="true"/>
+					<s:ToggleButton id="id_vitalsBtn" width="100%" label="Vitals" click="ShowRespectivePanel(event)" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBVitalsTB" useHandCursor="true" buttonMode="true"/>
+					<s:ToggleButton id="id_hpiBtn" width="100%" label="CC/HPI" click="ShowRespectivePanel(event)" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBHpiTB" useHandCursor="true" buttonMode="true"/>			
+					<s:ToggleButton id="id_rosBtn" width="100%" label="ROS" click="ShowRespectivePanel(event)" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBROSTB" useHandCursor="true" buttonMode="true"/>
+					
+				</s:HGroup>
+				<s:HGroup width="100%">
+					<s:ToggleButton id="id_physicalBtn" width="100%" label="Physical" click="ShowRespectivePanel(event)" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBPhysicalTB" useHandCursor="true" buttonMode="true"/>
+					<s:ToggleButton id="id_labBtn" width="100%" label="Lab" click="ShowRespectivePanel(event)" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBLabTB" useHandCursor="true" buttonMode="true"/>
+					<s:ToggleButton id="id_diagnosisBtn" width="100%" label="Diagnosis" click="ShowRespectivePanel(event)" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBDiagnosisTB" useHandCursor="true" buttonMode="true"/>
+					<s:ToggleButton id="id_prescriptionBtn" width="100%" label="Prescription" click="ShowRespectivePanel(event)" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBPrescriptionTB" useHandCursor="true" buttonMode="true"/>						
+					
+				</s:HGroup>
+				<s:HGroup width="100%">
+					<s:ToggleButton id="id_treatmentBtn" width="100%" label="Procedure" click="ShowRespectivePanel(event)" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBTreatmentTB" useHandCursor="true" buttonMode="true"/>
+					<s:ToggleButton id="id_planBtn" width="100%" label="Recommendation" click="ShowRespectivePanel(event)" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBPlanTB" useHandCursor="true" buttonMode="true"/>
+					<s:ToggleButton id="id_followUpBtn" width="{(id_diagnosisBtn.width * 2) + 6}" label="Follow Up" click="ShowRespectivePanel(event)" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBFollowUpTB" useHandCursor="true" buttonMode="true"/>
+				</s:HGroup>
+			</s:VGroup>	
+			
+			
+			
+			
+		</s:Group>
+		<!--</s:SkinnableContainer>-->
+	</s:VGroup>
+	
+</s:Group>

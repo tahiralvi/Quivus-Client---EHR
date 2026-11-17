@@ -1,0 +1,516 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:components="com.gazuntite.controls.extended.components.*"
+		 xmlns:appController="com.gazuntite.provider.search.services.patient.appController.*"
+		 xmlns:validators="com.zigron.utils.validators.*"  >
+	
+	<fx:Metadata>
+		[Event(name="PatientSelected", type="com.gazuntite.provider.search.services.patient.view.events.PatientSelectedEvent")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.RecentPatientSearchButton;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.orangeSearchButton;
+			import com.gazuntite.common.util.ValidationUtils;
+			import com.gazuntite.provider.search.services.patient.event.SearchPatientbyClinicIdEvent;
+			import com.gazuntite.provider.search.services.patient.model.SearchPatientModelLocator;
+			import com.gazuntite.provider.search.services.patient.util.sql.LocalPatientsDB;
+			import com.gazuntite.provider.search.services.patient.view.events.PatientSelectedEvent;
+			import com.gazuntite.provider.search.services.patient.view.search.patientSearchList;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayList;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			
+			[Bindable]
+			private var model : SearchPatientModelLocator = SearchPatientModelLocator.getInstance();
+			
+			private var list:ArrayList;
+			private var _patientLoaded:Boolean 	= false;
+			private var _AllowSearch:Boolean 	= false;
+			private var bSearchPatient : Boolean;
+			private var bSearchPatientGlobal: Boolean;
+			private var sLastCallString:String;
+			private var LocalSearch:Boolean 	= false;
+			private var searchCase:uint 		= LocalPatientsDB.FREE_SEARCH;
+			private var SearchListView:patientSearchList;
+			private var searchTypeCase:int 		= 1;
+			private var txtGID:String;//text for GID
+			
+			[Bindable]
+			public function get AllowSearch():Boolean
+			{
+				return _AllowSearch;
+			}
+			
+			public function set AllowSearch(value:Boolean):void
+			{
+				_AllowSearch = value;
+			}
+			
+			[Bindable]
+			public function get patientLoaded():Boolean
+			{
+				return _patientLoaded;
+			}
+			
+			public function set patientLoaded(value:Boolean):void
+			{
+				_patientLoaded = value;
+			}
+			
+			// -- Change handler of Textinput  ------------------------------------------
+			protected function textInput_changeHandler(event:TextOperationEvent):void
+			{
+				if( null == list )
+				{
+					list = new ArrayList();
+				}
+				
+				// old impl searchPatientAndDisplay();
+				switch(searchTypeCase)
+				{
+					case 1://First Name
+					case 2://Last Name
+					{
+						id_textInput.text = UtilityFunctions.TrimString(id_textInput.text); // Trim the white spaces from search query @ beginning & End
+						
+						if(id_textInput.text.length > 2 && id_textInput.text.length < 36)// min length for serach in name case is 3
+						{
+							searchPatientAndDisplay();
+						}
+						break;
+					}
+					case 3:// SSN Search
+					{
+						var ssn:String		=	id_textInput.text.replace(/[^0-9]/g, "");
+						id_textInput.text 	= 	ssn.substring(0,3) + (ssn.length > 3 ? "-" + ssn.substring(3,5) + (ssn.length > 5 ? "-" + ssn.substring(5,9):""):"");
+						id_textInput.selectRange(id_textInput.text.length, id_textInput.text.length);
+						
+						if(id_textInput.text.length == 11)//send only if SSn is complete
+						{
+							sendToServer(id_textInput.text, 1, showSuggestPopup);
+							id_btnSearch.setFocus();
+							//trace('SendToServer --------- Change------- ', 'SSN CASE');
+						}
+						
+						break;
+					}
+					case 4:// DOB Search
+						var dob:String		= id_textInput.text.replace(/[^0-9]/g,"");
+						id_textInput.text 	= dob.substring(0,2) + (dob.length>2?"/"+dob.substring(2,4) + (dob.length>4?"/"+dob.substring(4,8):""):"");
+						id_textInput.selectRange(id_textInput.text.length, id_textInput.text.length);
+						
+						//strDOB 			= id_textInput.text;
+						if(id_textInput.text.length == 10)// send only if DOB is complete
+						{
+							if(ValidationUtils.isValidDateText(id_textInput.text)) // always send valid date for search
+							{
+								sendToServer(id_textInput.text, 1, showSuggestPopup);
+								id_btnSearch.setFocus();
+								//trace('SendToServer --------- Change------- ', 'DOB CASE');
+							}
+						}
+						break;
+					case 5: //ID - Other ID
+					{
+						//id_textInput.text = UtilityFunctions.TrimString(id_textInput.text); // Trim the white spaces from search query @ beginning & End
+						var strID:String		= id_textInput.text.replace(/[^0-9]/g,"");
+						id_textInput.selectRange(id_textInput.text.length, id_textInput.text.length);
+						
+						if(id_textInput.text.length > 3 && id_textInput.text.length < 15)
+						{
+							searchPatientAndDisplay();
+						}
+						break;
+					}
+					case 6: //GID
+						var gid:String		= id_textInput.text.replace(/[^0-9]/g,"");
+						
+						txtGID = event.currentTarget.text;
+						var can:String = 'Ga-';
+						//trace("org: ",txtGID);
+						if(txtGID.indexOf(can) == 0)
+						{
+							txtGID = txtGID.substr(can.length);
+						}
+						
+						//trace("mod: ",txtGID);
+						
+						if( txtGID.length >= 1)
+						{
+							txtGID = 'Ga-' + txtGID;
+						}
+						
+						event.currentTarget.text = txtGID;
+						
+						event.currentTarget.selectRange( txtGID.length, txtGID.length );
+						//trace("cur: ",txtGID);
+						
+						if(id_textInput.text.length > 5 && id_textInput.text.length < 15)	// min 5 and max 14 include 'ga-'
+						{
+							searchPatientAndDisplay();
+						}
+						break;
+				}
+				
+				if( null == SearchListView )
+				{
+					createSearchList();
+					SearchListView.visible = false;
+				}
+			}
+			//----- Search on case basis on text input change -----------
+			private function searchPatientAndDisplay():void
+			{
+				var isTimerAdded:Boolean;
+				
+				if( id_textInput.text.length < 2 && (searchTypeCase == 1 || searchTypeCase == 2))// only first name and second name have min 3 char for search
+				{
+					model.CurrentPageNo = 1;
+					if( SearchListView && SearchListView.visible )
+					{
+						//SearchListView.removePopup();
+						SearchListView.visible = false;
+					}
+					return;
+				}
+				
+				var dispatchSearchEvent:Boolean = false;
+				var tok:Array;
+				
+				var searchString:String = id_textInput.text;
+				
+				if( searchString.charAt(0).toLowerCase() == 'g' && searchTypeCase == 6)// its a GID,
+				{
+					dispatchSearchEvent = true;
+				} // in case of First Name and Last Name
+				else if((searchString.length == 3 ||  searchString.length == 5 ||  searchString.length == 7 ||  searchString.length == 9) && (searchTypeCase == 1 || searchTypeCase == 2))
+				{
+					dispatchSearchEvent = true;
+				}// in acse of ID or Other ID
+				else if(searchTypeCase == 5 && searchString.length >= 4)
+				{
+					dispatchSearchEvent = true;
+				}
+				
+				
+				if( dispatchSearchEvent && !isTimerAdded)
+				{
+					bSearchPatient			=	true;
+					//sendCall( searchString, LocalSearch );
+					var timer:Timer 		= new Timer( 500, 1 );
+					list.addItem( timer );
+					timer.addEventListener( TimerEvent.TIMER_COMPLETE, onTimerComplete );
+					timer.start();
+					sLastCallString 		= 	searchString;
+					//trace("timer started");
+					bSearchPatientGlobal	=	true;
+					trace('TIMER START --------- ---- SEARCH STRING--- ', searchString);
+				}
+			}
+			//---------------- On timer complete -------------------
+			private function onTimerComplete(event:TimerEvent ):void
+			{
+				event.currentTarget.stop();
+				list.removeItem( event.currentTarget ); //remove the last tick timer
+				
+				if( (list.length == 0) && (sLastCallString == id_textInput.text) && (id_textInput.text !="") && (bSearchPatientGlobal))
+				{
+					//sendCall( id_textInput.text, LocalSearch );
+					sendToServer( id_textInput.text, 1, showSuggestPopup );
+					bSearchPatient			=	false;
+					bSearchPatientGlobal	=	false;
+					sLastCallString			=	"";
+					trace('TIMER COMPLETE --------- ---- SEND CALL--- ', id_textInput.text);
+				}
+			}
+			
+			//-- Create Search list in which records are displayed as a list ----------
+			private function createSearchList():void
+			{
+				SearchListView 				= new patientSearchList();
+				SearchListView.addEventListener( PatientSelectedEvent.PATIENT_SELECTED, OnItemClick);
+				SearchListView.addEventListener( "closeSearchBox", clearSearchResults);
+				var pLoc:Point = new Point( this.x , this.y + id_textInput.y + this.height + 8 );
+				var loc:Point = id_textInput.localToGlobal( pLoc );
+				
+				SearchListView.minWidth = this.width;
+				
+				SearchListView.x = loc.x - 15; 
+				SearchListView.y = loc.y + 7 ;  
+				
+				SearchListView.ShowPopup( this );
+			}
+			//-- Call back emthod for SearchPatientbyClinicIdEvent ------------------------------
+			private function showSuggestPopup(val:* = null):void
+			{
+				if( null == SearchListView )
+					createSearchList();
+				
+				if( ! SearchListView.visible )
+				{
+					var pLoc:Point = new Point( this.x ,
+						this.y + id_textInput.y + this.height + 8 );
+					var loc:Point = id_textInput.localToGlobal( pLoc );						
+					SearchListView.x = loc.x - 15; 
+					SearchListView.y = loc.y + 7 ;  
+					
+					SearchListView.visible = true;
+					//trace ( "showing list ", SearchListView.visible );
+					/* return;
+					clearSearchResults(); */
+				}
+				
+				if( SearchListView )
+					SearchListView.refreshList( id_textInput.text );
+				
+				/* var d:Date = new Date();
+				
+				SearchListView.callLater( SearchListView.refreshList, [id_textInput.text]); 
+				trace( "time showSuggestPopup exit " + d.minutes, d.seconds ) */
+			}
+			//------ on item selection actually click on loded patient after search ---------------------------
+			private function OnItemClick(event:Event):void
+			{
+				try
+				{
+					if(SearchListView.id_SearchList.selectedItem)
+					{
+						var ps:PatientSelectedEvent = new PatientSelectedEvent(PatientSelectedEvent.PATIENT_SELECTED);;
+						ps.selection = SearchListView.id_SearchList.selectedItem;
+						dispatchEvent( ps );
+						
+						clearSearchResults();
+					}
+				}
+				catch(e:Error)
+				{
+					trace("ERROR --> PatientSelectedEvent :: OnItemClick", e );
+				}
+			}
+			// -------- Click handler of Search textinput---------------------------
+			protected function textInput_clickHandler(event:MouseEvent):void
+			{
+				//event.stopImmediatePropagation();				
+			}
+			//----- Clear Display list of recent search result ----------------------
+			private function clearSearchResults(event:Event = null):void
+			{
+				if( SearchListView && SearchListView.visible )
+				{
+					txtGID					= '';
+					id_textInput.text		= '';
+					SearchListView.visible 	= false;
+					return
+				}
+			}
+			// ----------------- Search button click handler ---------------
+			protected function btnSearch_ClickHandler(event:MouseEvent):void
+			{
+				Search();
+				event.stopImmediatePropagation();	
+			}
+			//------------- Search on basis of Search Type selected --------------------------------
+			private function Search():void
+			{
+				if(id_searchType.selectedIndex != -1)
+				{
+					UtilityFunctions.TrimString(id_textInput.text);	//Trim space from start and end
+					
+					var searchString:String 	= id_textInput.text;
+					
+					if( searchString.length > 0 )
+					{
+						if( LocalSearch )
+						{
+							//FetchFromLocalDB( searchString, searchCase, showSuggestPopup );
+						}
+						else
+						{
+							if(searchTypeCase == 1 || searchTypeCase == 2)				// case First name or last name
+							{
+								if(searchString.length > 2 && searchString.length < 36)
+								{
+									sendToServer( searchString, 1, showSuggestPopup );
+								}
+							}
+							else if(searchTypeCase == 3) 								//case SSN
+							{
+								if(searchString.length == 10)							//send only if SSn is complete
+								{
+									sendToServer(searchString, 1, showSuggestPopup);
+								}
+							}
+							else if(searchTypeCase == 4) 								//case DOB
+							{
+								if(searchString.length == 9)							// send only if DOB is complete
+								{
+									if(ValidationUtils.isValidDateText(searchString)) 	// always send valid date for search
+									{
+										sendToServer(searchString, 1, showSuggestPopup);
+									}
+								}
+							}
+							else if(searchTypeCase == 5) 								//case ID & Other ID
+							{
+								if(searchString.length > 3 && searchString.length < 15)
+								{
+									sendToServer( searchString, 1, showSuggestPopup );
+								}
+							}
+							else if(searchTypeCase == 6) 								// GID case
+							{
+								if(searchString.length > 5 && searchString.length < 21)
+								{
+									sendToServer( searchString, 1, showSuggestPopup );
+								}
+							}
+						}
+					}
+					else
+					{
+						id_textInput.setFocus();
+						Alert.show("Please provide some value","Invalid input", 4, FlexGlobals.topLevelApplication.mainContainer);
+					}
+				}
+				else
+				{
+					id_searchType.setFocus();
+					Alert.show("Please select a search type","Invalid type", 4, FlexGlobals.topLevelApplication.mainContainer);
+				}
+			} 
+			// ----------------- Send to Server for Result---------------------------------------------------
+			private function sendToServer( searchString:String, pageNo:int, callBack:Function ):void
+			{
+				trace('SendToServer ---------------- ', 'SearchPatientbyClinicIdEvent');
+				var pseEvent : SearchPatientbyClinicIdEvent 	= new SearchPatientbyClinicIdEvent( searchString, pageNo, searchTypeCase, callBack );
+				CairngormEventDispatcher.getInstance().dispatchEvent( pseEvent );
+			}
+			
+			// -------- Key Up handler of Search textinput---------------------------
+			protected function textInput_keyUpHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode == Keyboard.ENTER)
+				{
+					Search();
+				}
+			}
+			//-------------- Search Type change handler -----------------------------
+			protected function searchType_changeHandler(event:IndexChangeEvent):void
+			{
+				//1=@FirstName LastName, 2=@LastName FirstName,3=@SSN,4=@DOB,5=@ID,6=@QuivusUserID
+				//id_textInput.text = '';//before switching to any type clear Textinput
+				
+				switch(id_searchType.selectedIndex)
+				{
+					case 0:
+						id_textInput.prompt = 'First Name';
+						searchTypeCase = 1;
+						id_image.source = selected_name;
+						break;
+					case 1:
+						id_textInput.prompt = 'Last Name';
+						searchTypeCase = 2;
+						id_image.source = selected_name;
+						break;
+					case 2:
+						id_textInput.prompt = 'SSN';
+						searchTypeCase = 3;
+						id_image.source = selected_ssn;
+						break;
+					case 3:
+						id_textInput.prompt = 'DOB';
+						searchTypeCase = 4;
+						id_image.source = selected_dob;
+						break;
+					case 4:
+						id_textInput.prompt = 'ID';
+						searchTypeCase = 5;
+						id_image.source = selected_id;
+						break;
+					case 5:
+						id_textInput.prompt = 'GID';
+						searchTypeCase = 6;
+						id_image.source = selected_gid;
+						break;
+					
+					default:
+						break;
+				}
+			}
+			
+			[Embed(source="com/gazuntite/provider/search/services/patient/view/skins/assets/selected_name.png")]
+			[Bindable]	public var selected_name:Class;
+			[Embed(source="com/gazuntite/provider/search/services/patient/view/skins/assets/selected_ssn.png")]
+			[Bindable]	public var selected_ssn:Class;
+			[Embed(source="com/gazuntite/provider/search/services/patient/view/skins/assets/selected_dob.png")]
+			[Bindable]	public var selected_dob:Class;
+			[Embed(source="com/gazuntite/provider/search/services/patient/view/skins/assets/selected_id.png")]
+			[Bindable]	public var selected_id:Class;
+			[Embed(source="com/gazuntite/provider/search/services/patient/view/skins/assets/selected_gid.png")]
+			[Bindable]	public var selected_gid:Class;
+			
+			protected function id_image_clickHandler(event:MouseEvent):void
+			{
+				id_searchType.openDropDown();
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!--<appController:SearchPatientController />-->
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:HorizontalLayout paddingLeft="1"  paddingBottom="1" verticalAlign="top" horizontalAlign="left" paddingRight="0" gap="1" />
+	</s:layout>
+	
+	<s:Group >
+		
+		<s:DropDownList id="id_searchType" left="0"
+						labelField="label" 
+						requireSelection="true"
+						skinClass="com.adobe.gazuntite.skins.chrome.comboBoxSkins.CustomDropDownListSkin"
+						itemRenderer="spark.skins.spark.DefaultComplexItemRenderer"	
+						width="1" height="1" 
+						change="searchType_changeHandler(event)">
+			<s:dataProvider>
+				<s:ArrayList>
+					<s:BitmapImage source="@Embed('com/gazuntite/provider/search/services/patient/view/skins/assets/fname.png')" />
+					<s:BitmapImage source="@Embed('com/gazuntite/provider/search/services/patient/view/skins/assets/lname.png')" />
+					<s:BitmapImage source="@Embed('com/gazuntite/provider/search/services/patient/view/skins/assets/ssn.png')" />
+					<s:BitmapImage source="@Embed('com/gazuntite/provider/search/services/patient/view/skins/assets/dob.png')" />
+					<s:BitmapImage source="@Embed('com/gazuntite/provider/search/services/patient/view/skins/assets/id.png')" />
+					<s:BitmapImage source="@Embed('com/gazuntite/provider/search/services/patient/view/skins/assets/gid.png')" />
+				</s:ArrayList>
+			</s:dataProvider>
+		</s:DropDownList>
+		<s:Image id="id_image" width="30" height="19" source="{selected_name}" left="0" click="id_image_clickHandler(event)" buttonMode="true" useHandCursor="true" />
+	</s:Group>
+	
+	<components:LabelTextInput id="id_textInput" 
+							   height="20" borderColor="#333333" borderVisible="false" borderAlpha="0" 
+							   width="100%"  focusAlpha="0" 
+							   paddingRight="2" paddingBottom="0" paddingTop="0" 
+							   prompt="First Name" restrict="[A-Z a-z , . / \- 0-9]" 
+							   keyUp="textInput_keyUpHandler(event)"
+							   click="textInput_clickHandler(event)" 
+							   change="textInput_changeHandler(event)" 
+							   skinClass="com.adobe.gazuntite.skins.chrome.textInputSkins.transparentTextInput"  />
+	
+	<s:Button id="id_btnSearch" 
+			  click="btnSearch_ClickHandler(event)"
+			  useHandCursor="true" buttonMode="true" 
+			  skinClass="{patientLoaded ? RecentPatientSearchButton : orangeSearchButton}" 
+			  width="{patientLoaded?25:23}" height="19"
+			  toolTip="Patient Search"/>
+</s:Group>

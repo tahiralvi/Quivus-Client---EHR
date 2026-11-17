@@ -1,0 +1,711 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="cc()" xmlns:validators="com.gazuntite.common.util.validators.*" xmlns:itemEditors="com.gazuntite.common.view.itemEditors.*" xmlns:components="com.gazuntite.controls.extended.components.*" xmlns:grid="com.gazuntite.common.view.components.grid.*"
+		 >
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace extended "com.adobe.Quivus.view.controls.extended.*";
+		@namespace components "com.zigron.controls.extended.components.*";
+		
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.common.dto.pmh.compHistory.SocialHistoryDTO;
+			import com.gazuntite.common.util.QSConstants;
+			import com.gazuntite.common.view.events.DataGridActionsEvent;
+			import com.gazuntite.common.view.itemEditors.DateFieldEditor;
+			import com.gazuntite.common.view.itemEditors.SparkComboBoxItemEditor;
+			import com.gazuntite.common.view.itemEditors.YesNoItemEditor;
+			import com.gazuntite.controls.extended.components.LabelComboBox;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			import com.gazuntite.patient.visit.utlis.VBGridController;
+			import com.gazuntite.patient.visit.utlis.VBUtilityFunctions;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.controls.Label;
+			import mx.controls.TextInput;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.events.DataGridEvent;
+			import mx.events.ValidationResultEvent;
+			
+			[Bindable]
+			public var model:VBModelLocator = VBModelLocator.getInstance();
+			
+			[Bindable]
+			public var dataGridActionsData:Object;
+			
+			private var _hasViewChanged:Boolean;
+			private var _hasGridChanged:Boolean;
+			
+			
+			private var m_bShowEditControls:Boolean;
+			private var vbGridController:VBGridController;
+			
+			[Bindable]
+			public function get ShowEditControls():Boolean
+			{
+				return m_bShowEditControls;
+			}
+			
+			public function set ShowEditControls(value:Boolean):void
+			{
+				m_bShowEditControls = value;
+			}
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			
+			
+			private function vbSocialGridItemEditBeginHandler(event:DataGridEvent):void
+			{
+				/* if (event.columnIndex < 3 )
+				{
+					id_DataGrid.editable = false;
+					event.preventDefault();
+					event.stopImmediatePropagation();
+					return; // don't allow first edit
+				}
+				else if (event.columnIndex > 3 )
+				{
+					if(id_DataGrid.selectedItem["Status"] == QSConstants.STRING_NO_UI)
+					{
+						id_DataGrid.editable = false;
+						event.preventDefault();
+						event.stopImmediatePropagation();
+						return; //don't allow edit until yes selected
+					}
+				}
+				
+				id_DataGrid.createItemEditor(event.columnIndex, event.rowIndex);
+				
+				if (event.columnIndex == 3)
+				{
+					try
+					{
+						if(id_DataGrid.selectedItem["Status"] == QSConstants.STRING_NO_UI)
+						{
+							(id_DataGrid.itemEditorInstance as YesNoItemEditor).isYes = "false";
+						}
+						else if(id_DataGrid.selectedItem["Status"] == Constants.STRING_YES_UI)
+						{
+							(id_DataGrid.itemEditorInstance as YesNoItemEditor).isYes = 'true';
+						}
+					}
+					catch(error:*)
+					{
+						
+					}
+				}
+					
+					
+				else if (event.columnIndex == 4)
+				{
+					try
+					{
+						if((id_DataGrid.itemEditorInstance).data["Current"] == true)
+						{
+							(id_DataGrid.itemEditorInstance).data["Current"] = "Yes";
+						}
+						else if((id_DataGrid.itemEditorInstance).data["Current"] == false)
+						{
+							(id_DataGrid.itemEditorInstance).data["Current"] = "No";
+						}
+					}
+					catch(error:*)
+					{
+						
+					}
+				}
+					
+				else if(event.columnIndex == 5)
+				{
+					try
+					{
+						trace("Social: ",event.itemRenderer.data["Social"]);					
+						if(event.itemRenderer.data["Social"] == Constants.SOCIAL_ALCOHOL_MODULE_NAME)
+						{
+							SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.dataProvider = model.historyMediumTypesDTOData.AlcoholList;
+						}
+						else if(event.itemRenderer.data["Social"] == Constants.SOCIAL_DRUGS_MODULE_NAME)
+						{
+							SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.dataProvider = model.historyMediumTypesDTOData.DrugsList;
+						}
+						else if(event.itemRenderer.data["Social"] == Constants.SOCIAL_TOBACCO_MODULE_NAME)
+						{
+							SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.dataProvider = model.historyMediumTypesDTOData.TobaccoList;
+						}
+						else if(event.itemRenderer.data["Social"] == Constants.SOCIAL_HISTORY_MODULE_NAME)
+						{
+							SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.dataProvider = null;
+						}
+						else if(event.itemRenderer.data["Social"] == Constants.SOCIAL_MERITAL_STATUS_MODULE_NAME)
+						{
+							SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.dataProvider = null;
+						}
+						else if(event.itemRenderer.data["Social"] == Constants.SOCIAL_WORK_STATUS_MODULE_NAME)
+						{
+							SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.dataProvider = null;
+						}
+						else if(event.itemRenderer.data["Social"] == Constants.SOCIAL_OTHER_MODULE_NAME)
+						{
+							SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.dataProvider = null;
+						}
+						
+					}
+					catch(error:*)
+					{
+						
+					}
+				}
+					
+				else if(event.columnIndex == 6)
+				{
+					try
+					{
+						trace("Social: ",event.itemRenderer.data["Social"]);					
+						if(event.itemRenderer.data["Social"] == Constants.SOCIAL_ALCOHOL_MODULE_NAME)
+						{
+							SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.dataProvider = model.usageAmountDTOData.AlcoholList;
+						}
+						else if(event.itemRenderer.data["Social"] == Constants.SOCIAL_DRUGS_MODULE_NAME)
+						{
+							SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.dataProvider = model.usageAmountDTOData.DrugsList;
+						}
+						else if(event.itemRenderer.data["Social"] == Constants.SOCIAL_TOBACCO_MODULE_NAME)
+						{
+							SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.dataProvider = model.usageAmountDTOData.TobacooList;
+						}
+						else if(event.itemRenderer.data["Social"] == Constants.SOCIAL_HISTORY_MODULE_NAME)
+						{
+							SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.dataProvider = null;
+						}
+						else if(event.itemRenderer.data["Social"] == Constants.SOCIAL_MERITAL_STATUS_MODULE_NAME)
+						{
+							SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.dataProvider = null;
+						}
+						else if(event.itemRenderer.data["Social"] == Constants.SOCIAL_WORK_STATUS_MODULE_NAME)
+						{
+							SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.dataProvider = null;
+						}
+						else if(event.itemRenderer.data["Social"] == Constants.SOCIAL_OTHER_MODULE_NAME)
+						{
+							SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.dataProvider = null;
+						}
+						
+					}
+					catch(error:*)
+					{
+						
+					}
+				}
+				else if (event.columnIndex == 7)
+				{
+					try
+					{
+						if( event.itemRenderer.data["Educated"] == Constants.STRING_TRUE ||
+							event.itemRenderer.data["Educated"] == Constants.STRING_YES_UI )
+						{
+							(id_DataGrid.itemEditorInstance as YesNoItemEditor).isYes = "true";
+						}
+						else if(event.itemRenderer.data["Educated"] == Constants.STRING_FALSE ||
+							event.itemRenderer.data["Educated"] == Constants.STRING_NO_UI )
+						{
+							(id_DataGrid.itemEditorInstance as YesNoItemEditor).isYes = "false";
+						}
+					}
+					catch(error:*)
+					{
+						
+					}
+				} */
+			}
+			
+			private var isAsking:Boolean = false; //@see --- ItemEditEndHandler
+			private function vbSocialGridItemEditEndHandler(event:DataGridEvent):void
+			{
+				/* var validationRes:ValidationResultEvent;
+				var pID:int = SocialhistoryVBDTO(event.currentTarget.selectedItem).PatientSocialHistoryID;
+				
+				if (event.dataField == "Type" || event.dataField == "Amount")
+				{
+					var editor:LabelComboBox = SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor;
+					
+					comboValidator.source = editor;
+					
+					if (event.dataField == "Type")
+					{
+						comboValidator.error = "Select type from list";
+					}
+					else if (event.dataField == "Amount")
+					{
+						comboValidator.error = "Select amount value from list";
+					}
+					
+					validationRes = comboValidator.validate(editor.selectedItem);
+					
+					if (validationRes && !validationRes.results)
+					{
+						var dto:SocialhistoryVBDTO = event.itemRenderer.data as SocialhistoryVBDTO;
+						
+						if (event.dataField == "Type")
+						{
+							dto.Type 	= editor.selectedItem.MediumName;
+							//dto. 		= editor.selectedItem.RelationshipId;
+						}
+						else if (event.dataField == "Amount")
+						{
+							dto.Amount 	= (editor.selectedItem as SocialHistoryUsageAmountTypeDTO).UsageAmountName;
+						}
+						
+						if (pID != 0)
+							event.itemRenderer.data.IsDirty = true;
+						
+						hasViewChanged = _hasGridChanged = true;
+					}
+					
+				}
+					
+				else if (event.dataField == "Status")
+				{
+					var isYes:String = (id_DataGrid.itemEditorInstance as YesNoItemEditor).isYes;
+					
+					if( isYes == Constants.STRING_FALSE && isAsking == false &&
+						(
+							event.itemRenderer.data.DictationId != Constants.GUID_FORMAT || 
+							//!AppUtils.IsNullOrEmpty( event.itemRenderer.data.NoteSubject ) ||
+							!AppUtils.IsNullOrEmpty( event.itemRenderer.data.Note ) ||
+							!AppUtils.IsNullOrEmpty( event.itemRenderer.data.Type ) ||
+							!AppUtils.IsNullOrEmpty( event.itemRenderer.data.Amount ) 
+						)
+					)
+					{
+						isAsking = true; // work around -- don't know why this event is firing twice --- look for real cause
+						UtilityFunctions.AskMessage( "This action will remove any related data, notes and dictation on the current selected record.", function():void //if yes is selected
+						{
+							//isAsking = false;
+							//event.itemRenderer.data.IsNone 				= Constants.STRING_FALSE;
+							//event.itemRenderer.data.NoteSubject 			= "";
+							event.itemRenderer.data.Status 					= Constants.STRING_NO_UI;
+							event.itemRenderer.data.DictationId 			= Constants.GUID_FORMAT;
+							event.itemRenderer.data.Note 					= "";
+							event.itemRenderer.data.EndDate 				= "";
+							event.itemRenderer.data.OnSet	 				= "";
+							event.itemRenderer.data.Current	 				= "";
+							
+							event.itemRenderer.data.Educated 				= "";
+							event.itemRenderer.data.Amount 					= "";
+							event.itemRenderer.data.Type 					= "";
+							
+							
+							//event.itemRenderer.data.DictationId 		= Constants.GUID_FORMAT;
+						}, null,function():void //if no is selected
+						{
+							isAsking = false;
+							event.itemRenderer.data.Status					= Constants.STRING_YES_UI;
+							//event.itemRenderer.data.IsNone 				= Constants.STRING_TRUE;
+							id_DataGrid.invalidateDisplayList();
+						});
+						
+						event.itemRenderer.data["IsDirty"] 			= true;
+					}
+				}
+					
+				else if (event.dataField == "Current")
+				{
+					event.itemRenderer.data.Current = (id_DataGrid.itemEditorInstance as SparkComboBoxItemEditor ).selectedItem;					
+					event.itemRenderer.data.IsDirty = true;
+				}
+					
+				else if (event.dataField == "Educated")
+				{
+					isYes = (id_DataGrid.itemEditorInstance as YesNoItemEditor).isYes;
+					event.itemRenderer.data.Educated = isYes == Constants.STRING_TRUE ? Constants.STRING_YES_UI : Constants.STRING_NO_UI ;
+					event.itemRenderer.data.IsDirty = true;	
+					trace("Educated-- "+isYes);
+				}
+				else if (event.dataField == "OnSet")
+				{
+					if((id_DataGrid.itemEditorInstance as TextInput).text.length > 0)
+					{
+						event.itemRenderer.data.OnSet = (id_DataGrid.itemEditorInstance as TextInput).text;
+						event.itemRenderer.data.IsDirty = true;
+					}
+				}
+				else if (event.dataField == "EndDate")
+				{
+					if((id_DataGrid.itemEditorInstance as TextInput).text.length > 0)
+					{
+						event.itemRenderer.data.EndDate = (id_DataGrid.itemEditorInstance as TextInput).text;
+						event.itemRenderer.data.IsDirty = true;
+					}
+				}
+				
+				
+				
+				//id_DataGrid.editable = false;
+				id_DataGrid.destroyItemEditor();
+				event.itemRenderer.data.IsDirty = true;
+				event.stopImmediatePropagation();
+				event.preventDefault(); */
+			}
+			
+			private function cc():void
+			{
+				vbGridController = new VBGridController(null, null, null, doValidateRecord);
+				vbGridController.dataGrid = id_DataGrid;
+				
+				vbGridController.firstEditableColIdx = 2;
+				vbGridController.firstEditablePropertyName = "Status";
+				vbGridController.sectionName = QSConstants.SOCIAL_HISTORY_MODULE_NAME;
+				
+				if (!dataGridActionsData)
+					dataGridActionsData = {};
+				
+				dataGridActionsData["noteDataFields"] = {subject: "", note: "Note", header: "Social", visitDate: "VisitDate"};
+				dataGridActionsData["dictationDataField"] = "DictationID";
+				//dataGridActionsData["recordIDField"] = "ID";
+				//dataGridActionsData["section"] = QIPopUpManager.VB_COMPREHENSIVE_HISTORY;
+			}
+			
+			public function doValidateRecord(event:DataGridEvent):void
+			{
+				var validationRes:ValidationResultEvent;
+				
+				var comboEditor:LabelComboBox;
+				var yesNoEditor:YesNoItemEditor;
+				var dateEditor:DateFieldEditor;
+				
+				var socialHistoryDTO:SocialHistoryDTO = event.itemRenderer.data as SocialHistoryDTO;
+				
+				if (!socialHistoryDTO)
+					return;
+				
+				switch (event.dataField)
+				{
+					case "Status":
+						
+						comboEditor = SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor;
+						
+						if (comboEditor.selectedItem)
+						{
+							event.itemRenderer.data.Status = comboEditor.selectedItem;
+						
+							event.itemRenderer.data.IsDirty = true;
+							
+							var canEdit:Boolean = true;
+							
+							if (comboEditor.selectedItem == "No")
+							{
+								canEdit = false;
+							}
+								
+							else
+							{
+								if (comboEditor.selectedItem != "Yes" && comboEditor.selectedItem != "No")
+								{
+									event.itemRenderer.data.MaritalStatusID = VBUtilityFunctions.getMaritalStatusId(comboEditor.selectedItem);
+								}
+							}
+							
+							for (var i:int = 3; i < 9; i++)
+							{
+								id_DataGrid.columns[i].editable = canEdit;
+							}
+						}
+						
+						break;
+					
+					case "Current":
+						
+						comboEditor = SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor;
+						
+						comboValidator.source = comboEditor;
+						comboValidator.error = "Select Current from list";
+						
+						validationRes = comboValidator.validate(comboEditor.selectedItem);
+						
+						
+						if (validationRes && !validationRes.results)
+						{
+							if (comboEditor.selectedItem == "Present")
+								event.itemRenderer.data.Current = QSConstants.STRING_YES_UI;
+							
+							else
+								event.itemRenderer.data.Current = QSConstants.STRING_NO_UI;
+							
+							event.itemRenderer.data.IsDirty = true;
+							
+							hasViewChanged = _hasGridChanged = true;
+						}
+						
+						break;
+					
+					case "Type":
+					case "Amount":
+						
+						comboEditor = SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor;
+						
+						if (comboEditor.textInput.text)
+						{
+							if (event.dataField == "Type")
+								event.itemRenderer.data.Type = comboEditor.textInput.text;
+							
+							else
+								event.itemRenderer.data.Amount = comboEditor.textInput.text;
+							
+							event.itemRenderer.data.IsDirty = true;
+							
+							hasViewChanged = _hasGridChanged = true;
+						}
+						
+						break;
+					
+					case "Educated":
+						
+						yesNoEditor = id_DataGrid.itemEditorInstance as YesNoItemEditor;
+						
+						if (yesNoEditor)
+						{
+							event.itemRenderer.data.Educated = yesNoEditor.isYes;
+							event.itemRenderer.data.IsDirty = true;
+						}
+						
+						break;
+					
+					case "OnSet":
+					case "EndDate":
+						
+						dateEditor = id_DataGrid.itemEditorInstance as DateFieldEditor;
+						
+						if (dateEditor)
+						{
+							if (event.dataField == "OnSet")
+								event.itemRenderer.data.OnSet = dateEditor.text;
+							
+							else
+								event.itemRenderer.data.EndDate = dateEditor.text;
+							
+							event.itemRenderer.data.IsDirty = true;
+						}
+						
+						break;
+				}
+			}
+			
+			public function displayRowNum(oItem:Object, iCol:int):String
+			{
+				var ret:String;
+				try
+				{
+					var rowNumber:int = id_DataGrid.dataProvider.getItemIndex(oItem) + 1; //Sort able column fails some how, don't know why?
+					ret = String(rowNumber);
+				}
+				catch (e:Error)
+				{
+					ret = "##";
+				}
+				
+				return ret;
+			}
+			
+			public function RecordLevelNotesStatus(hasNotes:Boolean, data:Object):void
+			{
+				if( hasNotes ) 
+					data.Status = QSConstants.STRING_FALSE;
+				else
+					data.Status = QSConstants.STRING_TRUE;
+				
+				model.socialHistoryDTOListByPatient.refresh();
+			}
+			
+			public function getStatusLabel(item:Object, iCol:int):String
+			{
+				if (item.Status == QSConstants.STRING_TRUE)
+					return QSConstants.STRING_YES_UI;
+				
+				else if (item.Status == QSConstants.STRING_FALSE)
+					return QSConstants.STRING_NO_UI;
+				
+				else
+					return VBUtilityFunctions.getMeritalStatus(item.MaritalStatusID);
+			}
+			
+			public function getCurrentLabel(obj:Object, dgc:DataGridColumn):String
+			{
+				if( obj.Current == QSConstants.STRING_YES_UI )
+					return "Present";
+				if( obj.Current == QSConstants.STRING_NO_UI )
+					return "Past";
+				
+				return "";
+			}
+			
+			public function getEducatedLabel(item:Object, iCol:int):String
+			{
+				if (!item)
+					return "";
+				
+				if (item.Educated == QSConstants.STRING_TRUE)
+					return QSConstants.STRING_YES_UI;
+				
+				else 
+					return QSConstants.STRING_NO_UI;
+			}
+			
+			public function getOnSetDateLabel(oItem:Object, iCol:int):String
+			{
+				var strDate:String = '';
+				
+				if (oItem && oItem.OnSet)
+				{
+					var dateRecieved:Date = new Date(Date.parse(oItem.OnSet));
+					
+					strDate = formatDateTime.format(dateRecieved);
+					
+					var nullDate:Date = QSConstants.NULL_DATE;
+					
+					if (dateRecieved.getFullYear() <= nullDate.getFullYear() && dateRecieved.getMonth() <= nullDate.getMonth())
+						strDate = "";
+				}
+				
+				return strDate;
+			}
+			
+			public function getEndDateLabel(oItem:Object, iCol:int):String
+			{
+				var strDate:String = '';
+				
+				if (oItem && oItem.EndDate)
+				{
+					var dateRecieved:Date = new Date(Date.parse(oItem.EndDate));
+					
+					strDate = formatDateTime.format(dateRecieved);
+					
+					var nullDate:Date = QSConstants.NULL_DATE;
+					
+					if (dateRecieved.getFullYear() <= nullDate.getFullYear() && dateRecieved.getMonth() <= nullDate.getMonth())
+						strDate = "";
+				}
+				
+				return strDate;
+			}
+			
+			private function button1_clickHandler(event:MouseEvent):void
+			{
+				if(model.socialHistoryDTOListByPatient!=null){
+					model.socialHistoryDTOListByPatient.filterFunction=myFilter;
+					model.socialHistoryDTOListByPatient.refresh();
+				}
+			}
+			
+			private function myFilter(obj:*):Boolean
+			{
+				if(model.vbFilter == QSConstants.BY_VISIT)
+				{
+					if(model.vbVisitId == obj.VisitID)
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+				
+				return true;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<validators:ComboValidator id="comboValidator" property="selectedItem"/>
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YY"/>
+		<s:ArrayCollection id="currentDp">
+			<fx:String>Present</fx:String>
+			<fx:String>Past</fx:String>
+		</s:ArrayCollection>
+		<s:ArrayCollection id="maritalStatusDp">
+			<fx:String>Married</fx:String>
+			<fx:String>Single</fx:String>
+			<fx:String>Divorced</fx:String>
+			<fx:String>Widow</fx:String>
+		</s:ArrayCollection>
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout />
+	</s:layout>
+	
+	<s:Button label="Filter" click="button1_clickHandler(event)" visible="false" includeInLayout="false" id="id_applyFiler"/>
+	<components:LabelDataGrid id="id_DataGrid" width="100%" useRollOver="false" rowCount="{id_DataGrid.dataProvider.length + 1}" verticalScrollPolicy="on"
+							  dataProvider="{model.socialHistoryDTOListByPatient}"
+							  maxHeight="150" columnWidths="{[30, '15%', '10%', '10%', '10%', '10%', '10%', '10%', '10%', 100]}">
+		<components:columns>
+			<mx:DataGridColumn headerText="Sr.#" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editable="false" labelFunction="displayRowNum"/>
+			<mx:DataGridColumn headerText="Social History" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editable="false"  dataField="Social"/>
+			<mx:DataGridColumn headerText="Status" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="Status">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Current" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="Current" labelFunction="getCurrentLabel">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.currentDp}"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Type" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="Type" editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor height="100%" dataProvider="{outerDocument.model.socialHistoryMediumTypeDTOList}"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Amount" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="Amount" editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor labelField="UsageAmountName" height="100%" dataProvider="{outerDocument.model.socialHistoryUsageAmountTypeDTOList}"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Educated" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="Educated" labelFunction="getEducatedLabel">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:YesNoItemEditor property="Educated"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="OnSet" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="OnSet">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:DateFieldEditor editable="true"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="End Date" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="EndDate">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:DateFieldEditor editable="true"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>	
+			<grid:DataGridColumnEx data="{dataGridActionsData}" headerText="" editable="false"
+									   itemRenderer="com.gazuntite.patient.visit.view.itemrenderer.VBRenderer"/>
+		</components:columns>
+	</components:LabelDataGrid>
+</s:Group>

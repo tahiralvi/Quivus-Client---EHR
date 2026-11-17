@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:flm="http://ns.adobe.com/flame/2008">
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect height="18" id="rect2" radiusX="2.99979" radiusY="2.99979" visible.disabledAndSelected="false"
+			visible.down="false" visible.downAndSelected="false" visible.over="false" visible.overAndSelected="false" visible.upAndSelected="false"
+			width="75" x="0" y="6" x.up="0" x.disabled="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#E3E3E3" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#ADADAD" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.7000000000000001" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.2" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="18" id="rect0" includeIn="down,over,up,upAndSelected" radiusX="2.99979" radiusY="2.99979" visible.up="false" visible.upAndSelected="false" width="75" x="0" y="6">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#AFD1FF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#6593D5" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.7000000000000001" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha.down="1" alpha.over="0.2" alpha.up="0.2" alpha.upAndSelected="1" angle="90" blurX.down="3" blurX.over="0" blurX.up="0" blurX.upAndSelected="3" blurY.down="3" blurY.over="0" blurY.up="0" blurY.upAndSelected="3" color.down="#79A4E0" color.over="#FFFFFF" color.up="#FFFFFF" color.upAndSelected="#79A4E0" distance.down="3" distance.over="1" distance.up="1" distance.upAndSelected="3" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="27" id="rect19" includeIn="disabledAndSelected,downAndSelected,overAndSelected,upAndSelected" radiusX="3"  x="0" y="6" width="75">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#BEC0E8" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#B8BBE0" ratio="0.47058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#B4B6D1" ratio="0.47058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#E8E8FF" ratio="0.8509803921568627"/>
+				<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.25" angle="270" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:RichText color="#000000" fontFamily="Calibri" fontSize="11" tabStops="S0" text="CONTACTS" x="24" y="10" 
+				visible.up="false" visible.over="false" visible.down="false" visible.disabled="false"/>
+	<s:RichText color="#141414" color.disabled="#666666" fontFamily="Calibri" fontSize="12" 
+				includeIn="disabled,disabledAndSelected,down,downAndSelected,over,up" tabStops="S0 S50 S100" tabStops.disabled="S0" 
+				text="Contact" visible.disabledAndSelected="false" visible.downAndSelected="false" x="24" y="10"/>
+	<s:BitmapImage smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/contactsicon.png')" 
+				   x="5" y="10"/>
+	<s:BitmapImage smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/contact.png')"
+				   visible="false" x="14" y="8"/>
+</s:Skin>
+

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:SlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+					  xmlns:patientExamView="com.adobe.Quivus.view.controls.custom.patientExamView.*" 
+					  xmlns:components="com.gazuntite.controls.extended.components.*"
+					  xmlns:recentPatient="com.adobe.Quivus.view.controls.custom.patientExamView.recentPatient.*"
+					  xmlns:skins="com.adobe.Quivus.view.controls.skins.*" 
+					  xmlns:buttonSeparators="com.adobe.Quivus.view.controls.skins.buttonSeparators.*" 
+					  
+					  creationComplete="slideoutpanel1_creationCompleteHandler(event)" 
+					  QSSlideStateChange="slideoutpanel1_QSSlideStateChangeHandler(event)"
+					  slideoutPanelName="Recent Patients"
+					  >
+	<fx:Metadata>
+		[Event(name="close", type="mx.events.CloseEvent")]
+		[Event(name="PatientSelected", type="com.gazuntite.provider.search.services.patient.view.events.PatientSelectedEvent")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.provider.search.services.patient.view.events.PatientSelectedEvent;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			
+			
+			
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			protected function slideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.DataProvider = model.mostRecentPatientList;
+			}
+			
+			import mx.events.CloseEvent;
+			import mx.collections.IList;
+			
+			private var m_oDataProvider:IList
+			
+			protected function CloseHandler(event:MouseEvent):void
+			{
+				dispatchEvent( new CloseEvent(CloseEvent.CLOSE) );
+			}
+			
+			[Bindable]
+			public function get DataProvider():IList
+			{
+				return m_oDataProvider;
+			}
+			
+			public function set DataProvider(value:IList):void
+			{
+				m_oDataProvider = value;
+			}
+			
+			
+			
+			protected function id_RecentPatientView_PatientSelectedHandler(event:PatientSelectedEvent):void
+			{
+				CloseHandler( null );
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				this.ToggleSlideOut();
+				
+				
+				//FlexGlobals.topLevelApplication.slideout_count++;
+				event.stopImmediatePropagation();
+			}
+			
+			
+			protected function slideoutpanel1_QSSlideStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if(this.ExpandedView)
+				{
+					id_expandBtn.selected = true;
+				}
+				else
+				{
+					id_expandBtn.selected = false;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	
+	<custom:HeaderContents>
+		<!--<recentPatient:RecentPatientPanelHeader width="100%" height="22" />-->
+		<s:Group width="100%" minWidth="{ChromeUtil.topLevelMainContainer.width - 32}">
+			<s:layout>
+				<s:VerticalLayout paddingLeft="{isSlideOut? 10:0}"  horizontalAlign="center" />
+			</s:layout>
+			<s:SkinnableContainer id="id_header" height="22" width="100%" minWidth="560" skinClass="com.adobe.Quivus.view.controls.skins.PatientRegHeaderSkin">
+				<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="left" >
+					<s:Label  paddingLeft="12" color="#111111" paddingTop="6" fontFamily="Calibri Bold" text="{'RECENT PATIENTS'+' '+'('+model.totalRecords_RP.toString()+')'}" />
+					
+					
+				</s:HGroup>
+				<s:HGroup horizontalAlign="right" width="100%" paddingRight="1" paddingTop="0" gap="0">
+					<buttonSeparators:buttonSeparatorGrey />
+					<s:HGroup paddingTop="0">
+						<s:Button id="id_btnClose" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QICrossButtonSkin" 
+								  buttonMode="true" useHandCursor="true" toolTip="Close This Panel" click="CloseHandler(event)" />
+					</s:HGroup>
+					<buttonSeparators:buttonSeparatorGrey />
+					<s:HGroup paddingTop="0">
+						<s:ToggleButton id="id_expandBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.expandButton_grey" selected="true" 
+										width="24" height="21" buttonMode="true" useHandCursor="true" toolTip="{id_expandBtn.selected?'Collapse':'Expand'}"/>
+					</s:HGroup>
+					<buttonSeparators:buttonSeparatorGrey includeInLayout="false" visible="false"/>
+					<s:HGroup paddingTop="0" paddingRight="0" includeInLayout="false" visible="false">
+						<s:ToggleButton id="id_slideoutBtn" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.slideOutBtn"
+										buttonMode="true" useHandCursor="true" toolTip="{id_slideoutBtn.selected?'Slide-In':'Slide-Out'}" 
+										width="19" height="21"  click="button1_clickHandler(event)" />
+					</s:HGroup>
+				</s:HGroup>
+			</s:SkinnableContainer>
+		</s:Group>
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		<!--<custom:slideOutGreyHeader width="100%" />		-->
+		<s:SkinnableContainer height="22" width="120" minWidth="500" skinClass="com.adobe.Quivus.view.controls.skins.PatientRegHeaderSkin">
+			<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="center" >
+				<s:Label  paddingLeft="12" color="#111111" paddingTop="6" fontFamily="Calibri Bold" text="RECENT PATIENTS" />				
+				
+			</s:HGroup>
+			
+			<!--<s:Label text="{Label}" top="2" left="5" />		-->		
+		</s:SkinnableContainer>
+	</custom:SlideHeaderContents>
+	<custom:Contents>
+		
+		<s:VGroup id="id_contents" paddingTop="-3" gap="0" maxHeight="400" height="100%" width="{id_header.width}" verticalAlign="top" horizontalAlign="center"
+				  paddingLeft="{isSlideOut? 15:0}" 
+				  >
+			
+			<s:VGroup paddingTop="{isSlideOut? -2:-2}" gap="-2" height="100%" width="{isSlideOut? id_header.width :id_header.width }"  verticalAlign="top" horizontalAlign="center" >
+				
+				<recentPatient:RecentPatientView id="id_RecentPatientView"  height="100%" width="100%" PatientSelected="id_RecentPatientView_PatientSelectedHandler(event)" 
+												 DataProvider="{DataProvider}"/>
+				
+				
+				<s:Button id="id_CloseBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.closeBtnSkin" 
+						  click="CloseHandler(event)" buttonMode="true" useHandCursor="true" toolTip="Close Recent Patient Section"/>
+				
+			</s:VGroup>
+			
+			
+			
+		</s:VGroup>
+	</custom:Contents>
+	
+</custom:SlideOutPanel>

@@ -1,0 +1,676 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:CollapsiblePanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							 xmlns:s="library://ns.adobe.com/flex/spark" 
+							 xmlns:mx="library://ns.adobe.com/flex/mx" 
+							 title="Insurance"
+							 width="100%" 
+							 creationComplete="cc()" xmlns:components1="com.gazuntite.controls.extended.components.*">
+	<components1:layout>
+		<s:VerticalLayout paddingBottom="8" paddingLeft="8" paddingRight="8" paddingTop="8"/>
+	</components1:layout>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.AddMoreTooltipBtn;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Label;
+			import mx.core.FlexGlobals;
+			
+			import spark.events.IndexChangeEvent;
+			
+			import valueObjects.GenderTypeDTO;
+			import valueObjects.InsuranceNatureDTO;
+			import valueObjects.InsuranceOrganizationDTO;
+			import valueObjects.InsuranceTypeDTO;
+			import valueObjects.PatientInsuranceDTO;
+			import valueObjects.StatusTypeDTO;
+			
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private	var isNotValid:Boolean = false;
+			
+			//Tahir - Tahir Alvi
+			private function cc():void
+			{
+				id_InsurenceList.addEventListener(DataGridActionsEvent.DELETE_RECORD_ONLY_CLICK, deleteRecordClickHandler, false, 0, true);
+				
+				
+				if(id_InsuranceTypes.selectedItem && id_InsuranceTypes.textInput.text.length > 0 )
+				{
+					enableFields(true);
+				}
+				else
+				{
+					enableFields(false);
+				}
+				id_DOB.id_dob.required = false;
+			}
+			
+			public function enableFields(value:Boolean):void
+			{
+				id_Type.enabled				= value;
+				id_CompanyName.enabled		= value;
+				id_PolicyNumber.enabled		= value;
+				id_GroupNumber.enabled		= value;
+				id_Plan.enabled				= value;
+				id_StartDate.enabled		= value;
+				id_EndDate.enabled			= value;
+				id_Name.enabled				= value;
+				id_Gender.enabled			= value;
+				id_DOB.enabled				= value;
+				id_CoPay.enabled			= value;
+				id_EligibilityYes.enabled	= value;
+				id_EligibilityNo.enabled	= value;
+				id_addInsuranceBtn.enabled	= value;
+			}
+			
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+				
+				if (curTar.selectedItem)
+				{
+					var patientInsuranceId:int = PatientInsuranceDTO(curTar.selectedItem).PatientInsuranceId;
+					UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+					{
+						if (patientInsuranceId == 0)
+						{
+							model.patientInsuranceDTOList.removeItemAt(curTar.selectedIndex);
+						}else
+						{
+							curTar.selectedItem.IsDeleted = true;
+							model.patientInsuranceDTOList.filterFunction = filterDeletedItems;
+							model.patientInsuranceDTOList.refresh();
+						}
+					});
+					if(model.patientInsuranceDTOList.length <=0 )
+					{
+						id_InsurenceList.visible      = false; 
+						hasChange = false;
+					}
+				}
+			}
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			//End - Tahir Alvi
+			private function addInsurance():void{
+				isNotValid  = false;
+				isInvalid();
+				if(!isNotValid)	{
+					addInsuranceRecord();
+				}
+			}
+			private function addInsuranceRecord():void
+			{
+				if (id_InsuranceTypes.selectedIndex != -1)
+				{
+					var patientObj:PatientInsuranceDTO  = new PatientInsuranceDTO();
+					if(id_InsuranceTypes.selectedItem)
+						patientObj.InsuranceType = id_InsuranceTypes.selectedItem as InsuranceTypeDTO;
+					
+					if(id_Type.selectedItem)
+						patientObj.InsuranceNature = id_Type.selectedItem as InsuranceNatureDTO;
+					
+					if(id_CompanyName.selectedItem)
+						patientObj.InsuranceOrganization = id_CompanyName.selectedItem as InsuranceOrganizationDTO;
+					
+					patientObj.PolicyNumber = id_PolicyNumber.text;
+					patientObj.GroupNumber = id_GroupNumber.text;
+					patientObj.InsurancePlan = id_Plan.text;
+					
+					if(id_StartDate.selectedDate){
+						patientObj.StartDate = id_StartDate.selectedDate;
+						patientObj.StrStartDate = df.format(patientObj.StartDate);
+					}
+					else{
+						patientObj.StartDate = new Date();
+						patientObj.StrStartDate = df.format(patientObj.StartDate);
+					}
+					
+					if(id_EndDate.selectedDate){
+						patientObj.EndDate = id_EndDate.selectedDate;
+						patientObj.StrEndDate = df.format(patientObj.EndDate);
+					}
+					else{
+						patientObj.EndDate = new Date();
+						patientObj.StrEndDate = df.format(patientObj.EndDate);
+					}
+					
+					if( id_DOB.text.length )
+					{
+						patientObj.InsuredPersonDOB 	= new Date(df.format(id_DOB.text));
+						patientObj.StrInsuredPersonDOB 	= df.format(patientObj.InsuredPersonDOB);
+					}
+					/* else
+					{
+						patientObj.InsuredPersonDOB = new Date();
+						patientObj.StrInsuredPersonDOB = df.format(patientObj.InsuredPersonDOB);
+					} */
+					
+					patientObj.InsuredPersonName = id_Name.text;
+					
+					if(id_Gender.selectedItem)
+						patientObj.InsuredPersonGender = id_Gender.selectedItem as GenderTypeDTO;
+					
+					patientObj.Copay = id_CoPay.text;
+					
+					patientObj.InsuranceStatus= new StatusTypeDTO();
+					patientObj.InsuranceStatus.StatusID = Constants.ACTIVE_STATUS_ID;
+					
+					if (eligibilityActiveYesNo.selectedValue == "yes")
+						patientObj.IsEligible = Constants.STRING_TRUE;
+					else if (eligibilityActiveYesNo.selectedValue == "no")
+						patientObj.IsEligible = Constants.STRING_FALSE;
+					
+					
+					patientObj.InsuranceType= new InsuranceTypeDTO();
+					
+					patientObj.InsuranceType = id_InsuranceTypes.selectedItem as InsuranceTypeDTO;
+					patientObj.IsDirty = true;
+					
+					if(model.patientInsuranceDTOList==null)
+						model.patientInsuranceDTOList = new ArrayCollection();
+					//Check that no more than primary and secondary insurance add in grid
+					// But tertiary 
+					
+					if(model.patientInsuranceDTOList.length >0)
+					{
+						var isYes:Boolean = true;
+						if(id_InsuranceTypes.selectedIndex == 0)//For Primary
+						{
+							for(var i:uint=0; i<model.patientInsuranceDTOList.length; i++)
+							{
+								var tempInsDTO:PatientInsuranceDTO = model.patientInsuranceDTOList[i] as PatientInsuranceDTO;
+								if(tempInsDTO.InsuranceType.InsuranceTypeId == patientObj.InsuranceType.InsuranceTypeId && patientObj.InsuranceType.InsuranceTypeName == 'Primary' )
+								{
+									Alert.show('More than one primary insurance cannot be added', 'Please change insurance type.',4,FlexGlobals.topLevelApplication.mainContainer);
+									id_InsuranceTypes.setFocus();
+									return;
+								}else
+								{
+									isYes = false;
+								}
+							}
+							if(!isYes)
+							{
+								model.patientInsuranceDTOList.addItem(patientObj);
+								id_InsurenceList.dataProvider = model.patientInsuranceDTOList;
+								id_InsurenceList.visible      = true;
+								hasChange = true;
+								clearInsurance();
+								id_InsuranceTypes.setFocus(); ////Alvi - Focus on first field after adding a record
+								return;
+							}
+						}else if(id_InsuranceTypes.selectedIndex == 1)//For Secondary
+						{
+							for(var i:uint=0; i<model.patientInsuranceDTOList.length; i++)
+							{
+								var tempInsDTO:PatientInsuranceDTO = model.patientInsuranceDTOList[i] as PatientInsuranceDTO;
+								if(tempInsDTO.InsuranceType.InsuranceTypeId == patientObj.InsuranceType.InsuranceTypeId && patientObj.InsuranceType.InsuranceTypeName == 'Secondary')
+								{
+									Alert.show('More than one Secondary insurance cannot be added', 'Please change insurance type.',4,FlexGlobals.topLevelApplication.mainContainer);
+									id_InsuranceTypes.setFocus();
+									return;
+								}else
+								{
+									isYes = false;
+								}
+							}
+							if(!isYes)
+							{
+								model.patientInsuranceDTOList.addItem(patientObj);
+								id_InsurenceList.dataProvider = model.patientInsuranceDTOList;
+								id_InsurenceList.visible      = true;
+								hasChange = true;
+								clearInsurance();
+								id_InsuranceTypes.setFocus(); ////Alvi - Focus on first field after adding a record
+								return;
+							}
+						}else if(id_InsuranceTypes.selectedIndex == 2){
+							model.patientInsuranceDTOList.addItem(patientObj);
+							id_InsurenceList.dataProvider = model.patientInsuranceDTOList;
+							id_InsurenceList.visible      = true;
+							hasChange = true;
+							clearInsurance();
+							id_InsuranceTypes.setFocus(); ////Alvi - Focus on first field after adding a record
+							return;
+						}
+					}else{
+						model.patientInsuranceDTOList.addItem(patientObj);
+						id_InsurenceList.dataProvider = model.patientInsuranceDTOList;
+						id_InsurenceList.visible      = true;
+						hasChange = true;
+						clearInsurance();
+						id_InsuranceTypes.setFocus(); ////Alvi - Focus on first field after adding a record
+						return;
+					}
+					
+				}else//For First record
+				{
+					id_InsuranceTypes.setFocus();
+				}
+			}
+			
+			public function LoadDataInsurance():void
+			{
+				try
+				{
+					if( model.patientProfileDTO.PatientInsuranceList && model.patientProfileDTO.PatientInsuranceList.length > 0 )
+					{
+						model.patientInsuranceDTOList = new ArrayCollection( model.patientProfileDTO.PatientInsuranceList.source );
+						id_InsurenceList.dataProvider = model.patientInsuranceDTOList;
+						id_InsurenceList.visible      = true;
+						hasChange = true;
+					}
+				}
+				catch(e:Error)
+				{
+					//trace ( "GuarantorList::loadDataGurantor", e.message );
+				}
+			}
+			
+			
+			private function selectInsuranceType( value:InsuranceNatureDTO ):void
+			{
+				var list:ArrayCollection = model.registrationStaticDataDTO.InsuranceNatureTypes;
+				var i:int;
+				for( i = 0; i < list.length; i++ )
+				{
+					var type:InsuranceNatureDTO = list[ i ] as InsuranceNatureDTO;
+					if( type.Description.toLowerCase() == value.Description.toLowerCase() )
+					{
+						id_Type.selectedItem = type;
+						break;
+					}
+				}
+			}
+			
+			private function selectInsuranceCompany( value:InsuranceOrganizationDTO ):void
+			{
+				var list:ArrayCollection = arrInsuranceOrganizations; //model.registrationStaticDataDTO.InsuranceOrganizations;
+				var i:int;
+				for( i = 0; i < list.length; i++ )
+				{
+					var type:InsuranceOrganizationDTO = list[ i ] as InsuranceOrganizationDTO;
+					if( type.InsuranceOrganizationName.toLowerCase() == value.InsuranceOrganizationName.toLowerCase() )
+					{
+						id_CompanyName.selectedItem = type;
+						break;
+					}
+				}
+			}
+			
+			private function selectGender(g:GenderTypeDTO):void
+			{
+				var list:ArrayCollection = model.registrationStaticDataDTO.GenderTypes;
+				var i:int;
+				for( i = 0; i < list.length; i++ )
+				{
+					var gtype:GenderTypeDTO = list[ i ] as GenderTypeDTO;
+					if( gtype.GenderId == g.GenderId )
+					{
+						id_Gender.selectedItem = gtype;
+						break;
+					}
+				}
+			}
+			
+			public function clearInsuranceRecords():void
+			{
+				clearInsurance();
+				if (id_InsurenceList)
+				{
+					id_InsurenceList.dataProvider = null;
+				}
+				
+				if(id_InsurenceList.visible)
+				{
+					id_InsurenceList.visible = false
+				} 
+				hasChange = false;
+			}
+			public function clearInsurance():void
+			{
+				id_InsuranceTypes.selectedIndex		= -1;
+				id_Type.selectedIndex				= -1;
+				id_CompanyName.selectedIndex		= -1;
+				id_PolicyNumber.text				= "";
+				id_GroupNumber.text					= "";
+				id_Plan.text						= "";
+				id_StartDate.text					= "";
+				id_EndDate.text						= '';
+				id_DOB.clearDob();
+				if(id_StartDate.selectedDate)
+					id_StartDate.selectedDate		= null;
+				if(id_EndDate.selectedDate)
+					id_EndDate.selectedDate			= null;
+				id_Name.text						= "";
+				id_Gender.selectedIndex				= -1;
+				id_CoPay.text						= "";
+				eligibilityActiveYesNo.selectedValue = null;
+				statusActiveYesNo.selectedValue 	= null;
+				
+				id_EligibilityYes.selected 			= false;
+				id_EligibilityNo.selected 			= false;
+				isNotValid				 		 	= false;
+			}
+			
+			public function isInvalid():void
+			{
+				var errorStr:String = "";
+				var toSetFocus:*;
+				var isInValidSdate:Boolean;
+				var isInValidEdate:Boolean;
+				
+				if (id_InsuranceTypes.selectedIndex != -1 ||id_Type.selectedIndex != -1 || id_CompanyName.selectedIndex != -1 || 
+					id_PolicyNumber.text.length || id_Name.text.length || id_StartDate.selectedDate || id_EndDate.selectedDate || id_Name.text.length || id_DOB.text.length)
+				{
+					if(!ValidationUtils.isValidValueSelected(id_InsuranceTypes))
+					{
+						isNotValid = true;
+						errorStr += "The data in insurance type is invalid.\n";
+						
+						if (!toSetFocus)
+							toSetFocus = id_InsuranceTypes;
+					}else{
+						//Insurance type
+						if (!ValidationUtils.isValidValueSelected(id_InsuranceTypes))
+						{
+							isNotValid = true;
+							errorStr += "The data in insurance type is invalid.\n";
+							
+							if (!toSetFocus)
+								toSetFocus = id_InsuranceTypes;
+						}
+						//Insurance Nature
+						if (!ValidationUtils.isValidValueSelected(id_Type))
+						{
+							isNotValid = true;
+							errorStr += "The data in insurance nature is invalid.\n";
+							
+							if (!toSetFocus)
+								toSetFocus = id_Type;
+						}
+						//Insurance Company
+						if (!ValidationUtils.isValidValueSelected(id_CompanyName))
+						{
+							isNotValid = true;
+							errorStr += "The data in insurance company is invalid.\n";
+							
+							if (!toSetFocus)
+								toSetFocus = id_CompanyName;
+						}
+						//Policy Number
+						if (!(id_PolicyNumber.text.length > 0 && id_PolicyNumber.text.length < 20))
+						{
+							isNotValid = true;
+							errorStr += "The data in policy number is invalid.\n";
+							
+							if (!toSetFocus)
+								toSetFocus = id_PolicyNumber;
+						}
+						//Insured Person Name
+						if (id_Name.text.length >= 3 && id_Name.text.length <= 200)
+						{
+							if (!ValidationUtils.isValidAlphaNumericWithSpaces(id_Name.text))
+							{
+								isNotValid = true;
+								errorStr += "The data in person name is invalid.\n";
+								
+								if (!toSetFocus)
+									toSetFocus = id_Name;
+							}
+						}
+						else
+						{
+							isNotValid = true;
+							errorStr += "Please enter data in person name.\n";
+							
+							if (!toSetFocus)
+								toSetFocus = id_Name;
+						}
+						//Gender
+						if (!ValidationUtils.isValidValueSelected(id_Gender))
+						{
+							isNotValid = true;
+							errorStr += "The data in gender is invalid.\n";
+							
+							if (!toSetFocus)
+								toSetFocus = id_Gender;
+						}
+						//DOB
+						if(id_DOB.text.length)
+						{
+							if (!ValidationUtils.isValidStringDate(id_DOB.text))
+							{
+								isNotValid = true;
+								errorStr += "The data in date of birth is invalid.\n";
+								
+								if (!toSetFocus)
+									toSetFocus = id_DOB.id_dob;
+							}
+						}else
+						{
+							isNotValid = true;
+							errorStr += "Please eneter/select Dob.\n";
+							
+							if (!toSetFocus)
+								toSetFocus = id_DOB.id_dob;
+						}
+						//Start Date
+						if (!ValidationUtils.isValidDate(id_StartDate))
+						{
+							isNotValid = true; isInValidSdate = true;
+							errorStr += "The data in start date is invalid.\n";
+							
+							if (!toSetFocus)
+								toSetFocus = id_StartDate;
+						}
+						//End Date
+						if (!ValidationUtils.isValidFutureDate2(id_EndDate))
+						{
+							isNotValid = true; isInValidEdate = true;
+							errorStr += "The data in end date is invalid.\n";
+							
+							if (!toSetFocus)
+								toSetFocus = id_EndDate;
+						} 
+						//Copay
+						if (id_CoPay.text && id_CoPay.text.length > 30)
+						{
+							isNotValid = true;
+							errorStr += "The data in co-pay is invalid.\n";
+							
+							if (!toSetFocus)
+								toSetFocus = id_CoPay;
+						}
+						//End date is always greater than strat date or start date is always less than end date
+						if(!isInValidSdate && !isInValidEdate)
+						{
+							if(!ValidationUtils.validateExpiryDate(id_StartDate.selectedDate, id_EndDate.selectedDate))
+							{
+								isNotValid = true;
+								errorStr += "Start date must be less than End date.\n";
+								
+								if (!toSetFocus)
+									toSetFocus = id_StartDate;
+							}
+						}
+					}
+				}
+				
+				if (isNotValid && errorStr.length)
+				{
+					Alert.show(errorStr,"Patient Registration Required Fields", 4, FlexGlobals.topLevelApplication.mainContainer, function(event:Event):void{
+						if (toSetFocus)
+							toSetFocus.setFocus();
+					});
+				}
+			}
+			private function getBDate(item:Object,column:DataGridColumn):String
+			{
+				if(!item.InsuredPersonDOB)
+					return '';
+				var dob:String = item.InsuredPersonDOB;
+				dob            = df.format(dob).toString();
+				return dob;
+			}
+			private function getSDate(item:Object,column:DataGridColumn):String
+			{
+				if(!item.StartDate)
+					return '';
+				var dob:String = item.StartDate;
+				dob            = df.format(dob).toString();
+				return dob;
+			}
+			private function getEDate(item:Object,column:DataGridColumn):String
+			{
+				if(!item.EndDate)
+					return '';
+				var dob:String = item.EndDate;
+				dob            = df.format(dob).toString();
+				return dob;
+			}
+			
+			protected function id_InsuranceTypes_changeHandler(event:IndexChangeEvent):void
+			{
+				// TODO Auto-generated method stub
+				if( id_InsuranceTypes.textInput.text.length != -1 )
+				{
+					enableFields(true);
+				}
+				else
+				{
+					enableFields(false);
+				}
+			}
+			
+			[Bindable]
+			public function get arrInsuranceOrganizations():ArrayCollection
+			{
+				return _arrInsuranceOrganizations;
+			}
+			
+			public function set arrInsuranceOrganizations(value:ArrayCollection):void
+			{
+				_arrInsuranceOrganizations = value;
+			}
+			
+			private var _arrInsuranceOrganizations:ArrayCollection;
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:DateFormatter id="df" formatString="MM/DD/YYYY" />
+		<s:RadioButtonGroup id="eligibilityActiveYesNo"/>
+		<s:RadioButtonGroup id="statusActiveYesNo"/>
+	</fx:Declarations>
+	
+	<fx:Binding source="model.registrationStaticDataDTO.InsuranceOrganizations" destination="arrInsuranceOrganizations" />
+	
+	<s:VGroup width="100%" >
+		
+		
+		<s:HGroup width="100%" >
+			<components1:LabelComboBox id="id_InsuranceTypes" prompt="Insurance Type" 
+									  dataProvider="{model.registrationStaticDataDTO.InsuranceTypes}" labelField="InsuranceTypeName"
+									  width="33%" toolTip="Select Insurance type" change="id_InsuranceTypes_changeHandler(event)"/>
+			
+			<components1:LabelComboBox id="id_Type" prompt="Insurance nature" autoWidth="false"
+									  dataProvider="{model.registrationStaticDataDTO.InsuranceNatureTypes}" 
+									  labelField="Description"  height="23" width="33%" toolTip="Select Insurance nature"/>
+			
+			<components1:LabelComboBox id="id_CompanyName" prompt="Insurance company" width="33%" height="23"  autoWidth="false"
+									  dataProvider="{arrInsuranceOrganizations}" 
+									  labelField="InsuranceOrganizationName" toolTip="Select Insurance company"/>
+			
+		</s:HGroup>
+		
+		<s:HGroup width="100%" >
+			<components1:LabelTextInput id="id_PolicyNumber"
+									   fontFamily="Calibri" fontSize="11" fontWeight="normal"
+									   prompt="Policy number"  width="33%" height="23" restrict="[0-9]" toolTip="Enter Policy number"/>
+			<components1:LabelTextInput id="id_GroupNumber"
+									   fontFamily="Calibri" fontSize="11" fontWeight="normal"
+									   prompt="Group number"  width="33%" height="23" restrict="[0-9]" toolTip="Enter Group number"/>
+			<components1:LabelTextInput id="id_Plan"
+									   fontFamily="Calibri" fontSize="11" 
+									   prompt="Plan"  width="33%" height="23" toolTip="Enter plan"/>
+			
+		</s:HGroup>
+		
+		<s:HGroup width="100%" gap="4" >
+			<s:HGroup width="33%" >
+				<components1:LabelDateField id="id_StartDate"  height="23" prompt="Start Date"  yearNavigationEnabled="true" IsEditAllow="false"
+										   minYear="1901"  paddingLeft="0" paddingRight="0" width="50%" toolTip="Select Start Date"/>
+				<!--maxYear="{new Date().getFullYear()}"-->
+				
+				<components1:LabelDateField id="id_EndDate"  height="23"  prompt="End Date" yearNavigationEnabled="true" IsEditAllow="false" width="50%" 
+										   minYear="1901" selectableRange="{{rangeStart:new Date()}}" toolTip="Select End Date"/>
+			</s:HGroup>
+			<components1:LabelTextInput id="id_Name" restrict="[A-Z a-z , . 0-9]" fontFamily="Calibri" fontSize="11" fontWeight="normal" prompt="Person name"  width="33%" height="23" toolTip="Enter name"/>
+			
+			<components1:LabelComboBox id="id_Gender" prompt="Gender"  height="23" autoWidth="false" dataProvider="{model.registrationStaticDataDTO.GenderTypes}" labelField="GenderName" width="16%" toolTip="Select gender"/>
+			<components1:LabelMaskDate id="id_DOB"  width="17%" />
+			
+			<!--<components:LabelDateField id="id_DOB"  height="23" prompt="DOB" yearNavigationEnabled="true"  IsEditAllow="false" toolTip="Select DOB"
+			minYear="1901" maxYear="{new Date().getFullYear()}" selectableRange="{{rangeEnd : new Date()}}" width="17%"/>-->
+		</s:HGroup>
+		
+		<s:HGroup  width="100%">
+			<components1:LabelTextInput id="id_CoPay" minWidth="150"  fontFamily="Calibri" fontSize="11" fontWeight="normal" prompt="Co-pay"  width="33%" height="23" restrict="[0-9%]" toolTip="Enter Co-Pay"/>
+			<s:HGroup verticalAlign="middle" height="30" width="66%">
+				<s:HGroup gap="0" verticalAlign="middle">
+					<s:RichText color="#333333" fontFamily="Calibri" fontSize="11" height="23" kerning="off" 
+								lineHeight="120%" trackingRight="2.5%" whiteSpaceCollapse="preserve" paddingRight="0" paddingTop="5">
+						<s:content><s:p><s:span>Eligibility</s:span></s:p></s:content>
+					</s:RichText>
+					<s:RadioButton id="id_EligibilityYes" buttonMode="true" value="yes" groupName="eligibilityActiveYesNo" 
+								   skinClass="com.adobe.Quivus.view.controls.skins.radioButtonSkins.YRadioButton"  toolTip="Select Eligibility"/>
+					<s:RadioButton id="id_EligibilityNo" buttonMode="true" value="no" groupName="eligibilityActiveYesNo"
+								   skinClass="com.adobe.Quivus.view.controls.skins.radioButtonSkins.NRadioButton"  toolTip="Select Eligibility"/>
+				</s:HGroup>
+				<s:Button id="id_addInsuranceBtn" click="addInsurance()"  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.AddMoreTooltipBtn"
+						  buttonMode="true" useHandCursor="true" toolTip="Add Insurance"  label="Add Insurance" />
+			</s:HGroup>
+		</s:HGroup>
+		
+		<components1:LabelDataGrid id="id_InsurenceList" width="100%" 
+								  visible="false"  includeInLayout="{id_InsurenceList.visible}" 
+								  editable="false" sortableColumns="false" horizontalScrollPolicy="off"
+								  rowCount="{id_InsurenceList.dataProvider.length+1}"
+								  columnWidths="{['9%','9%','9%','9%','8%','7%','7%','7%','7%','5%','7%','8%',10]}" >
+			<components1:columns>
+				<mx:DataGridColumn headerText="Insurance Type"  dataField="InsuranceType.InsuranceTypeName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn headerText="Insurance Nature"  dataField="InsuranceNature.Description" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn headerText="Insurance Company" dataField="InsuranceOrganization.InsuranceOrganizationName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn headerText="Policy No" dataField="PolicyNumber" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn headerText="Group No" dataField="GroupNumber" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn headerText="Plan" dataField="InsurancePlan" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn headerText="Start Date" dataField="StartDate" labelFunction="getSDate" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn headerText="End Date" dataField="EndDate" labelFunction="getEDate" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn headerText="Name" dataField="InsuredPersonName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn headerText="Gender" dataField="InsuredPersonGender.GenderName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn headerText="DOB" dataField="InsuredPersonDOB" labelFunction="getBDate" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn headerText="Co-pay" dataField="Copay" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn itemRenderer="com.adobe.Quivus.view.controls.registeration.DeleteRecordRendererOnly" />
+			</components1:columns>
+		</components1:LabelDataGrid>
+	</s:VGroup>
+</components1:CollapsiblePanel>

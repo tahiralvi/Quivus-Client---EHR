@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<s:SparkSkin xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark"
+    xmlns:fb="http://ns.adobe.com/flashbuilder/2009"
+	xmlns:mx="library://ns.adobe.com/flex/mx" 
+	alpha.disabled="0.5" blendMode="normal"
+	creationComplete="sparkskin1_creationCompleteHandler(event)"
+	>
+
+    <fx:Metadata>
+    <![CDATA[ 
+        /** 
+         * @copy spark.skins.spark.ApplicationSkin#hostComponent
+         */
+        [HostComponent("spark.components.TextInput")]
+    ]]>
+    </fx:Metadata> 
+    <fx:Script>
+        <![CDATA[
+			import mx.events.FlexEvent;
+        /** 
+         * @private 
+         */  
+		
+			[Bindable]
+			public var searchButtonPosition:Number;
+        	private static const focusExclusions:Array = ["textDisplay"];
+
+        /**
+         *  @private
+         */
+        override public function get focusSkinExclusions():Array { return focusExclusions;};
+					
+			
+
+			protected function sparkskin1_creationCompleteHandler(event:FlexEvent):void
+			{
+				searchButtonPosition = textDisplay.width - 10;
+			}
+
+        ]]>
+    </fx:Script>
+    
+	
+	<s:states>
+		<s:State name="normal"/><s:State name="normalWithPrompt"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+	</s:states>
+      
+
+    <!-- fill -->
+    <!--- Defines the appearance of the TextInput component's background. -->
+  <!--  <s:Rect id="background" left="1" right="1" top="1" bottom="1">
+        <s:fill>
+            
+            <s:SolidColor id="bgFill" color="0xFFFFFF" alpha="0" />
+        </s:fill>
+    </s:Rect>-->
+    
+  
+    
+    <!-- text -->
+    <!--- @copy spark.components.supportClasses.SkinnableTextBase#textDisplay -->
+	<!--<mx:Image source="@Embed('com/adobe/gazuntite/view/controls/skins/assets/mainContainer.swf', symbol='searchBox')">
+		
+	</mx:Image>-->
+	<!--<mx:Image x="{searchButtonPosition}" y="{textDisplay.y }" source="@Embed('com/adobe/gazuntite/view/controls/skins/assets/mainContainer.swf', symbol='btn_search')" />-->
+
+	<s:Path data="M 205.458 0.125 L 195.458 16.125 C 193.583 18.896 191.834 19.375 189.209 19.375 L 18.521 19.396 C 15.083 19.396 13.521 18.271 11.792 16.125 L 0.125 0.125" data.normal="M 206.333 1 L 196.333 17 C 194.458 19.771 192.709 20.25 190.084 20.25 L 19.396 20.271 C 15.958 20.271 14.396 19.146 12.667 17 L 1 1" winding="nonZero" x.normal="0" y.normal="0" x.disabled="1" y.disabled="1">
+		<s:fill>
+			<s:SolidColor color.normal="#000000"/>
+		</s:fill>
+		<s:stroke.disabled>
+			<s:SolidColorStroke caps="none" color="#AAAAAA" joints="miter" miterLimit="4" weight="0.25"/>
+		</s:stroke.disabled>
+		<s:filters>
+			<s:DropShadowFilter includeIn="normal" blurX="0" blurY="0" distance="0" hideObject="false" color="#FFFFFF" inner="false" strength="1" alpha="0.3" quality="2" knockout="false" angle="90"/>
+			<s:DropShadowFilter includeIn="normal" blurX="0" blurY="0" distance="0" hideObject="false" color="#6D6D74" inner="true" strength="1" alpha="1" quality="2" knockout="false" angle="90"/>
+		</s:filters>
+		<s:fill.normal>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="#0F0F0F" alpha="1.0" ratio="0"/>
+				<s:GradientEntry ratio="0.6196078431372549" color="#303030" alpha="1.0"/>
+				<s:GradientEntry color="#333333" alpha="1.0" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill.normal>
+	</s:Path>
+	
+	
+    <s:RichEditableText id="textDisplay" focusEnabled="false" focusRect="false" focusThickness="0"
+              verticalAlign="top"			  
+              widthInChars="12" paddingLeft="12" paddingTop="4" paddingBottom="1"
+              left="4" right="1" top="1" bottom="1" color="#999999"
+			  focusedTextSelectionColor="#999999"
+			  text="Search" focusIn="{textDisplay.text=''}" fontFamily="Calibri" fontSize="13"  />
+	
+	
+</s:SparkSkin>

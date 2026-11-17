@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009">
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect height="21" radiusX="2" width="18" x="0.5" y="0.5" visible.up="false" visible.disabled="false" visible.upAndSelected="false">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#565656" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#292929" ratio="0.47058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#4A4A4A" ratio="0.5058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#737373" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:stroke>
+			<s:LinearGradientStroke weight="1" caps="none" miterLimit="4" joints="miter" rotation="90">
+				<s:GradientEntry color="#727272" alpha="1" ratio="0"/>
+				<s:GradientEntry color="#000000" alpha="1" ratio="0.5058823529411764"/>
+				<s:GradientEntry ratio="1" color="#727272" alpha="1.0"/>
+			</s:LinearGradientStroke>
+		</s:stroke>
+		<s:filters>
+			<s:DropShadowFilter includeIn="down" blurX="4.0" blurY="4.0" distance="0" hideObject="false" color="0x000000" inner="true" strength="1" alpha="0.5" quality="2" knockout="false" angle="90"/>
+		</s:filters>
+	</s:Rect>
+	<s:Path data="M 0 0 L 4.127 3.843 L 8.254 0 L 0 0 Z" height="5" width="8.254" x="6" y="10" rotation.upAndSelected="180" x.upAndSelected="15" y.upAndSelected="13"
+			rotation.overAndSelected="180" x.overAndSelected="15" y.overAndSelected="13"
+			rotation.downAndSelected="180" x.downAndSelected="15" y.downAndSelected="13">
+		<s:fill>
+			<s:LinearGradient rotation="90" >
+				<s:GradientEntry alpha="1" color="#FFFFFF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Path>
+</s:Skin>

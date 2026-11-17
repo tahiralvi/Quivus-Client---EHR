@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						xmlns:s="library://ns.adobe.com/flex/spark" 
+						xmlns:mx="library://ns.adobe.com/flex/mx" 
+						xmlns:components="com.gazuntite.controls.extended.components.*"
+						close="popupwindow1_closeHandler(event)" xmlns:components1="com.gazuntite.controls.extended.components.*"
+						>				
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.util.xml.XmlConstants;
+			import com.gazuntite.common.util.xml.XmlUtils;
+			import com.gazuntite.provider.live.services.billing.dto.ClaimTransactionDTO;
+			import com.gazuntite.provider.live.services.billing.event.AddClaimTransactionEvent;
+			import com.gazuntite.provider.live.services.billing.event.LoadAllClaimMissingTransactionByVisitIdEvent;
+			import com.gazuntite.provider.live.services.billing.event.LoadAllClaimTransactionByClaimIdEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.util.BillingPopUpManager;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			public function hide():void
+			{
+				removePopup();
+			}
+			
+			[Bindable]
+			private var m_nClaimId:int;
+			
+			[Bindable]
+			private var m_sPatient:String;
+			
+			[Bindable]
+			private var m_nVisitId:int;
+			
+			[Bindable]
+			public function  get Patient():String
+			{
+				return m_sPatient;
+			}
+			
+			public function  set Patient(value:String):void
+			{
+				m_sPatient = value;
+			}
+			
+			[Bindable]
+			public function  get ClaimID():int
+			{
+				return m_nClaimId;
+			}
+			
+			public function  set ClaimID(value:int):void
+			{
+				m_nClaimId = value;
+			}
+			
+			[Bindable]
+			public function  get VisitID():int
+			{
+				return m_nVisitId;
+			}
+			
+			public function  set VisitID(value:int):void
+			{
+				m_nVisitId = value;
+			}
+			
+			protected function id_MisingTransactionGrid_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+			}
+
+			//private var m_bYesNo:Boolean = false;
+			
+			private function AlertListener(eventObj:CloseEvent): void
+			{
+				if(eventObj.detail == Alert.NO)
+				{
+					return;
+				}
+				
+					var transections:XML = XmlUtils.getNodeByTagName(XmlConstants.TRANSACTIONS);					
+											
+					for(var i:int = 0; i < id_MisingTransactionGrid.selectedItems.length; i++)
+					{
+						var counter:int = -1;
+						for(var j:int = 0; j < model.SearchClaimMissingTransactionResults.ClaimTransactions.length; j++)
+						{
+							var tempDTO:ClaimTransactionDTO = model.SearchClaimMissingTransactionResults.ClaimTransactions[j];
+							if(tempDTO.ProcedureID == id_MisingTransactionGrid.selectedItems[i].ProcedureID)
+							{
+								counter = j;
+								break;
+							}
+						}
+						if(counter > -1)
+						{
+							var transactionDTO:ClaimTransactionDTO = model.SearchClaimMissingTransactionResults.ClaimTransactions[counter];
+							transections.appendChild( transactionDTO.ToXML() );
+						}						
+					}
+					
+					var TransactionAddEvent:AddClaimTransactionEvent = new AddClaimTransactionEvent(transections,model.LoggedInUserId,AddTransactionStatus);
+					CairngormEventDispatcher.getInstance().dispatchEvent(TransactionAddEvent);
+										
+			}
+				
+			public function AddTransactionStatus ():void
+			{
+				if(model.Result == true)					
+				{					
+					var claimevent:LoadAllClaimTransactionByClaimIdEvent = new LoadAllClaimTransactionByClaimIdEvent(ClaimID);
+					CairngormEventDispatcher.getInstance().dispatchEvent(claimevent);
+					
+					var claimAddEvent:LoadAllClaimMissingTransactionByVisitIdEvent = new LoadAllClaimMissingTransactionByVisitIdEvent(VisitID,ClaimID,model.LoggedInUserId);
+					CairngormEventDispatcher.getInstance().dispatchEvent(claimAddEvent);
+					
+					Alert.show("Transaction(s) added successfully" , "Info",4,FlexGlobals.topLevelApplication.mainContainer);
+				}
+				else
+				{
+					Alert.show("Transaction(s) not added.", "Info",4,FlexGlobals.topLevelApplication.mainContainer);
+				}
+			}	
+						
+			
+			protected function id_AddBtn_clickHandler(event:MouseEvent):void
+			{
+				if(id_MisingTransactionGrid.selectedItems.length == 0)
+				{
+					Alert.show("Please Select Transaction","Add Transaction",4,this);
+					return;
+				}
+				if(id_MisingTransactionGrid.selectedItems.length == 1)
+				{
+					Alert.show("Are you sure you want to add this transaction to this claim?","Confirm",Alert.YES|Alert.NO,this,AlertListener);
+				}
+				else
+				{
+					Alert.show("Are you sure you want to add these transactions to this claim?","Confirm",Alert.YES|Alert.NO,this,AlertListener);
+				}
+				
+				
+			}
+
+
+			protected function id_CancelBtn_clickHandler(event:MouseEvent):void
+			{
+				this.removePopup();
+			}
+			
+			public function displayRowNum(oItem:Object,iCol:int):String
+			{
+				var ret:String;
+				try
+				{
+					var rowNumber:int = id_MisingTransactionGrid.dataProvider.getItemIndex(oItem) + 1; //Sort able column fails some how, don't know why?
+					ret = String(rowNumber);
+				}
+				catch(e:Error )
+				{
+					ret = "##";
+				}
+				return ret;
+			}
+
+			protected function popupwindow1_closeHandler(event:CloseEvent):void
+			{
+				BillingPopUpManager.removePopUp(this,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+			}
+			
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:VGroup width="100%">	
+		<s:VGroup width="100%">
+			<s:HGroup width="100%">
+				<s:Label id="id_lblPatientName" text=" {'Patient: ' + Patient}" width="100%"/>				
+			</s:HGroup>
+			<s:Label id="id_lblClaimId" text=" {'Claim: ' + ClaimID}" width="100%"/>
+		</s:VGroup>
+	<components1:LabelDataGrid id="id_MisingTransactionGrid" width="100%" dataProvider="{model.SearchClaimMissingTransactionResults.ClaimTransactions}"						
+						 click="id_MisingTransactionGrid_clickHandler(event)"						 
+						 useRollOver="false" editable="false"
+						 verticalScrollPolicy="on"  horizontalScrollPolicy="auto"
+						 maxHeight="150" variableRowHeight="true"
+						 columnWidths="{['20%'],['20%'],['25%'],['20%'],['15%']}"
+						 >
+		<components:columns>
+			<mx:DataGridColumn headerText="Sr.#" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" 
+							   wordWrap="true" editable="false" labelFunction="displayRowNum"  />
+			<mx:DataGridColumn headerText="Date From" dataField="DateFrom" width="100" sortable="true"/>
+			<mx:DataGridColumn headerText="Date To" dataField="DateTo" width="100" sortable="true"/>
+			<mx:DataGridColumn headerText="Document" dataField="Document" width="100" sortable="true"/>
+			<mx:DataGridColumn headerText="Procedure" dataField="ProcedureCode" width="100" sortable="true"/>
+			<mx:DataGridColumn headerText="Amount" dataField="Amount" width="100" sortable="true"/>			
+			<mx:DataGridColumn headerText="Procedure ID" dataField="ProcedureID" visible="false"/>
+			<mx:DataGridColumn headerText="ID" dataField="ID" visible="false"/>
+			<mx:DataGridColumn headerText="CID" dataField="ClaimID" visible="false"/>
+		</components:columns>
+		
+	</components1:LabelDataGrid>
+		<s:HGroup>
+			<s:Button id="id_AddBtn" label="Add" click="id_AddBtn_clickHandler(event)" styleName="blackButtonSkin"/>
+			<s:Button id="id_CancelBtn" label="Cancel" click="id_CancelBtn_clickHandler(event)" styleName="blackButtonSkin"/>
+		</s:HGroup>
+	</s:VGroup>
+</components1:PopupWindow>

@@ -1,0 +1,908 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:commons="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.*" 
+		 xmlns:components="com.zigron.controls.extended.components.*" 
+		 xmlns:itemEditors="com.adobe.Quivus.view.controls.custom.itemEditors.*"
+		 xmlns:validators="com.adobe.Quivus.utils.validators.*"
+		 creationComplete="cc()" xmlns:components1="com.gazuntite.controls.extended.components.*" 
+		 
+		 >
+	
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.staticData.lab.LoadInHouseLabTestTypeByClinicIdEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.DictationPopup;
+			import com.adobe.Quivus.view.controls.custom.itemEditors.SparkComboBoxItemEditor;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPanel;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.comboBoxSearchSkin;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.gazuntite.patient.visit.view.itemrenderers.DeleteRecordRenderer;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.dictation.QIDictationManager;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.ImmunizationDictationBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.ImmunizationSpeakerBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.ImmunizationWriteNotesBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.QIDictationBtn;
+			import com.adobe.Quivus.view.controls.skins.textAreaReqSkin;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.QIWriteNotes;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.QIWriteNotesSelected;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.quivus.skins.chrome.textInputSkins.optionalTextArea;
+			import com.adobe.quivus.skins.chrome.textInputSkins.requiredTextArea;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Label;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.events.CloseEvent;
+			import mx.events.CollectionEvent;
+			import mx.events.DataGridEvent;
+			import mx.events.ListEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.managers.PopUpManager;
+			import mx.utils.Base64Decoder;
+			import mx.utils.Base64Encoder;
+			
+			import spark.components.ComboBox;
+			import spark.components.RichEditableText;
+			
+			import valueObjects.InHouseLabDTO;
+			import valueObjects.InHouseLabTestTypeDTO;
+			import valueObjects.ModuleDictationDTO;
+			import valueObjects.ModuleNoteDTO;
+			import valueObjects.PhysicalDTO;
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var _includeGridInLayout:Boolean;
+			private var _includeGridInLayoutChanged:Boolean = true;
+			
+			private var _isAttached:Boolean;
+			
+			private var recordNotesDTO:ModuleNoteDTO;
+			public var recordNotesPanel:NotesPanel;
+			
+			private var _hasGridChanged:Boolean;
+			private var _hasViewChanged:Boolean;
+			
+			private var fileToOpen:File;
+			private var attachmentContent:ByteArray;
+			
+			[Bindable]
+			public var deleteColumnData:Object;
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			
+			private function cc():void
+			{
+				addEventListener("writeDictationClick", writeDictationClickHandler, false, 0, true);
+				
+				id_LabsRecordGrid.addEventListener(DataGridActionsEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+				id_LabsRecordGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				id_LabsRecordGrid.addEventListener(DataGridActionsEvent.WRITE_NOTES_CLICK, writeNotesClickHandler, false,0, true);
+				
+				if (!deleteColumnData)
+					deleteColumnData = {};
+				
+				deleteColumnData["noteDataFields"] = {subject: "NoteSubject", note: "Notes", header: "InHouseLabTestType.TestName"};
+				deleteColumnData["dictationDataField"] = "DictationID";
+				deleteColumnData["recordIDField"] = "PatientInHouseLabTestID";
+				deleteColumnData["section"] = QIPopUpManager.IN_HOUSE_LAB;
+			}
+			
+			private function writeNotesClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_LAB_IN ) )
+				{
+					
+				}
+				/*var dataGrid:DataGrid = DataGrid(event.currentTarget);
+				var selectedItem:InHouseLabDTO = InHouseLabDTO(dataGrid.selectedItem);
+				var loc:Point = event.clickPoint;
+				
+				var recordNotesPopUp:RecordNotesGridPopUp = new RecordNotesGridPopUp();
+				recordNotesPopUp.data = selectedItem;
+				recordNotesPopUp.dataField = "Notes";
+				recordNotesPopUp.recordID = selectedItem.PatientInHouseLabTestID;
+				recordNotesPopUp.move(loc.x, loc.y);
+				recordNotesPopUp.display(dataGrid);*/
+			}
+			
+			public function isGetEdited():Boolean
+			{
+				var edited:Boolean = false;
+				
+				if((id_TestCode.textInput.text.length > 4 ) && (id_TestName.textInput.text.length > 2)){
+					id_add.enabled = true;
+					edited = true;
+				}
+				/* if ((id_TestCode.selectedItem || id_TestCode.textInput.text.length) ||
+				(id_TestName.selectedItem || id_TestName.textInput.text.length) ||
+				id_Result.text.length) 
+				edited = true;
+				*/
+				
+				
+				
+				return edited;
+			}
+			
+			public function areRequiredFieldsProvidedAndValid():Boolean
+			{
+				/* calling isGetEdited() to check whether is there any change in view or not
+				just to set hasViewChanged boolean
+				*/
+				isGetEdited();
+				
+				if(UtilityFunctions.IsNullOrEmpty(id_TestCode.textInput.text ))
+					return false;
+				
+				if(UtilityFunctions.IsNullOrEmpty(id_TestName.textInput.text ))
+					return false;
+				
+				return true;
+			}
+			
+			public function showNotes(loc:Point):void
+			{
+				if (loc)
+				{
+					if( recordNotesPanel )
+						recordNotesPanel.removePopup();
+					
+					if (!recordNotesDTO)
+						recordNotesDTO = new ModuleNoteDTO();
+					
+					recordNotesPanel 					= new NotesPanel();
+					recordNotesPanel.width			= 580;
+					recordNotesPanel.height			= 150;
+					recordNotesPanel.HeadingLable 	= id_TestName.textInput.text;
+					recordNotesPanel.VisitDateLable = model.FormatedVisitDate;
+					recordNotesPanel.notesDTO	= recordNotesDTO;
+					recordNotesPanel.ShowPopup( this );
+					recordNotesPanel.move( loc.x, loc.y );
+					
+					recordNotesPanel.id_header.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						recordNotesPanel.SaveNotes();
+						recordNotesPanel.removePopup();
+						event.stopImmediatePropagation();
+					});
+					
+				}
+			}
+			
+			public function displayVisitDate(oItem:Object,iCol:int):String
+			{
+				return ValidationUtils.formatDate(model.visitDTO.VisitDate);
+			}
+			
+			private function editRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				id_LabsRecordGrid.editable = true;
+				
+				var rowIndex:int = LabelDataGrid(event.currentTarget).selectedIndex;
+				
+				var itemToSetInEditableMode:IListItemRenderer = id_LabsRecordGrid.indexToItemRenderer(rowIndex);
+				
+				var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+				ev.columnIndex = 2;
+				ev.rowIndex = rowIndex;
+				ev.itemRenderer = itemToSetInEditableMode;
+				ev.dataField = "InHouseLabTestType.TestCode";
+				id_LabsRecordGrid.dispatchEvent(ev);
+			}
+			
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_LAB_IN ) )
+				{
+					var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+					
+					var inHouseLabID:int = InHouseLabDTO(event.currentTarget.selectedItem).PatientInHouseLabTestID;
+					UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+					{
+						if (inHouseLabID == 0)
+						{
+							model.quickInputDTO.Physical.InHouseLabs.removeItemAt(curTar.selectedIndex);
+							if (model.quickInputDTO.Physical.InHouseLabs.length <= 0)
+							{
+								_hasGridChanged = false;
+								hasViewChanged = isGetEdited();
+							}
+						}
+						else
+						{
+							id_LabsRecordGrid.selectedItem.IsDeleted = true;
+							model.quickInputDTO.Physical.InHouseLabs.filterFunction = filterDeletedItems;
+							model.quickInputDTO.Physical.InHouseLabs.refresh();
+							hasViewChanged = _hasGridChanged = true;
+						}
+					});
+					
+					
+					if (model.quickInputDTO.Physical.InHouseLabs.length <= 0)
+					{
+						_includeGridInLayout = false;
+						_includeGridInLayoutChanged = false;
+					}
+				}
+			}
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			private function addRecordClick(event:Event):void
+			{	
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_LAB_IN ) )
+				{
+					id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+					if( !id_Add.enableAll )
+					{
+						if( UtilityFunctions.IsNullOrEmpty( id_TestCode.selectedItem ) )
+						{
+							id_TestCode.errorString = "invalid Test Code";
+							id_TestCode.setFocus();
+						}
+						else if	(UtilityFunctions.IsNullOrEmpty(id_TestName.selectedItem) )
+						{
+							id_TestName.errorString = "invalid Test Name";
+							id_TestName.setFocus();
+						}
+						return; // invalid data
+					}
+					
+					if (!_includeGridInLayout)
+					{
+						_includeGridInLayout = true;
+						_includeGridInLayoutChanged = true;
+						
+						invalidateProperties();
+					}
+					
+					var inHouseLabDTO:InHouseLabDTO = new InHouseLabDTO();
+					//	inHouseLabDTO.InHouseLabTestType = id_TestCode.selectedItem as InHouseLabTestTypeDTO;
+					inHouseLabDTO.InHouseLabTestType = selectedDTO;
+					inHouseLabDTO.TestResult = id_Result.text;
+					
+					if(attachmentContent)
+						inHouseLabDTO.ResultAttachment = AppUtils.getBase64String(attachmentContent);
+					
+					inHouseLabDTO.CreatedAt = new Date();
+					inHouseLabDTO.CreatedBy = model.loggedInUserDTO.UserId;
+					inHouseLabDTO.DictationID = Constants.GUID_FORMAT;
+					inHouseLabDTO.ModifiedAt = Constants.NULL_DATE;
+					
+					if( model.visitDTO!=null)
+					{
+						inHouseLabDTO.VisitDate = model.visitDTO.VisitDate;
+						inHouseLabDTO.VisitID 	= model.visitDTO.VisitId;
+					}
+					else if(model.quickInputDTO!= null && model.quickInputDTO.Visit!=null)
+					{
+						
+						inHouseLabDTO.VisitDate = model.quickInputDTO.Visit.VisitDate;
+						inHouseLabDTO.VisitID	= model.quickInputDTO.Visit.VisitId;
+					}
+					
+					inHouseLabDTO.PatientID = model.loadedPatientId;
+					
+					if (id_Add.notesDTO)
+					{
+						inHouseLabDTO.Notes = id_Add.notesDTO.Note;
+						inHouseLabDTO.NoteSubject = id_Add.notesDTO.NoteSubject;
+					}
+					
+					if (id_Add.dictationDTO != null && id_Add.dictationDTO.DictationID != null)
+					{
+						inHouseLabDTO.DictationID = id_Add.dictationDTO.DictationID;
+					}
+					
+					if(model.quickInputDTO.Physical== null)
+						model.quickInputDTO.Physical = new PhysicalDTO();
+					
+					if(model.quickInputDTO.Physical.InHouseLabs== null)
+						model.quickInputDTO.Physical.InHouseLabs = new ArrayCollection();
+					
+					model.quickInputDTO.Physical.InHouseLabs.addItem(inHouseLabDTO);
+					//add for review history
+					//model.labsReviewHistory.addItem(inHouseLabDTO);
+					
+					if(hasViewChanged)
+						hasViewChanged = false;
+					
+					_hasGridChanged = true;
+					hasViewChanged  = true;
+					
+					resetFields();
+					id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotes);
+					id_Add.id_WriteDictation.setStyle("skinClass", QIDictationBtn);
+				}
+			}
+			
+			private var recordLevelDicPanel:DictationPopup;
+			private function writeDictationClickHandler(event:Event):void
+			{
+				var addRecord:AddRecord = AddRecord(event.target);
+				
+				recordLevelDicPanel = QIDictationManager.show(addRecord, recordLevelDicPanel, addRecord.dictationDTO, addRecord.id_WriteDictation);
+				QIPopUpManager.addPopUp(recordLevelDicPanel, QIPopUpManager.IN_HOUSE_LAB);
+				recordLevelDicPanel.move( recordLevelDicPanel.x - 81, recordLevelDicPanel.y);
+				
+				recordLevelDicPanel.addEventListener(MouseEvent.CLICK, function():void
+				{
+					QIPopUpManager.removePopUp(recordLevelDicPanel, QIPopUpManager.IN_HOUSE_LAB);
+					
+					if(recordLevelDicPanel && recordLevelDicPanel.DictationID)
+					{
+						id_Add.id_WriteDictation.setStyle("skinClass", ImmunizationSpeakerBtn);
+					}
+					
+				}, true, 0, false);
+				
+			}
+			
+			private function comboChangeHandler(event:Event):void
+			{
+				var combo:LabelComboBox = LabelComboBox(event.currentTarget);
+				
+				id_Add.enabled = isGetEdited();
+				
+				if (combo.id == "id_TestCode")
+				{
+					id_TestName.textInput.text = "";
+					
+					var selectedCodeDTO:InHouseLabTestTypeDTO = id_TestCode.selectedItem as InHouseLabTestTypeDTO;
+					id_TestName.selectedItem = selectedCodeDTO;
+					
+					if (id_TestName.dataProvider)
+						id_TestName.selectedIndex = id_TestName.dataProvider.getItemIndex(selectedCodeDTO);
+					
+					if (id_TestCode.dataProvider)
+						id_TestCode.selectedIndex = id_TestCode.dataProvider.getItemIndex(selectedCodeDTO);
+					
+					id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+				}
+					
+				else if (combo.id == "id_TestName")
+				{
+					id_TestCode.textInput.text = "";
+					
+					var selectedNameDTO:InHouseLabTestTypeDTO = id_TestName.selectedItem as InHouseLabTestTypeDTO;
+					id_TestCode.selectedItem = selectedNameDTO;
+					
+					if (id_TestCode.dataProvider)
+						id_TestCode.selectedIndex = id_TestCode.dataProvider.getItemIndex(selectedNameDTO);
+					
+					if (id_TestName.dataProvider)
+						id_TestName.selectedIndex = id_TestName.dataProvider.getItemIndex(selectedNameDTO);
+					
+					id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+				}
+			}
+			
+			private function comboKeyUpHandler(event:Event):void
+			{
+				var combo:LabelComboBox = LabelComboBox(event.currentTarget);
+				
+				id_Add.enabled = isGetEdited();
+			}
+			
+			private function labsGridItemEditEndHandler(event:DataGridEvent):void
+			{
+				var inHouseLabID:int = InHouseLabDTO(event.currentTarget.selectedItem).PatientInHouseLabTestID;
+				
+				if (event.dataField == "InHouseLabTestType.TestCode" || event.dataField == "InHouseLabTestType.TestName")
+				{
+					var res:ValidationResultEvent;
+					var editor:LabelComboBox = SparkComboBoxItemEditor(id_LabsRecordGrid.itemEditorInstance).id_ComboEditor;
+					
+					comboValidator.source = editor;
+					
+					if (event.dataField == "InHouseLabTestType.TestCode")
+					{
+						comboValidator.error = "Invalid Test code";
+						res = comboValidator.validate(editor.selectedItem);		
+					}
+					else
+					{
+						comboValidator.error = "Invalid Test name";
+						res = comboValidator.validate(editor.selectedItem);
+					}
+					
+					if (res && !res.results)
+					{
+						event.itemRenderer.data.InHouseLabTestType = editor.selectedItem;
+						
+						if (inHouseLabID != 0)
+							event.itemRenderer.data.IsDirty = true;
+						
+						hasViewChanged = _hasGridChanged = true;
+					}
+					/*else
+					{
+					//event.itemRenderer.data.InHouseLabTestType = editor.previouslySelectedItem;
+					id_LabsRecordGrid.destroyItemEditor();
+					event.stopImmediatePropagation();
+					event.preventDefault();
+					}*/
+					
+					id_LabsRecordGrid.destroyItemEditor();
+					event.stopImmediatePropagation();
+					event.preventDefault();
+				}
+					
+				else if (event.dataField == "TestResult")
+				{
+					if (inHouseLabID != 0)
+						event.itemRenderer.data.IsDirty = true;
+					
+					hasViewChanged = _hasGridChanged = true;
+				}
+			}
+			
+			private function resetFields():void
+			{
+				id_TestCode.textInput.text				= "";
+				id_TestCode.selectedItem				= null;
+				
+				id_TestName.textInput.text				= "";
+				id_TestName.selectedItem				= null;
+				
+				id_Result.text 							= "";
+				
+				id_Add.enabled							= false;
+				id_Add.enableAll						= false;
+				
+				attachmentContent = null;
+				id_AttachBtn.label = "Attach";
+				
+				recordNotesDTO = new ModuleNoteDTO();
+				
+				if (id_Add.notesDTO)
+					id_Add.notesDTO = new ModuleNoteDTO();
+				
+				if (id_Add.dictationDTO)
+					id_Add.dictationDTO = new ModuleDictationDTO();
+				
+				if (recordNotesPanel)
+					recordNotesPanel.removePopup();
+				
+				serachTerm	= '';
+				id_TestName.textInput.text = '';
+				id_TestCode.textInput.text = '';
+				selectedDTO = null;
+			}
+			
+			private function attachmentLabelFunction(item:Object, iCol:int):String
+			{
+				return (_isAttached)? "View": "Attach";
+			}
+			
+			private function browseFileHandler():void
+			{
+				if (!fileToOpen)
+					fileToOpen = new File();
+				
+				fileToOpen.browse();
+				fileToOpen.addEventListener(Event.SELECT, fileSelectHandler, false, 0, true);
+				
+			}
+			
+			private function fileSelectHandler(event:Event):void
+			{
+				var fileStream:FileStream = new FileStream();
+				fileStream.open(fileToOpen, FileMode.READ);
+				
+				attachmentContent = new ByteArray();
+				
+				fileStream.readBytes(attachmentContent, 0, fileStream.bytesAvailable);
+				fileStream.close();
+				
+				id_AttachBtn.label = "Change";
+				
+				id_cbAttachement.label = fileToOpen.name;
+				id_cbAttachement.visible = true;
+				id_cbAttachement.selected = true;
+			}
+			
+			protected function checkbox1_changeHandler(event:Event):void
+			{
+				if( false == id_cbAttachement.selected )
+				{
+					id_cbAttachement.visible = false;
+					attachmentContent = null;
+				}
+			}
+			
+			override protected function commitProperties():void
+			{
+				super.commitProperties();
+				
+				/*if (_includeGridInLayoutChanged)
+				{
+				_includeGridInLayoutChanged = false;
+				
+				id_LabsRecordGrid.columns[0].width = 70;
+				id_LabsRecordGrid.columns[1].width = 80;
+				id_LabsRecordGrid.columns[2].width = 100;
+				id_LabsRecordGrid.columns[3].width = 100;
+				id_LabsRecordGrid.columns[4].width = 100;
+				id_LabsRecordGrid.columns[5].width = 100;
+				}*/
+			}
+			
+			/* public function gridRowNumber(item:Object, iCol:int):String
+			{
+			var strRowNum:String = "";
+			
+			if (id_LabsRecordGrid.dataProvider)
+			{
+			var rowNum:int = id_LabsRecordGrid.dataProvider.getItemIndex(item) + 1;
+			strRowNum = String(rowNum);
+			}
+			
+			return strRowNum;
+			}
+			*/
+			public function GridRowNumber(oItem:Object, iCol:int):String
+			{
+				var ret:String;
+				try
+				{
+					var rowNumber:int = id_LabsRecordGrid.dataProvider.getItemIndex(oItem) + 1; //Sort able column fails some how, don't know why?
+					ret = String(rowNumber);
+				}
+				catch(e:Error )
+				{
+					ret = "##";
+				}
+				return ret;
+			}
+			
+			
+			private var recordGridNotesPopUp:NotesPanel;
+			private var section:String;
+			
+			private function onWriteNotesClick(event:Event):void
+			{
+				if (!recordGridNotesPopUp)
+					recordGridNotesPopUp = new NotesPanel();
+				
+				if (!recordGridNotesPopUp.isPanelShown)
+				{
+					//gridNotesDTO = new ModuleNoteDTO();
+					var headingLabel:String = "";
+					
+					//extractDataForNotes();
+					
+					
+					var addRecord:AddRecord = AddRecord(event.target);
+					
+					//recordLevelDicPanel = QIDictationManager.show(addRecord, recordLevelDicPanel, addRecord.dictationDTO, addRecord.id_WriteDictation);
+					
+					//headingLabel = deriveComplexData(headerField);
+					recordGridNotesPopUp 				= new NotesPanel();
+					recordGridNotesPopUp.width			= 250;
+					recordGridNotesPopUp.height			= 110;
+					recordGridNotesPopUp.HeadingLable 	= id_TestName.textInput.text;
+					recordGridNotesPopUp.VisitDateLable = model.FormatedVisitDate;//new Date().toDateString();
+					recordGridNotesPopUp.ShowPopup(this);
+					
+					
+					
+					recordGridNotesPopUp.notesDTO		=  addRecord.notesDTO; //gridNotesDTO;
+					//recordGridNotesPopUp.onNotesSaved = updateNotesData;
+					
+					QIPopUpManager.addPopUp(recordGridNotesPopUp, section);
+					
+					//var pt:Point = localToGlobal(new Point(recordGridNotesPopUp.x, recordGridNotesPopUp.y));
+					
+					var pt:Point = id_Add.localToGlobal(new Point(id_Add.id_WriteNotes.x ,id_Add.id_WriteNotes.y));
+					
+					recordGridNotesPopUp.move(pt.x - 195, pt.y + 20);
+					
+					//recordGridNotesPopUp.move( recordGridNotesPopUp.x , recordGridNotesPopUp.y);
+					/*recordGridNotesPopUp.addEventListener("notesSaved", function(event:Event):void
+					{
+					updateNotesData();
+					
+					}, false, 0, true);*/
+					
+					recordGridNotesPopUp.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						//recordGridNotesPopUp.removePopup();
+						QIPopUpManager.removePopUp(recordGridNotesPopUp, section);
+						
+					}, false, 0, true);
+					
+					recordGridNotesPopUp.id_header.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						recordGridNotesPopUp.SaveNotes();
+						//if(recordNotesDTO)//if(recordNotesPanel.id_body.id_message.text.length > 0)
+						if(recordGridNotesPopUp.id_body.id_message.text.length > 0)
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotesSelected);								
+						}
+						else
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotes);
+						}
+						recordGridNotesPopUp.removeNotePanel();
+						QIPopUpManager.removePopUp(recordGridNotesPopUp, section);
+					});
+					
+					
+					recordGridNotesPopUp.addEventListener("notesSaved", function(event:Event):void
+					{
+						if(recordGridNotesPopUp.id_body.id_message.text.length > 0)
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotesSelected);								
+						}
+						else
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotes);
+						}
+					});
+				}
+			}
+			protected function nextSection_clickHandler(event:MouseEvent):void
+			{
+				dispactchSelectSectionEvent();
+				/* if( id_Add.enableAll )
+				{
+					UtilityFunctions.AskMessage( "There are changes in the form, do you still want to leave form in current state?", function ():void
+					{
+						dispactchSelectSectionEvent();
+					}); 
+				}
+				else
+				{
+					dispactchSelectSectionEvent();
+				} */
+			}
+			
+			private function dispactchSelectSectionEvent():void
+			{
+				dispatchEvent( new Event('nextSection',true,true));
+			} 
+			//Tahir Alvi - Aditional popup implementation 
+			[Bindable]public var selectedDTO:InHouseLabTestTypeDTO;
+			private var serachTerm:String;//Search term for the records
+			
+			private function testCodeKeyUpHandler():void
+			{
+				serachTerm = '';
+				serachTerm = id_TestCode.textInput.text;
+				//if value exceeds 4 characters then search Icd Code and map the Icd Code.
+				if(serachTerm.length >= 5)
+				{
+					id_TestName.textInput.text 		= '';
+					id_TestName.selectedIndex 		= -1;
+					selectedDTO 					= null;
+					id_Add.enabled 					= isGetEdited();
+					var labEvent : LoadInHouseLabTestTypeByClinicIdEvent = new LoadInHouseLabTestTypeByClinicIdEvent(loadData);
+					CairngormEventDispatcher.getInstance().dispatchEvent( labEvent );
+					
+				}else{
+					id_TestName.textInput.text 		= '';
+					id_TestName.selectedIndex 		= -1;
+					selectedDTO 					= null;
+					id_Add.enabled 					= isGetEdited();
+				}
+			}
+			public  function loadData(val:* = null):void
+			{
+				if(model.inHouseLabTestTypeDTOList.length)
+				{
+					for(var i:uint=0; i < model.inHouseLabTestTypeDTOList.length; i++)
+					{
+						if(serachTerm == model.inHouseLabTestTypeDTOList[i].TestCode)
+						{
+							id_TestCode.textInput.text 	= model.inHouseLabTestTypeDTOList[i].TestCode;
+							id_TestName.textInput.text  = model.inHouseLabTestTypeDTOList[i].TestName;
+							selectedDTO					= model.inHouseLabTestTypeDTOList[i];
+							id_Add.enabled 				= isGetEdited();
+							return;
+						}							
+					}
+				}
+			}
+			private function testNameChangeHandler():void
+			{
+				serachTerm = '';
+				serachTerm = id_TestName.textInput.text;
+			}
+			private function labIn_ClickHandler(event:MouseEvent, index:uint):void
+			{
+				if(event.target as RichEditableText || event.target as Label)
+				{
+					return;
+				}
+				else 
+				{
+					if(serachTerm == null)
+						return
+					
+					if(serachTerm.length > 2)
+					{
+						openLabInPopup(index);
+					}
+				}
+			}
+			private function openLabInPopup(index:int):void
+			{
+				var addlabInPopup:LabInPopup = new LabInPopup();
+				addlabInPopup.ShowPopup( this );
+				//QIPopUpManager.addPopUp( addlabInPopup, QIPopUpManager.IN_HOUSE_LAB );
+				addlabInPopup.addEventListener(CloseEvent.CLOSE, function (event:CloseEvent):void
+				{
+					if( model.quickInputDTO.Physical.InHouseLabs.length > 0 )
+					{
+						hasViewChanged = true;
+					}
+				});
+				addlabInPopup.title  = "Add LabIn";
+				addlabInPopup.height = 410;
+				addlabInPopup.width  = 600;
+				
+				//addlabInPopup.move((Capabilities.screenResolutionX/8) , addlabInPopup.y - 20);
+				addlabInPopup.move(addlabInPopup.x - 25 , addlabInPopup.y - 125);
+				addlabInPopup.searchAndLoadLabIn(serachTerm, index);
+				
+				addlabInPopup.removeEventListener( "labInAdded", onLabInAdded );
+				addlabInPopup.addEventListener( "labInAdded", onLabInAdded );
+				
+				resetFields();
+			}
+			// dataProvider="{model.inHouseLabTestTypeDTOList}" labelField="TestName" labelField="TestCode"
+			//Change the view and buttons when records added in the grid from popup
+			private function onLabInAdded(event:Event):void
+			{
+				if(hasViewChanged)
+					hasViewChanged = false;
+				
+				hasViewChanged = true;
+			}
+			
+			private var _labInCollection:ArrayCollection
+			[Bindable]
+			public function get labInCollection():ArrayCollection
+			{
+				return _labInCollection;
+			}
+			
+			public function set labInCollection(value:ArrayCollection):void
+			{
+				_labInCollection = value;
+				if (_labInCollection)
+				{
+					_labInCollection.addEventListener(CollectionEvent.COLLECTION_CHANGE, labInCollectionChangeHandler, false, 0, true);
+					
+				}
+				
+				//model.labsReviewHistory = _labInCollection;
+			}
+			
+			private function labInCollectionChangeHandler(event:CollectionEvent):void
+			{
+				if(labInCollection)
+				{
+					if(labInCollection.length > 1)
+						hasViewChanged = true;
+					else if(labInCollection.length < 1)
+						hasViewChanged = false;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<validators:ComboValidator id="comboValidator" source="{id_TestCode}" property="selectedItem"/>
+	</fx:Declarations>
+	
+	<fx:Binding source="model.quickInputDTO.Physical.InHouseLabs" destination="labInCollection"/>
+	
+	<s:layout>
+		<s:VerticalLayout gap="4" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5"/>
+	</s:layout>
+	
+	
+	<s:HGroup id="id_toparea" width="100%">
+		<s:VGroup width="100%">
+			<s:HGroup width="100%" gap="4">
+				<components1:LabelComboBox id="id_TestCode" prompt="Test Code" width="100" 
+										  useHandCursor="true" buttonMode="true"
+										  keyUp="testCodeKeyUpHandler()"
+										  click="labIn_ClickHandler(event, 0)"
+										  skinClass="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.comboBoxSearchSkin" tabIndex="1"/>
+				<components1:LabelComboBox id="id_TestName" prompt="Test Name" width="100%"  
+										  keyUp="testNameChangeHandler()"
+										  click="labIn_ClickHandler(event, 1)"
+										  skinClass="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.comboBoxSearchSkin" tabIndex="2"/>
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<components1:LabelTextArea id="id_Result" prompt="Result" width="100%" height="30" fontFamily="calibri" fontSize="11"
+										  keyUp="{id_Add.enabled = isGetEdited();}" maxChars="500" tabIndex="5" skinClass="com.adobe.quivus.skins.chrome.textInputSkins.optionalTextArea"/>
+			</s:HGroup>
+		</s:VGroup>
+		<s:VGroup>
+			<commons:AddRecord id="id_Add"  writeNotesClick="onWriteNotesClick(event)"  writeDictationClick="writeDictationClickHandler(event)"
+							   enabled="false" horizontalAlign="center" tabIndex="3"/>
+			<s:Button id="id_AttachBtn" label="Attach" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QILabAttachBtn"
+					  useHandCursor="true" buttonMode="true" toolTip="Attach" click="browseFileHandler()" tabIndex="6" visible="false" includeInLayout="{id_AttachBtn.visible}"/>
+			
+			<s:CheckBox id="id_cbAttachement" label="Attachment" width="100%" change="checkbox1_changeHandler(event)" fontFamily="Calibri" color="#ffffff" visible="false" />
+		</s:VGroup>
+		
+	</s:HGroup>
+	<s:HGroup width="100%">
+		<s:Button id="id_add" click="addRecordClick(event)" enabled="false" 
+				  buttonMode="true" useHandCursor="true" toolTip="Add Record" label="Add Lab In"
+				  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.AddMoreTooltipBtn" tabIndex="7"/>
+		<s:SkinnableContainer skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.tooltipBG" 
+							  visible="{!id_add.enabled}" width="100%" />
+		<mx:Spacer width="100%"/>
+		<s:Button id="id_nextBtn" label="Next" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QInextBtnSkin" buttonMode="true"
+				  toolTip="Move to next section Assessment" />  
+		
+		
+	</s:HGroup>
+	
+	<components1:LabelDataGrid id="id_LabsRecordGrid" width="{id_toparea.width-6}" visible="{(id_LabsRecordGrid.dataProvider.length)}" includeInLayout="{(id_LabsRecordGrid.dataProvider.length)}"
+							  useRollOver="false" itemEditEnd="labsGridItemEditEndHandler(event);" rowHeight="23"
+							  dataProvider="{labInCollection}" rowCount="{id_LabsRecordGrid.dataProvider.length + 1}"
+							  verticalScrollPolicy="auto"  
+							  horizontalScrollPolicy="off" 
+							  maxHeight="150" columnWidths="{[25,'10%','15%','25%','20%','15%','15%',100]}" >
+		<components:columns>
+			
+			<!--<mx:DataGridColumn editable="false" visible="false"/>-->
+			<!--<mx:DataGridColumn headerText="Visit Date" dataField="VisitDate" width="90" itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG" editable="false"/>
+			-->
+			<mx:DataGridColumn headerText="Sr.#" labelFunction="GridRowNumber" editable="false" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" />
+			<mx:DataGridColumn headerText="Visit Date" dataField="VisitDate" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" labelFunction="displayVisitDate" editable="false"/>
+			<mx:DataGridColumn headerText="Test Code" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="InHouseLabTestType.TestCode" editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>	
+						<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.inHouseLabTestTypeDTOList}" labelField="TestCode" width="85"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Test Name" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="InHouseLabTestType.TestName" editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.inHouseLabTestTypeDTOList}" labelField="TestName" width="85"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Result" dataField="TestResult" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editable="true" editorDataField="text"/>
+			<mx:DataGridColumn headerText="Normal Range" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="InHouseLabTestType.TestRange" editable="false"/>
+			<mx:DataGridColumn  headerText="Attachment" visible="false" dataField="ResultAttachment"  headerRenderer="mx.controls.Label" wordWrap="true" editable="false" itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.physical.labs.AttachmentViewRenderer"/>
+			<commons:DataGridColumnEx headerText="" data="{deleteColumnData}" itemRenderer="com.gazuntite.patient.visit.view.itemrenderers.DeleteRecordRenderer" editable="false"/>
+		</components:columns>
+	</components1:LabelDataGrid>
+</s:Group>

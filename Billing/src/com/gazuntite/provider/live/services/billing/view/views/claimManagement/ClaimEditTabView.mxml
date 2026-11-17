@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:toolbar="com.gazuntite.provider.live.services.billing.view.views.toolbar.*" 
+		 xmlns:appController="com.gazuntite.provider.live.services.billing.appController.*" 
+		 xmlns:components="com.gazuntite.controls.extended.components.*" 
+		 xmlns:claimManagement="com.gazuntite.provider.live.services.billing.view.views.claimManagement.*"
+		 creationComplete="vgroup1_creationCompleteHandler(event)" 
+		 paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" gap="-1" xmlns:components1="com.gazuntite.controls.extended.components.*">
+	
+	<fx:Metadata>
+		
+	</fx:Metadata>	
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.provider.live.services.billing.event.LoadAllClaimMissingTransactionByVisitIdEvent;
+			import com.gazuntite.provider.live.services.billing.event.LoadAllClaimTransactionByClaimIdEvent;
+			import com.gazuntite.provider.live.services.billing.event.LoadAllClaimbyProviderIdEvent;
+			import com.gazuntite.provider.live.services.billing.event.RemoveClaimTransactionEvent;
+			import com.gazuntite.provider.live.services.billing.event.SplitClaimTransactionEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.util.BillingConstants;
+			import com.gazuntite.provider.live.services.billing.util.BillingPopUpManager;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import spark.events.TextOperationEvent;
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+				
+			[Bindable]
+			private var m_nParentClaimId:int
+			
+			[Bindable]
+			private var m_nParentVisitId:int
+			
+			[Bindable]
+			private var m_sParentPatientName:String			
+			
+			[Bindable]
+			public function  get PatientName():String
+			{
+				return m_sParentPatientName;
+			}
+			
+			public function  set PatientName(value:String):void
+			{
+				m_sParentPatientName = value;
+			}
+			
+			[Bindable]
+			public function  get ClaimID():int
+			{
+				return m_nParentClaimId;
+			}
+			
+			public function  set ClaimID(value:int):void
+			{
+				m_nParentClaimId = value;
+			}
+
+			[Bindable]
+			public function  get VisitID():int
+			{
+				return m_nParentVisitId;
+			}
+			
+			public function  set VisitID(value:int):void
+			{
+				m_nParentVisitId = value;
+			}
+
+			
+			protected function claimtransactionbuttonbar1_SplitHandler(event:Event):void
+			{
+				if (id_TransactionGrid.selectedItems.length == 0) return;
+				
+				var idList:String;
+				idList = "";
+				
+				for (var i:int=0; i<id_TransactionGrid.selectedItems.length; i++)
+				{
+					if(i == 0)
+						idList = id_TransactionGrid.selectedItems[i].ID
+					else
+						idList += ", " + id_TransactionGrid.selectedItems[i].ID
+				}
+				
+				var claimSplitEvent:SplitClaimTransactionEvent = new SplitClaimTransactionEvent(idList,id_TransactionGrid.selectedItems[0].ClaimID,model.LoggedInUserId,SplitTransactionStatus);
+				CairngormEventDispatcher.getInstance().dispatchEvent(claimSplitEvent);								
+				
+			}
+			
+			public function SplitTransactionStatus ():void
+			{
+				if(model.Result == true)					
+				{					
+					var eventcomplete:LoadAllClaimTransactionByClaimIdEvent = new LoadAllClaimTransactionByClaimIdEvent(id_TransactionGrid.selectedItems[0].ClaimID);
+					CairngormEventDispatcher.getInstance().dispatchEvent(eventcomplete);
+					
+					//var claimEvent:LoadAllClaimbyProviderIdEvent = new LoadAllClaimbyProviderIdEvent(model.LoggedInUserProviderId,model.LoggedInUserSelectedBranchId,ClaimManagementSearchPageNo);
+					var claimEvent:LoadAllClaimbyProviderIdEvent = new LoadAllClaimbyProviderIdEvent(model.LoggedInUserProviderId,model.LoggedInUserSelectedBranchId,BillingConstants.FIRST_PAGE_NUMBER);
+					CairngormEventDispatcher.getInstance().dispatchEvent(claimEvent);					
+					
+					Alert.show("Transaction(s) moved to new claim successfully.", "Info",4,FlexGlobals.topLevelApplication.mainContainer);
+				}
+				else
+				{
+					Alert.show("Transaction(s) not moved to new claim.", "Info",4,FlexGlobals.topLevelApplication.mainContainer);
+				}
+			}
+
+			protected function claimtransactionbuttonbar1_RemoveHandler(event:Event):void
+			{
+				
+				if (id_TransactionGrid.selectedItems.length == 0) return;
+				
+				var idList:String;
+				idList = "";
+				
+				for (var i:int=0; i<id_TransactionGrid.selectedItems.length; i++)
+				{
+					if(i == 0)
+						idList = id_TransactionGrid.selectedItems[i].ID +
+							"^" + id_TransactionGrid.selectedItems[i].ProcedureID
+					else
+						idList += ", " + id_TransactionGrid.selectedItems[i].ID +
+							       "^" + id_TransactionGrid.selectedItems[i].ProcedureID
+				}
+				
+				var claimRemoveEvent:RemoveClaimTransactionEvent = new RemoveClaimTransactionEvent(idList,model.LoggedInUserId,RemoveTransactionStatus);
+				CairngormEventDispatcher.getInstance().dispatchEvent(claimRemoveEvent);						
+				
+			}
+	
+			public function RemoveTransactionStatus ():void
+			{
+				if(model.Result == true)					
+				{
+					var claimevent:LoadAllClaimTransactionByClaimIdEvent = new LoadAllClaimTransactionByClaimIdEvent(ClaimID);
+					CairngormEventDispatcher.getInstance().dispatchEvent(claimevent);	
+					
+					var claimAddEvent:LoadAllClaimMissingTransactionByVisitIdEvent = new LoadAllClaimMissingTransactionByVisitIdEvent(VisitID,ClaimID,model.LoggedInUserId);
+					CairngormEventDispatcher.getInstance().dispatchEvent(claimAddEvent);
+					
+					Alert.show("Transaction(s) removed successfully","Info",4,FlexGlobals.topLevelApplication.mainContainer);
+				}
+				else
+				{
+					Alert.show("Transaction(s) not removed.","Info",4,FlexGlobals.topLevelApplication.mainContainer);
+				}
+			}
+			protected function claimtransactionbuttonbar1_AddHandler(event:Event):void
+			{
+				var claimAddEvent:LoadAllClaimMissingTransactionByVisitIdEvent = new LoadAllClaimMissingTransactionByVisitIdEvent(VisitID,ClaimID,model.LoggedInUserId,MissingTransactionStatus);
+				CairngormEventDispatcher.getInstance().dispatchEvent(claimAddEvent);				
+			}
+			public function MissingTransactionStatus ():void
+			{
+				if(model.SearchClaimMissingTransactionResults.ClaimTransactions.length > 0)
+				{				
+					var mt:ClaimMissingTransactionsView = new ClaimMissingTransactionsView();
+					
+					mt.ClaimID =  ClaimID;
+					mt.Patient =  PatientName;
+					mt.VisitID =  VisitID;
+					
+					mt.ShowPopup(this);
+					BillingPopUpManager.addPopUp(mt,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+				}
+				else
+				{
+					Alert.show("There are no qualifying transactions to add to this claim.", "Info",4,FlexGlobals.topLevelApplication.mainContainer);
+				}
+			}
+			
+			public function displayRowNum(oItem:Object,iCol:int):String
+			{
+				var ret:String;
+				try
+				{
+					var rowNumber:int = id_TransactionGrid.dataProvider.getItemIndex(oItem) + 1; //Sort able column fails some how, don't know why?
+					ret = String(rowNumber);
+				}
+				catch(e:Error )
+				{
+					ret = "##";
+				}
+				return ret;
+			}
+
+			protected function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				
+			}
+			
+			protected function id_Note_changeHandler(event:TextOperationEvent):void
+			{
+				model.ClaimNewNote = id_Note.text;
+			}
+			
+			[Bindable] public var EDIReceiverName1:String = "";
+			[Bindable] public var EDIReceiverName2:String = "";
+			[Bindable] public var EDIReceiverName3:String = "";
+			
+		]]>
+	</fx:Script>
+
+	
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>	
+<s:ButtonBar id= "id_Tabs" width="100%" dataProvider = "{id_vsClaimEditViews}" styleName="blackButtonBarSkin"  />
+	<mx:ViewStack id="id_vsClaimEditViews" width = "100%" height = "100%" resizeToContent="true">
+		<s:NavigatorContent label="Carrier 1" width = "100%" height = "100%" tabIndex="2" skinClass="com.adobe.gazuntite.skins.chrome.containerSkins.lightBlueNGradientWhiteBGContainer" >
+			<claimManagement:ClaimCarrierView id="id_Carrier1" width="100%" CarrierNo="1" EDIReceiverName="{EDIReceiverName1}" />
+		</s:NavigatorContent>		 
+		<s:NavigatorContent label="Carrier 2" width = "100%" height = "100%" tabIndex="3" skinClass="com.adobe.gazuntite.skins.chrome.containerSkins.lightBlueNGradientWhiteBGContainer" >
+			<claimManagement:ClaimCarrierView id="id_Carrier2" width="100%"  CarrierNo="2" EDIReceiverName="{EDIReceiverName2}" />
+		</s:NavigatorContent>
+		<s:NavigatorContent label="Carrier 3" width = "100%" height = "100%" tabIndex="4" skinClass="com.adobe.gazuntite.skins.chrome.containerSkins.lightBlueNGradientWhiteBGContainer"  >
+			<claimManagement:ClaimCarrierView id="id_Carrier3" width="100%" CarrierNo="3"  EDIReceiverName="{EDIReceiverName3}" />			
+		</s:NavigatorContent>
+		<s:NavigatorContent label="Patient" width = "100%" height = "100%" tabIndex="5" skinClass="com.adobe.gazuntite.skins.chrome.containerSkins.lightBlueNGradientWhiteBGContainer"  >
+			<claimManagement:ClaimCarrierView id="id_PatientStatus" width="100%" CarrierNo="4"   />			
+		</s:NavigatorContent>
+		<s:NavigatorContent label="Transactions" width = "100%" height = "100%" tabIndex="5" >
+			<s:VGroup width="100%">
+				<s:HGroup width="100%">
+					<s:Label  text="Diagnosis:	"  fontFamily="Calibri" fontSize="11" color="#333333"   />
+					<s:Label  text="{model.SearchClaimDiagnoses}" color="Red" fontFamily="Calibri" fontSize="11" width="100%" maxDisplayedLines="5"  />	
+				</s:HGroup>									 
+			<components1:LabelDataGrid id="id_TransactionGrid" width="100%" dataProvider="{model.SearchClaimTransactionResults.ClaimTransactions}" 
+								 useRollOver="false" editable="false"
+								 verticalScrollPolicy="on"  horizontalScrollPolicy="auto"
+								 maxHeight="150" variableRowHeight="true"
+								 columnWidths="{['15%'],['15%'],['20%'],['15%'],['10%'],['10%'],['5%'],['5%'],['5%']}"
+								 tabIndex="1"
+								 >
+				<components:columns>
+					<mx:DataGridColumn headerText="Sr.#" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" 
+									   wordWrap="true" editable="false" labelFunction="displayRowNum"  />
+					<mx:DataGridColumn headerText="Date From" dataField="DateFrom"  sortable="true"/>
+					<mx:DataGridColumn headerText="Date To" dataField="DateTo" sortable="true"/>
+					<mx:DataGridColumn headerText="Document" dataField="Document"  sortable="true"/>
+					<mx:DataGridColumn headerText="Procedure" dataField="ProcedureCode"/>
+					<mx:DataGridColumn headerText="Amount" dataField="Amount" sortable="true"/>
+					<mx:DataGridColumn headerText="Ins 1 Resp" dataField="Ins1Resp" 
+											   itemRenderer="mx.controls.CheckBox"   sortable="true" editable="false"/>
+					<mx:DataGridColumn headerText="Ins 2 Resp" dataField="Ins2Resp" 
+											   itemRenderer="mx.controls.CheckBox" rendererIsEditor="true"  sortable="true" editable="false"/>
+					<mx:DataGridColumn headerText="Ins 3 Resp" dataField="Ins3Resp" editable="false"
+											   itemRenderer="mx.controls.CheckBox"  sortable="true"/>
+					<mx:DataGridColumn headerText="Patient Procedure ID" dataField="ProcedureID" visible="false"/>
+					<mx:DataGridColumn headerText="ID" dataField="ID" visible="false"/>
+					<mx:DataGridColumn headerText="CID" dataField="ClaimID" visible="false"/>
+				</components:columns>
+				
+			</components1:LabelDataGrid>
+				<toolbar:ClaimTransactionButtonBar width="100%" Split="claimtransactionbuttonbar1_SplitHandler(event)"
+												   Remove="claimtransactionbuttonbar1_RemoveHandler(event)"
+												   Add="claimtransactionbuttonbar1_AddHandler(event)" horizontalAlign="center"
+												   tabIndex="2"
+												   />					
+				
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent label="Comments" width = "100%" height = "100%" tabIndex="6" > 
+			<s:TextArea width="100%" id="id_Note" text="{model.ClaimNewNote}" change="id_Note_changeHandler(event)" tabIndex="1"/>			
+		</s:NavigatorContent>	
+	</mx:ViewStack>
+	
+</s:VGroup>

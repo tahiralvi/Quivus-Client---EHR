@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" height="100%" width="100%"
+		 creationComplete="group1_creationCompleteHandler(event)"
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			
+			import mx.events.FlexEvent;
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			import com.gazuntite.provider.search.services.provider.dto.ProviderBasicInfoResult;
+			import com.gazuntite.provider.search.services.provider.dto.SearchProviderResultsList;
+			
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				
+			}
+			
+			private function getProviderList(val:* = null):void
+			{
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:layout>
+		<s:VerticalLayout gap="45" paddingLeft="5" paddingRight="5" paddingTop="10" paddingBottom="5" />
+	</s:layout>
+	
+	<s:HGroup gap="4" width="100%">
+		
+		<s:SkinnableContainer styleName="greyImageBGContainerSkin" width="50" >
+			<mx:Image id="embededImage" source="{model.SearchProviderDetailsResults.ImageData}" width="50" height="52"/>
+		</s:SkinnableContainer>
+		
+		<s:SkinnableContainer width="100%" styleName="whiteNGreyRectangularBGContainerSkin">
+			<s:layout>
+				<s:HorizontalLayout paddingTop="28"/>
+			</s:layout>
+			<s:VGroup width="100%" gap="7" maxWidth="130" paddingLeft="5">
+				<s:RichText color="#666666" fontFamily="Calibri" fontSize="12" id="textDisplay15" tabStops="S0 S50 S100 S150" 
+							text="Name:"  />
+				<s:RichText color="#666666" fontFamily="Calibri" fontSize="12" id="textDisplay21" tabStops="S0 S50 S100 S150" 
+							text="SSN #:" />
+				<s:RichText color="#666666" fontFamily="Calibri" fontSize="12" id="textDisplay27" tabStops="S0 S50 S100 S150" 
+							text="Gender:" />
+				<s:RichText color="#666666" fontFamily="Calibri" fontSize="12" id="textDisplay1" tabStops="S0 S50 S100 S150" 
+							text="Phone:" />
+				<s:RichText color="#666666" fontFamily="Calibri" fontSize="12" id="textDisplay2" tabStops="S0 S50 S100 S150" 
+							text="Address:" />
+				<s:RichText color="#666666" fontFamily="Calibri" fontSize="12" id="textDisplay3" tabStops="S0 S50 S100 S150" 
+							text="State:" />
+				<s:RichText color="#666666" fontFamily="Calibri" fontSize="12" id="textDisplay4" tabStops="S0 S50 S100 S150" 
+							text="City:" />
+				<s:RichText color="#666666" fontFamily="Calibri" fontSize="12" id="textDisplay5" tabStops="S0 S50 S100 S150" 
+							text="Zip Code:" />
+			</s:VGroup>
+			
+			<s:VGroup width="100%" horizontalAlign="left" gap="7">
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" maxDisplayedLines="1" maxWidth="130" 
+							text="{model.SearchProviderDetailsResults.FirstName +' '+ model.SearchProviderDetailsResults.MiddleName+' '+model.SearchProviderDetailsResults.LastName}"
+							toolTip="{model.SearchProviderDetailsResults.FirstName +' '+ model.SearchProviderDetailsResults.MiddleName+' '+model.SearchProviderDetailsResults.LastName}"/>
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" maxDisplayedLines="1" maxWidth="130" 
+							text="{model.SearchProviderDetailsResults.SSN}" 
+							toolTip="{model.SearchProviderDetailsResults.SSN}"/>
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" maxDisplayedLines="1" maxWidth="130" 
+							text="{model.SearchProviderDetailsResults.Gender}" toolTip="{model.SearchProviderDetailsResults.Gender}" />
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" maxDisplayedLines="1" maxWidth="130" 
+							text="{model.SearchProviderDetailsResults.Phone}" toolTip="{model.SearchProviderDetailsResults.Phone}" />
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" maxDisplayedLines="1" maxWidth="130" 
+							text="{model.SearchProviderDetailsResults.Address}" toolTip="{model.SearchProviderDetailsResults.Address}"/>
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" maxDisplayedLines="1" maxWidth="130" 
+							text="{model.SearchProviderDetailsResults.State}" toolTip="{model.SearchProviderDetailsResults.State}"/>
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" maxDisplayedLines="1" maxWidth="130" 
+							text="{model.SearchProviderDetailsResults.City}" toolTip="{model.SearchProviderDetailsResults.City}"/>
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" maxDisplayedLines="1" maxWidth="130" 
+							text="{model.SearchProviderDetailsResults.Zip}" toolTip="{model.SearchProviderDetailsResults.Zip}" />
+			</s:VGroup>
+		</s:SkinnableContainer>
+	</s:HGroup>
+	<s:SkinnableContainer width="100%" styleName="miniWhiteNGreyRectangularBGContainerSkin">
+		
+		<!--<s:HGroup gap="0" width="100%" paddingBottom="5" paddingRight="5" paddingLeft="5">-->
+		
+		
+		<s:layout>
+			<s:HorizontalLayout paddingTop="28" />
+		</s:layout>
+		<s:VGroup width="100%" gap="7" horizontalAlign="left" paddingLeft="5">
+			<s:RichText color="#666666" fontFamily="Calibri" fontSize="12" text="Title:" />
+			<s:RichText color="#666666" fontFamily="Calibri" fontSize="12" text="Work Start:" />
+			<s:RichText color="#666666" fontFamily="Calibri" fontSize="12" text="NPI:" />
+			<s:RichText color="#666666" fontFamily="Calibri" fontSize="12" text="DEA:" />
+			<s:RichText color="#666666" fontFamily="Calibri" fontSize="12" text="License #:" />
+		</s:VGroup>
+		<s:VGroup width="100%" horizontalAlign="left" gap="7" verticalAlign="middle">
+			<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" maxDisplayedLines="1" 
+						maxWidth="95" text="{model.SearchProviderDetailsResults.Title}"/>
+			<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" maxDisplayedLines="1" maxWidth="95" 
+						text="{model.SearchProviderDetailsResults.WorkStart}" toolTip="{model.SearchProviderDetailsResults.WorkStart}" />
+			<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" maxDisplayedLines="1" maxWidth="95" 
+						text="{model.SearchProviderDetailsResults.NPI}" toolTip="{model.SearchProviderDetailsResults.NPI}"/>
+			<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" maxDisplayedLines="1" maxWidth="95" 
+						text="{model.SearchProviderDetailsResults.DAE}" toolTip="{model.SearchProviderDetailsResults.DAE}"/>
+			<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" maxDisplayedLines="1" maxWidth="95" 
+						text="{model.SearchProviderDetailsResults.LicenseNumber}" toolTip="{model.SearchProviderDetailsResults.LicenseNumber}"/>
+		</s:VGroup>
+		<!--<s:SkinnableContainer width="50%" styleName="whiteRectangularBGContainerSkin">
+		<s:layout>
+		<s:HorizontalLayout paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5" />
+		</s:layout>-->
+		<s:VGroup width="100%" gap="7" verticalAlign="middle">
+			<s:RichText color="#666666" fontFamily="Calibri" fontSize="12" text="Work Days:" />
+			<s:RichText color="#666666" fontFamily="Calibri" fontSize="12" text="Work End:" />
+			<s:RichText color="#666666" fontFamily="Calibri" fontSize="12" text="UPI:" />
+			<s:RichText color="#666666" fontFamily="Calibri" fontSize="12" text="TPI:" />
+			<s:RichText color="#666666" fontFamily="Calibri" fontSize="12" text="EIN:" />
+		</s:VGroup>
+		<s:VGroup width="100%" horizontalAlign="left" gap="7" verticalAlign="middle">
+			<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" maxDisplayedLines="1" maxWidth="95"
+						text="{model.SearchProviderDetailsResults.WorkDays}"  toolTip="{model.SearchProviderDetailsResults.WorkDays}" />
+			<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" maxDisplayedLines="1" maxWidth="95"
+						text="{model.SearchProviderDetailsResults.WorkEnd}" toolTip="{model.SearchProviderDetailsResults.WorkEnd}"/>
+			<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" maxDisplayedLines="1" maxWidth="95" 
+						text="{model.SearchProviderDetailsResults.UPIN}" toolTip="{model.SearchProviderDetailsResults.UPIN}"  />
+			<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" maxDisplayedLines="1" maxWidth="95" 
+						text="{model.SearchProviderDetailsResults.TPI}" toolTip="{model.SearchProviderDetailsResults.TPI}"/>
+			<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" maxDisplayedLines="1" maxWidth="95" 
+						text="{model.SearchProviderDetailsResults.EIN}" toolTip="{model.SearchProviderDetailsResults.EIN}"/>
+		</s:VGroup>
+	</s:SkinnableContainer>
+</s:Group>
+

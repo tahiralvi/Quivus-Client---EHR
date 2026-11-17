@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 creationComplete="creationCompleteHandler(event)"
+		 xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:components="com.zigron.controls.extended.components.*" xmlns:components1="com.gazuntite.controls.extended.components.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.QuivusCombineEventDispatcher;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.ePrescriptionView.EPrescriptionEditPrescriptionView;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.AddMoreAllergiesBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.addMoreButton;
+			import com.adobe.quivus.skins.chrome.buttonSkins.closeCrossButton;
+			import com.gazuntite.common.dto.PatientDTO;
+			import com.gazuntite.provider.eprescription.services.patient.view.ePrescription;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Label;
+			import mx.events.CollectionEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.CursorManager;
+			
+			import valueObjects.PrescriptionMedicationDTO;
+			import valueObjects.UserTypeDTO;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			private var _hasViewChanged:Boolean
+			private var _ePrescription:ePrescription;;
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			
+			public function GridRowNumber(oItem:Object, iCol:int):String
+			{
+				var ret:String;
+				try
+				{
+					var rowNumber:int = id_PrescriptionGrid.dataProvider.getItemIndex(oItem) + 1; //Sort able column fails some how, don't know why?
+					ret = String(rowNumber);
+				}
+				catch(e:Error )
+				{
+					ret = "##";
+				}
+				return ret;
+			}
+			public function medicineStrengthLabel(item:Object, iCol:int):String
+			{
+				var label:String = "";
+				
+				if (item.hasOwnProperty("GenericName"))
+				{
+					label += item.GenericName + ", ";
+					
+					if (item.hasOwnProperty("Strength"))
+					{
+						label += item.Strength;
+					}
+				}
+				
+				return label;
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				QuivusCombineEventDispatcher.dispatchEventToGetPrescriptionEditURL();
+				/* var g:PrescriptionMedicationDTO;
+				g.VisitDate */
+				if(model.prescriptionDToList && model.prescriptionDToList.length)
+				{
+					if(hasViewChanged)
+						hasViewChanged = false;
+					
+					hasViewChanged = true;
+				}
+			}
+			
+			private var _presCollection:ArrayCollection;
+			[Bindable]
+			public function get presCollection():ArrayCollection
+			{
+				return _presCollection;
+			}
+			
+			public function set presCollection(value:ArrayCollection):void
+			{
+				_presCollection = value;
+				if(model.prescriptionDToList && model.prescriptionDToList.length)
+				{
+					if(hasViewChanged)
+						hasViewChanged = false;
+					
+					hasViewChanged = true;
+				}
+			}
+			
+			//Tahir Alvi  - sep19 
+			private function getRefillData(item:Object, iCol:int):String
+			{
+				var result:String='';
+				if(item.hasOwnProperty("Refill"))
+					result = item.Refill;
+				
+				if(item.hasOwnProperty("isPRN"))
+					result = item.isPRN;
+				
+				if(result.toLowerCase() == 'true')
+					result = 'AS NEEDED';
+				else if(item.hasOwnProperty("Refill"))
+					result = item.Refill;
+				return result;
+			}
+			//-- Tahir Alvi - Add more button click handler
+			//-- New RX Integration in Quick Input
+			protected function id_AddMoreBtn_clickHandler(event:MouseEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_PRESCRIPTION ) )
+				{
+					if(id_AddMoreBtn.label == 'Add More') // when show New Rx Form
+					{
+						id_content.visible			=	true;
+						id_content.includeInLayout 	= 	true;
+						id_AddMoreBtn.label 		= 	''; 
+						id_AddMoreBtn.label 		= 'Close';  
+						//--- add new RX
+						var usertype_dto:UserTypeDTO 						= new UserTypeDTO();
+						var userTypeDTO:XML 								= <OwnerUserType />
+						userTypeDTO.IsClinicUser 							= usertype_dto.IsClinicUser?"true":"false";
+						userTypeDTO.IsProvider 								= usertype_dto.IsProvider?"true":"false";
+						userTypeDTO.UserTypeId 								= usertype_dto.UserTypeId;
+						userTypeDTO.UserTypeName 							= usertype_dto.UserTypeName;
+						
+						_ePrescription = new ePrescription();
+						
+						(_ePrescription as ePrescription).userID 			= model.loggedInUserDTO.UserId;
+						(_ePrescription as ePrescription).clinicBranchID 	= model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchIdSeq;
+						(_ePrescription as ePrescription).templateId 		= "1";
+						(_ePrescription as ePrescription).encounterTypeId 	= "1";
+						(_ePrescription as ePrescription).userTypeDTO 		= userTypeDTO;
+						
+						_ePrescription.percentWidth 						= 100;
+						//_ePrescription.percentHeight 						= 100;
+						id_content.addElement( _ePrescription );
+						_ePrescription.setNewRXView 						= true;
+						_ePrescription.isPrescriptionMode 					= true;
+						_ePrescription.id_newRX.loadSelectedPatientData(model.selectedPatientDTO as PatientDTO, model.visitDTO.VisitId);
+						
+					}
+					else if(id_AddMoreBtn.label == 'Close') // when hide New Rx Form
+					{
+						id_content.visible			=	false;
+						id_content.includeInLayout 	= false;
+						id_AddMoreBtn.label 		= ''; 
+						id_AddMoreBtn.label 		= 'Add More';  
+						//-- remove new RX
+						id_content.removeElement( _ePrescription );
+						_ePrescription = null;
+					}
+				}
+			}
+			//Tahir Alvi  - Nov 7 
+			private function getVisitDate(item:Object, iCol:int):String
+			{
+				var result:String = '';
+				if(item.VisitDate)
+					result = item.VisitDate;
+				
+				if(result == '01/01/1901' || result == '02/01/1901')
+					result = 'N/A';
+				
+				return result;
+			}
+		]]>
+	</fx:Script>
+	<fx:Binding source="model.prescriptionDToList" destination="presCollection" />
+	<s:layout>
+		<s:VerticalLayout gap="2" paddingTop="5" paddingLeft="3" paddingRight="3" paddingBottom="0"/>
+	</s:layout>
+	
+	<s:Group id="id_content" width="100%" height="100%"  visible="false" includeInLayout="false"/>
+	
+	<s:HGroup  width="100%" horizontalAlign="right">
+		<s:Button id="id_AddMoreBtn" 
+				  click="id_AddMoreBtn_clickHandler(event)" label="Add More" 
+				  buttonMode="true" useHandCursor="true" 
+				  skinClass="{id_AddMoreBtn.label=='Close' ? closeCrossButton : addMoreButton}"
+				  toolTip="{id_AddMoreBtn.label=='Close' ? 'Close Prescription Form' :'Add Prescription'}"/>
+		<s:Button id="id_nextBtn" label="Next" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QInextBtnSkin" toolTip="Next Section" enabled="true"
+				  buttonMode="true" useHandCursor="true"/>
+	</s:HGroup> 
+	<components1:LabelDataGrid id="id_PrescriptionGrid" width="100%" useRollOver="false" maxHeight="100"
+							  rowCount="{id_PrescriptionGrid.dataProvider.length + 1}" verticalScrollPolicy="on"
+							  sortableColumns="false" dataProvider="{presCollection}"
+							  visible="{id_PrescriptionGrid.dataProvider.length > 0?true :false}" 
+							  includeInLayout="{id_PrescriptionGrid.dataProvider.length > 0?true :false}"
+							  columnWidths="{['10%','15%','15%','20%','30%','10%']}">
+		<components:columns>
+			<mx:DataGridColumn headerText="Sr.#" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" width="50" labelFunction="GridRowNumber"/>
+			<mx:DataGridColumn headerText="Visit Date" width="80" dataField="VisitDate" headerRenderer="mx.controls.Label" wordWrap="true" labelFunction="getVisitDate"/>
+			<mx:DataGridColumn headerText="Dose" width="60" dataField="Dose" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"  />
+			<mx:DataGridColumn headerText="Medicine" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="drugName"  width="70"/>
+			<mx:DataGridColumn headerText="Sig" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="Sig" width="90" />
+			<mx:DataGridColumn headerText="No. of Refills" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" width="60" labelFunction="getRefillData"/>
+			<!--<mx:DataGridColumn width="85" itemRenderer="com.gazuntite.patient.visit.view.itemrenderers.DeleteRecordRenderer"/>-->
+		</components:columns>
+	</components1:LabelDataGrid>
+	
+	<s:Label text="No Prescriptions" fontFamily="Calibri Bold" color="#ffffff" fontSize="13" width="100%" textAlign="center"
+			 visible="{id_PrescriptionGrid.dataProvider.length > 0?false :true}" includeInLayout="{id_PrescriptionGrid.dataProvider.length > 0?false :true}"/>
+	
+</s:Group>

@@ -1,0 +1,694 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:CollapsiblePanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 creationComplete="Init()" width="100%"
+		 xmlns:components="com.gazuntite.controls.extended.components.*" 
+		 xmlns:common="com.gazuntite.provider.live.services.billing.view.common.*" 
+		 xmlns:itemEditors="com.gazuntite.provider.live.services.billing.view.common.itemEditors.*" 
+		 title="Diagnosis"
+		 skinClass="com.gazuntite.controls.extended.skins.popUpCollapsiblePanelSkin" xmlns:validators="com.gazuntite.provider.live.services.billing.view.common.validators.*" xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 >
+	<fx:Script>
+		<![CDATA[			
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.util.QSConstants;
+			import com.gazuntite.controls.extended.skins.popUpCollapsiblePanelSkin;
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.ICDCodeTypeDTO;
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.SuperBillDiagnosisInfoDTO;
+			import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadICDCodeTypesEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.util.BillingPopUpManager;
+			import com.gazuntite.provider.live.services.billing.view.common.ComboBoxEditor;
+			import com.gazuntite.provider.live.services.billing.view.event.DataGridActionEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DataGrid;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.events.CollectionEvent;
+			import mx.events.DataGridEvent;
+			import mx.events.ValidationResultEvent;
+			
+			import spark.components.RichEditableText;
+			
+			[Bindable]
+			public var model:BillingModelLocator = BillingModelLocator.getInstance(); 
+			
+			private var m_aDiagnosis:ArrayCollection
+			
+			[Bindable]
+			public function get ICDs():ArrayCollection
+			{
+				return m_aDiagnosis;
+			}			
+			
+			public function set ICDs(value:ArrayCollection):void
+			{
+				m_aDiagnosis = value;
+				
+				if (m_aDiagnosis)
+				{
+					m_aDiagnosis.addEventListener(CollectionEvent.COLLECTION_CHANGE, diagnosisCollectionChangeHandler, false, 0, true);
+					
+					if (m_aDiagnosis.length)
+						includeGridInLayout = true;
+						
+					else
+						includeGridInLayout = false;		
+				}
+				else
+					includeGridInLayout = false;
+			}
+			
+			private function diagnosisCollectionChangeHandler(event:CollectionEvent):void
+			{
+				/*switch(event.kind)
+				{
+					case CollectionEventKind.ADD:
+						includeGridInLayout = true;
+						break;
+					
+					case CollectionEventKind.REMOVE:
+						if (ICDs && ICDs.length < 1)
+							includeGridInLayout = false;
+						break;
+				}*/
+			}
+			
+			private function icdKeyUpHandler(event:KeyboardEvent):void
+			{
+				if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+				{
+					var searchString:String = id_ICDCode.textInput.text;
+					if(searchString.length > 2)
+					{
+						var icdEvent : LoadICDCodeTypesEvent = new LoadICDCodeTypesEvent(searchString,model.LoggedInUserSelectedBranchId.toString());
+						CairngormEventDispatcher.getInstance().dispatchEvent( icdEvent );
+					}
+					
+					//id_Add.enableAll = false;
+					id_Add.enabled = isGetEdited();
+				}
+			}
+			
+			private var serachTermDiagnosis:String;//Search term for the records
+			[Bindable]
+			private var selectedIcdCodeDTO:ICDCodeTypeDTO;
+			
+			private function icdKeyUpHandlerNew():void
+			{
+				serachTermDiagnosis = '';
+				serachTermDiagnosis = id_ICDCode.textInput.text;
+				//if value exceeds 4 characters then search Icd Code and map the Icd Code.
+				if(serachTermDiagnosis.indexOf(".")  > -1 && serachTermDiagnosis.indexOf(".") == serachTermDiagnosis.length - 1  )
+				{
+					id_Diagnosis.textInput.text = '';
+					id_Diagnosis.selectedIndex = -1;
+					selectedIcdCodeDTO = null;
+					id_Add.enabled = isGetEdited();
+					return;
+				}
+				if(serachTermDiagnosis.length >=5){
+					id_Diagnosis.textInput.text = '';
+					id_Diagnosis.selectedIndex = -1;
+					selectedIcdCodeDTO = null;	
+					id_Add.enabled = isGetEdited();
+					var icdEvent : LoadICDCodeTypesEvent = new LoadICDCodeTypesEvent(serachTermDiagnosis,model.LoggedInUserSelectedBranchId.toString(), loadData);
+					CairngormEventDispatcher.getInstance().dispatchEvent( icdEvent );
+					
+				}else{
+					id_Diagnosis.textInput.text = "";
+					id_Diagnosis.selectedIndex = -1;
+					selectedIcdCodeDTO = null;
+					id_Add.enabled = isGetEdited();
+				}
+			}
+			
+			public  function loadData(val:* = null):void
+			{
+				if(model.ICDCodeTypeList.length)
+				{
+					for(var i:uint=0; i < model.ICDCodeTypeList.length; i++)
+					{
+						if(serachTermDiagnosis.toUpperCase() ==  UtilityFunctions.TrimString(model.ICDCodeTypeList[i].ICDCodeName).toUpperCase() && ! hasDuplicateValues(model.ICDCodeTypeList[i].ICDCodeID))
+						{							
+							id_ICDCode.textInput.text 	= model.ICDCodeTypeList[i].ICDCodeName; 
+							id_Diagnosis.textInput.text = model.ICDCodeTypeList[i].ICDCodeDescription;
+							selectedIcdCodeDTO			= model.ICDCodeTypeList[i];
+							id_Add.enabled 		= isGetEdited();
+							return;
+						}							
+					}
+				}
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			
+			public function isGetEdited():Boolean
+			{
+				var edited:Boolean = false;
+				
+				if (id_ICDCode.textInput.text || id_ICDCode.selectedItem  || 
+					id_Diagnosis.textInput.text || id_Diagnosis.selectedItem)
+				{					
+					edited = true;
+				}
+				hasViewChanged = (_hasGridChanged)? _hasGridChanged : edited;
+				
+				return edited;
+			}
+			
+			private var _hasGridChanged:Boolean;
+			private var _hasViewChanged:Boolean;
+			private var _previouslySelectedItem:ICDCodeTypeDTO;
+			
+			private function validateICDCode():void
+			{
+				if (id_ICDCode.selectedItem)
+				{
+					var selectedItem:ICDCodeTypeDTO = id_ICDCode.selectedItem as ICDCodeTypeDTO;
+					
+					if (selectedItem)
+					{
+						id_Diagnosis.selectedItem = selectedItem;
+						_previouslySelectedItem = id_Diagnosis.selectedItem;
+					}
+					else
+					{
+						id_ICDCode.selectedItem = _previouslySelectedItem;
+						id_Diagnosis.selectedItem = _previouslySelectedItem;
+					}
+				}				
+			}
+			
+			private function diagnosisKeyUpHandler(event:KeyboardEvent):void
+			{
+				if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+				{
+					var searchString:String = id_Diagnosis.textInput.text;
+					if(searchString.length > 2)
+					{
+						var icdEvent : LoadICDCodeTypesEvent = new LoadICDCodeTypesEvent(searchString,model.LoggedInUserSelectedBranchId.toString());
+						CairngormEventDispatcher.getInstance().dispatchEvent( icdEvent );
+					}					
+					
+					id_Add.enabled = isGetEdited();
+				}
+			}
+			
+			private function validateDiagnosis():void
+			{
+				if (id_Diagnosis.selectedItem)
+				{
+					var selectedItem:ICDCodeTypeDTO = id_Diagnosis.selectedItem as ICDCodeTypeDTO;
+					
+					if (selectedItem)
+					{
+						id_ICDCode.selectedItem = selectedItem;
+						_previouslySelectedItem = selectedItem;
+					}
+					else
+					{
+						id_ICDCode.selectedItem = _previouslySelectedItem;
+						id_Diagnosis.selectedItem = _previouslySelectedItem;
+					}
+				}				
+			}
+			
+			[Bindable]
+			private var m_aNewDiagnosis:ArrayCollection;
+			
+			[Bindable]
+			public function get NewDiagnosis():ArrayCollection
+			{
+				return m_aNewDiagnosis;
+			}			
+			
+			public function set NewDiagnosis(value:ArrayCollection):void
+			{
+				m_aNewDiagnosis = value;
+			}
+			public var LastChildTabIndex:int = 0;
+			private function SetTabIndexes():void
+			{
+				var incrementer:int = 0;
+				id_ICDCode.tabIndex = tabIndex + (++incrementer);
+				id_Diagnosis.tabIndex = tabIndex + (++incrementer);
+				id_Add.tabIndex = tabIndex + (++incrementer);
+				id_DiagnisisGrid.tabIndex = tabIndex + (++incrementer);
+				
+				LastChildTabIndex = ++incrementer;
+			}				
+			
+			private function Init():void
+			{	
+				SetTabIndexes();
+				
+				id_DiagnisisGrid.addEventListener(DataGridActionEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+				id_DiagnisisGrid.addEventListener(DataGridActionEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				id_DiagnisisGrid.addEventListener(DataGridActionEvent.ITEM_EDIT_KEY_UP, itemEditKeyUpHandler, false, 0, true);
+				
+				//id_ProcedureGrid.addEventListener("widthChanged", dataGridWidthChangedHandler, false, 0, true);
+				
+				if(ICDs == null)
+					ICDs = new ArrayCollection();
+				//NewDiagnosis = new ArrayCollection();
+			}
+			
+			private function itemEditKeyUpHandler(event:DataGridActionEvent):void
+			{
+				if (event.searchString.length > 2)
+				{
+					var icdEvent : LoadICDCodeTypesEvent = new LoadICDCodeTypesEvent(event.searchString,model.LoggedInUserSelectedBranchId.toString());
+					CairngormEventDispatcher.getInstance().dispatchEvent( icdEvent );
+				}
+			}
+			
+			private function addRecordClickHandler(event:Event):void
+			{
+				if(UtilityFunctions.IsNullOrEmpty(id_ICDCode.textInput.text) || UtilityFunctions.IsNullOrEmpty(id_Diagnosis.textInput.text))
+				{
+					Alert.show("Please enter valid ICD","Info",4,this);
+					return; // invalid data
+				}
+				
+				if( !areRequiredFieldsProvidedAndValid() )
+				{
+					Alert.show("Invalid ICD","Info",4,this);
+					return; // invalid data
+				}
+				
+				if(hasDuplicateValues(selectedIcdCodeDTO.ICDCodeID))
+				{
+					Alert.show("This diagnosis already exists","Info",4,this);
+					id_ICDCode.setFocus();
+					return;
+				}
+				
+				var diagnosisDTO:SuperBillDiagnosisInfoDTO = new SuperBillDiagnosisInfoDTO(); 
+				
+				if(id_ICDCode.textInput.text && id_Diagnosis.textInput.text)
+				{
+					diagnosisDTO.ICDCodeID			= selectedIcdCodeDTO.ICDCodeID; 
+					diagnosisDTO.ICDCodeName        = selectedIcdCodeDTO.ICDCodeName;
+					diagnosisDTO.ICDCodeDescription = id_Diagnosis.textInput.text;
+				}
+				
+				diagnosisDTO.ModifiedBy ="0";
+				diagnosisDTO.DiagnosisID = "0";
+				diagnosisDTO.VisitID = "0";
+				diagnosisDTO.PatientID = "0";							
+				diagnosisDTO.CreatedBy = model.LoggedInUserId.toString();												
+				diagnosisDTO.IncludeInBilling = "true";
+				diagnosisDTO.IsCreatedFromSuperBill = "true";
+				diagnosisDTO.VisitDate = UtilityFunctions.FormatDate(QSConstants.NULL_DATE);
+				
+								
+				if(model.CurrentDiagnosis==null)
+					model.CurrentDiagnosis = new ArrayCollection();
+				
+				
+				model.CurrentDiagnosis.addItem(diagnosisDTO);
+					
+				
+				resetFields();
+				
+				hasViewChanged = _hasGridChanged = true;			
+				
+			}
+			
+			private function addRecordClickHandlerOld():void
+			{
+				if(id_ICDCode.selectedIndex == -1 )
+				{
+					Alert.show("Please select code","Info",4,this);
+					id_ICDCode.setFocus();
+					return;
+				}	
+				
+				if(hasDuplicateValues(id_ICDCode.textInput.text))
+				{
+					Alert.show("This diagnosis already exists","Info",4,this);
+					id_ICDCode.setFocus();
+					return;
+				}
+				
+				var diagnosisDTO:SuperBillDiagnosisInfoDTO = new SuperBillDiagnosisInfoDTO();
+				
+				diagnosisDTO.ModifiedBy ="0";
+				diagnosisDTO.DiagnosisID = "0";
+				diagnosisDTO.VisitID = "0";
+				diagnosisDTO.PatientID = "0";
+				diagnosisDTO.ICDCodeID = id_ICDCode.selectedItem.ICDCodeID;				
+				diagnosisDTO.CreatedBy = model.LoggedInUserId.toString();
+				diagnosisDTO.ICDCodeName = id_ICDCode.selectedItem.ICDCodeName;
+				diagnosisDTO.ICDCodeDescription = id_ICDCode.selectedItem.ICDCodeDescription;								
+				diagnosisDTO.IncludeInBilling = "true";
+				diagnosisDTO.IsCreatedFromSuperBill = "true";
+				diagnosisDTO.VisitDate = UtilityFunctions.FormatDate(QSConstants.NULL_DATE);					
+				
+				model.CurrentDiagnosis.addItem(diagnosisDTO);
+				
+				resetFields();
+				
+				hasViewChanged = _hasGridChanged = true;
+				
+			}
+			
+			public function areRequiredFieldsProvidedAndValid():Boolean
+			{
+				var result:Boolean = false;				
+				
+				if(model.ICDCodeTypeList.length)
+				{
+					for(var i:uint=0; i < model.ICDCodeTypeList.length; i++)
+					{
+						if(id_ICDCode.textInput.text == model.ICDCodeTypeList[i].ICDCodeName && id_Diagnosis.textInput.text == model.ICDCodeTypeList[i].ICDCodeDescription)
+						{
+							result = true;
+							break;
+						}							
+					}
+				}				
+				
+				return result;
+			}
+			
+			private function hasDuplicateValues(ICDCode:String):Boolean
+			{
+				for(var j:uint =0; j<model.CurrentDiagnosis.length; j++)
+				{
+					var patDiaDTO:SuperBillDiagnosisInfoDTO = model.CurrentDiagnosis[j] as SuperBillDiagnosisInfoDTO;
+					
+					if(ICDCode == patDiaDTO.ICDCodeID)
+						return true;
+				}				
+				return false;
+			}
+			
+			/*private function SaveSuperBillDiagnosis():void
+			{
+				var diagnoses:XML = XmlUtils.getNodeByTagName("DiagnosisInfo");
+				
+				for(var i:int =0; i < NewDiagnosis.length; i++)
+				{
+					var cpt:SuperBillDiagnosisInfoDTO = NewDiagnosis[i];
+					diagnoses.appendChild(cpt.ToXML());
+				}			
+				
+				//var ICDAddEvent:ManagePendingBillDiagnosis = new ManagePendingBillProceduresEvent(procedures);
+				//CairngormEventDispatcher.getInstance().dispatchEvent(ICDAddEvent);
+			}*/
+			
+			private function resetFields():void
+			{
+				id_Diagnosis.selectedIndex = -1;
+				id_ICDCode.selectedIndex = -1;				
+								
+				//id_form1.enabled = false;				
+				serachTermDiagnosis	= "";
+				id_Diagnosis.textInput.text = "";
+				id_ICDCode.textInput.text = "";
+				selectedIcdCodeDTO = null;
+				
+				id_Add.enabled = false;				
+			}
+			
+			private function deleteRecordClickHandler(event:DataGridActionEvent):void
+			{
+				var curTar:DataGrid = DataGrid(event.currentTarget);
+				var diagnosisID:String = SuperBillDiagnosisInfoDTO(event.currentTarget.selectedItem).DiagnosisID;
+				if(diagnosisID != "0") return;
+				
+				UtilityFunctions.AskMessage(  "Are you sure, you want to delete diagnosis [" + SuperBillDiagnosisInfoDTO(event.currentTarget.selectedItem).ICDCodeName + "]?" , function():void
+				{	
+					//NewDiagnosis.removeItemAt(NewDiagnosis.getItemIndex((model.CurrentDiagnosis.getItemAt(curTar.selectedIndex))));
+					model.CurrentDiagnosis.removeItemAt(curTar.selectedIndex);					
+					
+					hasViewChanged = _hasGridChanged = true;
+				});
+				
+			}
+			
+			private function editRecordClickHandler(event:DataGridActionEvent):void
+			{
+				id_DiagnisisGrid.editable = true;
+				
+				var rowIndex:int = DataGrid(event.currentTarget).selectedIndex;
+				
+				var itemToSetInEditableMode:IListItemRenderer = id_DiagnisisGrid.indexToItemRenderer(rowIndex);
+				
+				var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+				//ev.columnIndex = 0;
+				ev.rowIndex = rowIndex;
+				ev.itemRenderer = itemToSetInEditableMode;
+				//ev.dataField = "ICDCodeName";
+				id_DiagnisisGrid.dispatchEvent(ev);			
+				
+			}
+			
+			[Bindable]
+			public function get includeGridInLayout():Boolean
+			{
+				return _includeInLayout;
+			}
+			
+			private var _includeInLayout:Boolean;
+			private var _includeInLayoutChanged:Boolean;
+			
+			public function set includeGridInLayout(value:Boolean):void
+			{
+				if (_includeInLayout != value)
+				{
+					_includeInLayout = value;
+					_includeInLayoutChanged = true;
+					
+					invalidateProperties();
+					invalidateSize();
+					invalidateDisplayList();
+				}
+			}
+			
+			private function diagnosisItemEditBeginHandler(event:DataGridEvent):void
+			{	
+				id_DiagnisisGrid.createItemEditor(event.columnIndex, event.rowIndex);
+				
+				/* var searchString:String = "";
+				var dto:SuperBillDiagnosisInfoDTO = event.itemRenderer.data as SuperBillDiagnosisInfoDTO;
+				if( dto.DiagnosisID != "0" )
+				{
+					//id_ICDCode.textInput.text = dto.ICDCodeName;
+					//id_Diagnosis.textInput.text = dto.ICDCodeDescription;					
+					//id_DiagnisisGrid.editable = false;
+					event.preventDefault();
+					event.stopImmediatePropagation();
+					return;					
+				}
+				
+				if (event.columnIndex == 0 )
+				{	
+					searchString = event.itemRenderer.data.ICDCodeName;
+					var cptEvent : LoadICDCodeTypesEvent = new LoadICDCodeTypesEvent(searchString,model.LoggedInUserSelectedBranchId.toString());
+					CairngormEventDispatcher.getInstance().dispatchEvent( cptEvent );	
+				}
+				else if (event.columnIndex == 1 )
+				{	
+					searchString = event.itemRenderer.data.ICDCodeDescription;
+					var cptEventDesc : LoadICDCodeTypesEvent = new LoadICDCodeTypesEvent(searchString,model.LoggedInUserSelectedBranchId.toString());
+					CairngormEventDispatcher.getInstance().dispatchEvent( cptEventDesc );	
+				} */
+			}
+			
+			private function diagnosisItemEditHandler(event:DataGridEvent):void 
+			{					
+				var dto:SuperBillDiagnosisInfoDTO = event.itemRenderer.data as SuperBillDiagnosisInfoDTO;			
+				
+				if( dto.DiagnosisID != "0" )
+				{
+					id_ICDCode.textInput.text = dto.ICDCodeName;
+					id_Diagnosis.textInput.text = dto.ICDCodeDescription;
+					return;
+				}			 
+				
+				var validationRes:ValidationResultEvent;				
+				var editor:LabelComboBox = ComboBoxEditor(id_DiagnisisGrid.itemEditorInstance).id_ComboEditor;
+				
+				comboValidator.source = editor;
+				
+				if (event.dataField == "ICDCodeName")
+				{
+					comboValidator.error = "Select ICD Code from list";
+				}
+				else
+				{
+					comboValidator.error = "Select diagnosis from list";
+				}
+				
+				validationRes = comboValidator.validate(editor.selectedItem);
+				
+				if (validationRes && !validationRes.results)
+				{
+					//event.itemRenderer.data.ICDCode = editor.selectedItem;
+					dto.ICDCodeID 	= (editor.selectedItem as ICDCodeTypeDTO).ICDCodeID;
+					dto.ICDCodeDescription 	= (editor.selectedItem as ICDCodeTypeDTO).ICDCodeDescription;
+					dto.ICDCodeName = (editor.selectedItem as ICDCodeTypeDTO).ICDCodeName;					
+										
+					hasViewChanged = _hasGridChanged = true;
+				}
+				
+				/* if( editor.selectedItem )							
+				{
+					dto.ICDCodeID 	= (editor.selectedItem as ICDCodeTypeDTO).ICDCodeID;
+					dto.ICDCodeDescription 	= (editor.selectedItem as ICDCodeTypeDTO).ICDCodeDescription;
+					dto.ICDCodeName = (editor.selectedItem as ICDCodeTypeDTO).ICDCodeName;
+				}	 */		
+				
+				event.currentTarget.dataProvider.refresh();
+				id_DiagnisisGrid.destroyItemEditor();
+				event.stopImmediatePropagation();
+				event.preventDefault();
+			}
+			
+			protected function Icdcode_clickHandler(event:MouseEvent, index:uint):void
+			{
+				if( (addDiagnosisPopup && addDiagnosisPopup.isPopUp) || event.target as RichEditableText)
+				{
+					return;
+				}
+				else 
+				{
+					if(serachTermDiagnosis == null)
+						return
+					if(serachTermDiagnosis.indexOf(".")  > -1 && serachTermDiagnosis.indexOf(".") == serachTermDiagnosis.length - 1  )
+					{
+						Alert.show("Dot(.) is not allowed at the end of text","Info",4,this);
+						return;
+					}
+					if(serachTermDiagnosis.length > 2)
+					{
+						openDiagnosisPopup(index);
+					}
+				}
+			}
+			private var addDiagnosisPopup:SuperBillDiagnosisPopup = null;
+			private function openDiagnosisPopup(index:int):void
+			{
+				addDiagnosisPopup = new SuperBillDiagnosisPopup();
+				addDiagnosisPopup.ShowPopup( this );
+				BillingPopUpManager.addPopUp(addDiagnosisPopup,BillingPopUpManager.SUPER_BILL_POPUPS);
+				addDiagnosisPopup.title  = "Add Diagnosis";
+				addDiagnosisPopup.height = 410;
+				addDiagnosisPopup.width  = 600;
+				addDiagnosisPopup.move(addDiagnosisPopup.x, Capabilities.screenResolutionY/4);
+				addDiagnosisPopup.searchAndLoadDiagnosis(serachTermDiagnosis,  index);
+				resetFields();
+			}
+			
+			
+			private function icdDescriptionChangeHandler():void
+			{
+				serachTermDiagnosis = '';
+				serachTermDiagnosis = id_Diagnosis.textInput.text;
+			}
+
+			protected function id_ICDCode_keyDownHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode == 13 )
+				{
+					if(serachTermDiagnosis == null)
+						return
+					if(serachTermDiagnosis.indexOf(".")  > -1 && serachTermDiagnosis.indexOf(".") == serachTermDiagnosis.length - 1  )
+					{
+						Alert.show("Dot(.) is not allowed at the end of text","Info",4,this);
+						return;
+					}
+					if(serachTermDiagnosis.length > 2)
+					{
+						openDiagnosisPopup(0);
+					}
+				}
+			}
+
+
+			protected function id_Diagnosis_keyDownHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode == 13 )
+				{
+					if(serachTermDiagnosis == null)
+						return
+					if(serachTermDiagnosis.indexOf(".")  > -1 && serachTermDiagnosis.indexOf(".") == serachTermDiagnosis.length - 1  )
+					{
+						Alert.show("Dot(.) is not allowed at the end of text","Info",4,this);
+						return;
+					}
+					if(serachTermDiagnosis.length > 2)
+					{
+						openDiagnosisPopup(1);
+					}
+				}
+			}
+
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<validators:ComboValidator id="comboValidator" property="selectedItem"/>
+	</fx:Declarations>
+	
+	<components:layout>
+		<s:VerticalLayout paddingLeft="5" paddingRight="5" paddingBottom="5" paddingTop="5"/>
+	</components:layout>
+	
+	<s:HGroup width="100%">
+		<components1:LabelComboBox id="id_ICDCode"  labelField="ICDCodeName" width="50%" 
+								  useHandCursor="true" buttonMode="true"								  
+								  keyUp="icdKeyUpHandlerNew()" 
+								  keyDown="id_ICDCode_keyDownHandler(event)"
+								  click="Icdcode_clickHandler(event, 0)"
+								  prompt="Code"  />
+		<components1:LabelComboBox id="id_Diagnosis"  labelField="ICDCodeDescription" width="50%" 
+								  useHandCursor="true" buttonMode="true"								 
+								  keyUp="icdDescriptionChangeHandler()"
+								  keyDown="id_Diagnosis_keyDownHandler(event)"
+								  click="Icdcode_clickHandler(event, 1)"
+								  prompt="Description"/>
+		<s:Button id="id_Add" label="+" click="addRecordClickHandler(event)" toolTip="Add" useHandCursor="true" buttonMode="true"
+				  skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.superBillAddButton"/>
+	</s:HGroup>
+	
+	<s:Group width="100%" >
+		<components1:LabelDataGrid id="id_DiagnisisGrid" width="100%" height="70"  editable="false"
+								  itemEditBegin="diagnosisItemEditBeginHandler(event)" itemEditEnd="diagnosisItemEditHandler(event)"		 
+								  verticalScrollPolicy="auto"  horizontalScrollPolicy="off"
+								  maxHeight="150" variableRowHeight="true"		
+								  resizableColumns="false"
+								  dataProvider="{model.CurrentDiagnosis}"
+								  columnWidths="{['30%','80','20%']}"								  
+								  >
+			<components:columns>				
+				<mx:DataGridColumn headerText="ICD" dataField="ICDCodeName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editorDataField="editorText"  >
+					<mx:itemEditor>
+						<fx:Component>
+							<common:ComboBoxEditor dataProvider="{outerDocument.model.ICDCodeTypeList}" labelField="ICDCodeName" />				  
+						</fx:Component>
+					</mx:itemEditor>
+				</mx:DataGridColumn>								   
+				<mx:DataGridColumn headerText="Description" dataField="ICDCodeDescription"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editorDataField="editorText" >
+					<mx:itemEditor>
+						<fx:Component>
+							<common:ComboBoxEditor dataProvider="{outerDocument.model.ICDCodeTypeList}" labelField="ICDCodeDescription" width="50" />												   
+						</fx:Component>
+					</mx:itemEditor>
+				</mx:DataGridColumn>					
+				<itemEditors:DataGridColumnDel headerText="" editable="false" itemRenderer="com.gazuntite.provider.live.services.billing.view.common.itemEditors.EditDeleteItemRender"/>
+			</components:columns>
+			
+		</components1:LabelDataGrid>
+	</s:Group>
+</components1:CollapsiblePanel>

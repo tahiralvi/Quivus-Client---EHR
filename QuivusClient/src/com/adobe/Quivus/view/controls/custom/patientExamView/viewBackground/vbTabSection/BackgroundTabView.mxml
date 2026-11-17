@@ -1,0 +1,1191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:vbPMH="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbPMH.*" 
+		 xmlns:vbPhysical="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbPhysical.*" 
+		 xmlns:vbAssessment="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbAssessment.*" 
+		 xmlns:DropdownList="com.gazuntite.controls.extended.components.DropdownList.*"
+		 creationComplete="group1_creationCompleteHandler(event)">
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="right" gap="-3"/>
+	</s:layout>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBBGNavSkin;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBBGSkin;
+			import com.adobe.Quivus.view.events.SelectSection;
+			
+			import mx.events.FlexEvent;
+			
+			
+			public var medicalHXArrayCollection:ArrayCollection = new ArrayCollection();
+			public function medicalHXArray ():void
+			{
+				//medicalHXArrayCollection = new ArrayCollection(model.familyHistoryDTOListByVisit.source.concat(model.medicalHistoryDTOListByPatient.source));
+				
+				//return result;
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				id_VBViews.selectedIndex = 1;
+			}
+			
+			public function gotoSummaryView(event:MouseEvent):void
+			{
+				id_VBViews.selectedIndex = 0;
+				if( event )
+					event.stopImmediatePropagation();
+			}
+			
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_PMHView.id_VBAlergiesGridPanel.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, gotoSummaryView);
+				id_PMHView.id_medicalHX.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, gotoSummaryView);
+				//id_PMHView.id_history.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, gotoSummaryView);
+				id_PMHView.id_medication.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, gotoSummaryView);
+				id_PMHView.id_VBImGridP.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, gotoSummaryView);
+				
+				id_PMHView.id_VBVitalsGridPanel.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, gotoSummaryView);
+				id_PMHView.id_hpi.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, gotoSummaryView);
+				id_PMHView.id_ros.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, gotoSummaryView);
+				id_PMHView.id_physical.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, gotoSummaryView);
+				id_PMHView.id_lab.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, gotoSummaryView);
+				
+				id_PMHView.id_VBDiagnosisGridPanel.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, gotoSummaryView);
+				
+				id_PMHView.id_prescription.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, gotoSummaryView);
+				id_PMHView.id_treatment.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, gotoSummaryView);
+				id_PMHView.id_plan.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, gotoSummaryView);
+				
+				id_PMHView.id_followUp.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, gotoSummaryView);
+				
+				medicalHXArray();
+			}
+			
+			protected function id_PMHView_selectSectionHandler(event:SelectSection):void
+			{
+				var sectionId:String = event.SectionID;
+				
+				switch( sectionId )
+				{
+					case "id_allergiesBtn":
+						showAllergiesPanel();
+						break;
+					case "id_medicalHXBtn":	
+					case "id_historyBtn":	
+						showMedicalHXPanel();						
+						//showSocialHistoryPanel();						
+						break;
+					case "id_medicationBtn":	
+						showMedicationPanel();
+						break;
+					case "id_immunizationBtn":	
+						showImmunizationPanel();						
+						break;
+					case "id_vitalsBtn":	
+						showVitalsPanel();						
+						break;
+					case "id_hpiBtn":	
+						showHpiPanel();						
+						break;
+					case "id_rosBtn":	
+						showROSPanel();
+						break;
+					case "id_physicalBtn":	
+						showPhysicalPanel();
+						break;
+					case "id_labBtn":	
+						showLabPanel();
+						break;
+					case "id_diagnosisBtn":	
+						showDiagnosisPanel();
+						break;
+					case "id_prescriptionBtn":	
+						showPrescriptionPanel();
+						break;
+					case "id_treatmentBtn":	
+						showTreatmentPanel();
+						break;
+					case "id_planBtn":	
+						showPlanPanel();
+						break;
+					case "id_followUpBtn":	
+						showFollowUpPanel();
+						break;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.common.event.LoadPatientMedEvent;
+			import com.gazuntite.common.dto.AllergDTO;
+			import com.gazuntite.common.event.QSAllergyEvent;
+			import mx.controls.Alert;
+			import com.gazuntite.provider.eprescription.services.patient.model.EPrescriptionModelLocator;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.events.viewBackground.summary.LoadSummaryEvent;
+			import com.adobe.Quivus.events.viewBackground.lab.LoadPatientLabsByPatientIdEvent;
+			import com.adobe.Quivus.events.viewBackground.comprehensiveHistory.LoadSocialHistoryByPatientIdEvent;
+			import com.adobe.Quivus.events.viewBackground.followUp.LoadPatientFollowUpByPatientIdEvent;
+			import com.adobe.Quivus.events.viewBackground.recommendation.LoadPatientRecommendationByPatientIdEvent;
+			import com.adobe.Quivus.events.viewBackground.procedure.LoadPatientProcedureByPatientIdEvent;
+			import com.adobe.Quivus.events.viewBackground.prescription.LoadPrescriptionMedicationByPatientPrescriptionIdEvent;
+			import com.adobe.Quivus.events.viewBackground.diagnosis.LoadPatientDiagnosisResolvedByPatientIdEvent;
+			import com.adobe.Quivus.events.viewBackground.diagnosis.LoadPatientDiagnosisChronicByPatientIdEvent;
+			import com.adobe.Quivus.events.viewBackground.diagnosis.LoadPatientDiagnosisAcuteByPatientIdEvent;
+			import com.adobe.Quivus.events.viewBackground.immunization.LoadPatientImmunizationEvent;
+			import com.adobe.Quivus.events.viewBackground.prescription.LoadPatientPrescriptionByPatientIdEvent;
+			import com.adobe.Quivus.events.viewBackground.comprehensiveHistory.LoadFamilyHistoryByPatientIdEvent;
+			import com.adobe.Quivus.events.viewBackground.comprehensiveHistory.LoadMedicalHistoryByPatientIdEvent;
+			import com.adobe.Quivus.events.viewBackground.allergy.LoadPatientAllergyByPatientIdEvent;
+			import com.adobe.Quivus.events.viewBackground.lab.LoadPatientInHouseLabsByPatientIdEvent;
+			import com.adobe.Quivus.events.viewBackground.physical.LoadPatientPhysicalsByPatientIdEvent;
+			import com.adobe.Quivus.events.viewBackground.ros.LoadPatientROSByPatientIdEvent;
+			import com.adobe.Quivus.events.viewBackground.hpi.LoadPatientHPIByPatientIdEvent;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.Quivus.events.viewBackground.vital.LoadPatientVitalsByPatientIdEvent;
+			import valueObjects.PageDTO;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.paging.PagingAndFilterWindow;
+			import com.gazuntite.utils.UtilityFunctions;
+			import mx.collections.Sort;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.renderer.LocationMultiSelectItemRenderer;
+			import com.adobe.Quivus.view.controls.skins.comboBoxSkins.LocationMultiSelectionDropDownListSkin;
+			
+			private var m_acLocationDataProvider:ArrayCollection ;
+			
+			[Bindable]
+			public function get LocationDataProvider():ArrayCollection
+			{
+				return m_acLocationDataProvider;
+			}
+			
+			public function set LocationDataProvider(value:ArrayCollection):void
+			{
+				if( null == m_acLocationDataProvider )
+					m_acLocationDataProvider = value;
+				else
+					if( m_acLocationDataProvider.length != value.length )
+						m_acLocationDataProvider = value;
+			}
+			
+			
+			import valueObjects.StationDTO;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QuivusCombineEventDispatcher;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.IndexChangedEvent;
+			import mx.formatters.DateFormatter;
+			
+			import spark.events.IndexChangeEvent;
+			
+			import valueObjects.PatientEncounterDTO;
+			
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			[Bindable]
+			private var modelep : EPrescriptionModelLocator = EPrescriptionModelLocator.getInstance();
+			
+			
+			
+			public function displayVisitDate(item:Object):String
+			{
+				//H
+				
+				var vd:Date = (item as PatientEncounterDTO).VisitDate;
+				var formatDateTime:DateFormatter = new DateFormatter();
+				var visitDate:String = formatDateTime.format(vd.toDateString());					
+				
+				return String(visitDate); 
+				
+			}
+			
+			
+			
+			private function launchFilterEvent():void
+			{
+				var eve:MouseEvent = new MouseEvent(MouseEvent.CLICK);
+				
+				//################# PMH  ###################################################
+				id_PMHView.id_VBImGridP.id_immGridView.id_applyFiler.dispatchEvent(eve);
+				
+				id_PMHView.id_VBAlergiesGridPanel.id_applyFiler.dispatchEvent(eve);
+				
+				id_PMHView.id_medication.id_applyFiler.dispatchEvent(eve);
+				
+				/* 			if( id_PMHView.id_history.id_contents.id_fam )
+				id_PMHView.id_history.id_contents.id_fam.id_applyFiler.dispatchEvent(eve);
+				if( id_PMHView.id_history.id_contents.id_gen )
+				id_PMHView.id_history.id_contents.id_gen.id_applyFiler.dispatchEvent(eve);
+				if( id_PMHView.id_history.id_contents.id_sol )
+				id_PMHView.id_history.id_contents.id_sol.id_applyFiler.dispatchEvent(eve); */
+				//##########################################################################
+				
+				
+				//################# PHYSICAL################################################
+				//if(id_physicalView!=null)
+				{
+					id_PMHView.id_ros.id_applyFiler.dispatchEvent(eve);
+					id_PMHView.id_physical.id_applyFiler.dispatchEvent(eve);
+					id_PMHView.id_VBVitalsGridPanel.id_applyFiler.dispatchEvent(eve);
+					
+					if( id_PMHView.id_lab.id_labIn )
+						id_PMHView.id_lab.id_labIn.id_applyFiler.dispatchEvent(eve);
+					if( id_PMHView.id_lab.id_labOut )
+						id_PMHView.id_lab.id_labOut.id_applyFiler.dispatchEvent(eve);
+					
+					id_PMHView.id_hpi.id_applyFiler.dispatchEvent(eve); 
+				}
+				//##########################################################################
+				
+				
+				//################# ASSESMENT ###############################################
+				//if(id_assesment!=null)
+				{
+					id_PMHView.id_VBDiagnosisGridPanel.id_applyFiler.dispatchEvent(eve);
+					
+					/*  if( id_PMHView.id_plan.id_followup )
+					id_PMHView.id_plan.id_followup.id_applyFiler.dispatchEvent(eve); */
+					if( id_PMHView.id_plan.id_recomm )
+						id_PMHView.id_plan.id_recomm.id_applyFiler.dispatchEvent(eve);
+					
+					if( id_PMHView.id_treatment.id_procedure )
+						id_PMHView.id_treatment.id_procedure.id_applyFiler.dispatchEvent(eve);
+					/*  if( id_PMHView.id_treatment.id_prescription )
+					id_PMHView.id_treatment.id_prescription.id_applyFiler.dispatchEvent(eve);  */
+				}
+				//##########################################################################
+				
+				
+				//################# PHYSICAL################################################
+				/* if(id_physicalView!=null)
+				{
+				id_physicalView.id_ros.id_applyFiler.dispatchEvent(eve);
+				id_physicalView.id_physical.id_applyFiler.dispatchEvent(eve);
+				id_physicalView.id_VBVitalsGridPanel.id_applyFiler.dispatchEvent(eve);
+				
+				if( id_physicalView.id_lab.id_labIn )
+				id_physicalView.id_lab.id_labIn.id_applyFiler.dispatchEvent(eve);
+				if( id_physicalView.id_lab.id_labOut )
+				id_physicalView.id_lab.id_labOut.id_applyFiler.dispatchEvent(eve);
+				
+				id_physicalView.id_hpi.id_applyFiler.dispatchEvent(eve); 
+				}
+				//##########################################################################
+				
+				
+				//################# ASSESMENT ###############################################
+				if(id_assesment!=null)
+				{
+				id_assesment.id_VBDiagnosisGridPanel.id_applyFiler.dispatchEvent(eve);
+				
+				if( id_assesment.id_plan.id_followup )
+				id_assesment.id_plan.id_followup.id_applyFiler.dispatchEvent(eve);
+				if( id_assesment.id_plan.id_recomm )
+				id_assesment.id_plan.id_recomm.id_applyFiler.dispatchEvent(eve);
+				
+				if( id_assesment.id_treatment.id_procedure )
+				id_assesment.id_treatment.id_procedure.id_applyFiler.dispatchEvent(eve);
+				if( id_assesment.id_treatment.id_prescription )
+				id_assesment.id_treatment.id_prescription.id_applyFiler.dispatchEvent(eve); 
+				} */
+				//##########################################################################
+				
+			}
+			
+			
+			protected function id_VBViews_changeHandler(event:IndexChangedEvent):void
+			{
+				switch(event.oldIndex)
+				{
+					case 0:
+						QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.VB_COMPREHENSIVE_HISTORY);
+						QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.VB_IMMUNIZATION);
+						break;
+					
+					case 1:
+						QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.VB_HPI_CC);
+						QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.VB_ROS);
+						QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.VB_PHYSICAL);
+						QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.VB_IN_HOUSE_LAB);
+						break;
+					
+					case 2:
+						QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.VB_DIAGNOSIS);
+						QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.VB_PROCEDURE);
+						QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.VB_LAB_OUT);
+						QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.VB_RECOMMENDATION);
+						QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.VB_FOLLOW_UP_INSTRUCTIONS);
+						break;
+				}
+			}
+			
+			
+			
+			public function showAllergiesPanel():void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.VB_ALLERGIES ) )//Tahir Alvi - implement security check
+				{
+					//checkDefaultFilterAndCall( setAllergiesPagingAndFiltering );
+					loadAllAllergires();
+					id_PMHView.currentIndex = 1;
+					id_PMHView.SelectNextByIndex();
+					id_VBViews.selectedIndex = 1;
+				}
+			}
+			
+			public function showMedicalHXPanel():void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.VB_COMPREHENSIVE_HISTORY ) )//Tahir Alvi - implement security check
+				{
+					checkDefaultFilterAndCall( setMedicalHXPagingAndFiltering );
+					id_PMHView.currentIndex = 2;
+					id_PMHView.SelectNextByIndex();
+					id_VBViews.selectedIndex = 1;
+				}
+			}
+			
+			public function showMedicationPanel():void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.VB_CHRONIC_MEDICATION ) )//Tahir Alvi - implement security check
+				{
+					//checkDefaultFilterAndCall( setMedicationPagingAndFiltering );
+					loadPrescriptionMedication();
+					id_PMHView.currentIndex = 4;
+					id_PMHView.SelectNextByIndex();
+					id_VBViews.selectedIndex = 1;
+				}
+			}
+			
+			public function showImmunizationPanel():void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.VB_IMMUNIZATION ) )//Tahir Alvi - implement security check
+				{
+					checkDefaultFilterAndCall( setImmunizationPagingAndFiltering );
+					id_PMHView.currentIndex = 5;
+					id_PMHView.SelectNextByIndex();
+					id_VBViews.selectedIndex = 1;
+				}
+			}
+			public function showVitalsPanel():void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.VB_VITALS ) )//Tahir Alvi - implement security check
+				{
+					checkDefaultFilterAndCall( setVitalPagingAndFiltering );
+					
+					id_PMHView.currentIndex = 6;
+					id_PMHView.SelectNextByIndex();
+					id_VBViews.selectedIndex = 1;
+				}
+			}
+			public function showHpiPanel():void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.VB_CCHPI ) )//Tahir Alvi - implement security check
+				{
+					checkDefaultFilterAndCall( setHPIPagingAndFiltering );
+					id_PMHView.currentIndex = 7;
+					id_PMHView.SelectNextByIndex();
+					id_VBViews.selectedIndex = 1;
+				}
+			}
+			public function showROSPanel():void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.VB_ROS ) )//Tahir Alvi - implement security check
+				{
+					checkDefaultFilterAndCall( setROSPagingAndFiltering );
+					id_PMHView.currentIndex = 8;
+					id_PMHView.SelectNextByIndex();
+					id_VBViews.selectedIndex = 1;
+				}
+			}
+			public function showPhysicalPanel():void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.VB_PHYSICAL ) )//Tahir Alvi - implement security check
+				{
+					checkDefaultFilterAndCall( setPhysicalPagingAndFiltering );
+					id_PMHView.currentIndex = 9;
+					id_PMHView.SelectNextByIndex();
+					id_VBViews.selectedIndex = 1;
+				}
+			}
+			public function showLabPanel():void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.VB_LAB ) )//Tahir Alvi - implement security check
+				{
+					checkDefaultFilterAndCall( setLabInPagingAndFiltering );
+					id_PMHView.currentIndex = 10;
+					id_PMHView.SelectNextByIndex();
+					id_VBViews.selectedIndex = 1;
+				}
+			}
+			public function showDiagnosisPanel():void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.VB_DIAGNOSIS ) )//Tahir Alvi - implement security check
+				{
+					checkDefaultFilterAndCall( setDignosisPagingAndFiltering );
+					id_PMHView.currentIndex = 11;
+					id_PMHView.SelectNextByIndex();
+					id_VBViews.selectedIndex = 1;
+				}
+			}
+			public function showPrescriptionPanel():void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.VB_PRESCRIPTION ) )//Tahir Alvi - implement security check
+				{
+					//checkDefaultFilterAndCall( setPrescriptionPagingAndFiltering );
+					loadPrescriptionMedication();
+					id_PMHView.currentIndex = 12;
+					id_PMHView.SelectNextByIndex();
+					id_VBViews.selectedIndex = 1;
+				}
+			}
+			public function showTreatmentPanel():void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.VB_PROCEDURES ) )//Tahir Alvi - implement security check
+				{
+					checkDefaultFilterAndCall( setTreatmentPagingAndFiltering );
+					id_PMHView.currentIndex = 13;
+					id_PMHView.SelectNextByIndex();
+					id_VBViews.selectedIndex = 1;
+				}
+			}
+			
+			public function showPlanPanel():void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.VB_RECOMMENDATION ) )//Tahir Alvi - implement security check
+				{
+					checkDefaultFilterAndCall( setPlanPagingAndFiltering );
+					id_PMHView.currentIndex = 14;
+					id_PMHView.SelectNextByIndex();
+					id_VBViews.selectedIndex = 1;
+				}
+			}
+			public function showFollowUpPanel():void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.VB_FOLLOW_UP ) )//Tahir Alvi - implement security check
+				{
+					checkDefaultFilterAndCall( setFollowUpPagingAndFiltering );
+					id_PMHView.currentIndex = 15;
+					id_PMHView.SelectNextByIndex();
+					id_VBViews.selectedIndex = 1;
+				}
+			}
+			
+			///////////////////////////////////////////////////////////////////////////////////
+			///////////////////// Start No Filter Sections ///////////////////////////////////
+			/////////////////////////////////////////////////////////////////////////////////
+			private function setAllergiesPagingAndFiltering():void
+			{
+				if( UtilityFunctions.IsNullOrEmpty( model.allergyCurrentPageByPatient ) )
+					model.allergyCurrentPageByPatient = new PageDTO();
+				
+				var page:PageDTO 		= model.allergyCurrentPageByPatient;
+				page.pageNumber 		= 1;
+				
+				QSUtilityFunctions.setNoPagingAndFiltering( page );
+				
+				var lpaEvent : LoadPatientAllergyByPatientIdEvent = new LoadPatientAllergyByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpaEvent );
+			}
+			
+			private function setMedicalHXPagingAndFiltering():void
+			{
+				if( UtilityFunctions.IsNullOrEmpty( model.medicalHistoryCurrentPageByPatient ) )
+					model.medicalHistoryCurrentPageByPatient = new PageDTO();
+				
+				var page:PageDTO 		= model.medicalHistoryCurrentPageByPatient;
+				page.pageNumber 		= 1;
+				
+				QSUtilityFunctions.setNoPagingAndFiltering( page );
+				
+				var lmhbpEvent: LoadMedicalHistoryByPatientIdEvent = new LoadMedicalHistoryByPatientIdEvent( ); 
+				CairngormEventDispatcher.getInstance().dispatchEvent( lmhbpEvent );
+				
+				////////     familyHistory      ///////////
+				setFamilyHistoryPagingAndFiltering();
+				////////     SocialHistory      ///////////
+				setSocialHistoryPagingAndFiltering();
+			}
+			
+			private function setFamilyHistoryPagingAndFiltering():void
+			{
+				if( UtilityFunctions.IsNullOrEmpty( model.familyHistoryCurrentPageByPatient ) )
+					model.familyHistoryCurrentPageByPatient = new PageDTO();
+				
+				var page:PageDTO 		= model.familyHistoryCurrentPageByPatient;
+				page.pageNumber 		= 1;
+				
+				QSUtilityFunctions.setNoPagingAndFiltering( page );
+				
+				var lhvbpEvent: LoadFamilyHistoryByPatientIdEvent = new LoadFamilyHistoryByPatientIdEvent( ); 
+				CairngormEventDispatcher.getInstance().dispatchEvent( lhvbpEvent );
+				
+			}
+			
+			private function setSocialHistoryPagingAndFiltering():void
+			{
+				if( UtilityFunctions.IsNullOrEmpty( model.socialHistoryCurrentPageByPatient ) )
+					model.socialHistoryCurrentPageByPatient = new PageDTO();
+				
+				var page:PageDTO 		= model.socialHistoryCurrentPageByPatient;
+				page.pageNumber 		= 1;
+				
+				QSUtilityFunctions.setNoPagingAndFiltering( page );
+				
+				var lhvbpEvent: LoadSocialHistoryByPatientIdEvent = new LoadSocialHistoryByPatientIdEvent( ); 
+				CairngormEventDispatcher.getInstance().dispatchEvent( lhvbpEvent );
+			}
+			
+			private function setImmunizationPagingAndFiltering():void
+			{
+				if( UtilityFunctions.IsNullOrEmpty( model.immunizationCurrentPageByPatient ) )
+					model.immunizationCurrentPageByPatient = new PageDTO();
+				
+				var page:PageDTO 		= model.immunizationCurrentPageByPatient;
+				page.pageNumber 		= 1;
+				
+				QSUtilityFunctions.setNoPagingAndFiltering( page );
+				
+				var lpviEvent: LoadPatientImmunizationEvent = new LoadPatientImmunizationEvent( model.loadedPatientId ); 
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpviEvent );
+			}
+			
+			private function setDignosisPagingAndFiltering():void
+			{
+				/////////////   Acute   ////////////////
+				if( UtilityFunctions.IsNullOrEmpty( model.DiagnosisAcuteCurrentPageByPatient ) )
+					model.DiagnosisAcuteCurrentPageByPatient = new PageDTO();
+				
+				var page:PageDTO 		= model.DiagnosisAcuteCurrentPageByPatient;
+				page.pageNumber 		= 1;
+				
+				QSUtilityFunctions.setNoPagingAndFiltering( page );
+				
+				var ae:LoadPatientDiagnosisAcuteByPatientIdEvent = new LoadPatientDiagnosisAcuteByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( ae );
+				
+				/////////////   Chronic   ////////////////
+				if( UtilityFunctions.IsNullOrEmpty( model.DiagnosisChronicCurrentPageByPatient ) )
+					model.DiagnosisChronicCurrentPageByPatient = new PageDTO();
+				
+				var page:PageDTO 		= model.DiagnosisChronicCurrentPageByPatient;
+				page.pageNumber 		= 1;
+				
+				QSUtilityFunctions.setNoPagingAndFiltering( page );
+				
+				var ce:LoadPatientDiagnosisChronicByPatientIdEvent = new LoadPatientDiagnosisChronicByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( ce );
+				
+				///////////////////   Resolved  ////////////////////
+				if( UtilityFunctions.IsNullOrEmpty( model.DiagnosisResolvedCurrentPageByPatient ) )
+					model.DiagnosisResolvedCurrentPageByPatient = new PageDTO();
+				
+				var page:PageDTO 		= model.DiagnosisResolvedCurrentPageByPatient;
+				page.pageNumber 		= 1;
+				
+				QSUtilityFunctions.setNoPagingAndFiltering( page );
+				
+				var re:LoadPatientDiagnosisResolvedByPatientIdEvent = new LoadPatientDiagnosisResolvedByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( re );
+			}
+			
+			private function setPrescriptionPagingAndFiltering():void
+			{
+				if( UtilityFunctions.IsNullOrEmpty( model.prescriptionCurrentPageByPatient ) )
+					model.prescriptionCurrentPageByPatient = new PageDTO();
+				
+				var page:PageDTO 		= model.prescriptionCurrentPageByPatient;
+				page.pageNumber 		= 1;
+				
+				QSUtilityFunctions.setNoPagingAndFiltering( page );
+				
+				var lp: LoadPrescriptionMedicationByPatientPrescriptionIdEvent = new LoadPrescriptionMedicationByPatientPrescriptionIdEvent(); 
+				CairngormEventDispatcher.getInstance().dispatchEvent( lp );
+			}
+			
+			///////////////////////////////////////////////////////////////////////////////////
+			///////////////////// End No Filter Sections /////////////////////////////////////
+			/////////////////////////////////////////////////////////////////////////////////
+			
+			
+			private function setMedicationPagingAndFiltering():void
+			{
+				model.medicationCurrentPageByPatient = getNewPageDTOWithDefaultValues();
+				
+				
+				var lppbpEvent : LoadPatientPrescriptionByPatientIdEvent = new LoadPatientPrescriptionByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lppbpEvent ); 
+			}
+			
+			private function setVitalPagingAndFiltering():void
+			{
+				model.vitalCurrentPageByPatient = getNewPageDTOWithDefaultValues();
+				
+				
+				var lpv:LoadPatientVitalsByPatientIdEvent = new LoadPatientVitalsByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpv ); 
+			}
+			
+			private function setHPIPagingAndFiltering():void
+			{
+				model.HPI_CCCurrentPageByPatient = getNewPageDTOWithDefaultValues();
+				
+				
+				var lphpicc:LoadPatientHPIByPatientIdEvent = new LoadPatientHPIByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lphpicc );
+			}
+			
+			private function setROSPagingAndFiltering():void
+			{
+				model.rosCurrentPageByPatient = getNewPageDTOWithDefaultValues();
+				
+				
+				var lpros:LoadPatientROSByPatientIdEvent = new LoadPatientROSByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpros );
+			}
+			
+			private function setPhysicalPagingAndFiltering():void
+			{
+				model.physicalsCurrentPageByPatient = getNewPageDTOWithDefaultValues();
+				
+				
+				var lpp:LoadPatientPhysicalsByPatientIdEvent = new LoadPatientPhysicalsByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpp );
+			}
+			
+			private function setLabInPagingAndFiltering():void
+			{
+				model.inHouseLabCurrentPageByPatient = getNewPageDTOWithDefaultValues();
+				
+				
+				var lpihl:LoadPatientInHouseLabsByPatientIdEvent = new LoadPatientInHouseLabsByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpihl );
+				
+				////////     Lab Out      ///////////
+				setLabOutPagingAndFiltering()
+			}
+			
+			private function setLabOutPagingAndFiltering():void
+			{
+				model.LabOutCurrentPageByPatient = getNewPageDTOWithDefaultValues();
+				
+				
+				var lpihl:LoadPatientLabsByPatientIdEvent = new LoadPatientLabsByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpihl );
+			}
+			
+			private function setTreatmentPagingAndFiltering():void
+			{
+				model.patientProcedureCurrentPageByPatient = getNewPageDTOWithDefaultValues();
+				
+				
+				
+				var lpviEvent: LoadPatientProcedureByPatientIdEvent = new LoadPatientProcedureByPatientIdEvent(); 
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpviEvent );
+			}
+			
+			
+			private function setPlanPagingAndFiltering():void
+			{
+				model.patientRecommendationCurrentPageByPatient = getNewPageDTOWithDefaultValues();
+				
+				
+				var lpviEvent: LoadPatientRecommendationByPatientIdEvent = new LoadPatientRecommendationByPatientIdEvent(); 
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpviEvent );
+			}
+			
+			private function setFollowUpPagingAndFiltering():void
+			{
+				model.patientFollowupCurrentPageByPatient = getNewPageDTOWithDefaultValues();
+				
+				
+				var lpviEvent: LoadPatientFollowUpByPatientIdEvent = new LoadPatientFollowUpByPatientIdEvent(); 
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpviEvent );
+			}
+			
+			private function getNewPageDTOWithDefaultValues():PageDTO
+			{
+				var page:PageDTO 		= new PageDTO();
+				page.pageNumber 		= 1;
+				
+				QSUtilityFunctions.setDefaultValues( page );
+				
+				return page;
+			}
+			
+			private function checkDefaultFilterAndCall( callBack:Function ):void
+			{
+				if( isNullOrEmptyPage( model.defaultFilterAndPaging ) )
+				{
+					var page:PageDTO = model.defaultFilterAndPaging = new PageDTO();
+					page.fromDate 			= Constants.NULL_DATE;
+					page.toDate 			= Constants.NULL_DATE;
+					page.pageSize 			= 10;
+					page.LastVisitNumber 	= 4;
+				}
+				
+				callBack();
+				/* if( isNullOrEmptyPage( model.defaultFilterAndPaging ) )
+				{
+				model.defaultFilterAndPaging = new PageDTO();
+				var pfWin:PagingAndFilterWindow = new PagingAndFilterWindow();
+				pfWin.Page = model.defaultFilterAndPaging;
+				pfWin.Page.fromDate 		= Constants.NULL_DATE;
+				pfWin.Page.toDate 			= Constants.NULL_DATE;
+				pfWin.Page.pageSize 		= 200;
+				pfWin.Page.LastVisitNumber 	= 4;
+				pfWin.ShowPopup( this );
+				pfWin.addEventListener( Event.CLOSE, function(event:Event):void
+				{
+				callBack();
+				});
+				
+				var point:Point = new Point(id_PMHView.id_VBVitalsGridPanel.x, id_PMHView.id_VBVitalsGridPanel.y);
+				point = id_PMHView.id_VBVitalsGridPanel.localToGlobal( point );
+				
+				pfWin.move( point.x + width - pfWin.width / 2 , point.y + 15 );
+				}
+				else
+				{
+				callBack();
+				} */
+			}
+			
+			private function isNullOrEmptyPage(Page:PageDTO):Boolean
+			{
+				var retValue:Boolean;
+				if( UtilityFunctions.IsNullOrEmpty( Page ) )
+				{
+					retValue = true;
+				}
+				else
+				{
+					if( UtilityFunctions.IsNullOrEmpty( Page.pageSize ) )
+					{
+						retValue = true;
+					}
+					else 
+					{
+						if( ! isValidVisitRangeProvided(Page) && ! isValidDateRangeProvided(Page))
+						{
+							retValue = true;
+						}
+					}
+					
+				}
+				
+				return retValue;
+			}
+			
+			private function isValidDateRangeProvided(Page:PageDTO):Boolean
+			{
+				if( UtilityFunctions.IsNullOrEmpty( Page.fromDate ) || UtilityFunctions.IsNullOrEmpty( Page.toDate ) )
+				{
+					return false;
+				}
+				
+				return true;
+			}
+			
+			private function isValidVisitRangeProvided(Page:PageDTO):Boolean
+			{
+				if( UtilityFunctions.IsNullOrEmpty( Page.LastVisitNumber ) )
+				{
+					return false;
+				}
+				
+				return true;
+			}
+			
+			private function getFollowUpLabel(item:Object):String
+			{
+				var index:int = model.patientFollowupInstructionDTOListByPatient.getItemIndex(item);
+				var lbl:String;
+				if(index == 0)
+				{
+					lbl = "Upcoming";
+				}
+				else
+				{
+					lbl = "Next";
+				}
+				
+				return lbl;
+				
+				//model.patientFollowupInstructionDTOListByPatient.sort = new Sort()
+				
+			}
+			
+			private function getFollowUpSortedList():void
+			{
+				var sort:Sort = new Sort();
+				sort.compareFunction = sortFunction;
+				model.patientFollowupInstructionDTOListByPatient.sort = sort;
+				model.patientFollowupInstructionDTOListByPatient.refresh();
+			}
+			private function sortFunction(a:Object, b:Object, array:Array = null):int
+			{
+				if(a.dateUTC == b.dateUTC)
+					//throw new Error("Invalid value for criticality ");
+					return 0;
+				/* if(aLevel == bLevel)
+				return 0; */				
+				if(a.dateUTC > b.dateUTC)
+					return 1;
+				
+				return -1;
+			}
+			
+			private var _diagnosisCollection:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			public function get diagnosisCollection():ArrayCollection
+			{
+				return _diagnosisCollection;	
+			}
+			
+			public function set diagnosisCollection(value:ArrayCollection):void
+			{
+				//_diagnosisCollection.addAll(value);
+				_diagnosisCollection.removeAll();
+				
+				if( model.patientDiagnosisDTOAcuteListByPatientId)
+					_diagnosisCollection.addAll(model.patientDiagnosisDTOAcuteListByPatientId);
+				if( model.patientDiagnosisDTOChronicListByPatientId)
+					_diagnosisCollection.addAll(model.patientDiagnosisDTOChronicListByPatientId);
+				if( model.patientDiagnosisDTOResolvedListByPatientId)
+					_diagnosisCollection.addAll(model.patientDiagnosisDTOResolvedListByPatientId);
+				
+			}
+			
+			public function InitComponent():void
+			{
+				gotoSummaryView( null );
+				model.defaultFilterAndPaging = null;
+				model.summary = new SummaryViewXMLCollection( new XML() );
+			}
+			
+			public function ReloadLoadSummaryView():void
+			{
+				var evt:LoadSummaryEvent = new LoadSummaryEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( evt );
+			}
+			///Tahir Alvi (13-09-2012)- for updated records on every tab openning*******************
+			private function loadAllAllergires():void
+			{
+				if(model.QIAllergyDTOList){
+					model.QIAllergyDTOList.removeAll();
+				}
+				
+				if(model.gaxenID.length > 0 && model.gaxenID != "" && model.gaxenID != "0")
+				{
+					model.ThirdSectionLabel = '';
+					var alEvent : QSAllergyEvent = new QSAllergyEvent(2, model.gaxenID, callBackAllergy);
+					CairngormEventDispatcher.getInstance().dispatchEvent( alEvent ); 
+				}
+				dispatchEvent(new Event('UpdateAllergEvent', true, true));
+			}
+			// call back allergy 
+			private function callBackAllergy(arrAllergy:ArrayCollection):void
+			{
+				if(model.QIAllergyDTOList)
+					model.QIAllergyDTOList.removeAll();
+				else
+					model.QIAllergyDTOList = new ArrayCollection();
+				
+				model.QIAllergyDTOList.addAll(arrAllergy);
+				
+				if(model.QIAllergyDTOList.length > 0)
+				{					
+					var allergyDto:AllergDTO = new AllergDTO();
+					allergyDto			= model.QIAllergyDTOList.getItemAt(0) as AllergDTO;
+					//Tahir Alvi - Set Third Section data && NKDA LAbel Flag
+					
+					if(!allergyDto.isNKDA)
+					{
+						model.ThirdSectionLabel = allergyDto.AllergyName;
+						model.AllergyNKDAFlag 	= false;
+					}
+					else if(allergyDto.isNKDA)
+					{
+						model.ThirdSectionLabel = 'No Known Drug Allergies';
+						model.AllergyNKDAFlag 	= true;
+					}
+				}				
+			}
+			private function loadPrescriptionMedication():void
+			{
+				var securityHeaderXML:XML;
+				securityHeaderXML	 			= <Header />;					
+				securityHeaderXML.@EUserName	= "TESTUSER";
+				securityHeaderXML.@EPassword	= "TESTPASS";
+				securityHeaderXML.@ClinicID		= "sad";
+				
+				if(model.gaxenID.length > 0 && model.gaxenID != "" && model.gaxenID != "0")
+				{
+					var loadPatientPrescriptionEvent: LoadPatientMedEvent = new LoadPatientMedEvent("0", model.gaxenID, PrescriptionLoaded);				
+					loadPatientPrescriptionEvent.data = securityHeaderXML; 				
+					CairngormEventDispatcher.getInstance().dispatchEvent(loadPatientPrescriptionEvent);
+				}
+				
+			}
+						
+			public function PrescriptionLoaded(patientMedAC:ArrayCollection, patientChronicMedAC:ArrayCollection, patientMedAC_inactive:ArrayCollection, patientChronicMedAC_inactive:ArrayCollection):void
+			{
+				if(model.patientMedACList)
+					model.patientMedACList.removeAll();
+				else
+					model.patientMedACList = new ArrayCollection();
+				
+				if(model.patientMedAC_inactiveList)
+					model.patientMedAC_inactiveList.removeAll();
+				else
+					model.patientMedAC_inactiveList = new ArrayCollection();
+				
+				if(model.patientChronicMedAC_inactiveList)
+					model.patientChronicMedAC_inactiveList.removeAll();
+				else
+					model.patientChronicMedAC_inactiveList = new ArrayCollection();
+				
+				if(model.patientChronicMedACList)
+					model.patientChronicMedACList.removeAll();
+				else
+					model.patientChronicMedACList = new ArrayCollection();
+				
+				model.patientMedACList 						= patientMedAC;//prescription list
+				model.patientChronicMedACList 				= patientChronicMedAC;//medication list
+				model.patientMedAC_inactiveList			 	= patientMedAC_inactive;
+				model.patientChronicMedAC_inactiveList	 	= patientChronicMedAC_inactive;
+				
+				//For QI load
+				if(model.chMedicationDTOList)
+					model.chMedicationDTOList.removeAll();
+				else
+					model.chMedicationDTOList = new ArrayCollection();
+				
+				if(model.prescriptionDToList)
+					model.prescriptionDToList.removeAll();
+				else
+					model.prescriptionDToList = new ArrayCollection();
+				
+				model.chMedicationDTOList = patientChronicMedAC;
+				model.prescriptionDToList = patientMedAC;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Binding source="model.patientDiagnosisDTOAcuteListByPatientId" destination="diagnosisCollection"/>
+	<fx:Binding source="model.patientDiagnosisDTOChronicListByPatientId" destination="diagnosisCollection"/>
+	<fx:Binding source="model.patientDiagnosisDTOResolvedListByPatientId" destination="diagnosisCollection"/>
+	<fx:Declarations>
+		<s:ArrayCollection id="menu">
+			<fx:String>Select This Item Only</fx:String>
+			<fx:String>Item 1</fx:String>
+			<fx:String>Item 2</fx:String>
+			<fx:String>Item 3</fx:String>
+			<fx:String>Item 4</fx:String>
+			<fx:String>Item 5</fx:String>
+			<fx:String>Item 6</fx:String>
+			<fx:String>Item 7</fx:String>
+		</s:ArrayCollection>
+	</fx:Declarations>
+	<fx:Declarations>
+		<!--<s:Fade target="{id_sheetView}" id="fadeEffect" duration="600" alphaFrom="0" alphaTo="1" />-->		
+		<!--<s:Animate id="scaleEffectX" repeatCount="1" target="{id_summaryview}" duration="400" >
+		
+		<s:SimpleMotionPath property="scaleY" valueFrom="0" valueTo="1" />
+		
+		</s:Animate>-->
+	</fx:Declarations>
+	<fx:Binding source="model.userSelectedClinicBranchDTO.StationList" destination="LocationDataProvider" />
+	
+	<!--<s:HGroup width="100%" height="100%" horizontalAlign="left" verticalAlign="middle" >
+	<s:TabBar id="id_TabBar" dataProvider="{id_VBViews}" width="310" buttonMode="true" 				  
+	skinClass="com.adobe.Quivus.view.controls.skins.TabBarSkins.VBMainTabs"/>
+	
+	
+	
+	<mx:Spacer width="100%" />
+	
+	
+	
+	
+	</s:HGroup>-->
+	
+	
+	<!--	<s:Scroller id="id_Scroller" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off" maxHeight="440"  >
+	<s:Group>-->
+	
+	
+	<mx:ViewStack id="id_VBViews" height="100%" width="100%" minWidth="500" resizeToContent="true" creationPolicy="all" backgroundAlpha="0" contentBackgroundAlpha="0" >
+		<s:NavigatorContent height="100%"  >				
+			<s:layout>
+				<s:VerticalLayout gap="0" paddingTop="24"/>
+			</s:layout>
+			<s:SkinnableContainer width="100%"  height="450" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBBGSkin">
+				<s:layout>
+					<s:VerticalLayout gap="0" paddingLeft="3" paddingRight="3" paddingTop="5" paddingBottom="3"  />
+				</s:layout>
+				
+				
+				<s:HGroup width="100%" height="100%">
+					<s:VGroup id="id_vgrp" width="100%" gap="-2" horizontalAlign="center" height="100%" >
+						<s:Button id="id_allergiesBtn" buttonMode="true" width="{id_vgrp.width - 8}" label="Allergies" click="showAllergiesPanel()" 
+								  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBallergiesTAB"/>
+						<s:List width="100%" height="70" dataProvider="{model.QIAllergyDTOList}"
+								skinClass="com.adobe.Quivus.view.controls.skins.ListSkins.VBAllergiestListSkin"
+								itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.SummaryViewLists.VBAllergiesIR"/>
+					</s:VGroup>
+					
+					<s:VGroup width="100%" gap="-2" horizontalAlign="center" height="100%" >							
+						<s:Button buttonMode="true" width="{id_vgrp.width - 8}" label="Past Medical HX" click="showMedicalHXPanel()" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBMedicalHXTab"/>
+						<s:List width="100%" height="70" dataProvider="{model.summary.PastMedicalHistory}"
+								skinClass="com.adobe.Quivus.view.controls.skins.ListSkins.VBMedicalHXListSkin" horizontalScrollPolicy="off"
+								itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.SummaryViewLists.SummaryXmlIR"/>
+					</s:VGroup>
+					<!--dataProvider="{model.summary.PastMedicalHistory}"-->
+					<s:VGroup width="100%" gap="-2" horizontalAlign="center" height="100%" >							
+						<s:Button id="id_historyBtn" buttonMode="true" width="{id_vgrp.width - 8}" label="Social History" click="showMedicalHXPanel()" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBHistoryTab"/>
+						<s:List width="100%" height="70"  dataProvider="{model.summary.SocialHistory}" 
+								skinClass="com.adobe.Quivus.view.controls.skins.ListSkins.VBSocialHistoryListSkin"
+								itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.SummaryViewLists.SummaryXmlIR"/>
+					</s:VGroup>
+				</s:HGroup>
+				<s:HGroup width="100%" height="100%">						
+					<s:VGroup width="100%" gap="-2" horizontalAlign="center" height="100%" >							
+						<s:Button width="{id_vgrp.width - 8}" buttonMode="true" label="Chronic Medication" click="showMedicationPanel()" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBMedicationTab"/>
+						<s:List width="100%" height="70" id="id_chronicMedicationList" dataProvider="{model.patientChronicMedACList}"
+								skinClass="com.adobe.Quivus.view.controls.skins.ListSkins.VBMedicationListSkin"
+								itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.SummaryViewLists.VBMedicationIR"/>
+					</s:VGroup>
+					<s:VGroup width="100%" gap="-2" horizontalAlign="center" height="100%" >							
+						<s:Button buttonMode="true" width="{id_vgrp.width - 8}" label="Immunization" click="showImmunizationPanel()" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBImmunizationTab"/>
+						<s:List width="100%" height="70" dataProvider="{model.summary.Immunizations}" 
+								skinClass="com.adobe.Quivus.view.controls.skins.ListSkins.VBImmunizationListSkin"
+								itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.SummaryViewLists.SummaryXmlIR"/>
+					</s:VGroup>
+					
+					<s:VGroup width="100%" gap="-2" horizontalAlign="center" height="100%" >
+						
+						<s:Button buttonMode="true" width="{id_vgrp.width - 8}" label="Vitals" click="showVitalsPanel()" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBVitalsTab"/>
+						<s:List width="100%" height="70" dataProvider="{model.summary.Vitals}" 
+								skinClass="com.adobe.Quivus.view.controls.skins.ListSkins.VBVitalsListSkin"
+								itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.SummaryViewLists.VitalSummaryXmlIR"/>
+					</s:VGroup>
+					
+				</s:HGroup>
+				<s:HGroup width="100%" height="100%">
+					<s:VGroup  width="100%" gap="-2" horizontalAlign="center" height="100%" >							
+						<s:Button buttonMode="true" width="{id_vgrp.width - 8}" label="CC/HPI" click="showHpiPanel()" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBHpiTab"/>
+						<s:List width="100%" height="70"  dataProvider="{model.summary.CCHPI}" 
+								skinClass="com.adobe.Quivus.view.controls.skins.ListSkins.VBHpiListSkin"									
+								itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.SummaryViewLists.SummaryXmlIR"/>
+						<!--itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.SummaryViewLists.VBCCIR"-->
+					</s:VGroup>
+					<s:VGroup  width="100%" gap="-2" horizontalAlign="center" height="100%" >							
+						<s:Button buttonMode="true" width="{id_vgrp.width - 8}" label="ROS" click="showROSPanel()" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBROSTab"/>
+						<s:List width="100%" height="70" dataProvider="{model.summary.ROS}" 
+								skinClass="com.adobe.Quivus.view.controls.skins.ListSkins.VBROSListSkin"
+								itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.SummaryViewLists.SummaryXmlIR"/>
+					</s:VGroup>
+					<s:VGroup  width="100%" gap="-2" horizontalAlign="center" height="100%" >							
+						<s:Button buttonMode="true" width="{id_vgrp.width - 8}" label="Physical" click="showPhysicalPanel()" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBPhysicalTab"/>
+						<s:List width="100%" height="70" dataProvider="{model.summary.Physical}" 
+								skinClass="com.adobe.Quivus.view.controls.skins.ListSkins.VBPhysicalListSkin"
+								itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.SummaryViewLists.SummaryXmlIR"/>
+					</s:VGroup>
+					
+				</s:HGroup>
+				
+				<s:HGroup width="100%" height="100%">
+					
+					<s:VGroup  width="100%" gap="-2" horizontalAlign="center" height="100%" >							
+						<s:Button buttonMode="true" width="{id_vgrp.width - 8}" label="Lab" click="showLabPanel()" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBLabTab"/>
+						<s:List width="100%" height="70"  dataProvider="{model.summary.Labs}" 
+								skinClass="com.adobe.Quivus.view.controls.skins.ListSkins.VBLabListSkin"
+								itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.SummaryViewLists.SummaryXmlIR"/>
+					</s:VGroup>
+					<s:VGroup  width="100%" gap="-2" horizontalAlign="center" height="100%" >							
+						<s:Button buttonMode="true" width="{id_vgrp.width - 8}" label="Chronic Diagnosis" click="showDiagnosisPanel()" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBDiagnosisTab"/>
+						<s:List width="100%" height="70"  dataProvider="{model.summary.Diagnosis}" 
+								skinClass="com.adobe.Quivus.view.controls.skins.ListSkins.VBDiagnosisListSkin" horizontalScrollPolicy="off"
+								itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.SummaryViewLists.SummaryXmlIR"/>
+					</s:VGroup>
+					
+					<s:VGroup  width="100%" gap="-2" horizontalAlign="center" height="100%" >
+						<s:Button buttonMode="true" width="{id_vgrp.width - 8}" label="Prescription" click="showPrescriptionPanel()" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBPrescriptionTab"/>
+						<s:List width="100%" height="70" id="id_prescriptionList" dataProvider="{model.patientMedACList}"
+								skinClass="com.adobe.Quivus.view.controls.skins.ListSkins.VBPrescriptionListSkin"
+								itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.SummaryViewLists.VBMedicationIR"/>
+					</s:VGroup>
+					
+				</s:HGroup> 
+				
+				
+				
+				<s:HGroup width="100%" height="100%">
+					<s:VGroup width="100%" gap="-2" horizontalAlign="center" height="100%" >
+						<s:Button buttonMode="true" width="{id_vgrp.width - 8}" label="Procedure" click="showTreatmentPanel()" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBTreatmentTab"/>
+						<s:List width="100%" height="70" dataProvider="{model.summary.Procedures}" 
+								skinClass="com.adobe.Quivus.view.controls.skins.ListSkins.VBProcedureListSkin"
+								itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.SummaryViewLists.SummaryXmlIR"/>
+					</s:VGroup>
+					
+					<s:VGroup width="100%" gap="-2" horizontalAlign="center" height="100%" >							
+						<s:Button buttonMode="true" width="{id_vgrp.width - 8}" label="Recommendations" click="showPlanPanel()" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBRecommendationTab"/>
+						<s:List width="100%" height="70" dataProvider="{model.summary.Recomendation}" 
+								skinClass="com.adobe.Quivus.view.controls.skins.ListSkins.VBRecommendationsListSkin"
+								itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.SummaryViewLists.SummaryXmlIR"/>
+					</s:VGroup>
+					
+					<s:VGroup width="100%" gap="-2" horizontalAlign="center" height="100%" >							
+						<s:Button buttonMode="true" width="{id_vgrp.width - 8}" label="Follow up" click="showFollowUpPanel()" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBPlanTab"/>
+						<s:List width="100%" height="70" dataProvider="{model.summary.Followup}" 
+								skinClass="com.adobe.Quivus.view.controls.skins.ListSkins.VBFollowUpListSkin" labelFunction="getFollowUpLabel"
+								itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.SummaryViewLists.SummaryXmlIR"/>
+					</s:VGroup>
+				</s:HGroup> 
+				
+			</s:SkinnableContainer>
+			
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" height="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBBGNavSkin">				
+			<s:layout>
+				<s:VerticalLayout horizontalAlign="right" paddingTop="0" paddingLeft="3" paddingRight="3" paddingBottom="3" verticalAlign="top"   />
+			</s:layout>
+			
+			<vbPMH:VBPMHView height="100%" width="100%" id="id_PMHView" selectSection="id_PMHView_selectSectionHandler(event)"/>
+			
+		</s:NavigatorContent>		
+	</mx:ViewStack>
+	<!--</s:Group>
+	</s:Scroller>-->
+	<!--<mx:ViewStack id="id_VBViews" width="100%" minWidth="500" resizeToContent="true" change="id_VBViews_changeHandler(event)">
+	<s:NavigatorContent width="100%" label="PMH" minWidth="500" >
+	
+	</s:NavigatorContent>
+	
+	<s:NavigatorContent width="100%" label="Physical" >
+	
+	<vbPhysical:VBPhysicalView width="100%" id="id_physicalView"/>
+	</s:NavigatorContent>
+	<s:NavigatorContent width="100%" label="Assessment" >
+	
+	<vbAssessment:VBAssessmentView width="100%" id="id_assesment"/>
+	
+	</s:NavigatorContent>
+	</mx:ViewStack>-->
+	
+	
+</s:Group>

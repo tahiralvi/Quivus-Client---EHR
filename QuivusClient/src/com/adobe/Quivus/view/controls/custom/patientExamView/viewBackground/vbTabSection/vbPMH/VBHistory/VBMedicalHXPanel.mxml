@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:SlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*" xmlns:VBHistory="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbPMH.VBHistory.*" xmlns:viewBackground="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.*"
+					  creationComplete="slideoutpanel1_creationCompleteHandler(event)"
+					  QSViewStateChange="slideoutpanel1_QSViewStateChangeHandler(event)" xmlns:paging="com.adobe.Quivus.view.controls.custom.patientExamView.paging.*"
+					   
+					  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.viewBackground.comprehensiveHistory.LoadFamilyHistoryByPatientIdEvent;
+			import com.adobe.Quivus.events.viewBackground.comprehensiveHistory.LoadMedicalHistoryByPatientIdEvent;
+			import com.adobe.Quivus.events.viewBackground.comprehensiveHistory.LoadSocialHistoryByPatientIdEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.VBSectionDictation;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.VBSectionNotes;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBInternalBarInactiveSkin;
+			import com.adobe.Quivus.view.controls.skins.VBinternalBarSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.VBdictationBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.VBnotesBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBIconsButton;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.VBdictationBtnSelected;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.VBnotesBtnSelected;
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.VBIconsBlackButton;
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.VBIconsButtonFilled;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			
+			import spark.components.NavigatorContent;
+			
+			import valueObjects.PageDTO;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var notesGridPanel:VBSectionNotes;
+			private var m_oNotesDTOList:ArrayCollection;
+			
+			private var dictationGridPanel:VBSectionDictation;
+			
+			public function get notesDTOList():ArrayCollection
+			{
+				return m_oNotesDTOList;
+			}
+			
+			public function set notesDTOList(value:ArrayCollection):void
+			{
+				m_oNotesDTOList = value;
+			}
+			
+			private var vb_IsModelUpdated:Boolean;
+			private var moduleConstantName:String = Constants.COMPREHENSIVE_HISTORY_MODULE_NAME;
+			
+			public function get IsModelUpdated():Boolean{
+				
+				return vb_IsModelUpdated;
+				
+			}
+			
+			public function set IsModelUpdated(value:Boolean):void{
+				
+				vb_IsModelUpdated = value;
+				
+				if(vb_IsModelUpdated )
+				{
+					var notesDTOList:ArrayCollection = QSUtilityFunctions.getModuleNoteListForViewBackGround
+						( moduleConstantName);
+					var dictationDTOList:ArrayCollection = QSUtilityFunctions.getModuleDictationListForViewBackGround
+						(moduleConstantName);
+					
+					/* if(notesDTOList && notesDTOList.length > 0) {
+					id_header.id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected); 
+					} else {
+					id_header.id_NotesBtn.setStyle("skinClass", VBnotesBtn);
+					}
+					
+					if( dictationDTOList && dictationDTOList.length > 0) {
+					id_header.id_Voice.setStyle("skinClass", VBdictationBtnSelected);
+					} else {
+					id_header.id_Voice.setStyle("skinClass", VBdictationBtn);
+					} */
+					
+					if(dictationDTOList && dictationDTOList.length > 0)
+					{
+						id_header.id_Voice.setStyle("skinClass", VBdictationBtnSelected);
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+					}
+					
+					if(notesDTOList && notesDTOList.length > 0)
+					{
+						id_header.id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected);
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+					}		
+					
+				}
+			}
+			
+			protected function slideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				
+				if(this.ExpandedView)
+				{
+					id_header.HeadingLable = id_header.HeadingLable.toUpperCase();
+				}
+				else
+				{
+					id_header.HeadingLable = id_header.HeadingLable.toLowerCase();
+				}
+				
+				id_header.id_OptionPopUp.displayPopUp = true;
+				id_header.id_iconButtons.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					//if(id_Area.visible)
+					{
+						
+						if(id_header.id_OptionPopUp.displayPopUp)
+						{
+							id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						}
+						else
+						{
+							id_header.id_iconButtons.setStyle("skinClass", VBIconsButton);	
+						}
+					}
+					
+				});		
+				id_header.id_Voice.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					var notesDTOList:ArrayCollection = QSUtilityFunctions.getModuleNoteListForViewBackGround
+					( moduleConstantName);
+					var dictationDTOList:ArrayCollection = QSUtilityFunctions.getModuleDictationListForViewBackGround
+					(moduleConstantName);
+					
+					id_notesDictation.notesDTOList = notesDTOList;
+					id_notesDictation.DictationDTOList = dictationDTOList;
+					id_notesDictation.id_Area.visible 		= true;
+					id_notesDictation.id_Area.includeInLayout = true;
+					//id_notesDictation.id_VBViews.selectedIndex = 1;						
+					id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+					id_header.id_iconButtons.selected = false;
+					id_header.id_OptionPopUp.displayPopUp = false;
+					
+					if(this.ExpandedView)
+					{
+						event.stopImmediatePropagation();
+					}
+				});			
+				
+				id_header.id_slideoutBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					ToggleSlideOut();
+					event.stopImmediatePropagation();
+				});
+				id_slideoutHeader.id_slideoutClose.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					ToggleSlideOut();								
+					
+					event.stopImmediatePropagation();
+				});
+				
+				id_header.id_NotesBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					var notesDTOList:ArrayCollection = QSUtilityFunctions.getModuleNoteListForViewBackGround
+					( moduleConstantName);
+					var dictationDTOList:ArrayCollection = QSUtilityFunctions.getModuleDictationListForViewBackGround
+					(moduleConstantName);
+					
+					id_notesDictation.notesDTOList = notesDTOList;
+					id_notesDictation.DictationDTOList = dictationDTOList;
+					{
+						id_notesDictation.id_Area.visible 		= true;
+						id_notesDictation.id_Area.includeInLayout = true;						
+						//id_notesDictation.id_VBViews.selectedIndex = 0;
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						id_header.id_iconButtons.selected = false;
+						id_header.id_OptionPopUp.displayPopUp = false;
+						
+					}
+					
+					if(this.ExpandedView)
+					{
+						event.stopImmediatePropagation();
+					}
+				});
+				
+				id_header.id_slideoutBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					ToggleSlideOut();
+					event.stopImmediatePropagation();
+				});
+				
+				
+				id_header.id_OptionPopUp.displayPopUp = false;
+				
+				/* if(this.ExpandedView)
+				{
+					id_header.id_pmhHeader.setStyle("skinClass", VBinternalBarSkin);	
+				}
+				else
+				{
+					id_header.id_pmhHeader.setStyle("skinClass", VBInternalBarInactiveSkin);
+				} */
+			}
+			
+			protected function slideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if(id_header && id_header.id_pmhHeader)
+					if(event.viewState == QSViewStateEvent.EXPANDED_VIEW)
+					{
+						//id_header.id_pmhHeader.setStyle("skinClass", VBinternalBarSkin);	
+						id_header.HeadingLable = id_header.HeadingLable.toUpperCase();
+						id_header.id_expandBtn.selected = true;
+					}
+					else
+					{
+						//id_header.id_pmhHeader.setStyle("skinClass", VBInternalBarInactiveSkin);
+						id_header.HeadingLable = AppUtils.TitleCase(id_header.HeadingLable);
+						id_header.id_expandBtn.selected = false;
+					}
+			}
+			
+			
+			/* protected function id_VBViews_changeHandler(event:IndexChangedEvent):void
+			{
+				
+				var nav:NavigatorContent = id_notesDictation.id_VBViews.getElementAt( event.oldIndex ) as NavigatorContent;
+				nav.label = AppUtils.TitleCase( nav.label );
+				
+				nav = id_notesDictation.id_VBViews.getElementAt( event.newIndex ) as NavigatorContent;
+				nav.label =  nav.label.toUpperCase();
+				
+			} */
+			
+			//////
+			
+			private function switchPageForGridView4General( event:Event ):void
+			{
+				
+				if( UtilityFunctions.IsNullOrEmpty( model.medicalHistoryCurrentPageByPatient ) )
+					model.medicalHistoryCurrentPageByPatient = new PageDTO();
+				
+				var pvital:PageDTO 		= model.medicalHistoryCurrentPageByPatient;
+				pvital.fromDate 		= model.defaultFilterAndPaging.fromDate;
+				pvital.toDate 			= model.defaultFilterAndPaging.toDate;
+				pvital.pageSize 		= model.defaultFilterAndPaging.pageSize;
+				pvital.LastVisitNumber 	= model.defaultFilterAndPaging.LastVisitNumber;
+				
+				var lmhbpEvent: LoadMedicalHistoryByPatientIdEvent = new LoadMedicalHistoryByPatientIdEvent( ); 
+				CairngormEventDispatcher.getInstance().dispatchEvent( lmhbpEvent );
+			}
+			
+			private function switchPageForGridView4Family( event:Event ):void
+			{
+				
+				if( UtilityFunctions.IsNullOrEmpty( model.familyHistoryCurrentPageByPatient ) )
+					model.familyHistoryCurrentPageByPatient = new PageDTO();
+				
+				var pvital:PageDTO 		= model.familyHistoryCurrentPageByPatient;
+				pvital.fromDate 		= model.defaultFilterAndPaging.fromDate;
+				pvital.toDate 			= model.defaultFilterAndPaging.toDate;
+				pvital.pageSize 		= model.defaultFilterAndPaging.pageSize;
+				pvital.LastVisitNumber 	= model.defaultFilterAndPaging.LastVisitNumber;
+				
+				var lhvbpEvent: LoadFamilyHistoryByPatientIdEvent = new LoadFamilyHistoryByPatientIdEvent( ); 
+				CairngormEventDispatcher.getInstance().dispatchEvent( lhvbpEvent );
+			}
+			
+			private function switchPageForGridView4Social( event:Event ):void
+			{
+				
+				if( UtilityFunctions.IsNullOrEmpty( model.socialHistoryCurrentPageByPatient ) )
+					model.socialHistoryCurrentPageByPatient = new PageDTO();
+				
+				var pvital:PageDTO 		= model.socialHistoryCurrentPageByPatient;
+				pvital.fromDate 		= model.defaultFilterAndPaging.fromDate;
+				pvital.toDate 			= model.defaultFilterAndPaging.toDate;
+				pvital.pageSize 		= model.defaultFilterAndPaging.pageSize;
+				pvital.LastVisitNumber 	= model.defaultFilterAndPaging.LastVisitNumber;
+				
+				var lshvb:LoadSocialHistoryByPatientIdEvent = new LoadSocialHistoryByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lshvb );
+			}
+			
+			protected function id_PaginationFilterView4General_RefreshViewHandler(event:Event):void
+			{
+				var lmhbpEvent: LoadMedicalHistoryByPatientIdEvent = new LoadMedicalHistoryByPatientIdEvent( ); 
+				CairngormEventDispatcher.getInstance().dispatchEvent( lmhbpEvent );
+			}
+			
+			protected function id_PaginationFilterView4Family_RefreshViewHandler(event:Event):void
+			{
+				var lhvbpEvent: LoadFamilyHistoryByPatientIdEvent = new LoadFamilyHistoryByPatientIdEvent( ); 
+				CairngormEventDispatcher.getInstance().dispatchEvent( lhvbpEvent );
+			}
+			
+			protected function id_PaginationFilterView4Social_RefreshViewHandler(event:Event):void
+			{
+				var lshvb:LoadSocialHistoryByPatientIdEvent = new LoadSocialHistoryByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lshvb );
+			}
+			//Notice - Why this implement - can't understand
+			protected function slideoutpanel1_focusInHandler(event:FocusEvent):void
+			{
+				// TODO Auto-generated method stub
+				id_tabs.selectedIndex = 0;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Binding source="model.vbDataLoadedFlag" destination="IsModelUpdated" />
+	<custom:HeaderContents>
+		<s:Group id="id_mainHeader" width="100%" height="24" minWidth="{ChromeUtil.topLevelMainContainer.width - 90}">
+			<s:layout>
+				<s:VerticalLayout verticalAlign="bottom" horizontalAlign="center"/>
+			</s:layout>
+			<viewBackground:VBSectionHeader id="id_header" width="{id_mainHeader.width - 8}" HeadingLable="Medical HX" SectionNameID="{QSSecurityUtil.VB_COMPREHENSIVE_HISTORY}"
+										Skin="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBHistoryGridPanelSkin"	/>						   
+		</s:Group>
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		<viewBackground:VBSectionSlideoutHeader id="id_slideoutHeader" width="100%" label="{Constants.VB_SECTION_NAME_COMPREHENSIVE_HISTORY}" />
+		
+	</custom:SlideHeaderContents>
+	<custom:Contents>
+
+		<s:SkinnableContainer id="id_contents" width="100%" height="100%"  skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.TransparentVBHistoryGridPanelSkin">					
+
+			<s:layout>
+				<s:VerticalLayout horizontalAlign="center" verticalAlign="top" gap="1" paddingLeft="4" paddingRight="4" paddingBottom="4" paddingTop="0" />
+			</s:layout>
+			
+			<!--<s:HGroup id="id_NotesArea" width="100%" paddingTop="0" />-->
+			<viewBackground:VBSectionLevelNotesDictation id="id_notesDictation" width="100%" />
+			<!--<VBHistory:VBCombinedHistoryView  id="id_contents" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBBGSectionSkin" width="100%" height="100%" />-->
+			
+			<s:VGroup width="100%" gap="-4" paddingTop="5">									
+				<s:TabBar id="id_TabBar2" dataProvider="{id_tabs}" buttonMode="true" 				  
+						  skinClass="com.adobe.gazuntite.skins.chrome.tabBarSkins.VBrecordingsTabBar"/>
+				<s:SkinnableContainer id="id_VS" width="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBMedicationGridPanelSkin">
+					<s:layout>
+						<s:VerticalLayout paddingBottom="3" paddingLeft="3" paddingRight="3" paddingTop="3" />
+					</s:layout>
+					<mx:ViewStack width="100%" minWidth="500" resizeToContent="true" selectedIndex="{id_tabs.selectedIndex}">
+						<s:NavigatorContent width="100%" label="General History Paging and Filtering" minWidth="500" >
+							<paging:PaginationFilterView id="id_PaginationFilterView4General" width="100%" Page="{model.medicalHistoryCurrentPageByPatient}"
+														 ShowFilterControls="false"
+														 GoToFirstPage="switchPageForGridView4General(event)" GoToNextPage="switchPageForGridView4General(event)" 
+														 GoToPreviousPage="switchPageForGridView4General(event)" GoToLastPage="switchPageForGridView4General(event)"
+														 RefreshView="id_PaginationFilterView4General_RefreshViewHandler(event)"
+														 />
+						</s:NavigatorContent>
+						
+						<s:NavigatorContent width="100%" label="Family History Paging and Filtering" >											
+							<paging:PaginationFilterView id="id_PaginationFilterView4Family" width="100%" Page="{model.familyHistoryCurrentPageByPatient}"
+														 ShowFilterControls="false"
+														 GoToFirstPage="switchPageForGridView4Family(event)" GoToNextPage="switchPageForGridView4Family(event)" 
+														 GoToPreviousPage="switchPageForGridView4Family(event)" GoToLastPage="switchPageForGridView4Family(event)"
+														 RefreshView="id_PaginationFilterView4Family_RefreshViewHandler(event)"
+														 />
+						</s:NavigatorContent>
+						
+						<s:NavigatorContent width="100%" label="Social History Paging and Filtering" >	
+							<paging:PaginationFilterView id="id_PaginationFilterView4Social" width="100%" Page="{model.socialHistoryCurrentPageByPatient}"
+														 ShowFilterControls="false"
+														 GoToFirstPage="switchPageForGridView4Social(event)" GoToNextPage="switchPageForGridView4Social(event)" 
+														 GoToPreviousPage="switchPageForGridView4Social(event)" GoToLastPage="switchPageForGridView4Social(event)"
+														 RefreshView="id_PaginationFilterView4Social_RefreshViewHandler(event)"
+														 />
+						</s:NavigatorContent>
+					</mx:ViewStack>
+					<mx:ViewStack id="id_tabs" width="100%" minWidth="500" resizeToContent="true">
+						<s:NavigatorContent width="100%" label="General History" minWidth="500" >
+							<VBHistory:VBGeneralGridView width="100%" id="id_gen" ShowEditControls="true"/>
+						</s:NavigatorContent>
+						
+						<s:NavigatorContent width="100%" label="Family History" >											
+							<VBHistory:VBFamilyGridView width="100%" id="id_fam" ShowEditControls="true"/>
+						</s:NavigatorContent>
+						
+						<s:NavigatorContent width="100%" label="Social History" >	
+						<VBHistory:VBSocialGridView width="100%" id="id_sol" ShowEditControls="true"/>
+						</s:NavigatorContent>
+						
+					</mx:ViewStack>
+					
+				</s:SkinnableContainer>
+			</s:VGroup>
+			
+		</s:SkinnableContainer>
+	</custom:Contents>
+</custom:SlideOutPanel>

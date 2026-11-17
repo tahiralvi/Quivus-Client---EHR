@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:flm="http://ns.adobe.com/flame/2008">
+	<fx:Metadata>[HostComponent("spark.components.TextInput")]</fx:Metadata>
+	<s:states>
+		<s:State name="normal"/><s:State name="normalWithPrompt"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+	</s:states>
+	<s:Rect height="32" includeIn="normal" radiusX="5" width="310" x="0.5" y="0.5">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1" color="#FFFFFF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#CECBCE" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.9" angle="90" blurX="3" blurY="3" color="0x000000" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+		<s:stroke>
+			<s:LinearGradientStroke caps="none" joints="miter" miterLimit="4" rotation="90" weight="1">
+				<s:GradientEntry alpha="1.0" color="#525552" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#999999" ratio="0.27450980392156865"/>
+				<s:GradientEntry alpha="1.0" color="#BABABA" ratio="0.803921568627451"/>
+				<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="1"/>
+			</s:LinearGradientStroke>
+		</s:stroke>
+	</s:Rect>
+	<s:RichEditableText color="#000000" columnCount="1" fontFamily="Calibri" fontSize="15" heightInLines="1" id="textDisplay" kerning="off" lineHeight="100%" tabStops="S0 S50 S100 S150 S200" textAlign="start" trackingRight="0%"  whiteSpaceCollapse="preserve" width="210" width.normal="286" y="10" x="10" />
+</s:Skin>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:graphics="assets.graphics.*">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+	</s:states>
+	<s:Rect height="18" id="rect17" radiusX="3" width="17" y="0.5" x="0.5" visible.up="false" visible.over="false" visible.down="false">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#009CFF" joints="miter" miterLimit="4" weight="1" color.disabled="#999999"/>
+		</s:stroke>
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#6FC9FF" ratio="0.027450980392156862" color.disabled="#CCCCCC"/>
+				<s:GradientEntry alpha="1.0" color="#009CFF" ratio="1" ratio.down="0.5254901960784314" color.disabled="#999999"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="18" id="rect16" radiusX="3" width="17" y="0.5" x="0.5" visible.disabled="false">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" joints="miter" miterLimit="4" weight="1" color="#AB623B"/>
+		</s:stroke>
+		<s:fill>
+			<s:LinearGradient rotation="90" rotation.over="270">
+				<s:GradientEntry ratio="0" color="#D28553" alpha="1.0"/>
+				<s:GradientEntry ratio="1" color="#AB623B" alpha="1.0"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter includeIn="down" blurX="2" blurY="2" distance="2" hideObject="false" color="0x000000" inner="true" strength="1" alpha="0.5" quality="2" knockout="false" angle="90"/>
+		</s:filters>
+	</s:Rect>
+	<s:BitmapImage x="10" y="14" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/slideout.png')" rotation="180" />
+</s:Skin>

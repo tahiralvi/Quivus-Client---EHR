@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:MXDataGridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						  xmlns:s="library://ns.adobe.com/flex/spark" 
+						  xmlns:mx="library://ns.adobe.com/flex/mx" 
+						  focusEnabled="true">
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.view.controls.custom.ComingSoon;
+			import com.adobe.Quivus.view.controls.custom.DictationPopup;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPanel;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.dictation.QIDictationManager;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.WriteNotesBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.dictationIndicatorBtnSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridButtons.cosignButton;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridButtons.dictationBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridButtons.notesBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridButtons.signButton;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridDictationButtonSelectedSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridDictationButtonSkin;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.writeNotesButtonSelected;
+			
+			import valueObjects.ModuleDictationDTO;
+			import valueObjects.ModuleNoteDTO;
+			 
+			override public function  set data(value:Object):void
+			{
+				super.data = value;
+				
+				if (data )
+				{
+					notesDTO = new ModuleNoteDTO();
+					dictationDTO = new ModuleDictationDTO();
+					// Modify for the cosign change 
+					if (data.hasOwnProperty("CanSignCosign") != false)
+					{
+						id_Sign.visible = true;
+						
+						if (data.CanSignCosign.toLowerCase() == Constants.STRING_TRUE)
+						{
+							id_Sign.setStyle("skinClass", signButton);
+						}
+						else if (data.CanSignCosign.toLowerCase() == Constants.STRING_FALSE)
+						{
+							id_Sign.setStyle("skinClass", cosignButton);
+						}
+						else
+						{
+							id_Sign.visible = false;
+						}
+					}
+					
+					if (data.hasOwnProperty("VisitStatus") && data.VisitStatus && data.VisitStatus == Constants.SIGNED_STATUS)
+					{
+						//id_Edit.enabled = false;
+						id_Sign.visible = false;
+					}
+					else
+					{
+						//id_Edit.enabled = true;
+					}
+					
+					if (data.hasOwnProperty("Notes") && data.Notes)
+					{
+						notesDTO.Note = data.Notes;
+					}
+					
+					if (data.hasOwnProperty("NoteSubject") && data.NoteSubject)
+					{
+						notesDTO.NoteSubject = data.NoteSubject;
+					}
+					
+					if (data && data.hasOwnProperty("DictationID"))
+					{
+						dictationDTO.DictationID = data.DictationID;
+					}
+					
+					setNotesIcon();
+					setDictationIcons();
+				}
+				
+			}
+			
+			private var dictationPanel:DictationPopup;
+			private var dictationDTO:ModuleDictationDTO
+			private function onWriteDictationClick(event:MouseEvent):void
+			{
+				if (!dictationDTO)
+					dictationDTO = new ModuleDictationDTO();
+				
+				dictationPanel = QIDictationManager.show(id_WriteDictation.parent, dictationPanel, dictationDTO, id_WriteDictation);
+				QIPopUpManager.addPopUp(dictationPanel, QIPopUpManager.PATIENT_ENCOUNTER_LIST);
+				
+				dictationPanel.id_closeBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if (dictationDTO && data && data.hasOwnProperty("DictationID"))
+					{
+						data.DictationID = dictationDTO.DictationID;
+					}
+					
+					setDictationIcons();
+					QIPopUpManager.removePopUp(dictationPanel, QIPopUpManager.PATIENT_ENCOUNTER_LIST);
+					
+				}, false, 0, true);
+				
+				var xx:Number = id_WriteDictation.x + id_WriteDictation.width/2;
+				var yy:Number = id_WriteDictation.y + id_WriteDictation.height;
+				
+				var loc:Point = id_WriteDictation.parent.localToGlobal(new Point(xx- 194, yy));
+										
+				dictationPanel.move(loc.x, loc.y);
+			}
+			
+			private var notesPanel:NotesPanel;
+			private var notesDTO:ModuleNoteDTO;
+			private function onWriteNotesClick(event:MouseEvent):void
+			{
+				if (notesPanel && notesPanel.isPanelShown)
+					notesPanel.removeNotePanel();
+				
+				notesPanel = new NotesPanel();
+				
+				if (!notesDTO)
+					notesDTO = new ModuleNoteDTO();
+				
+				notesPanel.notesDTO = notesDTO;
+				notesPanel.width = 250;
+				//notesPanel.height = 110;
+				
+				if (data && data.hasOwnProperty("VisitDate") && data.VisitDate)
+					notesPanel.VisitDateLable = data.VisitDate.toDateString();
+				
+				var xx:Number = id_WriteNotes.x + id_WriteNotes.width/2;
+				var yy:Number = id_WriteNotes.y + id_WriteNotes.height;
+				
+				var loc:Point = id_WriteNotes.parent.localToGlobal(new Point(xx, yy));
+				
+				if (loc)
+					loc.x -= notesPanel.width - 50;
+				
+				notesPanel.ShowPopup(this);
+				notesPanel.move(loc.x, loc.y);
+				notesPanel.onNotesSaved = updateNotesData;
+				QIPopUpManager.addPopUp(notesPanel, QIPopUpManager.PATIENT_ENCOUNTER_LIST);
+				
+				/*notesPanel.addEventListener("notesSaved", function(event:Event):void
+				{
+					updateNotesData();
+				}, false, 0, true);*/
+				
+				notesPanel.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					QIPopUpManager.removePopUp(notesPanel, QIPopUpManager.PATIENT_ENCOUNTER_LIST);
+				}, false, 0, true);
+				
+				notesPanel.id_header.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					notesPanel.SaveNotes();
+					notesPanel.removeNotePanel();
+					QIPopUpManager.removePopUp(notesPanel, QIPopUpManager.PATIENT_ENCOUNTER_LIST);
+				}, false, 0, true);
+			}
+			
+			private function updateNotesData():void
+			{
+				if (data && notesDTO)
+				{
+					if (data.hasOwnProperty("Notes"))
+					{
+						data.Notes = notesDTO.Note;
+					}
+					
+					if (data.hasOwnProperty("NoteSubject"))
+					{
+						data.NoteSubject = notesDTO.NoteSubject;
+					}
+				}
+				
+				setNotesIcon();
+			}
+			
+			private function setNotesIcon():void
+			{
+				if (notesDTO)
+				{
+					if (notesDTO.Note || notesDTO.NoteSubject)
+					{
+						id_WriteNotes.setStyle("skinClass", writeNotesButtonSelected);
+					}
+					else
+					{
+						id_WriteNotes.setStyle("skinClass", notesBtn);
+					}
+				}
+				else
+				{
+					id_WriteNotes.setStyle("skinClass", notesBtn);
+				}
+			}
+			
+			private function setDictationIcons():void
+			{
+				if (dictationDTO && dictationDTO.DictationID && dictationDTO.DictationID != Constants.GUID_FORMAT)
+				{
+					id_WriteDictation.setStyle("skinClass", gridDictationButtonSelectedSkin);
+				}
+				else
+				{
+					id_WriteDictation.setStyle("skinClass", dictationBtn);
+				}
+			}
+
+			protected function ComingSoon_Handler(event:MouseEvent):void
+			{
+				var popup:ComingSoon = new ComingSoon();
+				popup.ShowPopup( this );
+				popup.height = 200;
+				popup.width = 200;
+				
+				var pLoc:Point = event.currentTarget.parent.localToGlobal( new Point( event.currentTarget.x +  (event.currentTarget.width /2) - 300 , event.currentTarget.y ) ); 
+				popup.move(pLoc.x,pLoc.y );
+			}
+
+		]]>
+	</fx:Script>
+	<s:layout>
+		<s:HorizontalLayout gap="8" />
+	</s:layout>
+	
+		
+	<s:Button id="id_Sign" toolTip="Sign" buttonMode="true"  width="12" height="12" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.gridButtons.signButton" />
+	<s:Button id="id_View" toolTip="View Visit Report" buttonMode="true" width="12" height="12" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.viewBtnIcon"/>
+	<s:Button id="id_Print" toolTip="Print Visit Report" buttonMode="true" width="12" height="12" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.gridButtons.printButton"/>
+	<s:Button id="id_History" click="ComingSoon_Handler(event)" toolTip="History" buttonMode="true" width="12" height="12" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.gridButtons.historyButton"/>
+	<s:Button id="id_WriteDictation" toolTip="Record dictation" buttonMode="true" width="12" height="12" click="onWriteDictationClick(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.gridButtons.dictationBtn" />
+	<s:Button id="id_WriteNotes" toolTip="Write notes" buttonMode="true" width="12" height="12" click="onWriteNotesClick(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.gridButtons.notesBtn" />
+	<!--<s:Button id="id_Edit" toolTip="Edit Visit" buttonMode="true" width="12" height="12" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.gridButtons.editButton" />-->
+
+	
+</s:MXDataGridItemRenderer>

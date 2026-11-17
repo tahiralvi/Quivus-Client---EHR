@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="100%" height="100%" 
+		 creationComplete="group1_creationCompleteHandler(event)"
+		 skinClass="com.adobe.gazuntite.skins.chrome.containerSkins.extendedBlackBGContainerSkin" 
+		 xmlns:buttonSeparators="com.adobe.Quivus.view.controls.skins.buttonSeparators.*" 
+		 xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 >
+	<fx:Metadata>
+		[Event(name="AcceptVideoCallEvent", type="com.adobe.Quivus.events.communication.videochat.VideoCallAcceptCallEvent")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.communication.videochat.GetIncomingVideoChatSessionEvent;
+			import com.adobe.Quivus.events.communication.videochat.VideoCallAcceptCallEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.view.controls.custom.ComingSoon;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.chatbuttons;
+			import com.adobe.cairngorm.control.CairngormEvent;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.gazuntite.skins.chrome.textInputSkins.optionalTextArea;
+			
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import valueObjects.UserBasicInfoDTO;
+			import valueObjects.UserDTO;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var _userID:int;
+			private var _clinicBranchID:int;
+			private var _currentLoggedInUserID:int;
+			private var _isNewCall:Boolean;
+			private var _providerName:String;
+
+			[Bindable]
+			public function get providerName():String
+			{
+				return _providerName;
+			}
+
+			public function set providerName(value:String):void
+			{
+				_providerName = value;
+			}
+
+			
+			public function get isNewCall():Boolean
+			{
+				return _isNewCall;
+			}
+
+			public function set isNewCall(value:Boolean):void
+			{
+				_isNewCall = value;
+			}
+
+
+			
+			[Bindable]
+			public function get currentLoggedInUserID():int
+			{
+				return _currentLoggedInUserID;
+			}
+			
+			public function set currentLoggedInUserID(value:int):void
+			{
+				_currentLoggedInUserID = value;
+			}
+			
+			public function get clinicBranchID():int
+			{
+				return _clinicBranchID;
+			}
+			
+			public function set clinicBranchID(value:int):void
+			{
+				_clinicBranchID = value;
+			}
+			
+			[Bindable]
+			public function get userID():int
+			{
+				return _userID;
+			}
+			
+			public function set userID(value:int):void
+			{
+				_userID = value;
+			}
+			
+			
+			private var _token:String;
+			[Bindable]
+			public function get token():String
+			{
+				return _token;
+			}
+			
+			public function set token(value:String):void
+			{
+				_token = value;
+			}
+			
+			private var _opentoksession:String;
+			
+			[Bindable]
+			public function get opentoksession():String
+			{
+				return _opentoksession;
+			}
+			
+			public function set opentoksession(value:String):void
+			{
+				_opentoksession = value;
+			}
+			protected function btnVideoChat_clickHandler(event:MouseEvent):void
+			{
+				
+				trace("TestVideoChatPanel: btnVideoChat_clickHandler");
+				var getSessionEvent:GetIncomingVideoChatSessionEvent=new GetIncomingVideoChatSessionEvent(currentLoggedInUserID,model.userSelectedStationDTO.ClinicBranchID,getVideoCallDetailsDetails);
+				CairngormEventDispatcher.getInstance().dispatchEvent(getSessionEvent);
+				
+				
+				/* 	var userSessionInfo:Array =model.m_ovideoCallInfo.split('^');
+				
+				var videochatSessionID:String= userSessionInfo[0];
+				var videochatInitiatorID:String= userSessionInfo[1];
+				var videoChatID:String= userSessionInfo[2];
+				var videoChatTokenID:String= userSessionInfo[3];
+				
+				var sessionId:String = videochatSessionID;// "2_MX44NjA0ODcyfjE5Mi4xNjguMC44NH4yMDEyLTAxLTI2IDE0OjQxOjMzLjIwNDA1NiswMDowMH4wLjQ3NDI2NTIzMjUwNn4";
+				var tokenId:String = videoChatTokenID; 
+				id_html.location = "http://192.168.0.146:89/MainVideoPage.aspx?ID="+sessionId+"&tokenID="+tokenId;
+				
+				*/ //"T1==cGFydG5lcl9pZD04NjA0ODcyJnNka192ZXJzaW9uPXRiZG90bmV0JnNpZz1jM2ZhNjY4MmQzMTAzMmE0YmIzNWRjNGI5YTVlYmEwN2YxNjUzNGUwOnNlc3Npb25faWQ9Ml9NWDQ0TmpBME9EY3lmakU1TWk0eE5qZ3VNQzQ0Tkg0eU1ERXlMVEF4TFRJMklERTBPalF4T2pNekxqSXdOREExTmlzd01Eb3dNSDR3TGpRM05ESTJOVEl6TWpVd05uNCZjcmVhdGVUaW1lPTEzMjc1ODg4OTUmbm9uY2U9ODI0NTEmcm9sZT1wdWJsaXNoZXIm";
+				//id_html.location = "http://192.168.0.146:89/MainVideoPage.aspx?ID=2_MX44NjA0ODcyfjE5Mi4xNjguMC44NH4yMDEyLTAxLTI2IDE0OjQxOjMzLjIwNDA1NiswMDowMH4wLjQ3NDI2NTIzMjUwNn4&tokenID=T1==cGFydG5lcl9pZD04NjA0ODcyJnNka192ZXJzaW9uPXRiZG90bmV0JnNpZz1jM2ZhNjY4MmQzMTAzMmE0YmIzNWRjNGI5YTVlYmEwN2YxNjUzNGUwOnNlc3Npb25faWQ9Ml9NWDQ0TmpBME9EY3lmakU1TWk0eE5qZ3VNQzQ0Tkg0eU1ERXlMVEF4TFRJMklERTBPalF4T2pNekxqSXdOREExTmlzd01Eb3dNSDR3TGpRM05ESTJOVEl6TWpVd05uNCZjcmVhdGVUaW1lPTEzMjc1ODg4OTUmbm9uY2U9ODI0NTEmcm9sZT1wdWJsaXNoZXIm"//"http://192.168.0.146:89/MainVideoPage.aspx?ID=1234656/";//"http://localhost:50917/TestJavaScript.aspx";
+				//////////	id_html.location = "http://192.168.0.146:89/MainVideoPage.aspx?ID="+sessionId+"&tokenID="+tokenId;
+				
+				/////	id_html.location = "http://localhost:50744/MainVideoPage.aspx";
+				
+				//id_html.location	="http://localhost:50744/Testhtmlpage.htm";
+				
+				
+				
+				//id_webPage.htmlLoader = ;
+				/* var sessionId1:String = "1_MX44NjA0ODcyfjE5Mi4xNjguMC44NH4yMDEyLTAxLTI3IDExOjMxOjE4Ljc0Njc1NSswMDowMH4wLjIzNzkzMDM0NzUzN34";
+				var  tokenId1:String = "T1==cGFydG5lcl9pZD04NjA0ODcyJnNka192ZXJzaW9uPXRiZG90bmV0JnNpZz04NjhlMzI0ZmNlOTRjODIxZTk3MzQ4ZmQzZWUzODM1YTYzMGM3NDAxOnNlc3Npb25faWQ9MV9NWDQ0TmpBME9EY3lmakU1TWk0eE5qZ3VNQzQ0Tkg0eU1ERXlMVEF4TFRJM0lERXhPak14T2pFNExqYzBOamMxTlNzd01Eb3dNSDR3TGpJek56a3pNRE0wTnpVek4zNCZjcmVhdGVUaW1lPTEzMjc2NjM4ODEmbm9uY2U9MTgwMDc3JnJvbGU9cHVibGlzaGVyJg==";
+				//id_html.location = "http://192.168.0.146:89/MainVideoPage.aspx?ID=2_MX44NjA0ODcyfjE5Mi4xNjguMC44NH4yMDEyLTAxLTI2IDE0OjQxOjMzLjIwNDA1NiswMDowMH4wLjQ3NDI2NTIzMjUwNn4&tokenID=T1==cGFydG5lcl9pZD04NjA0ODcyJnNka192ZXJzaW9uPXRiZG90bmV0JnNpZz1jM2ZhNjY4MmQzMTAzMmE0YmIzNWRjNGI5YTVlYmEwN2YxNjUzNGUwOnNlc3Npb25faWQ9Ml9NWDQ0TmpBME9EY3lmakU1TWk0eE5qZ3VNQzQ0Tkg0eU1ERXlMVEF4TFRJMklERTBPalF4T2pNekxqSXdOREExTmlzd01Eb3dNSDR3TGpRM05ESTJOVEl6TWpVd05uNCZjcmVhdGVUaW1lPTEzMjc1ODg4OTUmbm9uY2U9ODI0NTEmcm9sZT1wdWJsaXNoZXIm"//"http://192.168.0.146:89/MainVideoPage.aspx?ID=1234656/";//"http://localhost:50917/TestJavaScript.aspx";
+				//id_html.location = "http://192.168.0.146:89/MainVideoPage.aspx?ID="+sessionId+"&tokenID="+tokenId;
+				*/
+				
+				
+				///id_html.location ="http://localhost:56535/MainVideoPage.aspx?ID=1_MX44NjA0ODcyfjEyNy4wLjAuMX4yMDEyLTAxLTI3IDA4OjA1OjMyLjk3MjYyMSswMDowMH4wLjMxNTUzODQ1MDQ3Mn4&tokenId=T1==cGFydG5lcl9pZD04NjA0ODcyJnNka192ZXJzaW9uPXRiZG90bmV0JnNpZz02Y2NlMDMwZTQzYjU1OGI5YTFiOGQxMWY5N2RmZDM1MzRjZGI1MzMzOnNlc3Npb25faWQ9MV9NWDQ0TmpBME9EY3lmakV5Tnk0d0xqQXVNWDR5TURFeUxUQXhMVEkzSURBNE9qQTFPak15TGprM01qWXlNU3N3TURvd01INHdMak14TlRVek9EUTFNRFEzTW40JmNyZWF0ZVRpbWU9MTMyNzY1MTUzNiZub25jZT03OTQ5MDAmcm9sZT1wdWJsaXNoZXIm";
+				//id_html.location ="http://192.168.0.146:89/MainVideoPage.aspx?ID="+sessionId1+"&tokenId="+tokenId1;//+sessionId;//+"&tokenID="+tokenId;
+				//	id_html.location = "http://localhost:56535/MainVideoPage.aspx?ID=2_MX44NjA0ODcyfjEyNy4wLjAuMX4yMDEyLTAxLTI3IDEwOjE3OjU2LjY3MDQ3NiswMDowMH4wLjg2MTUyMTgwMDI1fg";
+			}
+			
+			private function getVideoCallDetailsDetails(val:* = null):void
+			{
+				if((model.m_ovideoCallInfo != null) && (model.m_ovideoCallInfo != ""))
+				{
+				var userSessionInfo:Array =model.m_ovideoCallInfo.split('^');
+				
+				var videochatSessionID:String= userSessionInfo[0];
+				var videochatInitiatorID:String= userSessionInfo[1];
+				var videoChatID:String= userSessionInfo[2];
+				var videoChatTokenID:String= userSessionInfo[3];
+				
+				var sessionId:String = videochatSessionID;// "2_MX44NjA0ODcyfjE5Mi4xNjguMC44NH4yMDEyLTAxLTI2IDE0OjQxOjMzLjIwNDA1NiswMDowMH4wLjQ3NDI2NTIzMjUwNn4";
+				var tokenId:String = videoChatTokenID;//"T1==cGFydG5lcl9pZD04NjA0ODcyJnNka192ZXJzaW9uPXRiZG90bmV0JnNpZz1jM2ZhNjY4MmQzMTAzMmE0YmIzNWRjNGI5YTVlYmEwN2YxNjUzNGUwOnNlc3Npb25faWQ9Ml9NWDQ0TmpBME9EY3lmakU1TWk0eE5qZ3VNQzQ0Tkg0eU1ERXlMVEF4TFRJMklERTBPalF4T2pNekxqSXdOREExTmlzd01Eb3dNSDR3TGpRM05ESTJOVEl6TWpVd05uNCZjcmVhdGVUaW1lPTEzMjc1ODg4OTUmbm9uY2U9ODI0NTEmcm9sZT1wdWJsaXNoZXIm";
+				//id_html.location = "http://192.168.0.146:89/MainVideoPage.aspx?ID=2_MX44NjA0ODcyfjE5Mi4xNjguMC44NH4yMDEyLTAxLTI2IDE0OjQxOjMzLjIwNDA1NiswMDowMH4wLjQ3NDI2NTIzMjUwNn4&tokenID=T1==cGFydG5lcl9pZD04NjA0ODcyJnNka192ZXJzaW9uPXRiZG90bmV0JnNpZz1jM2ZhNjY4MmQzMTAzMmE0YmIzNWRjNGI5YTVlYmEwN2YxNjUzNGUwOnNlc3Npb25faWQ9Ml9NWDQ0TmpBME9EY3lmakU1TWk0eE5qZ3VNQzQ0Tkg0eU1ERXlMVEF4TFRJMklERTBPalF4T2pNekxqSXdOREExTmlzd01Eb3dNSDR3TGpRM05ESTJOVEl6TWpVd05uNCZjcmVhdGVUaW1lPTEzMjc1ODg4OTUmbm9uY2U9ODI0NTEmcm9sZT1wdWJsaXNoZXIm"//"http://192.168.0.146:89/MainVideoPage.aspx?ID=1234656/";//"http://localhost:50917/TestJavaScript.aspx";
+				
+				//id_html.location = "http://192.168.0.146:89/MainVideoPage.aspx?ID="+sessionId+"&tokenID="+tokenId;
+				id_html.location = Constants.VIDEO_CHAT_URL + "?ID="+sessionId+"&tokenID="+tokenId;// "localhost:52000/Web/PatientContacts1.aspx?ID="+sessionId+"&tokenID="+tokenId;
+				}
+				else
+				{
+					trace("TestVideoChatPanel: getVideoCallDetailsDetails");
+					
+					var getSessionEvent:GetIncomingVideoChatSessionEvent=new GetIncomingVideoChatSessionEvent(currentLoggedInUserID,model.userSelectedStationDTO.ClinicBranchID,getVideoCallDetailsDetails);
+					CairngormEventDispatcher.getInstance().dispatchEvent(getSessionEvent);
+				}
+				//http://localhost:50744/
+				//id_html.location = "http://localhost:50744/MainVideoPage.aspx";//?ID="+sessionId+"&tokenID="+tokenId;
+			}
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				//CairngormEventDispatcher.getInstance().dispatchEvent(clinicuserIDevent);
+				
+				//  Committed by zahid on 8 Feb
+				/* var getSessionEvent:GetIncomingVideoChatSessionEvent=new GetIncomingVideoChatSessionEvent(currentLoggedInUserID,clinicBranchID,getVideoCallDetailsDetails);
+				CairngormEventDispatcher.getInstance().dispatchEvent(getSessionEvent); */
+				CallDetails();
+				
+			}
+		private	var videoChatID:int;
+		private var videochatSessionID:String;
+		public function CallDetails():void
+		{
+			
+			if(isNewCall && clinicBranchID != 0)
+			{
+				id_html.location = Constants.VIDEO_CHAT_OUTGOING_URL+"?InitiatorID="+model.loggedInUserDTO.UserId+"&RecieverID="+userID+"&BranchId="+clinicBranchID+"&RecieverName="+providerName;
+				//id_html.location = Constants.VIDEO_CHAT_OUTGOING_URL+"?InitiatorID="+model.loggedInUserDTO.UserId+"&RecieverID="+userID+"&BranchId="+clinicBranchID;
+				return ;
+			}
+			if((token == "" && opentoksession == "") || (token == null && opentoksession == null) && clinicBranchID != 0)
+			{
+				
+			if(model.m_ovideoCallInfo != null && model.m_ovideoCallInfo != "")
+			{
+			var userSessionInfo:Array =model.m_ovideoCallInfo.split('^');
+			
+			videochatSessionID = userSessionInfo[0];
+			var videochatInitiatorID:String= userSessionInfo[1];
+			videoChatID= userSessionInfo[2];
+			var videoChatTokenID:String= userSessionInfo[3];
+			
+			var sessionId:String = videochatSessionID;// "2_MX44NjA0ODcyfjE5Mi4xNjguMC44NH4yMDEyLTAxLTI2IDE0OjQxOjMzLjIwNDA1NiswMDowMH4wLjQ3NDI2NTIzMjUwNn4";
+			var tokenId:String = videoChatTokenID;//"T1==cGFydG5lcl9pZD04NjA0ODcyJnNka192ZXJzaW9uPXRiZG90bmV0JnNpZz1jM2ZhNjY4MmQzMTAzMmE0YmIzNWRjNGI5YTVlYmEwN2YxNjUzNGUwOnNlc3Npb25faWQ9Ml9NWDQ0TmpBME9EY3lmakU1TWk0eE5qZ3VNQzQ0Tkg0eU1ERXlMVEF4TFRJMklERTBPalF4T2pNekxqSXdOREExTmlzd01Eb3dNSDR3TGpRM05ESTJOVEl6TWpVd05uNCZjcmVhdGVUaW1lPTEzMjc1ODg4OTUmbm9uY2U9ODI0NTEmcm9sZT1wdWJsaXNoZXIm";
+			//id_html.location = "http://192.168.0.146:89/MainVideoPage.aspx?ID=2_MX44NjA0ODcyfjE5Mi4xNjguMC44NH4yMDEyLTAxLTI2IDE0OjQxOjMzLjIwNDA1NiswMDowMH4wLjQ3NDI2NTIzMjUwNn4&tokenID=T1==cGFydG5lcl9pZD04NjA0ODcyJnNka192ZXJzaW9uPXRiZG90bmV0JnNpZz1jM2ZhNjY4MmQzMTAzMmE0YmIzNWRjNGI5YTVlYmEwN2YxNjUzNGUwOnNlc3Npb25faWQ9Ml9NWDQ0TmpBME9EY3lmakU1TWk0eE5qZ3VNQzQ0Tkg0eU1ERXlMVEF4TFRJMklERTBPalF4T2pNekxqSXdOREExTmlzd01Eb3dNSDR3TGpRM05ESTJOVEl6TWpVd05uNCZjcmVhdGVUaW1lPTEzMjc1ODg4OTUmbm9uY2U9ODI0NTEmcm9sZT1wdWJsaXNoZXIm"//"http://192.168.0.146:89/MainVideoPage.aspx?ID=1234656/";//"http://localhost:50917/TestJavaScript.aspx";
+			
+			//id_html.location = "http://192.168.0.146:89/MainVideoPage.aspx?ID="+sessionId+"&tokenID="+tokenId;
+		////	id_html.location = "localhost:52000/Web/PatientContacts1.aspx?ID="+sessionId+"&tokenID="+tokenId;
+			
+			id_html.location = Constants.VIDEO_CHAT_URL + "?ID="+sessionId+"&tokenID="+tokenId+"&CallerName="+userSessionInfo[4];
+		}
+			else
+			{
+				trace("TestVideoChatPanel: CallDetails");
+				var getSessionEvent:GetIncomingVideoChatSessionEvent=new GetIncomingVideoChatSessionEvent(currentLoggedInUserID,model.userSelectedStationDTO.ClinicBranchID,getVideoCallDetailsDetails);
+				CairngormEventDispatcher.getInstance().dispatchEvent(getSessionEvent);
+			}
+			}
+			else
+			{
+			///////	id_html.location = "http://192.168.0.146:89/MainVideoPage.aspx?ID="+opentoksession+"&tokenID="+token;
+			//	id_html.location = "localhost:52000/Web/PatientContacts1.aspx?ID="+opentoksession+"&tokenID="+token;
+				
+				id_html.location = Constants.VIDEO_CHAT_URL + "?ID="+opentoksession+"&tokenID="+token+"&CallerName="+providerName;
+				
+				
+			}
+		}
+		
+			
+
+			protected function btnClose_clickHandler(event:MouseEvent):void
+			{
+				PopUpManager.removePopUp(this);
+				/* var endVideCall:VideoCallAcceptCallEvent=new VideoCallAcceptCallEvent();
+				dispatchEvent(endVideCall); */
+				
+				id_html.location = Constants.VIDEO_CHAT_OUTGOING_URL+"?InitiatorID="+model.loggedInUserDTO.UserId+"&RecieverID="+userID+"&videoChatID="+videoChatID+"&EndsessionID="+videochatSessionID;
+			}
+
+
+			protected function btnShare_clickHandler(event:MouseEvent):void
+			{
+				var popup:ComingSoon = new ComingSoon();
+				popup.ShowPopup( this );
+				popup.height = 125;
+				popup.width = 200;
+				
+				var pLoc:Point = id_CommentsTextBox.parent.localToGlobal( new Point( id_CommentsTextBox.x  , id_CommentsTextBox.y ) ); 
+				popup.move(pLoc.x,pLoc.y - 300 ); 
+			}
+
+		]]>
+	</fx:Script>
+
+	
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout  paddingTop="5" gap="-1" paddingLeft="3" paddingRight="3" paddingBottom="3" />
+	</s:layout>
+
+	<!--<s:ToggleButton label="Video Chat" skinClass="com.adobe.quivus.skins.chrome.tabBarSkins.customBlueTabBarSkin" selected="true"/>-->
+
+		<s:HGroup gap="8">
+			
+			<s:ToggleButton label="Vitals" id="id_VitalsButton" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.chatbuttons" />
+			<s:ToggleButton label="Blood Pressure" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.chatbuttons" />
+			<s:ToggleButton label="Allergies" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.chatbuttons" />
+			<s:ToggleButton label="Prescription" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.chatbuttons" />
+
+		</s:HGroup>
+	
+		
+	<s:SkinnableContainer skinClass="com.adobe.gazuntite.skins.chrome.containerSkins.blueBorderBlackBGContainer" width="100%" height="100%" >
+		<s:layout>
+			<s:VerticalLayout paddingBottom="5" paddingLeft="10" paddingRight="10" paddingTop="10" />
+		</s:layout>
+		<!--<s:HGroup>
+		<s:Button id="btnVideoChat" label="Click to Start" click="btnVideoChat_clickHandler(event)" 
+		buttonMode="true" toolTip="Start" styleName="communicationButtonSkin" width="90" height="25"/>
+		<s:Button id="btnClose" label="Close" click="btnClose_clickHandler(event)"  buttonMode="true" toolTip="Close"
+		styleName="communicationButtonSkin" width="82" height="25"/>	
+		</s:HGroup>-->
+		
+		<mx:HTML id="id_html" width="450" height="360" />
+			
+	
+	<s:HGroup  width="100%" >
+		<components1:LabelTextArea height="25" id="id_CommentsTextBox" width="300" prompt="Write Comments" skinClass="com.adobe.gazuntite.skins.chrome.textInputSkins.optionalTextArea" />
+		<s:Button id="btnShare"  buttonMode="true" toolTip="Share" useHandCursor="true" label="Send" height="25" width="26"  styleName="shareButtonSkin" click="btnShare_clickHandler(event)"  />
+		<mx:Spacer width="100%"/>
+		<buttonSeparators:buttonSeparator />
+		<s:Button label="Click"  buttonMode="true" toolTip="Other Options" useHandCursor="true" height="25" width="26"  styleName="whiteIconsToggleButtonSkin"  click="btnShare_clickHandler(event)"/>
+	</s:HGroup>	
+		
+	</s:SkinnableContainer>
+</s:SkinnableContainer>              

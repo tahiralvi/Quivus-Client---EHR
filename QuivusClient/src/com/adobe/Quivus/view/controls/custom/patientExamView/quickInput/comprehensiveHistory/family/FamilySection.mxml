@@ -1,0 +1,642 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:SelectablePanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:general="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.comprehensiveHistory.general.*" 
+		 xmlns:notes="com.adobe.Quivus.view.controls.custom.patientExamView.notes.*" 
+		 xmlns:family="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.comprehensiveHistory.family.*" 
+		 xmlns:components="com.zigron.controls.extended.components.*"
+		 xmlns:renderer="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.comprehensiveHistory.renderer.*"
+		 creationComplete="selectablepanel1_creationCompleteHandler(event)" xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.quickInput.DeleteComprehensiveModuleDatabyPatientIDEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.QIInnerSpeakerBtn;
+			import com.adobe.Quivus.view.controls.skins.radioButtonSkins.YNotesRadioButton;
+			import com.adobe.Quivus.view.controls.skins.radioButtonSkins.YRadioButton;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.writeNotesButtonSelected;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import flashx.textLayout.factory.TruncationOptions;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.core.IVisualElement;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.logging.ILogger;
+			import mx.logging.Log;
+			
+			import valueObjects.FamilyHistoryDTO;
+			import valueObjects.MedicalHistoryDTO;
+			
+			private var m_aAllowContents:Boolean = false;
+			private var m_oMedicalHistoryDto:MedicalHistoryDTO;
+			
+			//private var logger:ILogger = Log.getLogger("com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.comprehensiveHistory.social.FamilySection");
+			
+			
+			private var _miniView:Boolean = false;
+			
+			[Bindable]
+			public function get miniView():Boolean
+			{
+				return _miniView;
+			}
+			
+			public function set miniView(value:Boolean):void
+			{
+				_miniView = value;
+				
+				
+				
+			}
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			
+			private var isFirstTabSelected:Boolean = false;
+			
+			[Bindable]
+			public function get medicalHistoryDto():MedicalHistoryDTO
+			{
+				return m_oMedicalHistoryDto;
+			}
+			
+			public function set medicalHistoryDto(value:MedicalHistoryDTO):void
+			{
+				m_oMedicalHistoryDto = value;
+			}
+			
+			private function UpdateChange():void
+			{
+				try
+				{
+					hasChange = model.quickInputDTO.PMH.ComprehensiveHistory.FamilyHistory.length>0;
+				}
+				catch( e:Error )
+				{
+					trace( "QICH::Family Section", e.message );
+				}
+			}
+			
+			public function ClearData( executeBinding:Boolean = false ):void
+			{
+				id_HeartDisease.FamilyHistoryDto = null;
+				id_Hypertension.FamilyHistoryDto = null;
+				id_Diabetes.FamilyHistoryDto = null;
+				id_Cancer.FamilyHistoryDto = null;
+				id_Other.FamilyHistoryDto = null;
+				
+				if( executeBinding )
+				{
+					setSelectedTab( id_Views.selectedChild.label );
+					BindTabData( id_Views.selectedChild.label );
+				}
+			}
+			
+			public function LoadData():void
+			{
+				try
+				{
+					UpdateChange();//check if there is data for family history, then show check mark
+					var FamilyHistoryDto:FamilyHistoryDTO = QSUtilityFunctions.getFamilyHistoryDTO(  Constants.FAMILY_HEART_DISEASE_MODULE_NAME );
+					if( FamilyHistoryDto && FamilyHistoryDto.IsYesSelected )
+					{
+						if( FamilyHistoryDto.IsYesSelected.toLowerCase() == Constants.STRING_TRUE.toLowerCase() )
+						{
+							id_tab1.id_Y.selected 				= true;
+							id_HeartDisease.id_View.IsSelected 	= true;
+							id_tab1.id_N.selected 				= false;
+							id_HeartDisease.id_View.Label 		= "You have selected";
+							id_HeartDisease.id_View.Label2 		= Constants.STRING_YES_UI;
+							if(FamilyHistoryDto.FamilyHistoryNote && FamilyHistoryDto.FamilyHistoryNote.length > 0)
+								id_tab1.id_Y.setStyle("skinClass", YNotesRadioButton);		
+						}
+						else if( FamilyHistoryDto.IsYesSelected.toLowerCase() == Constants.STRING_FALSE.toLowerCase() )
+						{
+							id_tab1.id_N.selected 				= true;
+							id_tab1.id_Y.selected 				= false;
+							id_HeartDisease.id_View.IsSelected 	= false;
+							id_HeartDisease.id_View.Label 		= "You have selected";
+							id_HeartDisease.id_View.Label2 		= Constants.STRING_NO_UI;
+						}
+					}
+					
+					FamilyHistoryDto = QSUtilityFunctions.getFamilyHistoryDTO(  Constants.FAMILY_HYPERTENSION_MODULE_NAME );
+					if( FamilyHistoryDto && FamilyHistoryDto.IsYesSelected )
+					{
+						if( FamilyHistoryDto.IsYesSelected.toLowerCase() == Constants.STRING_TRUE.toLowerCase() )
+						{
+							id_tab2.id_Y.selected 				= true;
+							id_Hypertension.id_View.IsSelected 	= true;
+							id_tab2.id_N.selected 				= false;
+							id_Hypertension.id_View.Label 		= "You have selected";
+							id_Hypertension.id_View.Label2 		= Constants.STRING_YES_UI;
+							if(FamilyHistoryDto.FamilyHistoryNote && FamilyHistoryDto.FamilyHistoryNote.length > 0)
+								id_tab2.id_Y.setStyle("skinClass", YNotesRadioButton);
+						}
+						else if( FamilyHistoryDto.IsYesSelected.toLowerCase() == Constants.STRING_FALSE.toLowerCase() )
+						{
+							id_tab2.id_N.selected 				= true;
+							id_tab2.id_Y.selected 				= false;
+							id_Hypertension.id_View.IsSelected 	= false;
+							id_Hypertension.id_View.Label 		= "You have selected";
+							id_Hypertension.id_View.Label2 		= Constants.STRING_NO_UI;
+						}
+					}
+					
+					FamilyHistoryDto = QSUtilityFunctions.getFamilyHistoryDTO(  Constants.FAMILY_DIABETES_MODULE_NAME );
+					if( FamilyHistoryDto && FamilyHistoryDto.IsYesSelected )
+					{
+						if(FamilyHistoryDto.IsYesSelected.toLowerCase() == Constants.STRING_TRUE.toLowerCase() )
+						{
+							id_tab3.id_Y.selected 			= true;
+							id_Diabetes.id_View.IsSelected 	= true;
+							id_tab3.id_N.selected 			= false;
+							id_Diabetes.id_View.Label 		= "You have selected";
+							id_Diabetes.id_View.Label2 		= Constants.STRING_YES_UI;
+							if(FamilyHistoryDto.FamilyHistoryNote && FamilyHistoryDto.FamilyHistoryNote.length > 0)
+								id_tab3.id_Y.setStyle("skinClass", YNotesRadioButton);
+						}
+						else if( FamilyHistoryDto.IsYesSelected.toLowerCase() == Constants.STRING_FALSE.toLowerCase() )
+						{
+							id_tab3.id_N.selected 			= true;
+							id_tab3.id_Y.selected 			= false;
+							id_Diabetes.id_View.IsSelected 	= false;
+							id_Diabetes.id_View.Label 		= "You have selected";
+							id_Diabetes.id_View.Label2 		= Constants.STRING_NO_UI;
+						}
+					}
+					
+					FamilyHistoryDto = QSUtilityFunctions.getFamilyHistoryDTO(  Constants.FAMILY_CANCER_MODULE_NAME );
+					if( FamilyHistoryDto && FamilyHistoryDto.IsYesSelected )
+					{
+						if(FamilyHistoryDto.IsYesSelected.toLowerCase() == Constants.STRING_TRUE.toLowerCase() )
+						{
+							id_tab4.id_N.selected 			= false;
+							id_tab4.id_Y.selected 			= true;
+							id_Cancer.id_View.IsSelected 	= true;
+							id_Cancer.id_View.Label 		= "You have selected";
+							id_Cancer.id_View.Label2 		= Constants.STRING_YES_UI;
+							if(FamilyHistoryDto.FamilyHistoryNote && FamilyHistoryDto.FamilyHistoryNote.length > 0)
+								id_tab4.id_Y.setStyle("skinClass", YNotesRadioButton);
+						}
+						else if( FamilyHistoryDto.IsYesSelected.toLowerCase() == Constants.STRING_FALSE.toLowerCase() )
+						{
+							id_tab4.id_Y.selected 			= false;
+							id_tab4.id_N.selected 			= true;
+							id_Cancer.id_View.IsSelected 	= false;
+							id_Cancer.id_View.Label 		= "You have selected";
+							id_Cancer.id_View.Label2 		= Constants.STRING_NO_UI;
+						}
+					}
+					
+					FamilyHistoryDto = QSUtilityFunctions.getFamilyHistoryDTO(  Constants.FAMILY_OTHER_MODULE_NAME );
+					if( FamilyHistoryDto && FamilyHistoryDto.IsYesSelected )
+					{
+						if(FamilyHistoryDto.IsYesSelected.toLowerCase() == Constants.STRING_TRUE.toLowerCase() )
+						{
+							id_tab5.id_Y.selected 			= true;
+							id_tab5.id_N.selected 			= false;
+							id_Other.id_View.IsSelected 	= true;
+							id_Other.id_View.Label 			= "You have selected";
+							id_Other.id_View.Label2			= Constants.STRING_YES_UI;
+							if(FamilyHistoryDto.FamilyHistoryNote && FamilyHistoryDto.FamilyHistoryNote.length > 0)
+								id_tab5.id_Y.setStyle("skinClass", YNotesRadioButton);
+						}
+						else if( FamilyHistoryDto.IsYesSelected.toLowerCase() == Constants.STRING_FALSE.toLowerCase() )
+						{
+							id_tab5.id_N.selected 			= true;
+							id_tab5.id_Y.selected 			= false;
+							id_Other.id_View.IsSelected 	= false;
+							id_Other.id_View.Label 			= "You have selected";
+							id_Other.id_View.Label2 		= Constants.STRING_NO_UI;
+						}
+					}
+				}
+				catch( e:Error )
+				{
+					//logger.error( "Family::LoadData() errorID:" + e.errorID + ", errorName:" + e.name + ", errorMessage:" + e.message );
+					trace( "Family::LoadData() errorID:" + e.errorID + ", errorName:" + e.name + ", errorMessage:" + e.message );
+				}
+			}
+			
+			private function BindTabData(tabName:String):void
+			{
+				switch( AppUtils.TitleCase( tabName ) )
+				{
+					case Constants.FAMILY_HEARTDISEASE_MODULE_NAME:
+						//if( ! id_HeartDisease.FamilyHistoryDto )
+							id_HeartDisease.FamilyHistoryDto = QSUtilityFunctions.getFamilyHistoryDTO(  Constants.FAMILY_HEART_DISEASE_MODULE_NAME );
+							id_HeartDisease.id_View.id_DetailsView.id_TypeOfDisease.dataProvider = model.heartDiseaseDiseaseTypesDTOList ;
+						break;
+					case Constants.FAMILY_HYPERTENSION_MODULE_NAME:
+						//if( ! id_Hypertension.FamilyHistoryDto )
+							id_Hypertension.FamilyHistoryDto = QSUtilityFunctions.getFamilyHistoryDTO(  Constants.FAMILY_HYPERTENSION_MODULE_NAME );
+							id_Hypertension.id_View.id_DetailsView.id_TypeOfDisease.dataProvider = model.hypertensionDiseaseTypesDTOList ;
+						break;
+					case Constants.FAMILY_DIABETES_MODULE_NAME:
+						//if( ! id_Diabetes.FamilyHistoryDto )
+							id_Diabetes.FamilyHistoryDto = QSUtilityFunctions.getFamilyHistoryDTO(  Constants.FAMILY_DIABETES_MODULE_NAME );
+							id_Diabetes.id_View.id_DetailsView.id_TypeOfDisease.dataProvider = model.diabetesDiseaseTypesDTOList ;
+						break;
+					case Constants.FAMILY_CANCER_MODULE_NAME:
+						//if( ! id_Cancer.FamilyHistoryDto )
+							id_Cancer.FamilyHistoryDto = QSUtilityFunctions.getFamilyHistoryDTO(  Constants.FAMILY_CANCER_MODULE_NAME );
+							id_Cancer.id_View.id_DetailsView.id_TypeOfDisease.dataProvider = model.cancerDiseaseTypesDTOList ;
+						break;
+					case Constants.FAMILY_OTHER_MODULE_NAME:
+						//if( ! id_Other.FamilyHistoryDto )
+							id_Other.FamilyHistoryDto = QSUtilityFunctions.getFamilyHistoryDTO(  Constants.FAMILY_OTHER_MODULE_NAME );
+							id_Other.id_View.id_DetailsView.id_TypeOfDisease.dataProvider = model.otherDiseaseTypesDTOList ;
+						break;
+				}
+			}
+			
+			protected function id_Views_changeHandler(event:IndexChangedEvent):void
+			{
+				/**
+				 * Ayesha 16th May 2011
+				 * removing any popUps on tab change
+				 * */
+				QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.COMPREHENSIVE_HISTORY);
+				
+				BindTabData( id_Views.selectedChild.label );
+			}
+			
+
+			protected function tabbar1_clickHandler(event:MouseEvent):void
+			{
+				trace(event.target.id);
+			}
+			
+			private function isPreviousYesValue():Boolean
+			{
+				var hasYes:Boolean = false;
+				var i:int;
+				for( i = 0; i < model.familyHistoryDTOListByPatient.length; i++ )
+				{
+					var dto:FamilyHistoryDTO = model.familyHistoryDTOListByPatient.getItemAt( i ) as FamilyHistoryDTO;
+					hasYes = dto.IsYesSelected != Constants.STRING_FALSE;
+					if( hasYes )
+						break;
+				}
+				return hasYes;
+			}
+			
+			
+			private function OnYesNoClick(value:String, secLabel:String, target:OptionButton):void
+			{
+				setSelectedTab( secLabel );
+				
+				hasChange = true;
+				
+				
+				/* callLater( function():void 
+				{ */
+					var elm:TabSectionImpl = (id_Views.selectedChild as NavigatorContent).getElementAt( 0 ) as TabSectionImpl;
+					if( null == elm.FamilyHistoryDto )
+						BindTabData( id_Views.selectedChild.label );
+					
+					if( ( isPreviousYesValue() || elm.FamilyHistoryDto.PatientDiseaseList.length > 0 ) && value == Constants.STRING_NO_UI )
+					{
+						var strAlertMessage:String = "Do you want to delete"+" "+secLabel+" "+" history?";//Tahir Alvi
+						Alert.show(strAlertMessage,"Clear Data", Alert.YES|Alert.NO, 
+							FlexGlobals.topLevelApplication.mainContainer, function(event:CloseEvent):void
+							{
+								if( event.detail == Alert.YES)
+								{
+									/* elm.medicalHistoryDto.MedicalHistoryNote = "";
+									elm.id_NotesView.id_TextArea.text 		 = "";
+									elm.medicalHistoryDto.IsNone = Constants.STRING_TRUE; */
+									elm.FamilyHistoryDto.PatientDiseaseList.removeAll();
+									
+									/* changeTabYesNoSkin(elm.id); */
+									
+									//UtilityFunctions.AskMessage( "Do you realy want to delete previously \"Yes\" Selected data?", function():void 
+									//{
+										var family_section:int = 2;
+										var delEve:DeleteComprehensiveModuleDatabyPatientIDEvent = new DeleteComprehensiveModuleDatabyPatientIDEvent( model.familyHistoryDTOListByPatient,
+																														model.quickInputDTO.PatientId, family_section, 
+																														elm.FamilyHistoryDto.FamilyHistoryTypeID,
+																														model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchIdSeq 
+																														,loadData);
+										CairngormEventDispatcher.getInstance().dispatchEvent( delEve );
+									//});
+									setYesNoValue(value);
+								}
+								else if( event.detail == Alert.NO)
+								{
+									setYesNoValue(Constants.STRING_YES_UI);
+									target.id_Y.selected = true;
+									target.id_N.selected = false;
+								}
+								
+							});
+					}
+					else
+					{
+						setYesNoValue(value);
+					}
+					elm.FamilyHistoryDto.IsYesSelected = (value == Constants.STRING_YES_UI)? Constants.STRING_TRUE:Constants.STRING_FALSE;
+				/* }); */
+				
+				elm.id_View.id_DetailsView.id_ICDCode.setFocus();
+				dispatchEvent( new Event("data_added", true, true) );
+			}
+			
+			// Tahir Alvi -- response of delete records from general history
+			// Reload CH data
+			private function loadData(val:*=null):void
+			{
+				dispatchEvent(new Event('reLoad_CH',true, true));
+			}
+			
+			private function setYesNoValue(value:String):void
+			{
+				var elm:TabSectionImpl = ( id_Views.selectedChild as NavigatorContent).getElementAt( 0 ) as TabSectionImpl;
+				
+				elm.id_View.Label = "You have selected \n" + value;
+				elm.id_View.IsSelected = (value == Constants.STRING_YES_UI) ? true:false;
+				
+				elm.FamilyHistoryDto.IsYesSelected = (value == Constants.STRING_YES_UI)? Constants.STRING_TRUE:Constants.STRING_FALSE;
+				
+				if( value == Constants.STRING_NO_UI )
+				{
+					elm.id_Views.selectedIndex = 0;
+				}
+				else
+				{
+					elm.id_View.id_DetailsView.id_ICDCode.setFocus();
+				}
+			}
+			
+			private function OnTabClick(event:MouseEvent, secLabel:String):void
+			{
+				setSelectedTab( secLabel );
+			}
+
+			private function setSelectedTab(tabName:String):void
+			{
+				switch(  AppUtils.TitleCase( tabName ) )
+				{
+					case Constants.FAMILY_HEARTDISEASE_MODULE_NAME:
+						id_Views.selectedIndex = 0;
+					break;
+					case Constants.FAMILY_HYPERTENSION_MODULE_NAME:
+						id_Views.selectedIndex = 1;
+					break;
+					case Constants.FAMILY_DIABETES_MODULE_NAME:
+						id_Views.selectedIndex = 2;
+					break;
+					case Constants.FAMILY_CANCER_MODULE_NAME:
+						id_Views.selectedIndex = 3;
+					break;
+					case Constants.FAMILY_OTHER_MODULE_NAME:
+						id_Views.selectedIndex = 4;
+					break;
+					
+				}
+				
+				//AppUtils.EnableSelection( id_TabButtons, AppUtils.getButtonByLabel( id_TabButtons, tabName )  );
+				callLater( AppUtils.EnableSelection, [ id_TabButtons, AppUtils.getButtonByLabel( id_TabButtons, tabName ) ] );
+			}
+			
+			public override function set AllowContents(value:Boolean):void
+			{
+				super.AllowContents 		= value;
+				
+				if( !value )
+					DeselectAllButtons();
+				
+				if( id_Views )
+				{
+					id_Views.visible 			= value;
+					id_Views.includeInLayout	= value;
+					
+					if( value )
+					{
+						setSelectedTab( id_Views.selectedChild.label );
+						BindTabData( id_Views.selectedChild.label );
+					}
+					
+					/* if( ! model.isNewVisitCreated && value  ) //load data if not new visit
+					{
+						LoadData();
+						BindTabData( Constants.FAMILY_HEARTDISEASE_MODULE_NAME );
+					} */
+				}
+			}
+			
+			private function DeselectAllButtons():void
+			{
+				if( id_tab1 != null )
+				{
+					id_tab1.id_MainButton.selected = false;
+					id_tab2.id_MainButton.selected = false;
+					id_tab3.id_MainButton.selected = false;
+					id_tab4.id_MainButton.selected = false;
+					id_tab5.id_MainButton.selected = false;
+				}
+			}
+			
+			
+			public function set selectFirstTab( value:Boolean ):void
+			{
+				if( value )
+				{
+					BindTabData( Constants.FAMILY_HEARTDISEASE_MODULE_NAME );
+					setSelectedTab( Constants.FAMILY_HEARTDISEASE_MODULE_NAME );
+				}
+				isFirstTabSelected = value;
+			}
+			
+			public function get selectFirstTab():Boolean
+			{
+				return isFirstTabSelected;
+			}
+
+
+			private var FamilyHistoryDto:FamilyHistoryDTO;
+			
+			
+			
+			 protected function selectablepanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				 
+				 id_HeartDisease.addEventListener("dictationChange", function(evt:Event):void
+				 {
+					 id_tab1.id_Y.setStyle("skinClass", YNotesRadioButton);					 
+					 id_HeartDisease.id_View.id_DetailsView.id_header.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+					 id_HeartDisease.id_NotesHeader.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+				 });
+				 id_Hypertension.addEventListener("dictationChange", function(evt:Event):void
+				 {
+					 id_tab2.id_Y.setStyle("skinClass", YNotesRadioButton);
+					 id_Hypertension.id_View.id_DetailsView.id_header.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+					 id_Hypertension.id_NotesHeader.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+				 });
+				  id_Diabetes.addEventListener("dictationChange", function(evt:Event):void
+				 {
+					 id_tab3.id_Y.setStyle("skinClass", YNotesRadioButton);
+					 id_Diabetes.id_View.id_DetailsView.id_header.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+					 id_Diabetes.id_NotesHeader.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+				 });
+				  
+				  id_Cancer.addEventListener("dictationChange", function(evt:Event):void
+				 {
+					 id_tab4.id_Y.setStyle("skinClass", YNotesRadioButton);
+					 id_Cancer.id_View.id_DetailsView.id_header.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+					 id_Cancer.id_NotesHeader.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+				 });
+				  id_Other.addEventListener("dictationChange", function(evt:Event):void
+				 {
+					 id_tab5.id_Y.setStyle("skinClass", YNotesRadioButton);
+					 id_Other.id_View.id_DetailsView.id_header.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+					 id_Other.id_NotesHeader.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+				 }); 
+				 
+				 //////             NOTES              ////////////
+				  
+				  id_HeartDisease.addEventListener("notesChange", function(evt:Event):void
+				  {
+					  id_tab1.id_Y.setStyle("skinClass", YNotesRadioButton);					 
+					  id_HeartDisease.id_View.id_DetailsView.id_header.id_NotesBtn.setStyle("skinClass", writeNotesButtonSelected);
+					  id_HeartDisease.id_NotesHeader.id_NotesBtn.setStyle("skinClass", writeNotesButtonSelected);
+				  });
+				  id_Hypertension.addEventListener("notesChange", function(evt:Event):void
+				  {
+					  id_tab2.id_Y.setStyle("skinClass", YNotesRadioButton);
+					  id_Hypertension.id_View.id_DetailsView.id_header.id_NotesBtn.setStyle("skinClass", writeNotesButtonSelected);
+					  id_Hypertension.id_NotesHeader.id_NotesBtn.setStyle("skinClass", writeNotesButtonSelected);
+				  });
+				  id_Diabetes.addEventListener("notesChange", function(evt:Event):void
+				  {
+					  id_tab3.id_Y.setStyle("skinClass", YNotesRadioButton);
+					  id_Diabetes.id_View.id_DetailsView.id_header.id_NotesBtn.setStyle("skinClass", writeNotesButtonSelected);
+					  id_Diabetes.id_NotesHeader.id_NotesBtn.setStyle("skinClass", writeNotesButtonSelected);
+				  });
+				  
+				  id_Cancer.addEventListener("notesChange", function(evt:Event):void
+				  {
+					  id_tab4.id_Y.setStyle("skinClass", YNotesRadioButton);
+					  id_Cancer.id_View.id_DetailsView.id_header.id_NotesBtn.setStyle("skinClass", writeNotesButtonSelected);
+					  id_Cancer.id_NotesHeader.id_NotesBtn.setStyle("skinClass", writeNotesButtonSelected);
+				  });
+				  id_Other.addEventListener("notesChange", function(evt:Event):void
+				  {
+					  id_tab5.id_Y.setStyle("skinClass", YNotesRadioButton);
+					  id_Other.id_View.id_DetailsView.id_header.id_NotesBtn.setStyle("skinClass", writeNotesButtonSelected);
+					  id_Other.id_NotesHeader.id_NotesBtn.setStyle("skinClass", writeNotesButtonSelected);
+				  }); 
+				 
+			 	id_HeartDisease.id_NotesView.id_BoxHeader.id_VoiceBtn.addEventListener(MouseEvent.CLICK, function():void
+				{
+					trace("heart disease record clicked");
+					if (FamilyHistoryDto.DictationID)
+					{
+						trace("FamilyHistoryDto.DictationID"+FamilyHistoryDto.DictationID.toString());
+						
+					//	id_tab1.id_Y.setStyle("skinClass", YNotesRadioButton);
+					}
+						
+				}); 
+				
+				addEventListener("data_added", function(event:Event):void
+				{
+					var elm:TabSectionImpl = (id_Views.selectedChild as NavigatorContent).getElementAt( 0 ) as TabSectionImpl;
+					if(elm.id == "id_HeartDisease")
+					{
+						//id_tab1.id_Y.selected = false;//com.adobe.Quivus.view.controls.skins.radioButtonSkins.YRadioButton
+						id_tab1.id_Y.setStyle("skinClass", YRadioButton);
+					}
+					else if(elm.id == "id_Hypertension")
+					{
+						//id_tab2.id_Y.selected = false;
+						id_tab2.id_Y.setStyle("skinClass", YRadioButton);
+					}
+					else if(elm.id == "id_Diabetes")
+					{
+						//id_tab3.id_Y.selected = false;
+						id_tab3.id_Y.setStyle("skinClass", YRadioButton);
+					}
+					else if(elm.id == "id_Cancer")
+					{
+						//id_tab4.id_Y.selected = false;
+						id_tab4.id_Y.setStyle("skinClass", YRadioButton);
+					}
+					else if(elm.id == "id_Other")
+					{
+						//id_tab5.id_Y.selected = false;
+						id_tab5.id_Y.setStyle("skinClass", YRadioButton);
+					}
+				});
+				
+			} 
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<!--<fx:Binding source="model.chdataLoaded" destination="selectFirstTab"  /> -->
+	
+	<components:layout>
+		<s:HorizontalLayout gap="-1" paddingTop="2" paddingLeft="1" paddingRight="1" paddingBottom="1"/>
+	</components:layout>
+	
+	
+	
+	<!--<s:TabBar width="100" skinClass="com.adobe.Quivus.view.controls.skins.VerticalTabSkin" 
+			  dataProvider="{id_Views}" click="tabbar1_clickHandler(event)" />-->
+	
+	<s:VGroup id="id_TabButtons" width="100%" tabEnabled="true" tabChildren="true" maxWidth="132" gap="-1" paddingTop="0">
+		<renderer:OptionButton id="id_tab1"  tabEnabled="true" tabChildren="true" height="25" width="100%" showOptionButtons="YN" 
+							   Label="{Constants.FAMILY_HEARTDISEASE_MODULE_NAME}" YesNoClickHandler="OnYesNoClick" ButtonClickHandler="OnTabClick"
+							   Counter="{id_HeartDisease.FamilyHistoryDto.PatientDiseaseList.length}" />
+		<renderer:OptionButton id="id_tab2"  tabEnabled="true" tabChildren="true" height="25" width="100%" showOptionButtons="YN" 
+							   Label="{Constants.FAMILY_HYPERTENSION_MODULE_NAME}" YesNoClickHandler="OnYesNoClick" ButtonClickHandler="OnTabClick" 
+							   Counter="{id_Hypertension.FamilyHistoryDto.PatientDiseaseList.length}" />
+		<renderer:OptionButton id="id_tab3"  tabEnabled="true" tabChildren="true" height="25" width="100%" showOptionButtons="YN" 
+							   Label="{Constants.FAMILY_DIABETES_MODULE_NAME}" YesNoClickHandler="OnYesNoClick" ButtonClickHandler="OnTabClick" 
+							   Counter="{id_Diabetes.FamilyHistoryDto.PatientDiseaseList.length}" />
+		<renderer:OptionButton id="id_tab4"  tabEnabled="true" tabChildren="true" height="25" width="100%" showOptionButtons="YN" 
+							   Label="{Constants.FAMILY_CANCER_MODULE_NAME}" YesNoClickHandler="OnYesNoClick" ButtonClickHandler="OnTabClick" 
+							   Counter="{id_Cancer.FamilyHistoryDto.PatientDiseaseList.length}" />
+		<renderer:OptionButton id="id_tab5"  tabEnabled="true" tabChildren="true" height="25" width="100%" showOptionButtons="YN" 
+							   Label="{Constants.FAMILY_OTHER_MODULE_NAME}" YesNoClickHandler="OnYesNoClick" ButtonClickHandler="OnTabClick" 
+							   Counter="{id_Other.FamilyHistoryDto.PatientDiseaseList.length}" />
+	</s:VGroup>
+	<!-- DO NOT CHANGE THE IDS of   family:TabSectionImpl as they are being used in DetailView.mxml selectDisease() -->
+	<mx:ViewStack id="id_Views" width="100%" height="100%" resizeToContent="true" includeInLayout="{AllowContents}" visible="{AllowContents}"
+				  change="id_Views_changeHandler(event)" creationPolicy="all">
+		<s:NavigatorContent label="{Constants.FAMILY_HEARTDISEASE_MODULE_NAME}">
+			<family:TabSectionImpl id="id_HeartDisease" width="100%" height="123" miniView="{miniView}" />
+		</s:NavigatorContent>
+		<s:NavigatorContent label="{Constants.FAMILY_HYPERTENSION_MODULE_NAME}">
+			<family:TabSectionImpl id="id_Hypertension" width="100%" height="123" miniView="{miniView}"/>
+		</s:NavigatorContent>
+		<s:NavigatorContent label="{Constants.FAMILY_DIABETES_MODULE_NAME}">
+			<family:TabSectionImpl id="id_Diabetes" width="100%" height="123" miniView="{miniView}"/>
+		</s:NavigatorContent>
+		<s:NavigatorContent label="{Constants.FAMILY_CANCER_MODULE_NAME}">
+			<family:TabSectionImpl id="id_Cancer" width="100%" height="123" miniView="{miniView}"/>
+		</s:NavigatorContent>
+		<s:NavigatorContent label="{Constants.FAMILY_OTHER_MODULE_NAME}">
+			<family:TabSectionImpl id="id_Other" ShowNotes="false" width="100%" height="123" miniView="{miniView}"/>
+		</s:NavigatorContent>
+	</mx:ViewStack>
+	
+</components1:SelectablePanel>

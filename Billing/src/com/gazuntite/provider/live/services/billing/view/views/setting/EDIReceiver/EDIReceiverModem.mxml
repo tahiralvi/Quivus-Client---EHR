@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="group1_creationCompleteHandler(event)"
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			
+			[Bindable] private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			[Bindable] private var SerialPorts:ArrayCollection  		 =  new ArrayCollection(["COM1","COM2","COM3","COM4"]);
+			[Bindable] private var Parities:ArrayCollection      		 =  new ArrayCollection(["None","Odd","Even"]);
+			[Bindable] private var BaudRates:ArrayCollection   		 =  new ArrayCollection(["1200","2400","9600","14.4k","28.8k","38.4k","57.6k"]);
+			[Bindable] private var DataBits:ArrayCollection    		 =  new ArrayCollection(["7","8"]);
+			[Bindable] private var StopBits:ArrayCollection             =  new ArrayCollection(["0","1"]);
+			[Bindable] private var TransmitProtocols:ArrayCollection    =  new ArrayCollection(["ASCII","KERMIT","CHECKSUM","X-Modem","X-Modem CRC","X-Modem 1k","X-Modem 1kG","Y-Modem Batch","Y-Modem G","Z-Modem"]);
+			[Bindable] private var TransmissionModes:ArrayCollection    =  new ArrayCollection(["Test","Production"]);
+			
+			protected function textchangeHandler(event:TextOperationEvent):void
+			{
+				var txt:TextInput  = event.target as TextInput;
+				
+				switch(txt.id)
+				{
+					case "id_dataPhone":
+					{
+						model.CurrentEDIReceiver.DataPhone = txt.text;
+						break;
+					}
+					case "id_dialingPrefix":
+					{
+						model.CurrentEDIReceiver.DialingPrefix = txt.text;
+						break;
+					}
+					case "id_dialingSuffix":
+					{ 
+						model.CurrentEDIReceiver.DialingSuffix = txt.text;
+						break;
+					}
+					case "id_ftpAddress":
+					{ 
+						model.CurrentEDIReceiver.FTPAddress = txt.text;
+						break;
+					}
+					case "id_ftpPortNo":
+					{
+						model.CurrentEDIReceiver.FTPPortNumber = txt.text;
+						break;
+					}
+					case "id_modemInit":
+					{id_modemInit
+						model.CurrentEDIReceiver.ModemInitialization = txt.text;
+						break;
+					}
+					case "id_modemTermination":
+					{
+						model.CurrentEDIReceiver.ModemTermination = txt.text;
+						break;
+					}	
+					case "id_dialingAttempt":
+					{
+						model.CurrentEDIReceiver.DialingAttempt = txt.text;
+						break;
+					}	
+				}
+				
+			}
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(model.CurrentEDIReceiver.SerialPortTypeID != "0")
+					id_serialPort.selectedIndex = parseInt(model.CurrentEDIReceiver.SerialPortTypeID)  - 1;
+				
+				if(model.CurrentEDIReceiver.ParityTypeID != "0")
+					id_parity.selectedIndex = parseInt(model.CurrentEDIReceiver.ParityTypeID)  - 1;
+				
+				if(model.CurrentEDIReceiver.BaudRateTypeID != "0")
+					id_baudRate.selectedIndex = parseInt(model.CurrentEDIReceiver.BaudRateTypeID)  - 1;
+				
+				if(model.CurrentEDIReceiver.DataBits == "7")
+					id_dataBits.selectedIndex = 0;
+				else
+					id_dataBits.selectedIndex = 1;
+				
+				if(model.CurrentEDIReceiver.TransmitProtocolTypeID != "0")
+					id_transmitProtocol.selectedIndex = parseInt(model.CurrentEDIReceiver.TransmitProtocolTypeID)  - 1;
+				
+				if(model.CurrentEDIReceiver.StopBits == "0")
+					id_stopBits.selectedIndex = 0;
+				else
+					id_stopBits.selectedIndex = 1;
+				
+				if(model.CurrentEDIReceiver.TransmissionMode == "T")
+					id_transMode.selectedIndex = 0;
+				else
+					id_transMode.selectedIndex = 1;
+				
+				id_dataPhone.setFocus();
+				
+			}
+			
+			protected function id_transMode_changeHandler(event:IndexChangeEvent):void
+			{
+				model.CurrentEDIReceiver.TransmissionMode = String(TransmissionModes[id_transMode.selectedIndex]).substring(0,1);
+			}
+			
+			protected function id_serialPort_changeHandler(event:IndexChangeEvent):void
+			{
+				model.CurrentEDIReceiver.SerialPortTypeID = String(id_serialPort.selectedIndex + 1);
+			}
+			
+			protected function id_parity_changeHandler(event:IndexChangeEvent):void
+			{
+				model.CurrentEDIReceiver.ParityTypeID = String(id_parity.selectedIndex + 1);
+			}
+			
+			protected function id_baudRate_changeHandler(event:IndexChangeEvent):void
+			{
+				model.CurrentEDIReceiver.BaudRateTypeID = String(id_baudRate.selectedIndex + 1);
+			}
+			
+			protected function id_dataBits_changeHandler(event:IndexChangeEvent):void
+			{
+				model.CurrentEDIReceiver.DataBits = String(DataBits[id_dataBits.selectedIndex]);
+			}
+			
+			protected function id_transmitProtocol_changeHandler(event:IndexChangeEvent):void
+			{
+				model.CurrentEDIReceiver.TransmitProtocolTypeID = String(id_transmitProtocol.selectedIndex + 1);
+			}
+			
+			protected function id_stopBits_changeHandler(event:IndexChangeEvent):void
+			{
+				model.CurrentEDIReceiver.StopBits = String(StopBits[id_stopBits.selectedIndex]);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:VGroup width="100%">
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Data Phone:" width="115" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_dataPhone" text="{model.CurrentEDIReceiver.DataPhone}" width="100%" change="textchangeHandler(event)" restrict="[0-9]"	maxChars="10" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Dialing Prefix:" width="115" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_dialingPrefix" text="{model.CurrentEDIReceiver.DialingPrefix}" width="100%" change="textchangeHandler(event)" maxChars="35"  />
+		</s:HGroup>
+		<s:HGroup width="100%">
+			<s:Label text="Dialing suffix:" width="115" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_dialingSuffix" text="{model.CurrentEDIReceiver.DialingSuffix}" width="100%" change="textchangeHandler(event)" maxChars="30"  />
+		</s:HGroup>		
+	</s:VGroup>
+	<s:VGroup width="100%">
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Serial Port:" width="115" fontFamily="Calibri" fontSize="12" />
+			<s:ComboBox id="id_serialPort"  width="100" dataProvider="{SerialPorts}" change="id_serialPort_changeHandler(event)" />	
+			<s:Label text="Parity:" width="115" fontFamily="Calibri" fontSize="12" />
+			<s:ComboBox id="id_parity"  width="100" dataProvider="{Parities}" change="id_parity_changeHandler(event)" />	
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Baud Rate:" width="115" fontFamily="Calibri" fontSize="12" />
+			<s:ComboBox id="id_baudRate"  width="100" dataProvider="{BaudRates}" change="id_baudRate_changeHandler(event)" />	
+			<s:Label text="Data Bits:" width="115" fontFamily="Calibri" fontSize="12" />
+			<s:ComboBox id="id_dataBits"  width="100" dataProvider="{DataBits}" change="id_dataBits_changeHandler(event)" />	
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Transmit Protocol:" width="115"  fontFamily="Calibri" fontSize="12"/>
+			<s:ComboBox id="id_transmitProtocol"  width="100" dataProvider="{TransmitProtocols}" change="id_transmitProtocol_changeHandler(event)" />	
+			<s:Label text="Stop Bits:" width="115" fontFamily="Calibri" fontSize="12"  />
+			<s:ComboBox id="id_stopBits"  width="100" dataProvider="{StopBits}" change="id_stopBits_changeHandler(event)" />	
+		</s:HGroup>
+	</s:VGroup>
+	<s:VGroup width="100%">
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label  width="115" height="14" fontFamily="Calibri" fontSize="12"
+					 text="Modem Initialization:"/>
+			<s:TextInput id="id_modemInit" text="{model.CurrentEDIReceiver.ModemInitialization}" width="100%" change="textchangeHandler(event)" maxChars="20"  />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Modem Termination:" width="115" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_modemTermination" text="{model.CurrentEDIReceiver.ModemTermination}" width="100%" change="textchangeHandler(event)" maxChars="25"  />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="FTP Address:" width="115" fontFamily="Calibri" fontSize="12"  />
+			<s:TextInput id="id_ftpAddress" text="{model.CurrentEDIReceiver.FTPAddress}" width="100%" change="textchangeHandler(event)" maxChars="70" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="FTP Port Number:" width="115" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_ftpPortNo" text="{model.CurrentEDIReceiver.FTPPortNumber}" width="100%" change="textchangeHandler(event)" restrict="[0-9]"	maxChars="5" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Dialing Attempt:" width="115" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_dialingAttempt" text="{model.CurrentEDIReceiver.DialingAttempt}" width="100%" change="textchangeHandler(event)" restrict="[a-z A-Z 0-9]" maxChars="2" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Transmission Mode:" width="115" fontFamily="Calibri" fontSize="12" />
+			<s:ComboBox id="id_transMode"  width="100%" dataProvider="{TransmissionModes}" change="id_transMode_changeHandler(event)" />
+		</s:HGroup>
+	</s:VGroup>
+	
+</s:VGroup>

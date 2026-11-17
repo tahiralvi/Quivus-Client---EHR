@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 creationComplete="cc()" xmlns:components1="com.gazuntite.controls.extended.components.*">
+	<s:layout>
+		<s:VerticalLayout paddingBottom="3" paddingLeft="3" paddingRight="3" paddingTop="3"/>
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.search.SearchICDCodeByCodeEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.DTOInitializationUtility;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import flashx.textLayout.container.ScrollPolicy;
+			
+			import mx.controls.Alert;
+			import mx.controls.Label;
+			import mx.core.FlexGlobals;
+			import mx.utils.StringUtil;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			
+			import valueObjects.ICDCodeDTO;
+			import valueObjects.ICDCodeResponse;
+			import valueObjects.ICDCodeSearchDTO;
+			import valueObjects.PatientFamilyHistoryDTO;
+			import valueObjects.RelationshipTypeDTO;
+			
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var isNotValid:Boolean = false;
+			
+			//Start - Tahir Alvi ----- 
+			private function cc():void
+			{
+				id_FamilyHistoryGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_ONLY_CLICK, deleteRecordClickHandler, false, 0, true); 
+				
+				
+				if(id_FamilyHistory.text.length > 0 )
+				{
+					id_Relation.enabled 	= true;
+					id_familyBtn.enabled 	= true;					
+				}
+				else
+				{
+					id_Relation.enabled 	= false;
+					id_familyBtn.enabled 	= false;					
+				}
+				
+			}
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+				
+				if (curTar.selectedItem)
+				{
+					var patientHistoryFamilyId:int = PatientFamilyHistoryDTO(curTar.selectedItem).PatientHistoryFamilyId;
+					
+					UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+					{
+						if (patientHistoryFamilyId == 0)
+						{
+							model.healthHX.PatientFamilyHistoryDTOList.removeItemAt(curTar.selectedIndex);
+						}else
+						{
+							curTar.selectedItem.IsDeleted = true;
+							model.healthHX.PatientFamilyHistoryDTOList.filterFunction = filterDeletedItems;
+							model.healthHX.PatientFamilyHistoryDTOList.refresh();
+						}
+					});
+					
+					if(model.healthHX.PatientFamilyHistoryDTOList.length <=0)
+						id_FamilyHistoryGrid.visible = false;
+				}
+			}
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			//End - Tahir Alvi ----- 
+			private function addFamily():void
+			{
+				isNotValid = false;
+				isInvalid();
+				if(!isNotValid)
+					addRecordFamily();
+			}
+			protected function addRecordFamily():void
+			{
+				if(id_FamilyHistory.text.length  > 2)
+				{
+					if( null == model.healthHX )
+						DTOInitializationUtility.InitializeHealthInfoDTO();
+					var patientFamilyHistoryDTO:PatientFamilyHistoryDTO = new PatientFamilyHistoryDTO()
+					
+					patientFamilyHistoryDTO.Description 	= id_FamilyHistory.text;
+					patientFamilyHistoryDTO.RelationshipType = (id_Relation.selectedItem as RelationshipTypeDTO);
+					model.healthHX.PatientFamilyHistoryDTOList.addItem(patientFamilyHistoryDTO);
+					id_FamilyHistoryGrid.dataProvider = model.healthHX.PatientFamilyHistoryDTOList;
+					id_FamilyHistoryGrid.visible = true;
+					resetFields();
+					id_FamilyHistory.setFocus();// //Alvi - Focus on first field after adding a record
+				}
+				else
+				{
+					id_FamilyHistory.setFocus();
+				}
+				
+			}
+			
+			private function isInvalid():void 
+			{
+				var errorStr:String = "";
+				var toSetFocus:*;
+				ValidationUtils.Trim(id_FamilyHistory);
+				
+				if(id_FamilyHistory.text.length < 2)
+				{
+					isNotValid = true;
+					errorStr += "The data in family history problem is invalid.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_FamilyHistory;
+				}
+				
+				if(!ValidationUtils.isValidValueSelected(id_Relation))
+				{
+					isNotValid = true;
+					errorStr += "The data in relation is invalid.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_Relation;
+				}
+				
+				if (isNotValid && errorStr.length)
+				{
+					Alert.show(errorStr,"Patient Registeration Required Fields", 4, FlexGlobals.topLevelApplication.mainContainer, function(event:Event):void{
+						if (toSetFocus)
+							toSetFocus.setFocus();
+					});
+				}
+			} 
+			
+			public function resetFields():void
+			{
+				id_FamilyHistory.text = '';
+				id_Relation.textInput.text = "";
+				id_Relation.selectedIndex = -1;
+			}
+			
+			public function loadFamilyHistoryData():void
+			{
+				//isEditMode = true;
+				clearForm();
+				if(model.healthHX.PatientFamilyHistoryDTOList && model.healthHX.PatientFamilyHistoryDTOList.length > 0)
+				{
+					id_FamilyHistoryGrid.dataProvider = model.healthHX.PatientFamilyHistoryDTOList;
+					id_FamilyHistoryGrid.visible = true;
+				} 
+				id_FamilyHistoryGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_ONLY_CLICK, deleteRecordClickHandler, false, 0, true); 
+			}
+			
+			public function clearForm():void
+			{
+				resetFields();
+				
+				if (id_FamilyHistoryGrid)
+				{
+					id_FamilyHistoryGrid.dataProvider = null;
+				}
+				if(id_FamilyHistoryGrid.visible)
+					id_FamilyHistoryGrid.visible = false;
+				
+				
+			}
+			
+			protected function id_FamilyHistory_changeHandler(event:TextOperationEvent):void
+			{
+				// TODO Auto-generated method stub
+				
+				if(id_FamilyHistory.text.length > 0 )
+				{
+					id_Relation.enabled 	= true;
+					id_familyBtn.enabled 	= true;					
+				}
+				else
+				{
+					id_Relation.enabled 	= false;
+					id_familyBtn.enabled 	= false;					
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:RadioButtonGroup id="activeYesNo"/>
+	</fx:Declarations>
+	
+	<s:BorderContainer borderVisible="false" width="100%" height="20" backgroundColor="#C8DDEE" >
+		<s:layout>
+			<s:VerticalLayout verticalAlign="middle"/>
+		</s:layout>
+		<s:Label verticalAlign="middle" paddingLeft="8" text="Family History" width="100%" fontFamily="Calibri Bold"/>
+	</s:BorderContainer>
+	<s:VGroup width="100%">
+		
+		
+		<s:HGroup width="100%" verticalAlign="top">
+			
+			<components1:LabelTextInput id="id_FamilyHistory" tabIndex="10" width="30%" prompt="Family Problem...." maxChars="500" toolTip="Enter family history"
+									   change="id_FamilyHistory_changeHandler(event)"/>
+			
+			<components1:LabelComboBox id="id_Relation" prompt="Relation" width="50%"  dataProvider="{model.registrationStaticDataDTO.RelationshipTypes}" autoWidth="false"
+									  labelField="RelationshipName" tabIndex="11" toolTip="Select relation"/>
+			<mx:Spacer width="65" />
+			<s:Button id="id_familyBtn"  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.AddMoreTooltipBtn" toolTip="Add Family Problems" label="Add Family Histroy "
+					   buttonMode="true" click="addFamily()" tabIndex="12" />
+			
+		</s:HGroup>
+		<components1:LabelDataGrid id="id_FamilyHistoryGrid" width="100%" minHeight="50" 
+								  includeInLayout="{id_FamilyHistoryGrid.visible}"	  visible="false" 
+								  rowCount="{id_FamilyHistoryGrid.dataProvider.length+1}"
+								  columnWidths="{['70%', '20%', '10%']}">
+			<components1:columns>
+				<mx:DataGridColumn dataField="Description" headerText="Family Problem" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn dataField="RelationshipType.RelationshipName" headerText="Relationship" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn itemRenderer="com.adobe.Quivus.view.controls.registeration.DeleteRecordRendererOnly" />
+			</components1:columns>
+		</components1:LabelDataGrid>	
+	</s:VGroup>
+</s:Group>

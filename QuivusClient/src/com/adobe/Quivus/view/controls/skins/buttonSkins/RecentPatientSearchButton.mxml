@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:ATE="http://ns.adobe.com/ate/2009" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:flm="http://ns.adobe.com/flame/2008" xmlns:lib="assets.graphics.*" xmlns:fc="http://ns.adobe.com/flashcatalyst/2009">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+	</s:states>
+	<s:Path data="M 18.415 4.56 C 16.333 -0.762 12.178 0.064 6.443 0.03 L 0 0.03 L 0 22.99 L 26.333 22.96 C 20.098 7.936 18.415 4.56 18.415 4.56 Z" height="22.99" includeIn="down,over,up" width="25" winding="nonZero" visible.up="false" x="0" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="#737373" alpha="1.0" ratio="0"/>
+				<s:GradientEntry ratio="0.45098039215686275" color="#4A4A4A" alpha="1.0"/>
+				<s:GradientEntry ratio="0.4980392156862745" color="#292929" alpha="1.0"/>
+				<s:GradientEntry color="#565656" alpha="1.0" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter includeIn="down" blurX="2" blurY="2" distance="1" hideObject="false" color="0x000000" inner="true" strength="1" alpha="0.5" quality="3" knockout="false" angle="90"/>
+		</s:filters>
+	</s:Path>
+	<s:Path data="M 9.318 0.254 C 8.826 0.081 8.323 0 7.826 0 C 5.936 0 4.169 1.184 3.516 3.071 C 3.098 4.28 3.223 5.543 3.753 6.604 L 0 10.011 L 1.798 11.998 L 5.608 8.536 C 5.839 8.664 6.076 8.783 6.335 8.872 C 6.831 9.043 7.334 9.125 7.828 9.125 C 9.718 9.125 11.484 7.94 12.138 6.053 C 12.962 3.673 11.7 1.075 9.318 0.254 Z M 10.536 5.499 C 10.137 6.653 9.048 7.43 7.828 7.43 C 7.51 7.43 7.195 7.375 6.891 7.271 C 6.166 7.021 5.584 6.504 5.247 5.815 C 4.914 5.127 4.866 4.349 5.117 3.626 C 5.518 2.471 6.605 1.697 7.826 1.697 C 8.146 1.697 8.46 1.75 8.764 1.854 C 9.489 2.104 10.071 2.622 10.406 3.312 C 10.741 3.999 10.785 4.775 10.536 5.499 Z" d:userLabel="SearchIcon" x="3" y="6">
+		<s:fill>
+			<s:SolidColor color="#755454" color.over="#FFFFFF" color.down="#FFFFFF" color.disabled="#997676"/>
+		</s:fill>
+	</s:Path>
+</s:Skin>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<flexLibProperties includeAllClasses="true" useMultiPlatformConfig="false" version="3">
+  <includeClasses>
+    <classEntry path="com.zigron.provider.eprescription.services.patient.view.skins.arrowsTabBarSkin"/>
+    <classEntry path="com.zigron.provider.eprescription.services.patient.view.skins.arrowToggleBtn"/>
+    <classEntry path="com.zigron.provider.eprescription.services.patient.view.skins.editProfileBGSkin"/>
+    <classEntry path="com.zigron.provider.eprescription.services.patient.view.skins.editProfileUserPassBGSkin"/>
+    <classEntry path="com.zigron.provider.eprescription.services.patient.view.skins.editProfileFormBGSkin"/>
+    <classEntry path="com.zigron.provider.eprescription.services.patient.view.skins.buttonSkins.saveSectionButton"/>
+    <classEntry path="com.zigron.provider.eprescription.services.patient.view.skins.buttonSkins.addMoreBlueButton"/>
+    <classEntry path="com.zigron.provider.eprescription.services.patient.view.skins.editProfileSkinBG2"/>
+    <classEntry path="com.zigron.provider.eprescription.services.patient.view.skins.ePresDetailsBG"/>
+    <classEntry path="com.zigron.provider.eprescription.services.patient.view.skins.buttonSkins.smallWhiteButton"/>
+    <classEntry path="com.zigron.provider.eprescription.services.patient.view.skins.buttonSkins.statusButton"/>
+    <classEntry path="com.zigron.provider.eprescription.services.patient.view.skins.viewmodeBGSkin"/>
+    <classEntry path="com.zigron.provider.eprescription.services.patient.view.itemRenderers.multiCheckBox"/>
+    <classEntry path="com.zigron.provider.eprescription.services.patient.view.skins.medicationBGSkin"/>
+    <classEntry path="com.zigron.provider.eprescription.services.patient.view.skins.patientDetailsBG"/>
+    <classEntry path="com.zigron.provider.eprescription.services.patient.view.itemRenderers.pharmacySearchIR"/>
+    <classEntry path="com.zigron.provider.eprescription.services.patient.view.skins.buttonSkins.favoritePharmaciesLinkBtn"/>
+    <classEntry path="com.zigron.provider.eprescription.services.patient.view.views.DenyNewPrescriptionPopup"/>
+    <classEntry path="com.zigron.provider.eprescription.services.patient.view.views.userProfile.BasicInfoUserProfile"/>
+  </includeClasses>
+  <includeResources/>
+  <namespaceManifests/>
+</flexLibProperties>

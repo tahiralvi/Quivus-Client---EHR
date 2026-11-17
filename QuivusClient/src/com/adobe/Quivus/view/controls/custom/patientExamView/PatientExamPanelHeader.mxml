@@ -1,0 +1,659 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:skins="com.adobe.Quivus.view.controls.skins.*" 
+		 xmlns:components1="com.gazuntite.controls.extended.components.*" 
+		 xmlns:ui="com.zigron.controls.extended.components.autoCompleteTextinput.ui.*" 
+		 xmlns:buttonSeparators="com.adobe.Quivus.view.controls.skins.buttonSeparators.*" 
+		 xmlns:view="com.zigron.provider.search.services.patient.view.*" 
+		 width="100%" creationComplete="Init()" xmlns:view1="com.gazuntite.provider.search.services.patient.view.*" >
+	<fx:Metadata>
+		[Event(name="PatientSelected", type="com.gazuntite.provider.search.services.patient.view.events.PatientSelectedEvent")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.email.GetEmailByUserIdEvent;
+			import com.adobe.Quivus.events.patientProfileCustomization.LoadPatientProfileCustomizedSettingEvent;
+			import com.adobe.Quivus.events.patientProfileCustomization.LoadPatientProfilePopUpDataEvent;
+			import com.adobe.Quivus.events.search.PatientSearchEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppEventStrings;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.view.controls.custom.itemRenderer.ContactListItemRenderer;
+			import com.adobe.Quivus.view.controls.custom.itemRenderer.IconDescriptionItemRenderer;
+			import com.adobe.Quivus.view.controls.custom.itemRenderer.PatientSearchListRenderer;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.search.patientSearchList;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.patientSearchBGActiveSkin;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.patientSearchBGSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSeparators.buttonSeparator;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.expandButton_grey;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.expandButton_grey_expanded;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.dto.PatientDTO;
+			import com.gazuntite.provider.search.services.patient.view.events.PatientSelectedEvent;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Image;
+			import mx.controls.LinkButton;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.FlexMouseEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.managers.PopUpManager;
+			import mx.validators.DateValidator;
+			
+			import spark.components.Button;
+			import spark.components.List;
+			import spark.events.TextOperationEvent;
+			import spark.layouts.VerticalLayout;
+			
+			import valueObjects.PatientSearchDTO;
+			private var SearchListView:patientSearchList;
+			
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.RecentPatientSearchButton;
+			import com.adobe.gazuntite.skins.chrome.textInputSkins.hudTextInput;
+			
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			
+			import spark.components.RichEditableText;
+			
+			protected function id_CloseBtn_clickHandler(event:MouseEvent):void
+			{
+				id_OptionPopUp.displayPopUp = false;
+				id_optionsBtn.selected = false;
+				
+			}
+			
+			protected function lbl_PatientName_clickHandler(event:MouseEvent):void
+			{
+				id_PatientNameGroup.visible			              = false;
+				id_PatientNameGroup.includeInLayout               = false;
+				id_patientSearch.id_textInput.prompt = "Patient Search" ;
+				id_patientSearch.visible 			              = true;
+				id_patientSearch.includeInLayout 	              = true;
+				id_patientSearch.width 							  = 260;
+				//id_patientSearch.id_patientSearchTextInput.setStyle("skinClass",hudTextInput);
+				if (id_patientSearch.id_textInput.text.length > 0)
+				{
+					//id_patientSearch.id_patientSearchTextInput.setStyle("TextSelectionColor",'#00FF00');
+					id_patientSearch.id_textInput.setFocus();
+					id_patientSearch.id_textInput.selectAll();
+				}
+				
+				event.stopImmediatePropagation();
+			}
+			
+			protected function id_patientSearchBoxContainer_clickHandler(event:MouseEvent):void
+			{
+				var obj:Array = stage.getObjectsUnderPoint( localToGlobal( new Point( event.localX, event.localY ) ) );
+				obj.length;
+				
+			}
+			protected function id_patientSearch_focusOutHandler(event:FocusEvent):void
+			{
+				if(event.currentTarget.id != id_patientSearch.id)
+				{
+					
+					if( model.loadedPatientId != 0) // do it when patient is loaded 
+					{
+						id_PatientNameGroup.visible			              = true;
+						id_PatientNameGroup.includeInLayout               = true;
+						//id_patientSearch.id_patientSearchTextInput.prompt = "Patient Search" ;
+						id_patientSearch.visible 			              = false;
+						id_patientSearch.includeInLayout 	              = false;
+					}
+				}
+			}
+			
+			protected function id_patientSearch_clickHandler(event:MouseEvent):void
+			{
+				if(event.currentTarget.id != id_patientSearch.id_btnSearch.id)
+				{
+					event.stopImmediatePropagation();
+				}
+				
+				id_patientSearch.AllowSearch = QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.SEARCH_PATIENT );
+			}
+			private var m_acDataProvider:ArrayCollection = new ArrayCollection();
+			//public var pop:PopUpManager = new PopUpManager();
+			[Bindable]
+			public function get DataProvider():ArrayCollection
+			{
+				return m_acDataProvider;
+			}
+			
+			public function set DataProvider(value:ArrayCollection):void
+			{
+				m_acDataProvider = value;
+			}
+			
+			private function Init():void
+			{
+				ChromeUtil.topLevelMainContainer.addEventListener(MouseEvent.MOUSE_DOWN, function(event:MouseEvent):void
+				{
+					//id_OptionPopUp.displayPopUp = false;
+				});
+				
+				/* ChromeUtil.topLevelMainContainer.addEventListener(MouseEvent.CLICK,function(Event:MouseEvent):void
+				{
+				id_PatientNameGroup.visible			              = true;
+				id_PatientNameGroup.includeInLayout               = true;
+				//id_patientSearch.id_patientSearchTextInput.prompt = "Patient Search" ;
+				id_patientSearch.visible 			              = false;
+				id_patientSearch.includeInLayout 	              = false;
+				}); */
+			}
+			
+			/* protected function patientSearchTextInput_changeHandler(event:TextOperationEvent):void
+			{
+			searchPatientAndDisplay();
+			}
+			
+			private function searchPatientAndDisplay():void
+			{
+			if( id_patientSearchTextInput.text.length < 2 )
+			{
+			model.patientSearchPageNo = 1;
+			if( SearchListView )
+			{
+			SearchListView.removePopup();
+			}
+			return;
+			}
+			var dispatchSearchEvent:Boolean = false;
+			var tok:Array
+			var searchString:String = id_patientSearchTextInput.text;
+			var num:Number = new Number( id_patientSearchTextInput.text.substr( 0, 2 ) );// as Number;
+			if( ! isNaN( num ) )
+			{
+			if( searchString.charAt(2) == '-' )//	its a DOB,			date format MM-DD-YY
+			{
+			trace( "length",searchString.length );
+			if(searchString.length >= 8)
+			dispatchSearchEvent = true;
+			else
+			return;
+			}
+			else if( searchString.charAt(2) == '/' )//   its a DOB,       date format MM/DD/YYYY
+			{
+			trace( "length",searchString.length );
+			if(searchString.length >= 8)
+			dispatchSearchEvent = true;
+			else
+			return;
+			}
+			<<<<<<< .working
+			else if( searchString.charAt(3) == '-' )
+			=======
+			else if( searchString.charAt(3) == '-' ) // its ssn with hyphen format XXX-XX-XXXX
+			>>>>>>> .merge-right.r3281
+			{
+			trace( "length",searchString.length );
+			if( searchString.length == 11 )
+			dispatchSearchEvent = true;
+			else
+			return;
+			}
+			else if(searchString.length >= 6 && searchString.length <= 10)// its a i) date MMDDYY or MMDDYYYY  or ii) ssn without hyphen format XXXXXXXXX
+			dispatchSearchEvent = true;
+			else
+			return;
+			}
+			if( searchString.indexOf( ',' ) != -1 ) // its a Name 			format  Last, First
+			{
+			<<<<<<< .working
+			var tok:Array = searchString.split( ',' );
+			if( tok.length == 2 && ( tok[0].length >= 2 || tok[1].length >= 2 ) )
+			dispatchSearchEvent = true;
+			else
+			return;
+			}
+			else if( searchString.charAt(0).toLowerCase() == 'q')// its a QID,
+			{
+			=======
+			tok = searchString.split( ',' );
+			if( tok.length == 2 && ( tok[0].length >= 2 || tok[1].length >= 2 ) )
+			dispatchSearchEvent = true;
+			else
+			return;
+			}
+			else if( searchString.indexOf( ' ' ) != -1 ) // its a Name 			format  First <SPACE> Last OR First <SPACE> Middle <SPACE> Last
+			{
+			tok = searchString.split( ' ' );
+			if( tok.length == 2 ||//&& ( tok[0].length >= 2 || tok[1].length == 1  || tok[1].length == 3) ||
+			tok.length == 3 )//&& ( tok[0].length >= 2 || tok[2].length == 1  || tok[2].length == 3) )
+			dispatchSearchEvent = true;
+			else
+			return;
+			}
+			else if( searchString.charAt(0).toLowerCase() == 'q')// its a QID,
+			{
+			>>>>>>> .merge-right.r3281
+			if( searchString.length == 2 )
+			return;
+			if ( searchString.length >= 3 && searchString.charAt( 2 ) == '-' )
+			{
+			for( var i:int = 3; i < searchString.length ; i++ )
+			{
+			num = new Number ( searchString.charAt( i ) );
+			if( num > 0 )
+			dispatchSearchEvent = true;
+			}
+			}
+			}
+			if( searchString.length == 2 ||  searchString.length == 5)
+			{
+			dispatchSearchEvent = true;
+			}
+			
+			
+			if( dispatchSearchEvent )
+			{
+			var pseEvent : PatientSearchEvent = new PatientSearchEvent(searchString, showSuggestPopup );
+			CairngormEventDispatcher.getInstance().dispatchEvent( pseEvent );
+			trace("patientSearchTextInput_changeHandler", "search Event dispatched" );
+			}
+			if( SearchListView )
+			SearchListView.refreshList( searchString );
+			
+			
+			}
+			
+			private function showSuggestPopup(val:* = null):void
+			{
+			if( SearchListView )
+			{
+			clearSearchResults();
+			}
+			SearchListView 				= new patientSearchList();
+			SearchListView.addEventListener( AppEventStrings.SEARCH_LIST_PATIENT_SELECTED, OnItemClick);
+			var pLoc:Point = new Point( id_patientSearchBoxContainer.x + id_patientSearchTextInput.x,
+			id_patientSearchBoxContainer.y + id_patientSearchTextInput.y + this.height );
+			var loc:Point = this.localToGlobal( pLoc );
+			
+			SearchListView.minWidth = id_patientSearchBoxContainer.width;
+			
+			SearchListView.x = loc.x; 
+			SearchListView.y = loc.y;  
+			
+			/* SearchListView.addEventListener(CloseEvent.CLOSE, removePopup );
+			PopUpManager.addPopUp( SearchListView, FlexGlobals.topLevelApplication.mainContainer  ); *   /
+			
+			SearchListView.ShowPopup( this );
+			
+			} 
+			
+			private function OnItemClick(event:Event):void
+			{
+			try
+			{
+			trace("PatientExamPanelHeader::OnItemClick --> for Load Patient",SearchListView.id_SearchList.selectedItem.UserId, 
+			SearchListView.id_SearchList.selectedItem.FirstName, SearchListView.id_SearchList.selectedItem.LastName);
+			
+			
+			var selectedPatient:PatientSearchDTO = SearchListView.id_SearchList.selectedItem;
+			id_emailBtn.enabled 	= selectedPatient.IsEmailIdAvailable;
+			id_snailBtn.enabled 	= selectedPatient.IsSnailIdAvailable;
+			id_messageBtn.enabled 	= selectedPatient.IsChatIdAvailable;
+			id_commentBtn.enabled 	= selectedPatient.IsSMSNoAvalable;
+			id_PhoneBtn.enabled 	= selectedPatient.IsPhoneNoAvailable;
+			
+			//update ui / FE event
+			var ps:PatientSelectedEvent = new PatientSelectedEvent(AppEventStrings.PATIENT_SELECTED_EVENT);;
+			ps.selection = selectedPatient;
+			dispatchEvent( ps );
+			
+			//update model / BE events
+			var lppEvent : LoadPatientProfilePopUpDataEvent = new LoadPatientProfilePopUpDataEvent(selectedPatient.PatientId);
+			CairngormEventDispatcher.getInstance().dispatchEvent( lppEvent );
+			
+			if(model.userPatientProfileBarSettingTemp==null){
+			var lppcsEvent : LoadPatientProfileCustomizedSettingEvent = new LoadPatientProfileCustomizedSettingEvent(selectedPatient.PatientId,true);
+			CairngormEventDispatcher.getInstance().dispatchEvent( lppcsEvent );
+			}else
+			{
+			lppcsEvent = new LoadPatientProfileCustomizedSettingEvent( selectedPatient.PatientId, false);
+			CairngormEventDispatcher.getInstance().dispatchEvent( lppcsEvent );
+			}
+			
+			clearSearchResults();
+			
+			id_ClosePatnBtn.visible = true;
+			id_NotesBtn.visible = true;
+			id_RxBtn.visible = true;
+			
+			id_ClosePatnBtn.enabled = true;
+			id_NotesBtn.enabled = true;
+			id_RxBtn.enabled = true;
+			
+			}
+			catch(e:Error)
+			{
+			trace("PatientExamPanelHeader::OnItemClick", e );
+			}
+			}
+			
+			private function clearSearchResults():void
+			{
+			SearchListView.removePopup();
+			SearchListView.id_SearchList.removeEventListener(MouseEvent.CLICK, OnItemClick);
+			SearchListView = null;
+			}
+			
+			private function getPatientList():void
+			{
+			model.patientSearchPageNo ++;
+			var searchString:String 			= id_patientSearchTextInput.text;
+			var pseEvent : PatientSearchEvent 	= new PatientSearchEvent( searchString );
+			CairngormEventDispatcher.getInstance().dispatchEvent( pseEvent );
+			}
+			
+			
+			public function removePopup(event:Event = null):void
+			{
+			if( SearchListView )
+			{
+			/* PopUpManager.removePopUp( SearchListView );	
+			SearchListView = null; *   /
+			
+			SearchListView.removePopup();
+			SearchListView = null;
+			trace( "close SearchListView" );
+			}
+			}
+			
+			/* protected function bordercontainer1_clickHandler(event:MouseEvent):void
+			{
+			if( event.eventPhase == EventPhase.BUBBLING_PHASE )
+			event.stopImmediatePropagation();
+			} *    /
+			
+			
+			protected function id_patientSearchTextInput_focusOutHandler(event:FocusEvent):void
+			{
+			
+			
+			//id_patientSearchBoxContainer.setStyle("borderColor", 0xaaaaaa);
+			id_patientSearchBoxContainer.setStyle("skinClass", patientSearchBGSkin);
+			//id_patientSearchBoxContainer.setStyle("borderWeight", 1);
+			}
+			
+			
+			protected function id_patientSearchTextInput_focusInHandler(event:FocusEvent):void
+			{
+			
+			
+			//id_patientSearchBoxContainer.setStyle("borderColor", 0x246D9B);
+			id_patientSearchBoxContainer.setStyle("skinClass", patientSearchBGActiveSkin);
+			
+			//id_patientSearchBoxContainer.setStyle("borderWeight", 2);
+			
+			}
+			
+			
+			
+			
+			protected function id_btnSearch_clickHandler(event:MouseEvent):void
+			{
+			//searchPatientAndDisplay();
+			//event.preventDefault();
+			var searchString:String 			= id_patientSearchTextInput.text;
+			var pseEvent : PatientSearchEvent 	= new PatientSearchEvent(searchString, showSuggestPopup );
+			CairngormEventDispatcher.getInstance().dispatchEvent( pseEvent );
+			
+			event.stopImmediatePropagation();	
+			}
+			
+			public function get SearchDTOListIsUpdated():ArrayCollection
+			{
+			return m_acSearchDTOListIsUpdated;
+			}
+			
+			/* public function set SearchDTOListIsUpdated(value:ArrayCollection):void
+			{
+			m_acSearchDTOListIsUpdated = value;
+			
+			if( value )
+			{
+			var searchString:String = id_patientSearchTextInput.text;
+			SearchListView.refreshList( searchString );
+			}
+			} *   /
+			
+			private var m_acSearchDTOListIsUpdated:ArrayCollection;
+			*/
+			
+			protected function searchpatientview1_PatientSelectedHandler(event:PatientSelectedEvent):void
+			{
+				//if(model.selectedPatientDTO)
+				model.selectedPatientDTO		= event.selection as PatientDTO;
+				
+				var selectedPatient:PatientDTO 	= event.selection as PatientDTO;
+				id_emailBtn.enabled 			= selectedPatient.IsEmailIdAvailable;
+				id_snailBtn.enabled 			= selectedPatient.IsSnailIdAvailable;
+				id_messageBtn.enabled 			= selectedPatient.IsChatIdAvailable;
+				id_commentBtn.enabled 			= selectedPatient.IsSMSNoAvalable;
+				id_PhoneBtn.enabled 			= selectedPatient.IsPhoneNoAvailable; 
+				
+				//update ui / FE event
+				var ps:PatientSelectedEvent = new PatientSelectedEvent(AppEventStrings.PATIENT_SELECTED_EVENT);
+				ps.selection = selectedPatient;
+				dispatchEvent( ps );
+				
+				//update model / BE events
+				var lppEvent : LoadPatientProfilePopUpDataEvent = new LoadPatientProfilePopUpDataEvent(selectedPatient.ID);
+				CairngormEventDispatcher.getInstance().dispatchEvent( lppEvent );
+				
+				if(model.userPatientProfileBarSettingTemp==null)
+				{
+					var lppcsEvent : LoadPatientProfileCustomizedSettingEvent = new LoadPatientProfileCustomizedSettingEvent(selectedPatient.ID,true);
+					CairngormEventDispatcher.getInstance().dispatchEvent( lppcsEvent );
+				}
+				else
+				{
+					lppcsEvent = new LoadPatientProfileCustomizedSettingEvent( selectedPatient.ID, false);
+					CairngormEventDispatcher.getInstance().dispatchEvent( lppcsEvent );
+				}
+				
+				/* if(model.loadedPatientId != 0)
+				{
+				//if patient is loaded then change the skin..
+				id_patientSearchBoxContainer.setStyle("skinClass", patientSearchBGSkinNew);
+				}
+				else if( model.loadedPatientId == 0)
+				{
+				id_patientSearchBoxContainer.setStyle("skinClass", patientSearchBGSkin);	
+				} */
+				
+			} 
+			[Bindable]
+			private var _patientName:String ;
+			public function get patientName():String
+			{
+				return _patientName;
+			}
+			
+			/* public function set patientName(value:String):void
+			{
+			//_patientName = value;
+			var strName:String;
+			if(model.basicUserDTO.FirstName.toLowerCase() != 'null' ) 
+			strName = model.basicUserDTO.FirstName;
+			if(model.basicUserDTO.MiddleName.toLowerCase() != 'null')
+			strName = strName +' '+model.basicUserDTO.MiddleName;
+			if(model.basicUserDTO.LastName.toLowerCase() != 'null')
+			strName = strName +' '+model.basicUserDTO.LastName;
+			
+			_patientName = strName;
+			} */
+			
+			private function id_optionsBtn_ClickHandler(event:MouseEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.COMMUNICATION_PANEL ) )
+				{
+					id_OptionPopUp.displayPopUp = !id_OptionPopUp.displayPopUp; 
+					event.stopImmediatePropagation();
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!--<mx:DateValidator id="id_dateValidator1" inputFormat="DD/MM/YYYY" source="{id_patientSearchTextInput}" property="text"  />
+		<mx:DateValidator id="id_dateValidator2" inputFormat="DD-MM-YYYY" source="{id_patientSearchTextInput}" property="text"   />
+		<mx:DateValidator id="id_dateValidator3" inputFormat="DDMMYYYY"   source="{id_patientSearchTextInput}" property="text"   />-->
+	</fx:Declarations>
+	
+	<s:SkinnableContainer width="100%" height="27" skinClass="com.adobe.Quivus.view.controls.skins.patientExamSkin" >		
+		
+		<s:layout>
+			<s:HorizontalLayout  paddingLeft="5" verticalAlign="middle" horizontalAlign="center" paddingTop="-1"  gap="5" />
+		</s:layout>
+		
+		<mx:Spacer width="2" />
+		<s:Label color="#333333" fontFamily="Calibri Bold" paddingRight="5" fontSize="14" 
+				 typographicCase="uppercase" text="Patient Exam" width="100" paddingTop="3" />
+		
+		<!--<s:TextInput text="Patient Search" width="150"/>-->
+		<!--<s:SkinnableContainer skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.patientExamControlsSkin" height="19" width="135">
+		<s:layout>
+		<s:HorizontalLayout paddingLeft="3" paddingTop="0" paddingBottom="1" verticalAlign="middle" horizontalAlign="left" paddingRight="3" gap="3" />
+		</s:layout>
+		<s:ToggleButton id="id_ImportVisitBtn" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.PE_importVisitBtn" width="24"
+		toolTip="Import Visit" useHandCursor="true" buttonMode="true" enabled="false" height="19" />
+		<s:ToggleButton id="id_RecentPatientBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.PE_RecentPatientsBtn" width="24"
+		toolTip="Recent Patients" useHandCursor="true" buttonMode="true" height="19"/>
+		<s:ToggleButton id="id_RxBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.PE_RXBtn"  width="24"
+		toolTip="Prescription" enabled="false" visible="true" buttonMode="true" useHandCursor="true" height="19"/>			
+		<s:ToggleButton id="id_NotesBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.PE_notesBtn" width="24"
+		toolTip="View Notes" enabled="false" visible="true" buttonMode="true" useHandCursor="true" height="19"/>
+		<s:Button id="id_ClosePatnBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.PE_closeBtn" width="24"
+		toolTip="Close Patient" enabled="false" visible="true" buttonMode="true" useHandCursor="true" height="19"/>
+		</s:SkinnableContainer>-->
+		<!--<mx:Spacer width="100%" maxWidth="100" minWidth="30"  />-->
+		
+		<s:HGroup  width="100%" horizontalAlign="left" gap="4" verticalAlign="top" paddingTop="5"  paddingRight="3">
+			<buttonSeparators:buttonSeparator/>
+			<s:ToggleButton id="id_RecentPatientBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.PE_RecentPatientsBtn" 
+							toolTip="Recent Patients" useHandCursor="true" buttonMode="true" />
+			<buttonSeparators:buttonSeparator/>
+			<s:Button id="id_ClosePatnBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.PE_closeBtn"  width="24" 
+					  toolTip="Close Patient" enabled="false" visible="true" buttonMode="true" useHandCursor="true" />
+		</s:HGroup>
+		<!--<custom:patientExamToolBar width="70" />-->
+		<!--&amp;&amp; FlexGlobals.topLevelApplication.mainContainer.id_patientExamPanel.id_MainBGPanel.includeInLayout == false-->
+		<s:SkinnableContainer id="id_patientSearchBoxContainer"	 
+							  skinClass="{model.loadedPatientId == 0?com.adobe.Quivus.view.controls.skins.SkinnableContainers.patientSearchBGSkin:com.adobe.Quivus.view.controls.skins.SkinnableContainers.patientSearchBGSkinNew}"
+							  
+							  click="id_patientSearchBoxContainer_clickHandler(event)"
+							  height="19" width="285"  >
+			<!--visible="{model.loadedPatientId == 0?true:false}" 
+			includeInLayout="{(model.loadedPatientId == 0)?true:false}"-->
+			<s:layout>
+				<s:HorizontalLayout paddingLeft="{model.loadedPatientId == 0 ? 1 : 8}" paddingTop="{model.loadedPatientId == 0 ? 5 : 7}" paddingBottom="2" verticalAlign="middle" 
+									paddingRight="1" gap="1" />
+			</s:layout>
+			<s:Group >
+				<s:BitmapImage  id="id_PatientImage" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/patientpic.png')" width="15" includeInLayout="false" visible="false"/>
+				<mx:Image  id="id_patientImage_small" source="{AppUtils.getByteArray(model.imageDTO.ImageThumbnailData)}" visible="{model.loadedPatientId != 0}" includeInLayout="{model.loadedPatientId != 0}"
+						   width="{id_PatientImage.width+1}" height="{id_PatientImage.height+1}" maintainAspectRatio="false"/>
+			</s:Group>
+			
+			<s:HGroup width="100%"  id="id_PatientNameGroup" 
+					  includeInLayout="false" visible="false" verticalAlign="middle">
+				<s:Label id="lbl_PatientName" fontFamily="Calibri Bold" fontSize="19"  maxDisplayedLines="1" text="{model.patientName}"
+						 typographicCase="uppercase" click="lbl_PatientName_clickHandler(event)" width="235" textAlign="center" />
+				<s:Button  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.RecentPatientSearchButton"
+						   buttonMode="true" useHandCursor="true" width="25" click="lbl_PatientName_clickHandler(event)" />
+			</s:HGroup>
+			<view1:SearchPatientView id="id_patientSearch"   height="19" width="283" patientLoaded="{model.loadedPatientId == 0 ? false : true}"  
+									click="id_patientSearch_clickHandler(event)" focusOut="id_patientSearch_focusOutHandler(event)" PatientSelected="searchpatientview1_PatientSelectedHandler(event)" />
+		</s:SkinnableContainer>
+		<mx:Spacer width="100%" includeInLayout="true" />
+		<s:VGroup gap="-2" paddingTop="-2" horizontalAlign="right" width="100" verticalAlign="middle">
+			
+			
+			<s:ToggleButton id="id_optionsBtn" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.communicationBtnSkin" 
+							buttonMode="true" useHandCursor="true" toolTip="Communication Methods"
+							click="id_optionsBtn_ClickHandler(event)"/>
+			<s:PopUpAnchor id="id_OptionPopUp" width="138"
+						   popUpPosition="below" 
+						   displayPopUp="false" 
+						   styleName="popUpBox">
+				<s:SkinnableContainer id="id_buttons" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.communicationIconsBG" width="138">
+					<s:layout>
+						<s:VerticalLayout gap="2" verticalAlign="bottom" horizontalAlign="left" paddingBottom="6" paddingTop="5" paddingLeft="7" />
+					</s:layout>
+					
+					<s:HGroup width="100%" gap="35" verticalAlign="top">
+						
+						<s:RichText color="#000000" fontSize="12" height="12" kerning="off" text="Communicate" whiteSpaceCollapse="preserve" fontFamily="Calibri Bold"/>
+						<s:Button buttonMode="true" id="id_CloseBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.popupCloseBtnSkin" 
+								  toolTip="Close" height="16" width="16"
+								  click="id_CloseBtn_clickHandler(event)"/>
+					</s:HGroup>
+					
+					
+					<!--skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.PEemailBtn"-->
+					<s:Button id="id_emailBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.Btn_email_wide" 
+							  buttonMode="true" useHandCursor="true" toolTip="Email" />
+					
+					
+					<s:Button id="id_snailBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.Btn_snail_wide"
+							  buttonMode="true" useHandCursor="true" toolTip="Snailmail" />
+					
+					
+					<s:Button id="id_messageBtn"  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.Btn_Message_wide"
+							  buttonMode="true" useHandCursor="true" toolTip="SMS" />
+					
+					
+					<s:Button id="id_commentBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.Btn_chat_wide"
+							  buttonMode="true" useHandCursor="true" toolTip="Chat" />
+					
+					
+					<s:Button id="id_PhoneBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.Btn_Cell_wide"
+							  buttonMode="true" useHandCursor="true" toolTip="Phone" />
+					<!--</s:BorderContainer>-->
+					
+				</s:SkinnableContainer>
+			</s:PopUpAnchor>
+		</s:VGroup>
+		
+		
+		
+		<s:Group>
+			<s:layout>
+				<s:HorizontalLayout gap="3" horizontalAlign="right" paddingTop="1" />
+			</s:layout>	
+			
+			
+			
+			<buttonSeparators:buttonSeparator />
+			<s:HGroup paddingTop="-2">
+				
+				<s:ToggleButton id="id_expandBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.expandButton_grey" enabled="false" 
+								selected="false"  width="24" height="24" buttonMode="true" useHandCursor="true" toolTip="{id_expandBtn.selected?'Collapse':'Expand'}"/>
+			</s:HGroup>
+			
+			<s:HGroup paddingTop="-2" paddingRight="1">
+				<s:ToggleButton id="id_slideoutBtn" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.slideOutBtn_PE" visible="false" includeInLayout="false"
+								buttonMode="true" useHandCursor="true" toolTip="{id_slideoutBtn.selected?'Slide-In':'Slide-Out'}" 
+								width="24" height="24"  />
+				
+			</s:HGroup>
+			
+		</s:Group>
+		
+	</s:SkinnableContainer>
+	<!--</s:BorderContainer>-->
+	
+</s:Group>

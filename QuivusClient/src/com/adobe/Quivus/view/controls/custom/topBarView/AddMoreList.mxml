@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx"
+					  skinClass="com.adobe.Quivus.view.controls.skins.QLSkin"					 
+	
+	>
+	
+	
+
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			
+			public var itemClickListener:Function;
+			public var addMoreClickListener:Function;
+			[Bindable]
+			public var itemRendererClass:Class;
+			
+			private var m_acDataProvider:ArrayCollection
+			
+			[Bindable]
+			public function get DataProvider():ArrayCollection
+			{
+				return m_acDataProvider;
+			}
+			
+			public function set DataProvider(value:ArrayCollection):void
+			{
+				m_acDataProvider = value;
+			}
+			
+			protected function list1_clickHandler(event:MouseEvent):void
+			{
+				itemClickListener( event );
+			}
+
+			protected function linkbutton1_clickHandler(event:MouseEvent):void
+			{
+				addMoreClickListener( event );
+			}
+
+
+			protected function list1_creationCompleteHandler(event:FlexEvent):void
+			{
+				/* id_list1.scroller.setStyle("verticalScrollPolicy", ScrollPolicy.OFF);
+				  */
+				 
+				id_list1.setStyle( "color", 0xEEEEEE );
+				id_list1.setStyle( "fontSize", 11 );
+				//id_list1.setStyle( "contentBackgroundColor", 0x222222 );
+				//id_list1.setStyle( "border", 1 );
+				//id_list1.setStyle( "borderColor", 0x00A2FF );
+				id_list1.setStyle( "fontFamily", "Calibri Bold" );
+				//id_list1.setStyle( "embedFonts", true);
+				
+			
+				/* id_list1.setStyle( "paddingLeft", 15);
+				id_list1.setStyle( "paddingRight", 15); */
+				
+				
+				id_list1.setStyle("useRollOver", false);
+				id_list1.setStyle( "rollOverAlpha", 0 );
+
+				
+				/* id_list1.setStyle( "rollOverColor", 0xFF9300 );
+				id_list1.setStyle( "textRollOverColor", 0x333333 );
+				id_list1.setStyle( "selectionColor", 0x7c632c ); */ 
+				
+				
+				
+				
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="left" paddingLeft="4" paddingRight="4" paddingTop="4" gap="6" />
+	</s:layout>
+		
+	<s:List id="id_list1" width="100%" height="120" dataProvider="{DataProvider}" click="list1_clickHandler(event)" itemRenderer="{new ClassFactory(  itemRendererClass ) }" 
+			 creationComplete="list1_creationCompleteHandler(event)" skinClass="com.adobe.Quivus.view.controls.skins.ListSkins.QLListSkin"/>
+	<!--<mx:LinkButton label="+ ADD MORE" click="linkbutton1_clickHandler(event)" />-->
+	<s:HGroup paddingRight="0">
+		
+	<!--<s:Button buttonMode="true"
+			  click="linkbutton1_clickHandler(event)"
+			  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QLAddmoreBtn" toolTip="Add More Quick Links"/>
+		-->
+	<s:ToggleButton  id="id_ManageBtn" buttonMode="true" width="100%"
+				click="linkbutton1_clickHandler(event)"
+				skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.QLAddmoreToggleBtn" toolTip="Manage Search Engine List"/>		
+					
+	</s:HGroup>
+	
+</s:SkinnableContainer>

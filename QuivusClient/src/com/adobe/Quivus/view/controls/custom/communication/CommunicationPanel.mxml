@@ -1,0 +1,623 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:SlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+					  xmlns:view="com.zigron.provider.services.email.view.*" 
+					  xmlns:communication="com.adobe.Quivus.view.controls.custom.communication.*"
+					  xmlns:view1="com.zigron.provider.search.services.provider.view.*" 
+					  xmlns:view2="com.adobe.Quivus.view.controls.custom.communication.clinicUserProfile.view.*" 
+					  xmlns:skins="com.zigron.provider.live.services.scheduler.view.skins.*" 
+					  xmlns:SkinnableContainers="com.adobe.Quivus.view.controls.skins.SkinnableContainers.*" 
+					  xmlns:view3="com.zigron.provider.services.sms.view.*" 
+					  QSViewStateChange="slideoutpanel1_QSViewStateChangeHandler(event)"
+					  xmlns:videochat="com.adobe.Quivus.view.controls.custom.communication.videochat.*"
+					  creationComplete="slideoutpanel1_creationCompleteHandler(event)" xmlns:view4="com.gazuntite.provider.services.email.view.*" xmlns:view5="com.gazuntite.provider.services.sms.view.*" xmlns:view6="com.gazuntite.provider.search.services.provider.view.*" 
+					  >
+
+	<fx:Metadata>
+		[Event(name="close", type="mx.events.CloseEvent")]
+		[Event(name="AcceptVideoCallEvent", type="com.adobe.Quivus.events.communication.videochat.VideoCallAcceptCallEvent")]
+	</fx:Metadata>
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.communication.GetClinicUserIDEvent;
+			import com.adobe.Quivus.events.communication.videochat.VideoCallAcceptCallEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.view.controls.custom.communication.videochat.TestVideoChatPanel;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.controls.extended.components.PopupWindow;
+			import com.gazuntite.provider.search.services.provider.view.event.ListVieClickEvent;
+			import com.gazuntite.provider.services.email.view.CommunicationView;
+			import com.gazuntite.provider.services.sms.util.CommunicationConstant;
+			
+			import mx.controls.Alert;
+			import mx.core.IVisualElement;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+
+			private var _EmailAddress:String;
+			private var _userID:int;
+			private var _Heading:String;
+			private var _ProviderName:String;
+			private var _clinicBranchID:String;
+			
+			private var _userSessionStatus:String;
+			
+			[Bindable]
+			public function get userSessionStatus():String
+			{
+				return _userSessionStatus;
+			}
+
+			public function set userSessionStatus(value:String):void
+			{
+				_userSessionStatus = value;
+			}
+
+			
+			
+			///
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			private var m_oCurrentSlideOutPanel:SlideOutPanel;
+			private var _isVideoChat:Boolean=false;
+
+			public function get isVideoChat():Boolean
+			{
+				return _isVideoChat;
+			}
+
+			public function set isVideoChat(value:Boolean):void
+			{
+				_isVideoChat = value;
+			}
+			
+			
+			[Bindable]
+			public function get ProviderName():String
+			{
+				return _ProviderName;
+			}
+
+			public function set ProviderName(value:String):void
+			{
+				_ProviderName = value;
+			}
+			
+			[Bindable]
+			public function get Heading():String
+			{
+				return _Heading;
+			}
+
+			public function set Heading(value:String):void
+			{
+				_Heading = value;
+			}
+			
+			[Bindable]
+			public function get clinicBranchID():String
+			{
+				return _clinicBranchID;
+			}
+			
+			public function set clinicBranchID(value:String):void
+			{
+				_clinicBranchID = value;
+			}
+
+			
+			public function get currentSlideOutPanel():SlideOutPanel
+			{
+				return m_oCurrentSlideOutPanel;
+			}
+			
+			public function set currentSlideOutPanel(value:SlideOutPanel):void
+			{
+				m_oCurrentSlideOutPanel = value;
+				if( value )
+				{
+					/* m_oCurrentSlideOutPanel.addEventListener( AppEventStrings.QS_VIEW_STATE_CHANGE, QSViewStateChangeHandler );
+					m_oCurrentSlideOutPanel.addEventListener( AppEventStrings.QS_SLIDE_STATE_CHANGE, QSSlideStateChangeHandler ); */
+					m_oCurrentSlideOutPanel.ExpandedView 		= true;
+					m_oCurrentSlideOutPanel.ParentSlideOutPanel 	= this;
+					
+					//removeAllPopups();
+				}
+			}
+			
+			private function removeCurrentSlidePanel(event:CloseEvent = null):void
+			{
+				
+				
+				currentSlideOutPanel = null;
+				
+				//id_MainBGPanel.addElementAt(currentSlideOutPanel, 0);
+				
+				
+			}
+			///
+			protected function CloseHandler(event:MouseEvent = null):void
+			{
+				//var endVideCall:VideoCallAcceptCallEvent=new VideoCallAcceptCallEvent();
+				//dispatchEvent(endVideCall);
+				dispatchEvent( new CloseEvent(CloseEvent.CLOSE) );
+				
+			}
+			
+
+			protected function slideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_header.id_slideoutBtn.addEventListener(MouseEvent.CLICK, SlideoutHandler);
+				id_header.id_btnClose.addEventListener(MouseEvent.CLICK, CloseHandler);
+				
+				id_commInternalHeader.id_OptionPopUp.displayPopUp = true;
+				//id_patientExamControls.id_emailBtn.addEventListener(MouseEvent.CLICK, onEmailClick);
+				id_commInternalHeader.id_emailBtn.addEventListener(MouseEvent.CLICK,onEmailClick);
+				id_commInternalHeader.id_commentBtn.addEventListener(MouseEvent.CLICK,onSMSClick);
+				id_commInternalHeader.id_VideoChatBtn.addEventListener(MouseEvent.CLICK,onVideoChatClick);
+				
+				/* Heading=" Profile";
+				 */
+				if(isVideoChat)
+				{
+					id_MainCommView.selectedIndex=3;
+				}
+				id_commInternalHeader.id_OptionPopUp.displayPopUp = false;
+			}
+			
+			private function IsStatusAvailable():void
+			{
+				ProviderName = model.SearchProviderDetailsResults.FirstName +' '+model.SearchProviderDetailsResults.MiddleName+' '+ model.SearchProviderDetailsResults.LastName ; 
+				id_communication.EmailAddress = model.SearchProviderDetailsResults.UserEmail;
+				id_communication.userID = model.SearchProviderDetailsResults.userID;
+				userSessionStatus = model.SearchProviderDetailsResults.sessionStatus;
+				skinChange();
+				if(userSessionStatus == "Available")
+				{
+					if(idVideoChat != null)
+					{
+						idVideoChat.isNewCall = true;
+						idVideoChat.clinicBranchID = parseInt(clinicBranchID);
+						idVideoChat.currentLoggedInUserID = model.loggedInUserDTO.UserId;
+						idVideoChat.userID = userID;
+						idVideoChat.id_html.location = "";
+						idVideoChat.providerName = ProviderName;
+						idVideoChat.CallDetails();
+					}
+					ShowVideoPopup( idVideoChat );
+					id_commInternalHeader.id_OptionPopUp.displayPopUp=false;
+					id_commInternalHeader.id_optionsBtn.selected =false;
+					
+				}
+				else
+				{
+					if(userSessionStatus == "Invisible")
+					{
+						Alert.show("You cannot call "+ model.SearchProviderDetailsResults.FirstName +" "+ model.SearchProviderDetailsResults.LastName+" at this time.User current Status is Offline");
+					}
+					else
+						Alert.show("You cannot call "+ model.SearchProviderDetailsResults.FirstName +" "+ model.SearchProviderDetailsResults.LastName+" at this time.User current Status is "+ userSessionStatus);
+					
+					
+				}
+			}
+			
+			
+			private function GenerateVideCall():void
+			{
+				var clinicuserIDevent: GetClinicUserIDEvent = new GetClinicUserIDEvent(userID, parseInt(clinicBranchID), false, IsStatusAvailable);
+				CairngormEventDispatcher.getInstance().dispatchEvent(clinicuserIDevent);
+			}
+			
+			
+			private function onVideoChatClick(event:MouseEvent):void
+			{
+				if(!CommunicationConstant.ISVIDEOCALL_ACTIVE)
+				{
+					GenerateVideCall();
+				}
+				else
+				{
+					Alert.show("You can make one call at a time.","Information");
+				}
+				
+				/*  if(userSessionStatus == "Available")
+				{ 
+				
+				if(idVideoChat != null)
+				{
+				idVideoChat.isNewCall = "true";
+				idVideoChat.clinicBranchID = parseInt(clinicBranchID);
+				idVideoChat.currentLoggedInUserID = model.loggedInUserDTO.UserId;
+				idVideoChat.userID = userID;
+				idVideoChat.id_html.location = "";
+				idVideoChat.CallDetails();
+				}
+				ShowVideoPopup( idVideoChat );
+				id_commInternalHeader.id_OptionPopUp.displayPopUp=false;
+				id_commInternalHeader.id_optionsBtn.selected =false;
+				
+				 }
+				else
+				{
+					if(userSessionStatus == "Invisible")
+					{
+						Alert.show("You cannot call "+ model.SearchProviderDetailsResults.FirstName +" "+ model.SearchProviderDetailsResults.LastName+" at this time.User current Status is Offline");
+					}
+					else
+					Alert.show("You cannot call "+ model.SearchProviderDetailsResults.FirstName +" "+ model.SearchProviderDetailsResults.LastName+" at this time.User current Status is "+ userSessionStatus);
+					
+					
+				}
+				  */
+				
+			}
+			private function getVideoCallDetailsDetails(val:* = null):void
+			{
+				if(model.m_ovideoCallInfo != null || model.m_ovideoCallInfo != "")
+				{
+					//Alert.show("Video Call Accept or reject","Video Call")
+					/* var objnotification:VideoCallNotification=new VideoCallNotification();
+					PopUpManager.addPopUp(objnotification,this,true); */
+					
+				}
+				else
+				{
+					/* var getSessionEvent:GetIncomingVideoChatSessionEvent=new GetIncomingVideoChatSessionEvent(model.loggedInUserDTO.UserId,model.userSelectedStationDTO.ClinicBranchID,getVideoCallDetailsDetails);
+					CairngormEventDispatcher.getInstance().dispatchEvent(getSessionEvent); */
+				}
+			}
+				
+			private function ShowVideoPopup(panel:IVisualElement):void
+			{
+				ChromeUtil.restoreDefault();
+				var win:PopupWindow = new PopupWindow();
+				win.addElement( panel );
+				win.width = 500 ;
+				win.title ="Video Chat" ;
+				win.height = 470;
+				win.ShowPopup( this );
+				win.move(Capabilities.screenResolutionX/2 + 10,60);
+				win.addEventListener(CloseEvent.CLOSE,onVideoClose);
+				CommunicationConstant.ISVIDEOCALL_ACTIVE = true;
+				id_commInternalHeader.id_VideoChatBtn.enabled = !CommunicationConstant.ISVIDEOCALL_ACTIVE;
+				//var notificationEvent:VideoCallNotificationEvent = new VideoCallNotificationEvent(
+				
+			}	
+			
+			private function onVideoClose(event:CloseEvent):void
+			{
+				if(idVideoChat.id_html != null)
+				{
+					idVideoChat.id_html.location  = Constants.VIDEO_CHAT_OUTGOING_URL+"?InitiatorID="+model.loggedInUserDTO.UserId+"&RecieverID="+userID+"&videoChatID=000&EndsessionID=00";
+				}
+				
+				CommunicationConstant.ISVIDEOCALL_ACTIVE = false;
+				id_commInternalHeader.id_VideoChatBtn.enabled = !CommunicationConstant.ISVIDEOCALL_ACTIVE;
+				trace("Communication Panel: onVideoClose");
+				/* var getSessionEvent:GetIncomingVideoChatSessionEvent=new GetIncomingVideoChatSessionEvent(model.loggedInUserDTO.UserId,model.userSelectedStationDTO.ClinicBranchID,getVideoCallDetailsDetails);
+				CairngormEventDispatcher.getInstance().dispatchEvent(getSessionEvent); */
+			}
+			
+			private function onSMSClick(event:MouseEvent):void
+			{
+				Heading="SMS";
+				id_MainCommView.selectedIndex = 2;
+				id_commInternalHeader.id_OptionPopUp.displayPopUp=false;
+				id_commInternalHeader.id_optionsBtn.selected =false;
+				//dispatchEvent(CloseHandler);
+				if(idVideoChat != null)
+					idVideoChat.isNewCall=false;
+				
+				if(id_smsView != null)
+				{
+					id_smsView.BranchID = model.userSelectedStationDTO.ClinicBranchID.toString();
+					id_smsView.senderID = model.loggedInUserDTO.UserId;
+					id_smsView.userID = userID;
+				}
+				//id_commInternalHeader.ProviderName = model.SearchProviderDetailsResults.FirstName +" "+model.SearchProviderDetailsResults.MiddleName +" "+model.SearchProviderDetailsResults.LastName;
+			}
+			
+			private function onEmailClick(event:MouseEvent):void
+			{	
+				Heading = "Email";
+				id_MainCommView.selectedIndex = 1;
+				id_commInternalHeader.id_OptionPopUp.displayPopUp=false;
+				id_commInternalHeader.id_optionsBtn.selected =false;
+				
+				
+				
+				// Previous data clearance
+				
+				//
+				
+				
+				//event.stopImmediatePropagation();
+				/* var emailPanel:EmailPanel=new EmailPanel();
+				emailPanel.EmailAddress = EmailAddress;
+				emailPanel.userID = userID;
+				emailPanel.addEventListener(CloseEvent.CLOSE, CloseHandler); */
+				
+				//var emailPanel:CommunicationView=new CommunicationView();
+				//id_communication.visible=true;
+				if(idVideoChat != null)
+					idVideoChat.isNewCall=false;
+				
+				
+				if(id_communication != null)
+				{
+				id_communication.EmailAddress = model.SearchProviderDetailsResults.UserEmail;
+				id_communication.userID = model.SearchProviderDetailsResults.userID;
+				id_communication.id_Views.selectedIndex=1;
+				//id_communication.addEventListener(CloseEvent.CLOSE, CloseHandler);
+				}
+				//id_MainCommPanel.addElementAt(id_communication, 0 );
+				
+				//id_commInternalHeader.ProviderName = model.SearchProviderDetailsResults.FirstName +" "+model.SearchProviderDetailsResults.MiddleName +" "+model.SearchProviderDetailsResults.LastName;
+				this.ExpandedView=true;
+			}
+			
+			
+			
+			protected function SlideoutHandler(event:MouseEvent):void
+			{
+				this.ToggleSlideOut();
+				event.stopImmediatePropagation();
+			}
+			[Bindable]
+			public function get EmailAddress():String
+			{
+				return _EmailAddress;
+			}
+
+			public function set EmailAddress(value:String):void
+			{
+				_EmailAddress = value;
+			}
+			[Bindable]
+			public function get userID():int
+			{
+				return _userID;
+			}
+
+			public function set userID(value:int):void
+			{
+				_userID = value;
+			}
+
+
+
+			protected function searchproviderview1_LoadClinicUserDetailsEventHandler(event:ListVieClickEvent):void
+			{
+				//id_searchProviderView.
+				if(id_MainCommView.selectedIndex > 0)
+				id_MainCommView.selectedIndex=0;
+				
+				Heading="Profile";
+				if(event.userId > 0)
+				userID = event.userId;
+				EmailAddress = EmailAddress;
+				clinicBranchID = event.branchId.toString();
+				
+				if(idVideoChat != null)
+					idVideoChat.isNewCall=false;
+				
+				var clinicuserIDevent: GetClinicUserIDEvent = new GetClinicUserIDEvent(event.userId,event.branchId, false, getProviderDetails);
+				CairngormEventDispatcher.getInstance().dispatchEvent(clinicuserIDevent);
+			}
+			
+			private function getProviderDetails(val:* = null):void
+			{
+				ProviderName = model.SearchProviderDetailsResults.FirstName +' '+model.SearchProviderDetailsResults.MiddleName+' '+ model.SearchProviderDetailsResults.LastName ; 
+				id_communication.EmailAddress = model.SearchProviderDetailsResults.UserEmail;
+				id_communication.userID = model.SearchProviderDetailsResults.userID;
+				userSessionStatus = model.SearchProviderDetailsResults.sessionStatus;
+				skinChange();
+				
+				if(model.SearchProviderDetailsResults.userID > 0)
+					id_commInternalHeader.id_optionsBtn.enabled= true;
+				else if(model.SearchProviderDetailsResults.userID > 0)
+					id_commInternalHeader.id_optionsBtn.enabled= false;
+			}
+
+			private function skinChange () :void
+			{
+				if(userSessionStatus == "Available")
+				{
+					id_commInternalHeader.statusImage.visible 	  =true ;
+					id_commInternalHeader.statusImage.source      = "com/adobe/Quivus/view/controls/skins/assets/available.png";
+				}
+				
+				else if(userSessionStatus == "Offline")
+				{
+					id_commInternalHeader.statusImage.visible		=true ;
+					id_commInternalHeader.statusImage.source 	    ="com/adobe/Quivus/view/controls/skins/assets/invisible.png" ;
+				}
+					
+			
+				else if(userSessionStatus == "Busy")
+				{
+					id_commInternalHeader.statusImage.visible 	    =true ;
+					id_commInternalHeader.statusImage.source 	    ="com/adobe/Quivus/view/controls/skins/assets/busy.png" ;
+				}
+					
+			
+				else if(userSessionStatus == "Away")
+				{
+					id_commInternalHeader.statusImage.visible 	   =true ;
+					id_commInternalHeader.statusImage.source       = "com/adobe/Quivus/view/controls/skins/assets/away.png";
+				}
+					
+				else 
+					id_commInternalHeader.statusImage.visible   =false ;
+				
+			}
+			protected function idVideoChat_AcceptVideoCallEventHandler(event:VideoCallAcceptCallEvent):void
+			{
+				 /* var objnotification:VideoCallNotification=new VideoCallNotification();
+				 objnotification.percentHeight = 100;
+				 objnotification.percentWidth  = 100;
+				var userSessionInfo:Array =model.m_ovideoCallInfo.split('^');
+				
+				objnotification.opentoksession= userSessionInfo[0];
+				objnotification.videochatInitiatorID = userSessionInfo[1];
+				objnotification.videoChatID = userSessionInfo[2];
+				objnotification.videoChatTokenID = userSessionInfo[3]; */
+				
+				//PopUpManager.addPopUp(objnotification,this,true);
+				
+				
+					/* var endVideCall:VideoCallAcceptCallEvent=new VideoCallAcceptCallEvent();
+					dispatchEvent(endVideCall);
+				 */
+				
+				
+				/* var objTest:TestVideoChatPanel=null;
+				objTest= new TestVideoChatPanel(); */
+				
+				
+				
+				
+				/* var userSessionInfo:Array = model.m_ovideoCallInfo.split('^');
+				
+				var videochatSessionID:String = userSessionInfo[0];
+				var videochatInitiatorID:String = userSessionInfo[1];
+				var videoChatID:String = userSessionInfo[2];
+				var videoChatTokenID:String = userSessionInfo[3];
+				objTest.currentLoggedInUserID = model.loggedInUserDTO.UserId;
+				objTest.clinicBranchID = parseInt(clinicBranchID);
+				objTest.token = videoChatTokenID;
+				objTest.opentoksession = videochatSessionID;
+				
+				////////
+				if(model.m_ovideoCallInfo != null)
+				{
+					var userSessionInfo:Array =model.m_ovideoCallInfo.split('^');
+					
+					objTest.opentoksession = userSessionInfo[0];
+					objTest.token = userSessionInfo[3];
+				}
+				
+				ShowVideoPopup( objTest );
+			
+				if(idVideoChat != null)
+					idVideoChat.isNewCall=false; */
+				
+				
+				
+				/* var getSessionEvent:GetIncomingVideoChatSessionEvent=new GetIncomingVideoChatSessionEvent(model.loggedInUserDTO.UserId,7,getVideoCallDetailsDetails);
+				CairngormEventDispatcher.getInstance().dispatchEvent(getSessionEvent);
+			} */
+			}
+			
+			protected function slideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if (id_header)
+				{
+					if(this.ExpandedView)
+						
+						id_header.id_expandBtn.selected = true;
+					else 
+						
+						id_header.id_expandBtn.selected = false;
+				}
+			}
+					
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<custom:HeaderContents>
+		<s:Group width="100%" height="22">
+			<s:layout>
+				<s:VerticalLayout paddingLeft="{isSlideOut? 5:0}" horizontalAlign="center" />
+			</s:layout>
+			
+			<communication:CommunicationHeaderView id="id_header" minWidth="560" width="100%" height="22" />
+			<mx:Spacer width="2" />
+		</s:Group>
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		<s:SkinnableContainer height="22" width="100%" minWidth="550" styleName="lightPurpleHeaderBGContainerSkin">
+			<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="center" >
+				<s:Label paddingLeft="12" color="#ffffff" paddingTop="6" fontFamily="Calibri Bold" text="COMMUNICATIONS" />
+			</s:HGroup>
+		</s:SkinnableContainer>
+	</custom:SlideHeaderContents>
+	<custom:Contents>
+		
+		<s:VGroup gap="0" height="100%" width="{id_header.width}" verticalAlign="top" horizontalAlign="center"
+				  paddingLeft="{isSlideOut? 10:0}" maxHeight="450"  >
+			
+			<s:BorderContainer height="100%" width="100%" cornerRadius="3" backgroundColor="#999AAA" borderAlpha="0" borderColor="#999AAA">
+				<s:filters>
+				<s:GlowFilter blurX="5" blurY="5" color="#00d2ff" inner="true" strength="5" alpha="1.0" quality="2" knockout="false"   />
+					</s:filters>
+					<s:layout>
+					<s:VerticalLayout paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" gap="2"/>
+				</s:layout>
+				
+				<s:HGroup height="100%" width="100%" >
+					<s:SkinnableContainer width="30%" id="searchContainer" height="100%" styleName="gradientGreyHeaderWhiteBGContainerSkin">
+						<view6:SearchProviderView id="id_searchProviderView" userID="{model.loggedInUserDTO.UserId}" LoadClinicUserDetailsEvent="searchproviderview1_LoadClinicUserDetailsEventHandler(event)" width="{searchContainer.width}" height="100%" />
+					</s:SkinnableContainer>
+					<s:SkinnableContainer width="70%" height="100%" styleName="gradientGreyHeaderWhiteBGContainerSkin" id="contactsContainer">
+						<s:layout>
+							<s:VerticalLayout gap="1" paddingBottom="5" paddingLeft="3" paddingRight="3" paddingTop="10"/>
+						</s:layout>
+						
+						<communication:CommunicationInternalHeaderView id="id_commInternalHeader" ProviderName="{ProviderName}"
+																	   Heading="{Heading}" sessionStatus="{userSessionStatus}" width="100%"/>
+						<mx:ViewStack id="id_MainCommView" width="100%" height="100%" creationPolicy="all" >
+							<s:NavigatorContent width="100%" height="100%" >
+								<view2:clinicUserBasicInformation id="id_UserBasicInfo" width="100%" height="100%" />
+							</s:NavigatorContent>
+							<s:NavigatorContent width="100%" height="100%" >
+								<view4:CommunicationView id="id_communication" width="100%" height="100%"
+														EmailAddress="{EmailAddress}" userID="{userID}"/>
+							</s:NavigatorContent>
+							<s:NavigatorContent width="100%" height="100%">
+								<view5:SMSView id="id_smsView" userID="{userID}" senderID="{model.loggedInUserDTO.UserId}" 
+											   BranchID="{model.userSelectedStationDTO.ClinicBranchID.toString()}" width="100%" height="100%"/>
+							</s:NavigatorContent>
+							<!--<s:NavigatorContent width="100%" height="100%">
+								<videochat:VideoChatView id="id_VideoChat" clinicBranchID="{clinicBranchID}" currentLoggedInUserID="{model.loggedInUserDTO.UserId}" userID="{userID}" width="100%" height="100%" />
+							</s:NavigatorContent>-->
+							<s:NavigatorContent width="100%" height="100%">
+								<videochat:TestVideoChatPanel id="idVideoChat" isNewCall="false" 
+															  clinicBranchID="{clinicBranchID}" 
+															  currentLoggedInUserID="{model.loggedInUserDTO.UserId}" 
+															  userID="{userID}" providerName="{ProviderName}" width="100%" height="100%" 
+															  AcceptVideoCallEvent="idVideoChat_AcceptVideoCallEventHandler(event)" />
+							</s:NavigatorContent>
+
+						</mx:ViewStack>
+						
+					</s:SkinnableContainer>
+				</s:HGroup>
+				<s:HGroup horizontalAlign="right" width="100%" paddingRight="7">
+					<s:Button height="8" width="40" toolTip="Scroll Up" styleName="blackScrollUpButtonSkin"
+							  buttonMode="true" useHandCursor="true"/>
+					<s:Button height="8" width="40" toolTip="Scroll Down" styleName="blackScrollDownButtonSkin"
+							  buttonMode="true" useHandCursor="true"/>
+				</s:HGroup>
+			</s:BorderContainer>
+			<s:HGroup horizontalAlign="center" verticalAlign="bottom" width="100%" >
+				<s:Button id="id_CloseBtn" styleName="closeButtonSkin"
+						  click="CloseHandler(event)" buttonMode="true" useHandCursor="true" toolTip="Close Communication Section"/>
+			</s:HGroup>
+			
+			
+		</s:VGroup>
+	
+	</custom:Contents>
+</custom:SlideOutPanel>
+
+

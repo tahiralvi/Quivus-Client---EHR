@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 
+		 >
+	<s:layout>
+		<s:HorizontalLayout verticalAlign="middle" horizontalAlign="left" />
+	</s:layout>
+
+	<fx:Script>
+		<![CDATA[
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			private var popGroup:Group;
+			private var m_oAttachment:AttachmentView;
+			/* private var m_oAttachmentHandler:Function;
+			
+			
+			public function get AttachmentHandler():Function
+			{
+				return m_oAttachmentHandler;
+			}
+
+			public function set AttachmentHandler(value:Function):void
+			{
+				m_oAttachmentHandler = value;
+			} */
+
+
+			public function get Attachment():AttachmentView
+			{
+				return m_oAttachment;
+			}
+
+			public function set Attachment(value:AttachmentView):void
+			{
+				m_oAttachment = value;
+			}
+
+			protected function AttachmentBtn_clickHandler(event:MouseEvent):void
+			{
+				showAttachmentView();
+				event.stopImmediatePropagation();
+			}
+			
+			private function showAttachmentView():void
+			{
+				
+				if(popGroup && popGroup.isPopUp)
+				{
+					PopUpManager.removePopUp( popGroup );
+					popGroup = null;
+					return;
+				}
+				
+				Attachment = new AttachmentView();
+				/* if(AttachmentHandler)
+				{ */
+					Attachment.addEventListener(FlexEvent.CREATION_COMPLETE, function(e:FlexEvent):void
+					{
+						Attachment.id_Attach.addEventListener(MouseEvent.CLICK, function(event:Event):void
+						{
+							PopUpManager.removePopUp( popGroup );
+						}); 
+						
+						Attachment.id_CloseButton.addEventListener(MouseEvent.CLICK, function(event:Event):void
+						{
+							PopUpManager.removePopUp( popGroup );
+						}); 
+					
+					});
+				/* } */
+				popGroup = new Group();
+				popGroup.addElement( Attachment );
+				PopUpManager.addPopUp( popGroup, FlexGlobals.topLevelApplication as DisplayObject );
+				
+				var pLoc:Point = new Point( id_AttachmentBtn.x + id_AttachmentBtn.width, id_AttachmentBtn.y + id_AttachmentBtn.height);
+				var loc:Point = this.localToGlobal( pLoc ); 
+				
+				popGroup.x = loc.x-260;
+				popGroup.y = loc.y-17; 
+				
+				
+				Attachment.id_CloseButton.addEventListener(MouseEvent.CLICK, CloseHandler);
+			}
+			
+			protected function CloseHandler(event:MouseEvent):void
+			{
+				PopUpManager.removePopUp( popGroup );
+				Attachment.id_CloseButton.removeEventListener(MouseEvent.CLICK, CloseHandler);
+				trace("close attachment");
+			}
+			
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	
+	
+	<s:Button id="id_AttachmentBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.emailAttachmentBtnSkin"
+					label="" click="AttachmentBtn_clickHandler(event)" toolTip="Attach Patient Record"
+					 useHandCursor="true" buttonMode="true"/>
+	
+	
+	
+</s:Group>

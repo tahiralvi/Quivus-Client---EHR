@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:SlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+					  xmlns:patientEncounter="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.patientEncounter.*"
+						creationComplete="slideoutpanel1_creationCompleteHandler(event)" xmlns:buttonSeparators="com.adobe.Quivus.view.controls.skins.buttonSeparators.*"						
+						QSViewStateChange="slideoutpanel1_QSViewStateChangeHandler(event)"
+					  
+					  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.createVisitBtn;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			
+			import mx.events.FlexEvent;
+			
+			import valueObjects.PatientEncounterDTO;
+			
+		
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			
+			public function ScrollUp(event:MouseEvent = null):void
+			{
+				id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition + 15;
+			}
+			
+			public function ScrollDown(event:MouseEvent = null):void
+			{
+				id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition - 15;
+			}
+			
+			
+
+			protected function slideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.ExpandedView = true;
+				id_slideoutBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					ToggleSlideOut();
+					event.stopImmediatePropagation();
+				});
+			}
+
+
+		
+
+			protected function slideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if(this.ExpandedView)
+				{
+					//id_HeaderLabel.text.toUpperCase();
+					id_expandBtn.selected = true;
+				}
+				else
+				{
+					id_expandBtn.selected = false;
+					////id_headerLabel.text.toLowerCase();
+					//id_HeaderLabel.text = AppUtils.TitleCase(id_HeaderLabel.text);
+				}
+								
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<custom:HeaderContents>
+		
+		<s:SkinnableContainer id="id_header" width="100%" height="23" skinClass="com.adobe.Quivus.view.controls.skins.VBInternalHeaderBarSkin">
+			
+		<!--<s:BorderContainer width="100%" height="22" backgroundAlpha="1" backgroundColor="#E0DFCB" borderVisible="false" >
+		-->	<s:layout>
+				<s:HorizontalLayout horizontalAlign="left" verticalAlign="middle" />
+			</s:layout>
+			<s:HGroup paddingLeft="5">
+				
+			<s:Label id="id_HeaderLabel" text="PATIENT ENCOUNTER" color="#4A3824" fontFamily="Calibri Bold" fontSize="12"  />
+			</s:HGroup>
+			<s:HGroup width="100%" horizontalAlign="right" paddingRight="2" gap="0">
+				<buttonSeparators:buttonSeparator />
+				<s:HGroup paddingTop="-2">
+					<s:ToggleButton id="id_expandBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.expandButton_grey" selected="true" 
+									buttonMode="true" useHandCursor="true" toolTip="{id_expandBtn.selected?'Collapse':'Expand'}"
+									width="23" height="23" />
+				</s:HGroup>
+				
+				<buttonSeparators:buttonSeparator />
+				<s:HGroup paddingTop="-2">
+					<s:ToggleButton id="id_slideoutBtn" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.slideOutBtn"
+									buttonMode="true" useHandCursor="true" toolTip="{id_slideoutBtn.selected?'Slide-In':'Slide-Out'}" 
+									width="23" height="23" />
+				</s:HGroup>
+				
+			</s:HGroup>	
+		</s:SkinnableContainer>
+		<!--</s:BorderContainer>-->
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		<s:BorderContainer  width="100%" backgroundColor="#E0DFCB" height="22">
+			
+		</s:BorderContainer>
+		
+	</custom:SlideHeaderContents>
+	<custom:Contents>
+		<s:BorderContainer id="id_contents" width="100%" height="100%" backgroundAlpha="0" backgroundColor="#E0DFCB" borderVisible="false" >
+			<s:layout>
+				<s:HorizontalLayout horizontalAlign="left" verticalAlign="middle" paddingBottom="2" />
+			</s:layout>
+			<s:Scroller id="id_Scroller" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off" >
+				
+		<patientEncounter:PatientEncounterView id="id_PatientEncounterView" width="100%" height="100%" minHeight="175" DataProvider="{model.patientEncounterResult.PatientEncounterList}" />
+				</s:Scroller>
+		</s:BorderContainer>
+	</custom:Contents>
+	
+</custom:SlideOutPanel>

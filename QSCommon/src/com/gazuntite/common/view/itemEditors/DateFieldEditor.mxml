@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:DateField xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					xmlns:s="library://ns.adobe.com/flex/spark" 
+					xmlns:mx="library://ns.adobe.com/flex/mx" focusOut="onEditorDateFieldFocusOut(event)" verticalCenter="0" horizontalCenter="0" left="6" right="6" top="6" bottom="6"
+					textInputStyleName="dateFieldTextInput">
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		.dateFieldTextInput
+		{
+			padding-top: 2px;
+			padding-bottom: 2px;
+			padding-left: 2px;
+			padding-right: 2px;
+			
+			verticalCenter: 0px;
+			horizontalCenter: 0px;
+			
+			contentBackgroundColor: #FFFFFF;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			private var _dateText:String;
+			private var _dateField:String;
+			
+			[Bindable]
+			public function get dateText():String
+			{
+				return _dateText;
+			}
+			
+			public function set dateText(value:String):void
+			{
+				_dateText = value;
+			}
+			
+			/**
+			 * Ayesha 28/01/2013
+			 * It will take dateField of the DTO and actual value of date will be extracted by using this propertyName
+			 * dateField will not work for complex date fields like 'ImmunizationTypeDTO.Name'
+			 * */
+			public function get dateField():String
+			{
+				return _dateField;
+			}
+			
+			public function set dateField(value:String):void
+			{
+				_dateField = value;
+			}
+			
+			override public function set data(value:Object):void
+			{
+				if (listData)
+				{
+					var newDate:Date
+					if (value is String)
+					{
+						newDate = new Date(Date.parse( value as String));
+						super.data = newDate;
+					}
+					else
+					{
+						if (value.hasOwnProperty(dateField))
+						{
+							newDate= new Date(Date.parse(value[dateField]));
+							super.data = newDate;
+							text = value[dateField];
+						}
+					}
+					
+				}
+			}
+			private function onEditorDateFieldFocusOut(event:Event):void	
+			{
+			}
+		]]>
+	</fx:Script>
+</mx:DateField>

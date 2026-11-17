@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<quickInput:PMHSectionHeader xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							 xmlns:s="library://ns.adobe.com/flex/spark" 
+							 xmlns:mx="library://ns.adobe.com/flex/mx" 
+							 xmlns:quickInput="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.*" 
+							 xmlns:comprehensiveHistory="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.comprehensiveHistory.*" 
+							 xmlns:buttonSeparators="com.adobe.Quivus.view.controls.skins.buttonSeparators.*"
+							 >
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.utils.AppUtils;
+			
+			import mx.events.FlexEvent;
+			protected function spinerlist1_clickHandler(event:MouseEvent):void
+			{
+				event.stopImmediatePropagation();//don't colapse panel ....
+			}
+
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<s:ArrayCollection id="id_SecCol" >
+			<fx:String>COMBINED ALL HISTORY</fx:String>
+			<fx:String>GENERAL</fx:String>
+			<fx:String>FAMILY</fx:String>
+			<fx:String>SOCIAL</fx:String>
+		</s:ArrayCollection>
+	</fx:Declarations>
+	<quickInput:layout>
+		<s:HorizontalLayout horizontalAlign="center" />
+	</quickInput:layout>
+	
+	
+	<s:HGroup paddingTop="-2" width="100%" horizontalAlign="left">
+		<comprehensiveHistory:SpinerList id="id_SpinerList" width="200" DataProvider="{id_SecCol}"
+										 click="spinerlist1_clickHandler(event)" />
+		
+	</s:HGroup>
+	
+	
+		
+</quickInput:PMHSectionHeader>

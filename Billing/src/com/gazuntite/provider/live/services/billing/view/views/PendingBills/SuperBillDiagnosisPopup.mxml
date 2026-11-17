@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						xmlns:s="library://ns.adobe.com/flex/spark" 
+						xmlns:mx="library://ns.adobe.com/flex/mx" 
+						xmlns:components="com.gazuntite.controls.extended.components.*" 
+						cornerRadius="10" 
+						skinClass="com.adobe.gazuntite.skins.chrome.containerSkins.TitleWindowSkin"
+						xmlns:CheckBoxGrid="com.zigron.controls.extended.components.CheckBoxGrid.*" 
+						xmlns:CheckBoxGrid1="com.gazuntite.controls.extended.components.CheckBoxGrid.*" xmlns:components1="com.gazuntite.controls.extended.components.*" 
+						>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.util.QSConstants;
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.ICDCodeTypeDTO;
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.SuperBillDiagnosisInfoDTO;
+			import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadICDCodeTypesEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.util.BillingPopUpManager;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.DataGridEvent;
+			
+			import spark.events.TextOperationEvent;
+			
+						
+			[Bindable] public var model : BillingModelLocator = BillingModelLocator.getInstance();
+			[Bindable] private var searchType:ArrayCollection = new ArrayCollection([{label:"ICD Code"},{label:"Description"}]);
+			[Bindable] private var icdCodeList:ArrayCollection; // Diagnosis Popup
+			
+			private var val:Boolean = false;
+			
+			public function hide():void
+			{
+				removePopup();
+			}
+			
+			private function saveDiagnosis(_val:Boolean):void
+			{
+				if(id_DataGrid.selectedItems.length == 0)
+				{
+					Alert.show('Please select a record for Save.','No record selected',4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}				
+				
+				val = _val;
+				
+				addrecord();
+				
+			}
+			
+			// Add records on the Add & Add and Close Button Click
+			protected function addrecord():void
+			{
+				for(var i:uint = 0; i< id_DataGrid.selectedItems.length; i++)
+				{
+					
+					var diagnosisDTO:SuperBillDiagnosisInfoDTO = new SuperBillDiagnosisInfoDTO(); 
+					
+					diagnosisDTO.ModifiedBy ="0";
+					diagnosisDTO.DiagnosisID = "0";
+					diagnosisDTO.VisitID = "0";
+					diagnosisDTO.PatientID = "0";
+					diagnosisDTO.ICDCodeID = id_DataGrid.selectedItems[i].ICDCodeID;				
+					diagnosisDTO.CreatedBy = model.LoggedInUserId.toString();
+					diagnosisDTO.ICDCodeName = id_DataGrid.selectedItems[i].ICDCodeName;
+					diagnosisDTO.ICDCodeDescription = id_DataGrid.selectedItems[i].ICDCodeDescription;								
+					diagnosisDTO.IncludeInBilling = "true";
+					diagnosisDTO.IsCreatedFromSuperBill = "true";
+					diagnosisDTO.VisitDate = UtilityFunctions.FormatDate(QSConstants.NULL_DATE);					
+					
+					//model.CurrentDiagnosis.addItem(diagnosisDTO);	
+					
+					if(model.CurrentDiagnosis ==	null)
+						model.CurrentDiagnosis = new ArrayCollection();					
+					model.CurrentDiagnosis.addItem(diagnosisDTO);
+					
+				}
+				if(icdCodeList)
+					icdCodeList.removeAll(); icdCodeList = null;			
+				
+				//If Clicked is Add and Close
+				if(val)
+					removePopup();
+			}
+			//Close Alert and disaptach the event for saving records in DB Directly
+			private function alertSaveDBListener(eventObj:CloseEvent):void 
+			{
+				if (eventObj.detail == Alert.YES) 
+				{
+					addrecord();
+				}
+			}
+			
+			private function searchICDCode(searchText:String):void
+			{
+				var icdEvent : LoadICDCodeTypesEvent = new LoadICDCodeTypesEvent(searchText,model.LoggedInUserSelectedBranchId.toString(), loadData);
+				CairngormEventDispatcher.getInstance().dispatchEvent( icdEvent );
+			}
+			
+			//############### Seach and load data in Grid ###########################			
+			//Search and load ICD code on Buton Click
+			public function searchIcdCode():void
+			{
+				if(id_searchText.text.length < 3){
+					id_message.visible 	= true;
+					id_message.text 	= 'Please enter search term before click';
+				}else{
+					
+					if(id_searchText.text.indexOf(".")  > -1 && id_searchText.text.indexOf(".") == id_searchText.text.length - 1  )
+					{
+						Alert.show("Dot(.) is not allowed at the end of text","Info",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+					}
+					if(icdCodeList)
+						icdCodeList.removeAll(); icdCodeList = null;
+					
+					searchICDCode(id_searchText.text);
+				}
+			}
+			public  function loadData(val:* = null):void
+			{
+				if(model.ICDCodeTypeList != null)
+				{
+					var ICDList:ArrayCollection = new ArrayCollection();
+					if(model.ICDCodeTypeList.length)
+					{
+						for(var j:uint = 0; j < model.ICDCodeTypeList.length; j++)
+						{
+							var typeDTO:ICDCodeTypeDTO = model.ICDCodeTypeList[j] as ICDCodeTypeDTO;
+							var diagnosisDTO:SuperBillDiagnosisInfoDTO = new SuperBillDiagnosisInfoDTO();
+							
+							diagnosisDTO.ICDCodeID			= typeDTO.ICDCodeID; 
+							diagnosisDTO.ICDCodeName        = typeDTO.ICDCodeName;
+							diagnosisDTO.ICDCodeDescription = typeDTO.ICDCodeDescription;
+							
+							diagnosisDTO.ModifiedBy ="0";
+							diagnosisDTO.DiagnosisID = "0";
+							diagnosisDTO.VisitID = "0";
+							diagnosisDTO.PatientID = "0";							
+							diagnosisDTO.CreatedBy = model.LoggedInUserId.toString();												
+							diagnosisDTO.IncludeInBilling = "true";
+							diagnosisDTO.IsCreatedFromSuperBill = "true";
+							diagnosisDTO.VisitDate = UtilityFunctions.FormatDate(QSConstants.NULL_DATE);
+							
+							ICDList.addItem(diagnosisDTO);
+						}
+						
+						if(icdCodeList == null)
+							icdCodeList = new ArrayCollection();
+						
+						for(var i:uint = 0; i < ICDList.length; i++)
+						{
+							var obj:Object 			= new Object();							
+							obj.SuperBillDiagnosisInfoDTO			= ICDList[i];							
+							
+							if( model.CurrentDiagnosis != null && model.CurrentDiagnosis.length > 0  )
+							{
+								if( hasDuplicateValues( obj.SuperBillDiagnosisInfoDTO as SuperBillDiagnosisInfoDTO ) )
+									continue;
+								else
+									icdCodeList.addItem(obj.SuperBillDiagnosisInfoDTO as SuperBillDiagnosisInfoDTO);
+							}
+							else
+							{
+								icdCodeList.addItem(obj.SuperBillDiagnosisInfoDTO as SuperBillDiagnosisInfoDTO);
+							}
+						}
+						
+						//resetFields();
+					}else
+					{
+						id_message.visible  = true;
+						id_message.text 	= 'No diagnosis found, try different.';
+					}
+				}
+			}
+			
+			private function hasDuplicateValues(dto:SuperBillDiagnosisInfoDTO):Boolean
+			{
+				for(var j:uint =0; j< model.CurrentDiagnosis.length; j++)
+				{
+					var patDiaDTO:SuperBillDiagnosisInfoDTO = model.CurrentDiagnosis[j] as SuperBillDiagnosisInfoDTO;
+					
+					if(dto.ICDCodeID == patDiaDTO.ICDCodeID)
+						return true;
+				}				
+				return false;
+			}
+			
+			private function id_searchText_changeHandler(event:TextOperationEvent):void
+			{
+				if(id_searchText.text.length >= 3){
+					id_SearchButton.enabled = true;
+					id_message.visible 		= false;
+				}else{
+					id_SearchButton.enabled = false;
+					id_message.visible 		= false;
+				}
+			} 
+			private function resetFields():void
+			{
+				id_SearchCombo.selectedIndex = -1;
+				id_message.visible			 = false;
+				id_searchText.text			 = '';
+				id_SearchButton.enabled		 = false;				
+			}
+			
+			//Search and load recors on basis search term from form
+			public function searchAndLoadDiagnosis(_searchTerm:String, index:uint):void
+			{
+				id_SearchCombo.selectedIndex = index;
+				id_searchText.text 			 = _searchTerm;
+				id_SearchButton.enabled		 = true;
+				
+				searchICDCode(_searchTerm);
+			}
+			
+			//Close this popup
+			public override function removePopup():void
+			{		
+				BillingPopUpManager.removePopUp(this,BillingPopUpManager.SUPER_BILL_POPUPS);
+				super.removePopup();
+				resetFields();
+			}
+			
+			private function procedureItemEditHandler(event:DataGridEvent):void
+			{
+				event.preventDefault();
+				event.stopImmediatePropagation();
+			}
+
+			protected function id_searchText_keyDownHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode == 13 )
+				{
+					if(id_searchText.text.length < 3)
+					{
+						id_message.visible 	= true;
+						id_message.text 	= 'Please enter search term';
+					}
+					else
+					{						
+						if(id_searchText.text.indexOf(".")  > -1 && id_searchText.text.indexOf(".") == id_searchText.text.length - 1  )
+						{
+							Alert.show("Dot(.) is not allowed at the end of text","Info",4,FlexGlobals.topLevelApplication.mainContainer);
+							return;
+						}
+						if(icdCodeList)
+							icdCodeList.removeAll(); icdCodeList = null;
+						
+						searchICDCode(id_searchText.text);
+					}
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		
+	</fx:Declarations>
+	
+	<components:layout>
+		<s:VerticalLayout horizontalAlign="center" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5"/>
+	</components:layout>
+	<s:HGroup width="100%" gap="4" >
+	<s:DropDownList id="id_SearchCombo" height="19" tabIndex="1"
+					prompt="Select Type" dataProvider="{searchType}"
+					width="150" />
+	
+	<s:SkinnableContainer width="200" styleName="patientSearchBGContainerSkin" >
+		<s:layout >
+			<s:HorizontalLayout gap="0" verticalAlign="middle"/>
+		</s:layout>
+		
+		<components1:LabelTextInput id="id_searchText"
+								   restrict="0-9 A-Z a-z \." maxChars="30" width="100%" prompt="Search Diagnosis"
+								   keyDown="id_searchText_keyDownHandler(event)" height="19" tabIndex="2"
+								   change="id_searchText_changeHandler(event)" skinClass="com.adobe.gazuntite.skins.chrome.textInputSkins.transparentTextInput"/>
+		
+		<s:Button id="id_SearchButton" tabIndex="3"
+				  enabled="false" styleName="orangeSearchButtonSkin" width="23" 
+				  toolTip="Diagnosis Search" buttonMode="true"  height="19" 
+				  click="searchIcdCode()" />
+	</s:SkinnableContainer>
+	<s:Label id="id_message" color="#DE2626"  visible="false"/>
+	</s:HGroup>
+	
+	<CheckBoxGrid1:CheckBoxDataGrid id="id_DataGrid" tabIndex="4"
+								   width="95%" height="90%" allowMultipleSelection="true" 								   
+								   draggableColumns="true" 
+								   useRollOver="false"
+								   styleName="gridStyle"								   
+								   dataProvider="{icdCodeList}"							    
+								   								   
+								   variableRowHeight="true" columnWidths="{[40,'30%','65%']}">
+		<CheckBoxGrid1:columns>
+			<mx:DataGridColumn dataField="" 
+							   headerText="" 
+							   rendererIsEditor="true"
+							   sortable="false" 
+							   itemRenderer="com.gazuntite.controls.extended.components.CheckBoxGrid.CheckBoxRenderer" 
+							   headerRenderer="com.gazuntite.controls.extended.components.CheckBoxGrid.CheckBoxHeaderRenderer" 
+							   editorDataField="selected" 
+							   />
+			
+			<mx:DataGridColumn headerText="ICD Code" dataField="ICDCodeName"  editable="false" sortable="false" />
+			<mx:DataGridColumn headerText="Diagnosis" dataField="ICDCodeDescription" editable="false" sortable="false" wordWrap="true"/>			
+			
+		</CheckBoxGrid1:columns>
+	</CheckBoxGrid1:CheckBoxDataGrid>
+	
+	<s:HGroup width="95%" horizontalAlign="center" height="5%" verticalAlign="middle" paddingBottom="4">
+		<s:Button buttonMode="true" toolTip="Add diagnosis and close popup" label="Add  &amp; Close" width="100" click="saveDiagnosis(true)" styleName="blackButtonSkin" tabIndex="5" />
+		<s:Button buttonMode="true" toolTip="Add diagnosis" label="Add" click="saveDiagnosis(false)"  width="60" styleName="blackButtonSkin" tabIndex="6" />
+		<s:Button buttonMode="true" toolTip="Close popup" label="Cancel" click="removePopup()" width="60" styleName="blackButtonSkin" tabIndex="7" />
+	</s:HGroup>
+	
+</components1:PopupWindow>

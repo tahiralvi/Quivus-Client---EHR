@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:lab="com.zigron.provider.live.services.elab.view.lab.*" 
+		 xmlns:LiveGridView="com.gazuntite.common.view.LiveGridView.*" 
+		 xmlns:roleManagement="com.gazuntite.provider.live.services.administration.view.roleManagement.*"
+		 xmlns:components="com.gazuntite.controls.extended.components.*" 
+		 xmlns:userManagement="com.gazuntite.provider.live.services.administration.view.userManagement.*" 
+		 xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 width="100%" height="100%" 
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.provider.live.services.administration.model.AdminAppModelLocator;
+			import com.gazuntite.provider.live.services.administration.util.AdminConstant;
+			import com.gazuntite.provider.live.services.administration.view.itemRenderer.UserGridLockedRenderer;
+			import com.gazuntite.provider.live.services.administration.view.itemRenderer.UserGridStatusRenderer;
+			
+			import mx.controls.Alert;
+			import mx.controls.Label;
+			import mx.core.FlexGlobals;
+			
+			[Bindable]
+			public var model : AdminAppModelLocator = AdminAppModelLocator.getInstance();
+			
+			
+			
+			protected function ListOnlyHandler(event:Event):void
+			{
+				// TODO Auto-generated method stub
+			}
+			
+			protected function GoToPageHandler(event:Event):void
+			{
+				// TODO Auto-generated method stub
+			}
+			
+			protected function RefreshViewHandler(event:Event):void
+			{
+				// TODO Auto-generated method stub
+			}
+			
+			//#################### Methods ###########################################
+			public function displayRowNum(oItem:Object,iCol:int):String
+			{
+				var rowNumber:int = id_UserManagGridView.dataProvider.getItemIndex(oItem) + 1;
+				return String(rowNumber);
+			}
+			
+			// For new user registration
+			protected function id_AddMore_clickHandler(event:MouseEvent):void
+			{
+				id_userManagementGridView_viewStack.selectedIndex = 1;
+				model.isNewRegistration = true;
+				id_UserFormView.initiateUserSettings = true;
+			}
+			// For update user
+			protected function id_Edit_clickHandler(event:MouseEvent):void
+			{
+				if(id_UserManagGridView.selectedItem)
+				{
+					id_userManagementGridView_viewStack.selectedIndex 	= 1;
+					model.isNewRegistration 							= false;
+					model.selUserID 									= id_UserManagGridView.selectedItem.UserId;
+					id_UserFormView.initiateUserSettings 				= true;
+				}
+				else
+				{
+					Alert.show('please select a user from grid', AdminConstant.INFO, 4, FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+		<s:VerticalLayout gap="1" paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5" />
+	</s:layout>
+	
+	<!--
+	<LiveGridView:FilterViewForGrid width="100%"
+	ListOnly="ListOnlyHandler(event)"
+	GoToFirstPage="GoToPageHandler(event)"
+	GoToLastPage="GoToPageHandler(event)"
+	GoToNextPage="GoToPageHandler(event)"
+	GoToPreviousPage="GoToPageHandler(event)"
+	RefreshView="RefreshViewHandler(event)"/>
+	-->
+	<mx:ViewStack id="id_userManagementGridView_viewStack" width="100%" height="100%">
+		<s:NavigatorContent>
+			<s:layout>
+				<s:VerticalLayout gap="1" paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5"   />
+			</s:layout>
+			
+			<components1:LabelDataGrid id="id_UserManagGridView"
+									  width="100%"  height="95%"
+									  dataProvider="{model.ClinicalUserList}" 
+									  verticalScrollBarStyleName="VScrollBar"
+									  columnWidths="{[30, '20%', '20%','20%','15%','15%']}">  
+				<components:columns>
+					<!--<mx:AdvancedDataGridColumn width="30" dataField="UserTypeId"  	headerText="Role Id"  />-->
+					<mx:DataGridColumn headerText="Sr.#"  labelFunction="displayRowNum"  />
+					<mx:DataGridColumn  dataField="FirstName" 	headerText="First Name" itemRenderer="mx.controls.Label" wordWrap="true" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn dataField="LastName" 	headerText="Last Name" itemRenderer="mx.controls.Label" wordWrap="true" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn dataField="ActiveUserTypeLabel" 	headerText="Role" itemRenderer="mx.controls.Label" wordWrap="true" headerRenderer="mx.controls.Label" />
+					<mx:DataGridColumn headerText="Status" itemRenderer="com.gazuntite.provider.live.services.administration.view.itemRenderer.UserGridStatusRenderer"/>
+					<mx:DataGridColumn headerText="Locked" itemRenderer="com.gazuntite.provider.live.services.administration.view.itemRenderer.UserGridLockedRenderer"/>
+				</components:columns>
+			</components1:LabelDataGrid>
+			
+			<s:HGroup width="100%" layoutDirection="rtl" gap="10" height="5%" verticalAlign="middle" visible="false" includeInLayout="false">
+				<s:Button id="id_AddMore" 
+						  width="60" label="Add More" click="id_AddMore_clickHandler(event)" styleName="blackButtonSkin"/>
+				<s:Button id="id_Edit" 
+						  width="60" label="Edit" click="id_Edit_clickHandler(event)" styleName="blackButtonSkin"/>
+			</s:HGroup>
+			
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent>
+			<s:layout>
+				<s:VerticalLayout gap="1" paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5"   />
+			</s:layout>
+			
+			<userManagement:UserFormView id="id_UserFormView" width="100%" height="100%"/>
+			
+		</s:NavigatorContent>
+	</mx:ViewStack>
+	
+</s:Group>

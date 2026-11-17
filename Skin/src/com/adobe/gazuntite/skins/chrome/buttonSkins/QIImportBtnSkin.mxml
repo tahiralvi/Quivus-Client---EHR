@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009">
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect height="21" includeIn="disabled,disabledAndSelected,down,downAndSelected,over,overAndSelected,upAndSelected" radiusX="0" width="21" x="0" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#FF7200" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#FF7800" ratio="0.00784313725490196"/>
+				<s:GradientEntry alpha="1.0" color="#FF7800" ratio="0.19215686274509805"/>
+				<s:GradientEntry alpha="1.0" color="#FF4B13" ratio="0.47058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#FFBB5A" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.99" angle="90" blurX="2" blurY="2" color="#F6C32D" distance="0" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="0.98" alpha.down="1" alpha.overAndSelected="1" angle="270" angle.down="90" angle.overAndSelected="90" blurX="0" blurX.down="2" blurX.overAndSelected="2" blurY="0" blurY.down="2" blurY.overAndSelected="2" color="#333333" distance="1" distance.down="2" distance.overAndSelected="2" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+		<s:fill.disabled>
+			<s:SolidColor color="#CCCCCC"/>
+		</s:fill.disabled>
+		<s:fill.disabledAndSelected>
+			<s:SolidColor color="#CCCCCC"/>
+		</s:fill.disabledAndSelected>
+	</s:Rect>
+	<s:Rect height="16" includeIn="disabled,up" radiusX="2" width="16" x="5" y="3" visible="false">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#FF7200" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#FF7800" ratio="0.00784313725490196"/>
+				<s:GradientEntry alpha="1.0" color="#FF7800" ratio="0.19215686274509805"/>
+				<s:GradientEntry alpha="1.0" color="#FF4B13" ratio="0.47058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#FFBB5A" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.99" angle="90" blurX="2" blurY="2" color="#F6C32D" distance="0" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="1" angle="90" blurX="2" blurY="2" color="#333333" distance="2" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:BitmapImage includeIn="disabled,disabledAndSelected,up,upAndSelected" smooth="false" source="@Embed('com/adobe/gazuntite/skins/chrome/assets/icons/Bar_Import.png')" x="5" y="6" visible.upAndSelected="false" y.up="5" y.disabled="5" y.disabledAndSelected="5">
+	
+	</s:BitmapImage>
+	<s:BitmapImage includeIn="disabled,down,downAndSelected,over,overAndSelected,upAndSelected" smooth="false" source="@Embed('com/adobe/gazuntite/skins/chrome/assets/icons/Bar_Import.png')" x="5" y="6" visible.disabled="false" >
+		<s:filters>
+			<s:GlowFilter alpha="1.0" blurX="10" blurY="10" color="#000000" inner="true" knockout="false" quality="2" strength="10"/>
+			<!--<s:DropShadowFilter alpha="0.25" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>-->
+		</s:filters>
+	</s:BitmapImage>
+</s:Skin>

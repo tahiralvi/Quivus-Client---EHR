@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009">
+	<fx:Metadata>[HostComponent("spark.components.VScrollBar")]</fx:Metadata>
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="disabled"/>
+		<s:State name="inactive"/>
+	</s:states>
+	<s:Button  id="track" skinClass="com.adobe.gazuntite.skins.chrome.scrollerSkins.track"   />
+	<s:Button   id="thumb"  toolTip="Scroll"  buttonMode.normal="true"  skinClass="com.adobe.gazuntite.skins.chrome.scrollerSkins.thumbButton"/>
+	<s:Button   id="decrementButton" buttonMode.normal="true" skinClass="com.adobe.gazuntite.skins.chrome.scrollerSkins.greyScrollButton"   />
+	<s:Button   id="incrementButton" buttonMode.normal="true"  y="{track.height + track.y + 5}" skinClass="com.adobe.gazuntite.skins.chrome.scrollerSkins.downBtn" x="4"
+				/>
+	
+	
+	
+	
+
+	<!--<s:Button id="track" top="16" bottom="15" height="54"
+			  focusEnabled="false" />
+
+
+	<s:Button id="thumb" 
+			  focusEnabled="false" visible.inactive="false"  />
+
+	
+
+	<s:Button id="decrementButton" top="0" enabled.inactive="false"
+			  focusEnabled="false" />
+
+	<s:Button id="incrementButton" bottom="0" enabled.inactive="false"
+			  focusEnabled="false" />
+	-->
+	
+</s:Skin>

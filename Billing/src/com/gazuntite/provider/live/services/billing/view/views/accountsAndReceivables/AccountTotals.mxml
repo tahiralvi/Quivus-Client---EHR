@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:HGroup width="100%">				
+		<s:Label width="50%" text="Charges:" />
+		<s:Label width="50%" text="{Number(model.CurrentPatienAccount.Charges).toFixed(2) }" textAlign="right" />
+	</s:HGroup>	
+	<s:HGroup width="100%">				
+		<s:Label width="50%" text="Adjustments:" />
+		<s:Label width="50%" text="{Number(model.CurrentPatienAccount.Adjustment).toFixed(2)}" textAlign="right" />
+	</s:HGroup>
+	<s:HGroup width="100%">				
+		<s:Label width="50%" text="Payment:" />
+		<s:Label width="50%" text="{Number(model.CurrentPatienAccount.Payment).toFixed(2)}" textAlign="right" />
+	</s:HGroup>
+	<s:HGroup width="100%">				
+		<s:Label width="50%" text="Balance:" />
+		<s:Label width="50%" text="{Number(model.CurrentPatienAccount.Balance).toFixed(2)}" textAlign="right" />
+	</s:HGroup>	
+</s:VGroup>

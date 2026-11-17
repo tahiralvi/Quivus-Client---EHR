@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  creationComplete="vgroup1_creationCompleteHandler(event)" 
+		  xmlns:components="com.gazuntite.controls.extended.components.*" 
+		  xmlns:itemEditors="com.gazuntite.provider.live.services.billing.view.common.itemEditors.*" xmlns:components1="com.gazuntite.controls.extended.components.*"
+		  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.dto.InsOrganizationDTO;
+			import com.gazuntite.common.event.LoadAllInsuranceEvent;
+			import com.gazuntite.common.util.xml.XmlUtils;
+			import com.gazuntite.provider.live.services.billing.dto.accountsAndReceiveables.AdjustmentMappingDTO;
+			import com.gazuntite.provider.live.services.billing.dto.accountsAndReceiveables.AdjustmentReasonCodeDTO;
+			import com.gazuntite.provider.live.services.billing.event.accountsAndReceiveables.AdjustmentMappingEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.view.event.DataGridActionEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.CursorManager;			
+						
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			[Bindable]
+			private var MappingTypes:ArrayCollection = new ArrayCollection(["Write Off","Patient Responsibility","Exception"]);
+			
+			private var DeletedMappings:ArrayCollection = null;
+			private var mappingSelectedIndex:int;
+			
+			protected function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				LoadInsuranceList();
+				
+				var admEvent:AdjustmentMappingEvent = new AdjustmentMappingEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent(admEvent);
+				
+				id_AdjustmentMappingGrid.addEventListener(DataGridActionEvent.EDIT_RECORD_CLICK, editMapping, false, 0, true);
+				id_AdjustmentMappingGrid.addEventListener(DataGridActionEvent.DELETE_RECORD_CLICK, deleteMapping, false, 0, true);
+			}
+			
+			private function editMapping(event:DataGridActionEvent):void
+			{	
+				if(id_AdjustmentMappingGrid.selectedItems.length == 0)
+				{
+					Alert.show("Please select a record", "No record selected", 4, FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				
+				var dto:AdjustmentMappingDTO = id_AdjustmentMappingGrid.selectedItem as AdjustmentMappingDTO;
+				
+				mappingSelectedIndex = id_AdjustmentMappingGrid.selectedIndex;					
+				
+				for each (var insurance:InsOrganizationDTO in model.InsuranceListforAdjustmentMapping) 
+				{
+					if(dto.InsOrganizationID == insurance.InsOrganizationID)
+					{
+						id_insuranceList.selectedItem = insurance;
+						break;
+					}
+				}	
+				
+				for each (var reason:AdjustmentReasonCodeDTO in model.AdjustmentReasonCodeListADM) 
+				{
+					if(dto.ReasonCode == reason.AdjustmentReasonCode)
+					{
+						id_reasonList.selectedItem = reason;
+						break;
+					}
+				}	
+				id_groupList.selectedIndex = parseInt(dto.AdjustmentGroupCodeTypeID) - 1;				
+				id_groupList.enabled = true;	
+				id_reasonList.enabled = true;
+				id_insuranceList.enabled = true;
+				id_typeList.selectedIndex = parseInt(dto.AdjustmentMappingTypeID) - 1;
+				id_typeList.enabled = true;
+				id_save.enabled = true;
+				id_save.label = "Save Update";
+				id_woEditDel.visible = false;
+				id_AddMapping.enabled = false;
+				id_saveAll.enabled = false;
+				id_cancel.enabled = true;
+				id_AdjustmentMappingGrid.enabled = false;
+			}
+			
+			private function deleteMapping(event:DataGridActionEvent):void
+			{				
+				Alert.show("Are you sure, you want to delete selected mapping?","Confirmation", Alert.YES|Alert.NO, this, function( event:CloseEvent):void
+				{
+					if( event.detail == Alert.YES )
+					{						
+						var dto:AdjustmentMappingDTO = id_AdjustmentMappingGrid.selectedItem as AdjustmentMappingDTO;
+						
+						if(dto.AdjustmentMappingID != "0")
+						{							
+							dto.IsDeleted = "true";
+							dto.ModifiedBy = model.LoggedInUserId.toString();						
+							
+							if(DeletedMappings == null)
+								DeletedMappings = new ArrayCollection();
+							
+							DeletedMappings.addItem(dto);	
+						}
+												
+						model.AdjustmentMappingList.removeItemAt(id_AdjustmentMappingGrid.selectedIndex);					
+						changeSaveStatus();
+					} 
+				});
+			}
+			
+			private function changeSaveStatus():void
+			{
+				var isUpdate:Boolean = DeletedMappings != null && DeletedMappings.length > 0;					
+				
+				for each (var adm:AdjustmentMappingDTO in model.AdjustmentMappingList) 
+				{
+					if(adm.IsUpdated)
+					{
+						isUpdate = true;
+						break;
+					}
+				}
+				
+				if( isUpdate)				
+					id_saveAll.setStyle("color","red");				
+				else
+					id_saveAll.setStyle("color","black");
+			}
+			
+			private function LoadInsuranceList():void
+			{
+				if(model.InsuranceListforAdjustmentMapping == null || model.InsuranceListforAdjustmentMapping.length == 0)
+				{
+					var insEvent : LoadAllInsuranceEvent = new LoadAllInsuranceEvent(setInsurances);
+					CairngormEventDispatcher.getInstance().dispatchEvent( insEvent );	
+				}
+			}
+			
+			private function setInsurances(insList:ArrayCollection):void
+			{
+				model.InsuranceListforAdjustmentMapping = insList;	
+			}
+			
+			protected function id_AddMapping_clickHandler(event:MouseEvent):void
+			{
+				id_insuranceList.selectedIndex = -1;
+				id_reasonList.selectedIndex = -1;
+				id_groupList.selectedIndex = - 1;				
+				id_typeList.selectedIndex = - 1;				
+				id_groupList.enabled = true;	
+				id_reasonList.enabled = true;
+				id_insuranceList.enabled = true;
+				id_typeList.enabled = true;
+				id_save.enabled = true;
+				id_save.label = "Save New";
+				id_woEditDel.visible = false;	
+				id_AddMapping.enabled = false;
+				id_saveAll.enabled = false;
+				id_cancel.enabled = true;
+				id_AdjustmentMappingGrid.enabled = false;
+				
+			}
+			
+			protected function id_saveAll_clickHandler(event:MouseEvent):void
+			{
+				var isUpdate:Boolean = false;
+				
+				var updateXML:XML = XmlUtils.getNodeByTagName("AdjustmentMappings");
+				
+				if( DeletedMappings != null && DeletedMappings.length > 0)
+				{
+					isUpdate = true;
+					for each (var admD:AdjustmentMappingDTO in DeletedMappings) 
+					{						
+						updateXML.appendChild(admD.ToXML());						
+					}
+				}
+				
+				for each (var adm:AdjustmentMappingDTO in model.AdjustmentMappingList) 
+				{
+					if(adm.IsUpdated)
+					{
+						isUpdate = true;
+						updateXML.appendChild(adm.ToXML());
+					}
+				}
+				
+				if( ! isUpdate)
+				{
+					Alert.show("No update found.","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}	
+				
+				var admEvent : AdjustmentMappingEvent = new AdjustmentMappingEvent(updateXML, saveResult);				
+				CairngormEventDispatcher.getInstance().dispatchEvent( admEvent ); 
+				
+			}
+			
+			private function saveResult(result:String):void
+			{
+				if(result == "true")				
+				{
+					CursorManager.setBusyCursor();
+					var admEvent : AdjustmentMappingEvent = new AdjustmentMappingEvent(null, refreshUpdates);				
+					CairngormEventDispatcher.getInstance().dispatchEvent( admEvent ); 					 	
+				}
+				else
+					Alert.show("Adjustment Mapping not saved.","Confirmation", 4, FlexGlobals.topLevelApplication.mainContainer);			
+			}
+			
+			private function refreshUpdates():void
+			{
+				id_saveAll.setStyle("color","black");
+				CursorManager.removeBusyCursor();
+				Alert.show("Adjustment Mapping(s) saved successfully.", "Confirmation", 4, FlexGlobals.topLevelApplication.mainContainer);
+				DeletedMappings = null;
+			}
+			
+			protected function id_save_clickHandler(event:MouseEvent):void
+			{
+				
+				if(id_insuranceList.selectedIndex < 0)
+				{
+					id_insuranceList.setFocus();
+					Alert.show("Please Select Insurance","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				
+				if(id_groupList.selectedIndex < 0)
+				{
+					id_groupList.setFocus();
+					Alert.show("Please Select Group Code","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				
+				if(id_reasonList.selectedIndex < 0)
+				{
+					id_reasonList.setFocus();
+					Alert.show("Please Select Reason Code","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				
+				if(id_typeList.selectedIndex < 0)
+				{
+					id_typeList.setFocus();
+					Alert.show("Please Select Adjustment Type","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				
+				if( isDuplicateMapping((id_insuranceList.selectedItem as InsOrganizationDTO).InsOrganizationID,
+					String(id_groupList.selectedIndex + 1),(id_reasonList.selectedItem as AdjustmentReasonCodeDTO).AdjustmentReasonCodeID, 
+					String(id_typeList.selectedIndex + 1) ))
+				{
+					id_insuranceList.setFocus();
+					Alert.show("This Mapping already exists","Duplicate Mapping",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				
+				 if(id_save.label == "Save Update")
+				{
+					(model.AdjustmentMappingList[mappingSelectedIndex] as AdjustmentMappingDTO).InsOrganizationID = (id_insuranceList.selectedItem as InsOrganizationDTO).InsOrganizationID;
+					(model.AdjustmentMappingList[mappingSelectedIndex] as AdjustmentMappingDTO).InsuranceName = (id_insuranceList.selectedItem as InsOrganizationDTO).InsuranceName;
+					(model.AdjustmentMappingList[mappingSelectedIndex] as AdjustmentMappingDTO).AdjustmentGroupCodeTypeID = String(id_groupList.selectedIndex + 1);
+					(model.AdjustmentMappingList[mappingSelectedIndex] as AdjustmentMappingDTO).AdjustmentReasonCodeID = (id_reasonList.selectedItem as AdjustmentReasonCodeDTO).AdjustmentReasonCodeID;
+					(model.AdjustmentMappingList[mappingSelectedIndex] as AdjustmentMappingDTO).GroupCode =  UtilityFunctions.TrimString(id_groupList.textInput.text.split('-')[0]);
+					(model.AdjustmentMappingList[mappingSelectedIndex] as AdjustmentMappingDTO).ReasonCode =  (id_reasonList.selectedItem as AdjustmentReasonCodeDTO).AdjustmentReasonCode;
+					(model.AdjustmentMappingList[mappingSelectedIndex] as AdjustmentMappingDTO).AdjustmentMappingTypeID = String(id_typeList.selectedIndex + 1);
+					(model.AdjustmentMappingList[mappingSelectedIndex] as AdjustmentMappingDTO).Type = id_typeList.textInput.text;
+					(model.AdjustmentMappingList[mappingSelectedIndex] as AdjustmentMappingDTO).ModifiedBy = model.LoggedInUserId.toString();
+						
+					(model.AdjustmentMappingList[mappingSelectedIndex] as AdjustmentMappingDTO).IsUpdated = true;
+					
+					id_AdjustmentMappingGrid.validateNow();
+					id_AdjustmentMappingGrid.scrollToIndex(mappingSelectedIndex);
+										
+				}
+				else
+				{
+					var mapping:AdjustmentMappingDTO = new AdjustmentMappingDTO();
+					
+					mapping.AdjustmentMappingID = "0";
+					mapping.ReasonDescription = "";
+					mapping.GroupDescription = "";
+					mapping.InsOrganizationID = (id_insuranceList.selectedItem as InsOrganizationDTO).InsOrganizationID;
+					mapping.InsuranceName = (id_insuranceList.selectedItem as InsOrganizationDTO).InsuranceName;
+					mapping.AdjustmentMappingTypeID =  String(id_typeList.selectedIndex + 1);
+					mapping.Type =  id_typeList.textInput.text;
+					mapping.AdjustmentGroupCodeTypeID = String(id_groupList.selectedIndex + 1);
+					mapping.AdjustmentReasonCodeID = (id_reasonList.selectedItem as AdjustmentReasonCodeDTO).AdjustmentReasonCodeID;
+					mapping.GroupCode =  UtilityFunctions.TrimString(id_groupList.textInput.text.split('-')[0]);
+					mapping.ReasonCode =  (id_reasonList.selectedItem as AdjustmentReasonCodeDTO).AdjustmentReasonCode				
+					mapping.CreatedBy = model.LoggedInUserId.toString();
+					mapping.ModifiedBy = model.LoggedInUserId.toString();
+					mapping.IsDeleted = "false";
+					mapping.IsUpdated = true;
+					
+					if(model.AdjustmentMappingList == null)
+						model.AdjustmentMappingList = new ArrayCollection();
+					
+					model.AdjustmentMappingList.addItem(mapping);
+					
+				}					
+				
+				 id_insuranceList.selectedIndex = -1;
+				 id_reasonList.selectedIndex = -1;
+				 id_groupList.selectedIndex = - 1;				
+				 id_typeList.selectedIndex = - 1;				
+				 id_groupList.enabled = false;	
+				 id_reasonList.enabled = false;
+				 id_insuranceList.enabled = false;
+				 id_typeList.enabled = false;
+				 id_save.enabled = false;
+				 id_save.label = "Save";
+				 id_woEditDel.visible = true;	
+				 id_AddMapping.enabled = true;
+				 id_saveAll.enabled = true;
+				 id_cancel.enabled = false;
+				 id_AdjustmentMappingGrid.enabled = true;
+				 
+				 changeSaveStatus();
+			}
+			
+			private function isDuplicateMapping(InsOrganizationID:String, AdjustmentGroupCodeTypeID:String, AdjustmentReasonCodeID:String, AdjustmentMappingTypeID:String):Boolean
+			{
+				var isDuplicate:Boolean = false;
+				
+				for each (var mapping:AdjustmentMappingDTO in model.AdjustmentMappingList) 
+				{
+					if(mapping.AdjustmentGroupCodeTypeID == AdjustmentGroupCodeTypeID
+						&& mapping.AdjustmentReasonCodeID == AdjustmentReasonCodeID
+						&& mapping.InsOrganizationID == InsOrganizationID
+						&& mapping.AdjustmentMappingTypeID == AdjustmentMappingTypeID
+					)
+					{
+						isDuplicate = true;
+						break;
+					}
+				}
+				
+				return isDuplicate;
+			}
+			
+			protected function id_cancel_clickHandler(event:MouseEvent):void
+			{
+				id_insuranceList.selectedIndex = -1;
+				id_reasonList.selectedIndex = -1;
+				id_groupList.selectedIndex = - 1;				
+				id_typeList.selectedIndex = - 1;				
+				id_groupList.enabled = false;	
+				id_reasonList.enabled = false;
+				id_insuranceList.enabled = false;
+				id_typeList.enabled = false;
+				id_save.enabled = false;
+				id_save.label = "Save";
+				id_woEditDel.visible = true;	
+				id_AddMapping.enabled = true;
+				id_saveAll.enabled = true;
+				id_cancel.enabled = false;	
+				id_AdjustmentMappingGrid.enabled = true;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+		
+	<components1:LabelDataGrid id="id_AdjustmentMappingGrid" width="100%" dataProvider="{model.AdjustmentMappingList}"
+							  height="100%" useRollOver="false" editable="false"  
+							  styleName="QIGrid" verticalScrollPolicy="on" fontFamily="Verdana" horizontalScrollPolicy="auto"
+							  maxHeight="150" variableRowHeight="true" tabIndex="12"
+							  columnWidths="{['50%'],['10%'],['10%'],['30%'],['5%']}"
+							  >
+		<components:columns>
+			<!--<mx:DataGridColumn headerText="Sr.#" dataField="SNo" />-->
+			<mx:DataGridColumn headerText="InsuranceName" dataField="InsuranceName" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Group code" dataField="GroupCode" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" />
+			<mx:DataGridColumn headerText="Reason Code" dataField="ReasonCode" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Adjustment Type" dataField="Type" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<itemEditors:DataGridColumnDel id="id_woEditDel" headerText="" editable="false" itemRenderer="com.gazuntite.provider.live.services.billing.view.common.itemEditors.EditDeleteItemRender"/>
+		</components:columns>
+	</components1:LabelDataGrid>	
+	<s:HGroup width="100%" horizontalAlign="right">
+		<s:Button id="id_AddMapping" label="{ model.AdjustmentMappingList == null || model.AdjustmentMappingList.length == 0 ? 'Add' : 'Add More' }" 
+				  width="120" click="id_AddMapping_clickHandler(event)" />	
+		<s:Button id="id_saveAll" label="Save All" width="120" click="id_saveAll_clickHandler(event)" />	
+	</s:HGroup>
+	<s:HGroup width="100%" >			
+		<components1:LabelComboBox id="id_insuranceList" width="100%" prompt="Insurance Name" enabled="false"
+								  dataProvider="{model.InsuranceListforAdjustmentMapping}" labelField="InsuranceName" />
+		<components1:LabelComboBox id="id_groupList" width="100%" prompt="Group Code" enabled="false"
+								  dataProvider="{model.AdjustmentGroupCodeListADM}" />
+		<components1:LabelComboBox id="id_reasonList" width="100%" prompt="Reason Code" enabled="false"
+								  labelField="AdjustmentReasonName" dataProvider="{model.AdjustmentReasonCodeListADM}" />
+		<components1:LabelComboBox id="id_typeList" width="100%" prompt="Adjustment Type" enabled="false"
+								   dataProvider="{MappingTypes}" />
+		<s:Button id="id_save" label="Save" width="100" enabled="false" click="id_save_clickHandler(event)"/>
+		<s:Button id="id_cancel" label="Cancel" width="100" enabled="false" click="id_cancel_clickHandler(event)"/>
+	</s:HGroup>		
+</s:VGroup>

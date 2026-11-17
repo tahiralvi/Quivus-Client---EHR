@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 	
+		 width="100%"
+		 xmlns:claimManagement="com.gazuntite.provider.live.services.billing.view.views.claimManagement.*" 
+		 xmlns:PendingBills="com.gazuntite.provider.live.services.billing.view.views.PendingBills.*"
+		 creationComplete="CC()" xmlns:Settings="com.zigron.provider.live.services.billing.view.views.Settings.*" 
+		 xmlns:insuranceSettings="com.gazuntite.provider.live.services.billing.view.views.insuranceSettings.*" 
+		 xmlns:views="com.gazuntite.provider.live.services.billing.view.views.insuranceSettings.views.*" 
+		 xmlns:accountsAndReceivables="com.gazuntite.provider.live.services.billing.view.views.accountsAndReceivables.*" xmlns:report="com.gazuntite.provider.live.services.billing.view.views.report.*"   >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.gazuntite.skins.chrome.containerSkins.blackTitleBGContainer;
+			import com.gazuntite.common.event.LoadAllInsuranceEvent;
+			import com.gazuntite.common.event.LoadPlaceOfServiceTypesEvent;
+			import com.gazuntite.provider.live.services.billing.event.ClaimManagement.ClaimPatientSearchEvent;
+			import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadENMCodeTypesEvent;
+			import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadEncounterTypesEvent;
+			import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadFrequencyCodeTypesEvent;
+			import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadStateCodesEvent;
+			import com.gazuntite.provider.live.services.billing.event.accountsAndReceiveables.LoadAdjustmentReasonCodesEvent;			
+			import com.gazuntite.provider.live.services.billing.event.settings.LoadEDIReceiverByCriteriaEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.util.BillingPopUpManager;
+			import com.gazuntite.provider.live.services.billing.view.event.LoadReportEvent;
+			import com.gazuntite.provider.live.services.billing.view.event.LoadReportPanelEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.IndexChangedEvent;
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			private var AdjustmentGroupCodes:ArrayCollection =  new ArrayCollection(["PR - Patient Responsible", "CO - Contractual Obligations", "PI - Payor Initiated Reductions", "CR - Correction and Reversals", "OA - Other Adjustments"]);
+			
+			private function LoadClaimsForManagement():void
+			{	
+				id_ClaimManagement.id_FilterBar_RefreshViewHandler(null);
+				/* var claimevent:LoadAllClaimbyProviderIdEvent = new LoadAllClaimbyProviderIdEvent(model.LoggedInUserProviderId,model.LoggedInUserSelectedBranchId,BillingConstants.FIRST_PAGE_NUMBER);
+				CairngormEventDispatcher.getInstance().dispatchEvent(claimevent);  */
+				id_ClaimManagement.id_FilterBar.id_FieldsCmbo.setFocus();
+			}
+
+			public function CC():void
+			{				
+				LoadInsuranceList();
+				LoadEDIReceiverList();
+				LoadTypeOfServiceList();
+				LoadPlaceOfServiceList();
+				LoadFrequencyCodeList();
+				LoadStateCodeList();
+				LoadClaimPatientList();
+				LoadENMTypeList();
+				LoadAdjustmentReasonCodeList();
+				
+				//id_vsViews.selectedIndex == 0;
+				
+				addEventListener(LoadReportEvent.LOAD_REPORT_EVENT, openReportPanelWindow);	
+				
+				//model.IsLoadingBilling = false;
+			}
+			
+			private function LoadAdjustmentReasonCodeList():void
+			{
+				var lrcEvent:LoadAdjustmentReasonCodesEvent = new LoadAdjustmentReasonCodesEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent(lrcEvent);				
+				
+				model.AdjustmentGroupCodeListWOF = AdjustmentGroupCodes;
+				model.AdjustmentGroupCodeListADJ = AdjustmentGroupCodes;
+				model.AdjustmentGroupCodeListADM = AdjustmentGroupCodes;
+			}
+			
+			private function openReportPanelWindow(event:LoadReportEvent):void
+			{				
+				dispatchEvent(new LoadReportPanelEvent());				
+			}
+			
+			private function LoadPendingBills():void
+			{		
+				
+				model.ActionButtonEnabled = true;					
+				
+					id_PendingBills.filterBar_RefreshViewHandler(null);
+					/* var pageNumber:int = 1;
+					var pendingBillsvent:LoadAllPendingBillsbyProviderIdEvent = new LoadAllPendingBillsbyProviderIdEvent(0,model.LoggedInUserSelectedBranchId,9,model.LoggedInUserProviderId.toString(),pageNumber);
+					CairngormEventDispatcher.getInstance().dispatchEvent(pendingBillsvent);  */
+					id_PendingBills.id_FilterBar.id_FieldsCmbo.setFocus();
+			}
+
+			private function LoadENMTypeList():void
+			{				
+				var enmEvent:LoadENMCodeTypesEvent = new LoadENMCodeTypesEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( enmEvent );	
+				
+			}
+			
+			private function LoadTypeOfServiceList():void
+			{				
+				var tosEvent : LoadEncounterTypesEvent= new LoadEncounterTypesEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( tosEvent );
+				
+			}
+			
+			private function LoadEDIReceiverList():void
+			{
+				if(model.EDIReceiverList == null || model.EDIReceiverList.length == 0)
+				{
+					model.isEDIReceiverGeneralList = true;
+					var lerEvent:LoadEDIReceiverByCriteriaEvent = new LoadEDIReceiverByCriteriaEvent(0,"0",0,EDIReceiverGeneralListLoaded);
+					CairngormEventDispatcher.getInstance().dispatchEvent(lerEvent);
+				}
+			}
+			
+			private function EDIReceiverGeneralListLoaded():void
+			{
+				if(model.EDIReceiverList != null || model.EDIReceiverList.length > 0)
+				{
+					model.isEDIReceiverGeneralList = false;
+				}
+			}
+			
+			private function LoadInsuranceList():void
+			{				
+				var insEvent : LoadAllInsuranceEvent = new LoadAllInsuranceEvent(setClaimManagementCarriers);
+				CairngormEventDispatcher.getInstance().dispatchEvent( insEvent );				
+			}
+			
+			private function setClaimManagementCarriers(insList:ArrayCollection):void
+			{
+				model.InsuranceListforCarrier1 = insList;
+				
+				//model.InsuranceListforCarrier2 = insList;
+				
+				//model.InsuranceListforCarrier3 = insList;
+				
+				model.InsuranceListfoClaimListOnly = insList;
+			}
+			
+			private function LoadPlaceOfServiceList():void
+			{				
+				var posEvent : LoadPlaceOfServiceTypesEvent = new LoadPlaceOfServiceTypesEvent("All", onTypesOfServiceLoaded );
+				CairngormEventDispatcher.getInstance().dispatchEvent( posEvent );				
+			}
+			
+			private function onTypesOfServiceLoaded(typeOfServiceList:ArrayCollection):void
+			{
+				model.PlaceOfServiceTypeList = typeOfServiceList;
+			}
+			
+			private function LoadFrequencyCodeList():void
+			{				
+				var cfcEvent : LoadFrequencyCodeTypesEvent= new LoadFrequencyCodeTypesEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( cfcEvent );				
+			}
+			
+			private function LoadStateCodeList():void
+			{				
+				var cfcEvent : LoadStateCodesEvent= new LoadStateCodesEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( cfcEvent );	
+				
+				/* var getStates: GetStatesBillingEvent = new GetStatesBillingEvent(statesLoaded);
+				CairngormEventDispatcher.getInstance().dispatchEvent(getStates); */
+			}
+			
+			public function statesLoaded(states:XML):void
+			{				
+				var statesArrayCol:ArrayCollection = new ArrayCollection();
+				for(var i:int=0; i<states.States.State.length(); i++)
+				{					
+					var s_name:String = states.States.State[i].@StateName.toString();
+					var s_code:String = states.States.State[i].@StateCode.toString();
+					var s_id:String = states.States.State[i].@StateID.toString();					
+					
+					statesArrayCol.addItem({ stateName:s_name, StateCode:s_code, StateID:s_id});
+				}
+				model.BillingStateList = statesArrayCol;								
+			}
+			
+			private function LoadClaimPatientList():void
+			{				
+				var cplEvent : ClaimPatientSearchEvent= new ClaimPatientSearchEvent(model.LoggedInUserSelectedBranchId);
+				CairngormEventDispatcher.getInstance().dispatchEvent( cplEvent );				
+			}
+
+			private function LoadInBox():void
+			{				
+				//to do...		
+			}
+			
+			protected function id_vsViews_changeHandler(event:IndexChangedEvent):void
+			{
+				BillingPopUpManager.removeAllServicePopUps(BillingPopUpManager.BILLING_SERVICE_POPUPS);
+				
+				if(id_vsViews.selectedIndex == 0)//Pending Bills				
+					LoadPendingBills();						
+				else if(id_vsViews.selectedIndex == 1)//Inbox
+					LoadInBox();										
+				else if(id_vsViews.selectedIndex == 2) ///Claim Management
+					LoadClaimsForManagement();
+			}
+			
+			public function removePopUp():void
+			{
+				BillingPopUpManager.removeAllServicePopUps(BillingPopUpManager.BILLING_SERVICE_POPUPS);
+				//id_PendingBills.removePopUp();
+			}
+		]]>
+	</fx:Script>	
+	<!--
+	<fx:Style source="..\Skin\src\Styles\AppLevelSkins.css" />
+	<fx:Style source="..\Skin\src\Styles\AppLevelPopUpSkins.css" />
+	<fx:Style source="..\Skin\src\Styles\AppLevelScrollerSkins.css" />
+	<fx:Style source="..\Skin\src\Styles\AppLevelTextInputSkins.css" />
+	<fx:Style source="..\Skin\src\Styles\AppLevelButtonSkins.css" />
+	<fx:Style source="..\Skin\src\Styles\AppLevelDataGridSkins.css" />
+	<fx:Style source="..\Skin\src\Styles\AppLevelContainerSkins.css" />
+	<fx:Style source="..\Skin\src\Styles\AppLevelButtonBarSkins.css" />
+	<fx:Style source="..\Skin\src\Styles\AppLevelComboBoxSkins.css" />
+	<fx:Style source="..\Skin\src\Styles\AppLevelCheckBoxSkins.css" />
+	-->
+	<!--<s:BorderContainer width="100%" height="100%"  styleName="greyBGContainerSkin">
+		<s:layout>
+			<s:VerticalLayout gap="-5" />				
+		</s:layout>-->
+	
+	<s:layout>
+		<s:VerticalLayout paddingTop="4" paddingBottom="4" paddingLeft="2" paddingRight="2" gap="-4" />
+	</s:layout>
+	
+	<s:ButtonBar  id= "id_Tabs"   width="625" dataProvider = "{id_vsViews}"  styleName="blackButtonBarSkin" buttonMode="true" useHandCursor="true" />	
+	<s:SkinnableContainer minHeight="100" height="100%" width="100%"  skinClass="com.adobe.gazuntite.skins.chrome.containerSkins.blackTitleBGContainer">
+		<s:layout>
+			<s:VerticalLayout paddingTop="5" paddingBottom="5" paddingRight="2" horizontalAlign="right" />
+		</s:layout>
+		
+		<mx:ViewStack id="id_vsViews" width = "100%" height = "100%"  
+					  change="id_vsViews_changeHandler(event)" resizeToContent="true"				  
+					  >
+			<s:NavigatorContent label="{'Pending Bills'+' '+ '('+model.totalrecords_PB.toString()+')'}" width = "100%" height = "100%">
+				<PendingBills:PendingBills  id="id_PendingBills" width="100%" toolTip="Pending Bills"/>
+			</s:NavigatorContent>
+			<s:NavigatorContent label = "Inbox" width = "100%" height = "100%"  >
+				<s:Label text="Work in Progress"  fontFamily="Calibri" fontSize="14" verticalCenter="0" horizontalCenter="0"   />
+			</s:NavigatorContent>
+			<s:NavigatorContent  label="Claim Management" width = "100%" height = "100%" >
+				<claimManagement:ClaimManagement id="id_ClaimManagement" width="100%" />
+			</s:NavigatorContent>
+			<s:NavigatorContent label = "Accounts And Receivables" width = "100%" height = "100%" >
+				<accountsAndReceivables:AccountsAndReceivableView width="100%" />
+			</s:NavigatorContent>
+			<s:NavigatorContent label = "Reports" width = "100%" height = "100%">
+				<report:BillingReportView width="100%" height="100%" />
+			</s:NavigatorContent>
+			<s:NavigatorContent label = "Settings" width = "100%" height = "100%" >
+				<views:BillingSetUp width="100%"/>
+			</s:NavigatorContent>
+		</mx:ViewStack>		
+		</s:SkinnableContainer>
+		<!--</s:BorderContainer>-->
+</s:Group>

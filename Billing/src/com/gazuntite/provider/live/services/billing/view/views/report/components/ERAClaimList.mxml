@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  xmlns:components="com.gazuntite.controls.extended.components.*"
+		  creationComplete="CC(event)"
+		  >
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			protected function CC(event:FlexEvent):void
+			{
+				
+			}
+				
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<components:LabelDataGrid id="id_pmtClaimGrid" width="100%" dataProvider="{model.PaymentClaimList}" 
+							  height="100" useRollOver="false" editable="false" allowMultipleSelection="true" 
+							  verticalScrollPolicy="on"  
+							  verticalScrollBarStyleName="VScrollBar" horizontalScrollPolicy="auto"
+							  maxHeight="150" variableRowHeight="true" tabIndex="12" horizontalScrollBarStyleName="VScrollBar"
+							  columnWidths="{['5'],['7%'],['10%'],['20%'],['10%'],['10%'],['10%'],['10%'],['5%'],['10%'],['10%']}"
+							  >
+		<components:columns>
+			<mx:DataGridColumn dataField="" 
+							   headerText="" 
+							   rendererIsEditor="true"
+							   sortable="false" 
+							   itemRenderer="com.gazuntite.controls.extended.components.CheckBoxGrid.CheckBoxRenderer" 
+							   headerRenderer="com.gazuntite.controls.extended.components.CheckBoxGrid.CheckBoxHeaderRenderer" 
+							   editorDataField="selected"/>
+			<mx:DataGridColumn headerText="Patient" dataField="Patient" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Account" dataField="ClaimID" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="ICN" dataField="ICN" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Visit Date" dataField="VisitDate" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Billed Amount" dataField="Charges" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Paid Amount" dataField="Payments" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Patient Responsibility" dataField="PatientResponsibility" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="POS" dataField="ServiceTypeCode" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>										
+		</components:columns>
+	</components:LabelDataGrid>
+</s:VGroup>

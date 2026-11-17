@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- http://blog.flexexamples.com/2009/07/19/setting-the-header-colors-on-the-halo-datagrid-control-in-flex-4/ -->
+<s:SparkSkin name="CustomDataGridHeaderBackgroundSkin"
+			 xmlns:fx="http://ns.adobe.com/mxml/2009"
+			 xmlns:s="library://ns.adobe.com/flex/spark"
+			 minWidth="21" minHeight="19">
+	
+	<!-- layer 2: fill -->
+	<s:Rect left="0" right="0" top="0" bottom="0">
+		<s:filters>
+			<s:DropShadowFilter alpha="1" angle="90" blurX="0" blurY="0" color="#666666" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#8A969E" ratio="0.00784313725490196"/>
+				<s:GradientEntry alpha="1.0" color="#AEB6BD" ratio="0.08235294117647059"/>
+				<s:GradientEntry alpha="1.0" color="#8D9BA6" ratio="0.996078431372549"/>
+				<s:GradientEntry alpha="1.0" color="#B1BCC3" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+</s:SparkSkin>

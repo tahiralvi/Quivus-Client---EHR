@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SparkSkin width="100%" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" 
+			 xmlns:fb="http://ns.adobe.com/flashbuilder/2009" alpha.disabled="0.5" xmlns:mx="library://ns.adobe.com/flex/mx"	
+			 >
+	
+	<fx:Metadata>
+		<![CDATA[ 
+		/** 
+		* @copy spark.skins.spark.ApplicationSkin#hostComponent
+		*/
+		[HostComponent("spark.components.SkinnableContainer")]
+		]]>
+	</fx:Metadata> 
+	
+	<s:states>
+		<s:State name="normal" />
+		<s:State name="disabled" />
+	</s:states>
+	<s:Group width="100%">
+		<!--<s:BitmapImage width="100%" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='bar_email')"
+					   />-->
+		<!--<s:Rect height="22" radiusX="3.99972" radiusY="4.10581" width="100%">-->
+			<s:Rect height="22" id="rect1" radiusX="5" width="100%">
+				<s:filters>
+					<s:DropShadowFilter angle="90" blurX="1" blurY="1" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1" color="#FFFFFF" alpha="0.25"/>
+					<s:DropShadowFilter blurX="2" blurY="2" distance="1" hideObject="false" color="#333333" inner="false" strength="1" alpha="0.75" quality="3" knockout="false" angle="90"/>
+				</s:filters>
+				<s:fill>
+					<s:LinearGradient rotation="270">
+						<s:GradientEntry ratio="0" color="#F8DA24" alpha="1.0"/>
+						<s:GradientEntry color="#F0BE28" ratio="0.49411764705882355" alpha="1.0"/>
+						<s:GradientEntry color="#EECE6A" ratio="0.4980392156862745" alpha="1.0"/>
+						<s:GradientEntry alpha="1.0" ratio="1" color="#E5D09B"/>
+					</s:LinearGradient>
+				</s:fill>
+			</s:Rect>
+		
+		
+	</s:Group>
+	<!--- @copy spark.components.SkinnableContainer#contentGroup -->
+	<s:Group width="100%" id="contentGroup" clipAndEnableScrolling="false" left="0" right="0" top="0" bottom="0" minWidth="0" minHeight="0">
+		<s:layout>
+			<s:BasicLayout />
+		</s:layout>
+	</s:Group>
+	
+</s:SparkSkin>

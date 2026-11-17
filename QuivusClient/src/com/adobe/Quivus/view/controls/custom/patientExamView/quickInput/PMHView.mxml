@@ -1,0 +1,626 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:quickInput="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.*"
+		 xmlns:allergies="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.allergies.*" 
+		 xmlns:medication="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.medication.*" 
+		 xmlns:history="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.history.*" 
+		 xmlns:immunization="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.immunization.*" 
+		 implements="com.adobe.Quivus.view.interfaces.IScrollableView"
+		 creationComplete="group1_creationCompleteHandler(event)" xmlns:components="com.gazuntite.controls.extended.components.*"
+		 >
+	
+	<s:layout>
+		<s:VerticalLayout gap="0" horizontalAlign="center"/>
+	</s:layout>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.view.controls.custom.PinableSlideOutPanel;
+			import com.adobe.Quivus.view.controls.custom.SlideOutPanel;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.QIAllergiesBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.QIChronicMedicationBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.QIComprehensiveHistoryBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.QIImmunizationBtn;
+			import com.adobe.Quivus.view.events.SelectSection;
+			import com.adobe.Quivus.view.interfaces.IScrollableView;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.QIAllergiesBtnDeletedSkin;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.QIChronicMedicationBtnDeletedSkin;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.QIComprehensiveHistoryBtnDeletedSkin;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.QIImmunizationBtnDeletedSkin;
+			import com.gazuntite.common.dto.AllergDTO;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.zigron.provider.eprescription.services.patient.event.GetPatientGaxenIdEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.events.FlexEvent;
+			import mx.events.ItemClickEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var currentExpandedPanel:SlideOutPanel ;
+			private var currentSlideOutPanel:SlideOutPanel ;
+			
+			private var currentIndex:int = 0;
+			
+			private var m_bHasChange:Boolean;
+			
+			[Bindable]
+			public var ParentSlideOutPanel:SlideOutPanel;
+			[Bindable]
+			public function get hasChange():Boolean
+			{
+				return m_bHasChange;
+			}
+			
+			public function set hasChange(value:Boolean):void
+			{
+				m_bHasChange = value;
+				
+				if( value || id_QIAllergiesPanel.hasChange || id_QIHistoryPanel.hasChange || id_QIMedicationPanel.hasChange || id_QIImmunizationPanel.hasChange )
+				{
+					m_bHasChange = true;
+					/* id_header.id_ChangeIndicator.visible		 = true;
+					id_header.id_ChangeIndicator.includeInLayout = true; */ 
+				}
+				else
+				{
+					m_bHasChange = false;
+					/* id_header.id_ChangeIndicator.visible		 = false;
+					id_header.id_ChangeIndicator.includeInLayout = false; */
+				}
+			}
+			
+			/*public function isInvalid() : Boolean 
+			{
+			var isNotValid:Boolean = false;
+			
+			if( ! isNotValid )
+			isNotValid = id_QIImmunizationPanel.id_ImmunizationBodyView.isInvalid();
+			
+			
+			return isNotValid;
+			}*/
+			
+			protected function QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				//For time Being commented ---- for proper and better solution
+				/* if( currentExpandedPanel == id_QIImmunizationPanel && event.viewState == QSViewStateEvent.COLLAPSED_VIEW )
+				{ 
+				id_QIImmunizationPanel.AllowMoveToNextPanel( function ():void
+				{
+				do_QSViewStateChangeHandler( event );
+				});
+				}
+				else
+				{
+				do_QSViewStateChangeHandler( event );
+				} */
+				do_QSViewStateChangeHandler( event );
+			}
+			
+			private function do_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( currentExpandedPanel && currentExpandedPanel != event.currentTarget && 
+					event.viewState == QSViewStateEvent.EXPANDED_VIEW &&
+					!currentExpandedPanel.isSlideOut && !event.currentTarget.isSlideOut )
+					currentExpandedPanel.ExpandedView = false;
+				
+				//ignore state change if panel is in SlideOut state
+				if( currentExpandedPanel != event.currentTarget && !event.currentTarget.isSlideOut )
+				{
+					currentExpandedPanel = event.currentTarget as SlideOutPanel;
+					setSelectedById( currentExpandedPanel.id );
+				}
+				
+				//moverEffect2.target = event.currentTarget;
+				//moverEffect2.play();
+			}
+			
+			protected function QSSlideStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( currentSlideOutPanel && currentSlideOutPanel != event.currentTarget && 
+					event.viewState == QSViewStateEvent.VIEW_SLIDE_OUT && currentSlideOutPanel.isSlideOut )
+				{
+					//currentSlideOutPanel.ToggleSlideOut();
+					//currentSlideOutPanel["IsNotesPanelVisible"] = false;
+				}
+				
+				currentSlideOutPanel = event.currentTarget as SlideOutPanel;
+				if( event.viewState == QSViewStateEvent.VIEW_SLIDE_IN )
+					currentSlideOutPanel.ExpandedView = true;
+			}
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				currentIndex ++ ;
+				SelectNextByIndex();
+				
+				addEventListener("SelectSection", function(event:SelectSection):void
+				{
+					SelectNextByID( event.SectionID ) ;
+					
+				});
+				
+				id_QIAllergiesPanel.id_Header.id_CloseBtn.addEventListener( MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					event.stopImmediatePropagation();
+					currentIndex = 2 ;
+					SelectNextByIndex();
+					id_QIAllergiesPanel.visible 			= !id_QIAllergiesPanel.visible;
+					/* id_QIAllergiesPanel.includeInLayout 	= !id_QIAllergiesPanel.visible; */
+					
+					
+					id_QIAllergiesBtn.setStyle("skinClass", QIAllergiesBtnDeletedSkin);
+					
+				});
+				
+				id_QIHistoryPanel.id_Header.id_CloseBtn.addEventListener( MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					event.stopImmediatePropagation();
+					currentIndex = 3 ;
+					SelectNextByIndex();
+					id_QIHistoryPanel.visible 				= !id_QIHistoryPanel.visible;
+					/* id_QIHistoryPanel.includeInLayout 		= !id_QIHistoryPanel.visible; */
+					
+					
+					id_QIHistoryBtn.setStyle("skinClass", QIComprehensiveHistoryBtnDeletedSkin);
+				});
+				
+				id_QIMedicationPanel.id_Header.id_CloseBtn.addEventListener( MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					event.stopImmediatePropagation();
+					currentIndex = 4 ;
+					SelectNextByIndex();
+					id_QIMedicationPanel.visible 			= !id_QIMedicationPanel.visible;
+					/* id_QIMedicationPanel.includeInLayout 	= !id_QIMedicationPanel.visible; */
+					
+					id_QIMedicationBtn.setStyle("skinClass", QIChronicMedicationBtnDeletedSkin);
+				});
+				
+				id_QIImmunizationPanel.id_Header.id_CloseBtn.addEventListener( MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					event.stopImmediatePropagation();
+					/* currentIndex = 2 ;
+					SelectNextByIndex(); */
+					id_QIImmunizationPanel.visible 			= !id_QIImmunizationPanel.visible;
+					/* id_QIImmunizationPanel.includeInLayout 	= !id_QIImmunizationPanel.visible; */
+					id_QIImmunizationBtn.setStyle("skinClass", QIImmunizationBtnDeletedSkin);
+				});
+			}
+			
+			/* private function HidePanel(event:MouseEvent):void
+			{
+			event.currentTarget.visible = false;
+			} */
+			
+			private function ShowPanel(event:MouseEvent):void
+			{
+				var btn:ToggleButton = event.currentTarget as ToggleButton;
+				btn.selected = false;
+				getCurrentSelectedPanel().AllowMoveToNextPanel( function():void
+				{
+					btn.selected = true;
+					
+					setSelectedById( btn.id );
+				});
+			}
+			
+			private function getCurrentSelectedPanel():PinableSlideOutPanel
+			{
+				if( id_QIAllergiesPanel.ExpandedView )
+				{
+					return id_QIAllergiesPanel;
+				}
+				else if( id_QIHistoryPanel.ExpandedView )
+				{
+					return id_QIHistoryPanel;
+				}
+				else if( id_QIMedicationPanel.ExpandedView )
+				{
+					return id_QIMedicationPanel;
+				}
+				else if( id_QIImmunizationPanel.ExpandedView )
+				{
+					return id_QIImmunizationPanel;
+				}
+				
+				return id_QIHistoryPanel;
+			}
+			
+			private function inActivateBorders():void 
+			{				
+				/* id_AllergiesBorder.setStyle("borderAlpha", false);
+				id_QHistoryBorder.setStyle("borderAlpha", false);
+				id_QIMedicationBorder.setStyle("borderAlpha", false);
+				id_QIImmunizationBorder.setStyle("borderAlpha", false); */
+				id_QIAllergiesPanel.ShowFocusBorder		= false;
+				id_QIHistoryPanel.ShowFocusBorder 		= false;
+				id_QIMedicationPanel.ShowFocusBorder	= false;
+				id_QIImmunizationPanel.ShowFocusBorder 	= false;
+			}
+			private function setSelectedById(tabId:String):void
+			{
+				DeSelectAllNavButton();
+				
+				switch( tabId )
+				{
+					case "id_QIAllergiesBtn":
+					case "id_QIAllergiesPanel":
+						inActivateBorders();
+						id_QIAllergiesBtn.selected				= true;
+						id_QIAllergiesPanel.ExpandedView 		= true;
+						//id_QIAllergiesPanel.ShowFocusBorder		= true;
+						id_QIAllergiesPanel.visible				= true;
+						id_QIAllergiesPage.selected				= true;
+						currentIndex							= 1;
+						
+						id_QIAllergiesBtn.setStyle("skinClass", QIAllergiesBtn);
+						
+						id_Scroller.viewport.verticalScrollPosition = 5;
+						
+						//Tahir Alvi - on load Qi manage Allergy UI
+						if(model.QIAllergyDTOList && model.QIAllergyDTOList.length > 0)
+						{
+							if( (model.QIAllergyDTOList[0] as AllergDTO).isNKDA)
+							{
+								id_QIAllergiesPanel.id_isNKDA.selected 			= true;
+								id_QIAllergiesPanel.id_onSet.enabled 			= false;
+								id_QIAllergiesPanel.id_allergyList.enabled 		= false;
+								id_QIAllergiesPanel.id_reaction.enabled 		= false;						
+								id_QIAllergiesPanel.id_Yes.enabled 				= false;
+								id_QIAllergiesPanel.id_No.enabled 				= false;
+								id_QIAllergiesPanel.id_AllergiesGrid.visible 	= false;
+								id_QIAllergiesPanel.id_nkda.visible 			= true;
+							}else
+							{
+								id_QIAllergiesPanel.id_AllergiesGrid.visible 	= true;
+								id_QIAllergiesPanel.id_isNKDA.selected 			= false;
+								id_QIAllergiesPanel.id_allergyList.enabled 		= true;
+								id_QIAllergiesPanel.id_reaction.enabled 		= true;						
+								id_QIAllergiesPanel.id_Yes.enabled 				= true;
+								id_QIAllergiesPanel.id_No.enabled 				= true;
+								id_QIAllergiesPanel.id_nkda.visible 			= false;
+								
+							}
+						}else
+						{
+							id_QIAllergiesPanel.id_AllergiesGrid.visible 			= false;
+							id_QIAllergiesPanel.id_AllergiesGrid.includeInLayout  = false;
+							id_QIAllergiesPanel.id_nkda.visible 			= false;
+						}
+						break;
+					
+					case "id_QIHistoryBtn":
+					case "id_QIHistoryPanel":
+						inActivateBorders();
+						id_QIHistoryBtn.selected				= true;
+						id_QIHistoryPanel.ExpandedView 			= true;
+						//id_QIHistoryPanel.ShowFocusBorder 		= true;
+						id_QIHistoryPanel.visible		 		= true;
+						id_QIHistoryPage.selected				= true;
+						
+						id_QIHistoryPanel.id_HistoryView.id_GeneralSection.selectFirstTab = true;
+						
+						id_QIHistoryBtn.setStyle("skinClass", QIComprehensiveHistoryBtn);
+						currentIndex							= 2;
+						
+						if( checkPinAll() )
+							id_Scroller.viewport.verticalScrollPosition = id_QIAllergiesPanel.height;
+						else
+							id_Scroller.viewport.verticalScrollPosition = id_QIAllergiesPanel.height + 25;
+						
+						break;
+					
+					case "id_QIMedicationBtn":
+					case "id_QIMedicationPanel":
+						inActivateBorders();
+						id_QIMedicationBtn.selected				= true;
+						id_QIMedicationPanel.ExpandedView 		= true;
+						//id_QIMedicationPanel.ShowFocusBorder	= true;
+						id_QIMedicationPanel.visible		 	= true;
+						id_QIMedicationPage.selected			= true;
+						
+						
+						id_QIMedicationBtn.setStyle("skinClass", QIChronicMedicationBtn);
+						currentIndex							= 3;
+						
+						if( checkPinAll() )
+							id_Scroller.viewport.verticalScrollPosition = id_QIAllergiesPanel.height + 45;
+						else
+							id_Scroller.viewport.verticalScrollPosition = id_QIAllergiesPanel.height + id_QIHistoryPanel.height;
+						
+						break;
+					
+					case "id_QIImmunizationBtn":
+					case "id_QIImmunizationPanel":
+						inActivateBorders();
+						id_QIImmunizationBtn.selected			= true;
+						id_QIImmunizationPanel.ExpandedView 	= true;
+						//id_QIImmunizationPanel.ShowFocusBorder 	= true;
+						id_QIImmunizationPanel.visible		 	= true;
+						id_QIImmunizationPage.selected			= true;
+						
+						id_QIImmunizationPanel.id_ImmunizationBodyView.id_AssociateVisitzCombo.setFocus();
+						
+						id_QIImmunizationBtn.setStyle("skinClass", QIImmunizationBtn);
+						currentIndex							= 4;
+						
+						if( checkPinAll() )
+							id_Scroller.viewport.verticalScrollPosition = id_QIAllergiesPanel.height + id_QIHistoryPanel.height + id_QIMedicationPanel.height;
+						else
+							id_Scroller.viewport.verticalScrollPosition = id_QIMedicationPanel.height + 65;
+						
+						break;
+					
+				}
+				trace( "selected index", currentIndex );
+			}
+			
+			private function SelectNextByIndex():void
+			{
+				if( currentIndex == 0 )
+					currentIndex = 4;
+				
+				switch( currentIndex )
+				{
+					case 1:
+						setSelectedById( "id_QIAllergiesBtn" );
+						break;
+					case 2:
+						setSelectedById( "id_QIHistoryBtn" );
+						break;
+					case 3:
+						setSelectedById( "id_QIMedicationBtn" );
+						break;
+					case 4:
+						setSelectedById( "id_QIImmunizationBtn" );
+						break;
+					
+					default:
+						setSelectedById( "id_QIAllergiesBtn" );
+						break;
+				}
+			}
+			
+			private function SelectNextByID( sectionID:String ):void
+			{
+				removeAllPopups();
+				
+				switch( sectionID )
+				{
+					case "id_QIImmunizationPanel":
+						setSelectedById( "id_QIAllergiesBtn" );
+						break;
+					case "id_QIAllergiesPanel":
+						setSelectedById( "id_QIHistoryBtn" );
+						break;
+					case "id_QIHistoryPanel":
+						setSelectedById( "id_QIMedicationBtn" );
+						break;
+					case "id_QIMedicationPanel":
+						setSelectedById( "id_QIImmunizationBtn" );
+						break;
+					
+					default:
+						setSelectedById( "id_QIAllergiesBtn" );
+						break;
+				}
+			}
+			
+			private function DeSelectAllNavButton():void
+			{
+				id_QIAllergiesBtn.selected		=	false;
+				id_QIHistoryBtn.selected		=	false;
+				id_QIMedicationBtn.selected		=	false;
+				id_QIImmunizationBtn.selected	=	false;
+			}
+			
+			
+			
+			protected function pagination_itemClickHandler(event:ItemClickEvent):void
+			{
+				getCurrentSelectedPanel().AllowMoveToNextPanel( function():void
+				{
+					setSelectedById( event.item as String );
+				});
+			}
+			
+			
+			protected function next_clickHandler(event:MouseEvent):void
+			{
+				currentIndex += 1 ;
+				SelectNextByIndex()
+			}
+			
+			
+			protected function previous_clickHandler(event:MouseEvent):void
+			{
+				currentIndex -= 1 ;
+				SelectNextByIndex()
+			}
+			
+			
+			public function ScrollUp():void
+			{
+				id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition + 15;
+				removeAllPopups();
+			}
+			
+			public function ScrollDown():void
+			{
+				id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition - 15;
+				removeAllPopups();
+			}
+			
+			public function PinAll( value:Boolean ):void
+			{
+				id_QIAllergiesPanel.PinView 						= value;
+				id_QIAllergiesPanel.id_Header.id_Pin.selected 		= value;
+				
+				id_QIImmunizationPanel.PinView 						= value;
+				id_QIImmunizationPanel.id_Header.id_Pin.selected 	= value;
+				
+				id_QIHistoryPanel.PinView 							= value;
+				id_QIHistoryPanel.id_Header.id_Pin.selected 		= value;
+				
+				id_QIMedicationPanel.PinView 						= value;
+				id_QIMedicationPanel.id_Header.id_Pin.selected 		= value;
+				
+				if( !value )
+					currentExpandedPanel.ExpandedView = true;
+				
+				removeAllPopups();
+			}
+			
+			public function checkPinAll():Boolean
+			{
+				return id_QIAllergiesPanel.PinView 	&&
+					id_QIImmunizationPanel.PinView 	&&
+					id_QIHistoryPanel.PinView 		&&
+					id_QIMedicationPanel.PinView 	;
+				
+			}
+			
+			public function removeAllPopups():void
+			{
+				id_QIAllergiesPanel.AllowOtherPopup		= false;
+				id_QIHistoryPanel.AllowOtherPopup		= false;
+				id_QIImmunizationPanel.AllowOtherPopup	= false;
+				id_QIMedicationPanel.AllowOtherPopup	= false;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:RadioButtonGroup id="pagination" itemClick="pagination_itemClickHandler(event)"/>
+		
+		<!--<s:Animate id="moverEffect2" repeatCount="1" duration="800">-->
+		<!--<s:SimpleMotionPath
+		property="rotationY"
+		valueFrom="-100" valueTo="0" />
+		
+		<s:SimpleMotionPath
+		property="rotationZ" 
+		valueFrom="60" valueTo="0" />-->
+		
+		<!--<s:SimpleMotionPath property="rotationX" valueFrom="60" valueTo="0" />-->
+		<!--<s:SimpleMotionPath property="y" valueFrom="-200" valueTo="0" />-->
+		<!--<s:SimpleMotionPath property="scaleY" valueFrom="0.1" valueTo="1" />-->
+		
+		
+		<!--</s:Animate>	-->
+		
+		
+	</fx:Declarations>
+	
+	
+	<fx:Binding source="id_QIAllergiesPanel.hasChange" destination="hasChange" /> 
+	<fx:Binding source="id_QIHistoryPanel.hasChange" destination="hasChange"  /> 
+	<fx:Binding source="id_QIMedicationPanel.hasChange" destination="hasChange"  /> 
+	<fx:Binding source="id_QIImmunizationPanel.hasChange" destination="hasChange"  /> 
+	
+	<s:HGroup width="100%" horizontalAlign="center" height="40" verticalAlign="middle">
+		<s:Button skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBPMHPrevBtn" click="previous_clickHandler(event)" toolTip="Previous Section" buttonMode="true"/>
+		<s:HGroup width="100%" horizontalAlign="left">			
+			<s:ToggleButton id="id_QIAllergiesBtn" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.QIAllergiesBtn" label="ALLERGIES"
+							selected="{ !id_QIAllergiesPanel.visible}" click="ShowPanel(event)" useHandCursor="true" buttonMode="true" toolTip="Allergies"
+							/>
+			<s:ToggleButton id="id_QIHistoryBtn" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.QIComprehensiveHistoryBtn" label="COMPREHENSIVE HISTORY" 
+							selected="{ !id_QIHistoryBtn.visible}" click="ShowPanel(event)" useHandCursor="true" buttonMode="true" toolTip="Comprehensive History"
+							/>
+			<s:ToggleButton id="id_QIMedicationBtn" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.QIChronicMedicationBtn" 
+							selected="{ !id_QIMedicationBtn.visible}" click="ShowPanel(event)" useHandCursor="true" buttonMode="true" toolTip="Chronic Medication"
+							/> 
+			<s:ToggleButton id="id_QIImmunizationBtn" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.QIImmunizationBtn" label="IMMUNIZATION" 
+							selected="{ !id_QIImmunizationBtn.visible}" click="ShowPanel(event)" useHandCursor="true" buttonMode="true" toolTip="Immunization"
+							/>
+		</s:HGroup>
+		
+		<!--<s:Button id="id_QIImmunizationBtn" width="90" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.PMHButtonSkin" label="IMMUNIZATION" />-->
+		<s:Button skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBPMHNextBtn" click="next_clickHandler(event)"
+				  toolTip="Next Section" buttonMode="true"/>
+	</s:HGroup>
+	
+	
+	
+	
+	<s:BorderContainer id="id_Area" width="100%" height="100%" cornerRadius="3" backgroundColor="#999AAA" 
+					   borderAlpha="0" borderColor="#999AAA" backgroundAlpha="0">
+		<s:layout>
+			<s:VerticalLayout paddingTop="0" horizontalAlign="left" gap="1"  />
+		</s:layout>
+		
+		
+		
+		<s:Scroller id="id_Scroller" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off" >
+			<s:Group width="100%" height="100%" >
+				<s:layout>
+					<s:VerticalLayout paddingTop="0" horizontalAlign="center" verticalAlign="top" gap="1"  />
+				</s:layout>
+				
+				
+				
+				
+				<allergies:QIAlergiesPanel 		  id="id_QIAllergiesPanel"		width="100%" allowSlideOut="true" ExpandedView="true" 
+												  SlideOutXOffset="35" SlideOutYOffset="0"
+												  includeInLayout="{id_QIAllergiesPanel.visible}" 
+												  ParentSlideOutPanel="{this.ParentSlideOutPanel}"
+												  QSViewStateChange="QSViewStateChangeHandler(event)"
+												  QSSlideStateChange="QSSlideStateChangeHandler(event)" 
+												  ShowFocusBorder="false" slideoutPanelName="Allergies"/>
+				
+				
+				<history:QIHistoryPanel 		  id="id_QIHistoryPanel"		width="100%" allowSlideOut="true" ExpandedView="false" 
+												  SlideOutXOffset="35" SlideOutYOffset="0"
+												  includeInLayout="{id_QIHistoryPanel.visible}"
+												  ParentSlideOutPanel="{this.ParentSlideOutPanel}"
+												  QSViewStateChange="QSViewStateChangeHandler(event)" 
+												  QSSlideStateChange="QSSlideStateChangeHandler(event)" 
+												  ShowFocusBorder="false" slideoutPanelName="History"/>
+				
+				
+				<medication:QIMedicationPanel 	  id="id_QIMedicationPanel"		width="100%" allowSlideOut="true" ExpandedView="false" 
+												  SlideOutXOffset="35" SlideOutYOffset="0"
+												  includeInLayout="{id_QIMedicationPanel.visible}"
+												  ParentSlideOutPanel="{this.ParentSlideOutPanel}"
+												  QSViewStateChange="QSViewStateChangeHandler(event)" 
+												  QSSlideStateChange="QSSlideStateChangeHandler(event)" 
+												  ShowFocusBorder="false" slideoutPanelName="Medication"/>
+				
+				
+				<immunization:QIImmunizationPanel id="id_QIImmunizationPanel" 	width="100%" allowSlideOut="true" ExpandedView="false"  
+												  SlideOutXOffset="35" SlideOutYOffset="0"
+												  includeInLayout="{id_QIImmunizationPanel.visible}"
+												  ParentSlideOutPanel="{this.ParentSlideOutPanel}"
+												  QSViewStateChange="QSViewStateChangeHandler(event)" 
+												  QSSlideStateChange="QSSlideStateChangeHandler(event)" 
+												  ShowFocusBorder="false" slideoutPanelName="Immunization"/>
+				
+				
+				
+				
+				
+			</s:Group>
+		</s:Scroller>
+		
+		
+		
+		<s:HGroup width="100%" horizontalAlign="center" paddingTop="5" paddingBottom="0">
+			
+			<s:RadioButton id="id_QIAllergiesPage" 		groupName="pagination" value="id_QIAllergiesBtn" skinClass="com.adobe.Quivus.view.controls.skins.QIPaginationRadioBtn" buttonMode="true" useHandCursor="true" toolTip="Allergies" 		/>
+			<s:RadioButton id="id_QIHistoryPage" 		groupName="pagination" value="id_QIHistoryBtn" 	skinClass="com.adobe.Quivus.view.controls.skins.QIPaginationRadioBtn" buttonMode="true" useHandCursor="true" toolTip="Comprehensive History"	/>
+			<s:RadioButton id="id_QIMedicationPage" 	groupName="pagination" value="id_QIMedicationBtn" skinClass="com.adobe.Quivus.view.controls.skins.QIPaginationRadioBtn" buttonMode="true" useHandCursor="true" toolTip="Chronic Medication"	/>
+			<s:RadioButton id="id_QIImmunizationPage" 	groupName="pagination" value="id_QIImmunizationBtn" skinClass="com.adobe.Quivus.view.controls.skins.QIPaginationRadioBtn" buttonMode="true" useHandCursor="true" toolTip="Immunization"	/>
+		</s:HGroup>
+	</s:BorderContainer>
+	
+	
+</s:Group>

@@ -1,0 +1,1289 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 creationComplete="Init()"
+		 width="100%"
+		 xmlns:components="com.gazuntite.controls.extended.components.*" 
+		 xmlns:itemEditors="com.gazuntite.provider.live.services.billing.view.common.itemEditors.*" 
+		 xmlns:common="com.gazuntite.provider.live.services.billing.view.common.*" xmlns:components1="com.gazuntite.controls.extended.components.*" 
+		 
+		 >
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.CPTMedicalTypeDTO;
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.CPTModifierTypeDTO;
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.SuperBillProcedureInfoDTO;
+			import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadCPTMedicalTypesEvent;
+			import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadCPTModifierTypesEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.util.BillingPopUpManager;
+			import com.gazuntite.provider.live.services.billing.view.common.ComboBoxEditor;
+			import com.gazuntite.provider.live.services.billing.view.common.validators.ComboValidator;
+			import com.gazuntite.provider.live.services.billing.view.event.DataGridActionEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.TextInput;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.CollectionEvent;
+			import mx.events.CollectionEventKind;
+			import mx.events.DataGridEvent;
+			import mx.events.ValidationResultEvent;
+			
+			import spark.components.RichEditableText;
+			
+			[Bindable]
+			public var model:BillingModelLocator = BillingModelLocator.getInstance(); 			
+			
+			[Bindable]
+			private var m_aNewProcedures:ArrayCollection;			
+			
+			[Bindable]
+			public function get NewProcedures():ArrayCollection
+			{
+				return m_aNewProcedures;
+			}			
+			
+			public function set NewProcedures(value:ArrayCollection):void
+			{
+				m_aNewProcedures = value;
+			}
+			
+			[Bindable]
+			private var m_nReqNo:int;			
+			
+			[Bindable]
+			public function get ReqNo():int
+			{
+				return m_nReqNo;
+			}			
+			
+			public function set ReqNo(value:int):void
+			{
+				m_nReqNo = value;
+			}
+			
+			[Bindable]
+			private var m_sServiceDate:String
+			
+			[Bindable]
+			public function get ServiceDate():String
+			{
+				return m_sServiceDate;
+			}			
+			
+			public function set ServiceDate(value:String):void
+			{
+				m_sServiceDate = value;
+			}
+			
+			[Bindable]
+			private var m_sVisitId:String;
+			
+			[Bindable]
+			public function get VisitId():String
+			{
+				return m_sVisitId;
+			}			
+			
+			public function set VisitId(value:String):void
+			{
+				m_sVisitId = value;
+			}
+			
+			[Bindable]
+			private var m_sPatientId:String;
+			
+			[Bindable]
+			public function get PatientId():String
+			{
+				return m_sPatientId;
+			}			
+			
+			public function set PatientId(value:String):void
+			{
+				m_sPatientId = value;
+			}
+			
+			[Bindable]
+			private var m_aProcedures:ArrayCollection
+			
+			private var _previouslySelectedItem:CPTMedicalTypeDTO;
+			
+			[Bindable]
+			public function get CPTs():ArrayCollection
+			{
+				return m_aProcedures;
+			}			
+			
+			public function set CPTs(value:ArrayCollection):void
+			{
+				m_aProcedures = value;				
+				
+				if (m_aProcedures)
+				{
+					m_aProcedures.addEventListener(CollectionEvent.COLLECTION_CHANGE, procedureCollectionChangeHandler, false, 0, true);
+					
+					if (m_aProcedures.length)
+						includeGridInLayout = true;
+						
+					else
+						includeGridInLayout = false;		
+				}
+				else
+					includeGridInLayout = false;
+			}
+			
+			private function procedureCollectionChangeHandler(event:CollectionEvent):void
+			{
+				switch(event.kind)
+				{
+					case CollectionEventKind.ADD:
+						includeGridInLayout = true;
+						break;
+					
+					case CollectionEventKind.REMOVE:
+						if (CPTs && CPTs.length < 1)
+							includeGridInLayout = false;
+						break;
+				}
+			}
+			
+			private function itemEditKeyUpHandler(event:DataGridActionEvent):void	
+			{
+				var searchString:String;
+				if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+				{
+					searchString = event.searchString;
+					if(event.labelFiled == "ProcedureCode" || event.labelFiled == "ProcedureDescription")
+					{
+						if(searchString.length > 2)
+						{							
+							var cptEvent : LoadCPTMedicalTypesEvent = new LoadCPTMedicalTypesEvent(searchString,ReqNo);
+							CairngormEventDispatcher.getInstance().dispatchEvent( cptEvent );								
+						}
+					}
+					else if (event.labelFiled == "Modifier1" )
+					{
+						searchString = event.searchString;
+						if(searchString.length > 0)
+						{
+							var modi1Event : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,1);
+							CairngormEventDispatcher.getInstance().dispatchEvent( modi1Event );
+						}
+					}
+					else if (event.labelFiled == "Modifier2" )
+					{
+						if(searchString.length > 0)
+						{
+							var modi2Event : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,2);
+							CairngormEventDispatcher.getInstance().dispatchEvent( modi2Event );
+						}
+					}
+					else if (event.labelFiled == "Modifier3" )
+					{
+						if(searchString.length > 0)
+						{
+								var modi3Event : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,3);
+								CairngormEventDispatcher.getInstance().dispatchEvent( modi3Event );
+						}
+					}
+					else if (event.labelFiled == "Modifier4" )
+					{
+						if(searchString.length > 0)
+						{
+							var modi4Event : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,4);
+							CairngormEventDispatcher.getInstance().dispatchEvent( modi4Event );
+						}
+					}
+				}
+			}
+			public var LastChildTabIndex:int = 0;
+			private function SetTabIndexes():void
+			{
+				var incrementer:int = 0;
+				id_CPTCode.tabIndex = tabIndex + (++incrementer) ;
+				id_Procedure.tabIndex = tabIndex + (++incrementer);
+				id_Fee.tabIndex = tabIndex + (++incrementer);
+				id_Unit.tabIndex = tabIndex + (++incrementer);
+				id_AddModifiers.tabIndex = tabIndex + (++incrementer);
+				id_Add.tabIndex = tabIndex + (++incrementer);
+				id_ProcedureGrid.tabIndex = tabIndex + (++incrementer);
+				
+				LastChildTabIndex = ++incrementer;
+			}
+			private function Init():void
+			{	
+				SetTabIndexes();	
+				
+				id_ProcedureGrid.addEventListener(DataGridActionEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+				id_ProcedureGrid.addEventListener(DataGridActionEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				//id_ProcedureGrid.addEventListener(DataGridActionEvent.ITEM_EDIT_KEY_UP, itemEditKeyUpHandler, false, 0, true);			
+				
+				//id_ProcedureGrid.addEventListener("widthChanged", dataGridWidthChangedHandler, false, 0, true);
+												
+				//NewProcedures = new ArrayCollection();
+				
+				if(CPTs == null)
+					CPTs = new ArrayCollection();
+				if(model.CurrentOtherProcedures == null)
+					model.CurrentOtherProcedures = new ArrayCollection();			
+				
+			}
+			private function deleteRecordClickHandler(event:DataGridActionEvent):void
+			{
+				var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+				var procedureID:String = SuperBillProcedureInfoDTO(event.currentTarget.selectedItem).ProcedureID;
+				if(procedureID != "0") return;
+						
+				
+				Alert.show("Are you sure, you want to delete procedure [" + (curTar.selectedItem as SuperBillProcedureInfoDTO).ProcedureCode +"]?","Confirmation", Alert.YES|Alert.NO, this, function( event:CloseEvent):void
+				{
+					if( event.detail == Alert.YES )
+					{
+						if(ReqNo == 1)
+						{
+							var CPTCharges:Number = Number( (model.CurrentProcedures[curTar.selectedIndex] as SuperBillProcedureInfoDTO).Fee) * Number((model.CurrentProcedures[curTar.selectedIndex] as SuperBillProcedureInfoDTO).Unit);
+							model.CurrentProcedures.removeItemAt(curTar.selectedIndex);	
+							model.TotalCharges -= CPTCharges;
+						}
+						else
+						{
+							var CPTChargesO:Number = Number( (model.CurrentOtherProcedures[curTar.selectedIndex] as SuperBillProcedureInfoDTO).Fee) * Number((model.CurrentOtherProcedures[curTar.selectedIndex] as SuperBillProcedureInfoDTO).Unit);
+							model.CurrentOtherProcedures.removeItemAt(curTar.selectedIndex);
+							model.TotalCharges -= CPTChargesO;
+						}
+						model.CalculateSuperBill();
+						hasViewChanged = _hasGridChanged = true;
+					} 
+				});
+					/*UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+					{	
+						//NewProcedures.removeItemAt(NewProcedures.getItemIndex((CPTs.getItemAt(curTar.selectedIndex))));
+						if(ReqNo == 1)
+						{
+							var CPTCharges:Number = Number( (model.CurrentProcedures[curTar.selectedIndex] as SuperBillProcedureInfoDTO).Fee) * Number((model.CurrentProcedures[curTar.selectedIndex] as SuperBillProcedureInfoDTO).Unit)
+							model.CurrentProcedures.removeItemAt(curTar.selectedIndex);	
+							model.TotalCharges -= CPTCharges;
+						}
+						else
+						{
+							var CPTChargesO:Number = Number( (model.CurrentProcedures[curTar.selectedIndex] as SuperBillProcedureInfoDTO).Fee) * Number((model.CurrentProcedures[curTar.selectedIndex] as SuperBillProcedureInfoDTO).Unit)
+							model.CurrentOtherProcedures.removeItemAt(curTar.selectedIndex);
+							model.TotalCharges -= CPTChargesO;
+						}
+						
+						hasViewChanged = _hasGridChanged = true;
+					});*/
+				
+			}
+			
+			private function editRecordClickHandler(event:DataGridActionEvent):void
+			{
+				id_ProcedureGrid.editable = true;
+				
+				var rowIndex:int = LabelDataGrid(event.currentTarget).selectedIndex;	
+				
+				var itemToSetInEditableMode:IListItemRenderer = id_ProcedureGrid.indexToItemRenderer(rowIndex);
+								
+				var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+				
+				//var dto:SuperBillProcedureInfoDTO = CPTs[rowIndex];
+				//if(dto.ProcedureID != "0")					
+				
+				ev.rowIndex = rowIndex;
+				ev.itemRenderer = itemToSetInEditableMode;
+				//ev.dataField = "ProcedureCode";
+				
+				id_ProcedureGrid.dispatchEvent(ev);				
+				
+			}
+			
+			private var modifierPopup:Modifiers = null;
+			protected function btnModifiers_clickHandler(event:MouseEvent):void
+			{
+				if(modifierPopup && modifierPopup.isPopUp) return;
+				
+				if(UtilityFunctions.IsNullOrEmpty(id_CPTCode.textInput.text.length) || UtilityFunctions.IsNullOrEmpty(id_Procedure.textInput.text))
+				{
+					Alert.show("Please enter valid procedure","Info",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}				
+				modifierPopup = new Modifiers();
+				modifierPopup.title = "ADD MODIFIERS                                 <CPT " + id_CPTCode.textInput.text + " >";
+				//md.DataProvider = model.CPTModifierTypeList;
+				
+				//md.x= md.x - 400; 
+				modifierPopup.ShowPopup(this);
+				BillingPopUpManager.addPopUp(modifierPopup,BillingPopUpManager.SUPER_BILL_POPUPS);
+				modifierPopup.x = modifierPopup.x - 70;
+				modifierPopup.y = modifierPopup.y + 20;
+			}
+			
+			private function cptKeyUpHandler(event:KeyboardEvent):void
+			{
+				if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+				{
+					var searchString:String = id_CPTCode.textInput.text;
+					if(searchString.length > 2)
+					{
+						var cptEvent : LoadCPTMedicalTypesEvent = new LoadCPTMedicalTypesEvent(searchString,ReqNo);
+						CairngormEventDispatcher.getInstance().dispatchEvent( cptEvent );
+					}
+					
+					//id_Add.enableAll = false;
+					id_Add.enabled = isGetEdited();
+				}
+			}
+			
+			private var serachTerm:String;
+			[Bindable]
+			public var selectedDTO:CPTMedicalTypeDTO;
+			
+			private function cptKeyUpHandlerNew():void
+			{
+				serachTerm = '';
+				serachTerm = id_CPTCode.textInput.text;
+				//if value exceeds 4 characters then search Icd Code and map the Icd Code.
+				if(serachTerm.length >= 4)
+				{
+					id_Procedure.textInput.text 	= '';
+					id_Procedure.selectedIndex 		= -1;
+					selectedDTO 					= null;
+					id_Add.enabled 					= isGetEdited();
+					var cptEvent : LoadCPTMedicalTypesEvent = new LoadCPTMedicalTypesEvent(serachTerm,ReqNo, loadData);
+					CairngormEventDispatcher.getInstance().dispatchEvent( cptEvent );
+					
+				}else{
+					id_Procedure.textInput.text 	= '';
+					id_Procedure.selectedIndex 		= -1;
+					selectedDTO 					= null;
+					id_Add.enabled 					= isGetEdited();
+				}
+			}
+			
+			private function hasDuplicateValues(CPTCode:String):Boolean
+			{
+				if( model.CurrentProcedures != null && model.CurrentProcedures.length > 0  )
+					for(var j:uint =0; j < model.CurrentProcedures.length; j++)
+					{
+						var labDTO:SuperBillProcedureInfoDTO = model.CurrentProcedures[j] as SuperBillProcedureInfoDTO;
+						
+						if(CPTCode == labDTO.ProcedureCode)
+							return true;
+					}
+				
+				if( model.CurrentOtherProcedures != null && model.CurrentOtherProcedures.length > 0  )
+					for(var k:uint =0; k < model.CurrentOtherProcedures.length; k++)
+					{
+						var labDTOother:SuperBillProcedureInfoDTO = model.CurrentOtherProcedures[k] as SuperBillProcedureInfoDTO;
+						
+						if(CPTCode == labDTOother.ProcedureCode)
+							return true;
+					}
+				
+				return false;
+			}
+			
+			private function testNameChangeHandler():void
+			{
+				serachTerm = '';
+				serachTerm = id_Procedure.textInput.text;
+			}
+			
+			public  function loadData(val:* = null):void
+			{
+				if(ReqNo == 1)
+				{
+					if(model.CPTMedicalTypeList.length)
+					{
+						for(var i:uint=0; i < model.CPTMedicalTypeList.length; i++)
+						{
+							if(serachTerm.toUpperCase() == UtilityFunctions.TrimString(model.CPTMedicalTypeList[i].ProcedureCode).toUpperCase() && ! hasDuplicateValues(model.CPTMedicalTypeList[i].ProcedureCode))
+							{
+								id_CPTCode.textInput.text 	= model.CPTMedicalTypeList[i].ProcedureCode;
+								id_Procedure.textInput.text = model.CPTMedicalTypeList[i].ProcedureDescription;
+								selectedDTO					= model.CPTMedicalTypeList[i];
+								id_Add.enabled 				= isGetEdited();
+								
+								return;
+							}							
+						}
+					}
+				}
+				else
+				{
+					if(model.CPTMedicalTypeListOther.length)
+					{
+						for(var j:uint=0; j < model.CPTMedicalTypeListOther.length; j++)
+						{
+							if(serachTerm.toUpperCase() == UtilityFunctions.TrimString(model.CPTMedicalTypeListOther[j].ProcedureCode).toUpperCase()  && ! hasDuplicateValues(model.CPTMedicalTypeListOther[j].ProcedureCode))
+							{
+								id_CPTCode.textInput.text 	= model.CPTMedicalTypeListOther[j].ProcedureCode;
+								id_Procedure.textInput.text = model.CPTMedicalTypeListOther[j].ProcedureDescription;
+								selectedDTO					= model.CPTMedicalTypeListOther[j];
+								id_Add.enabled 				= isGetEdited();
+								return;
+							}							
+						}
+					}
+				}
+			}		
+			
+			private var _hasGridChanged:Boolean;
+			private var _hasViewChanged:Boolean;
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			
+			public function isGetEdited():Boolean
+			{
+				var edited:Boolean = false;
+				
+				
+				if((id_CPTCode.textInput.text.length > 3 ) && (id_Procedure.textInput.text.length > 2)){
+					model.CurrentModifiers =new ArrayCollection();
+					edited = true;
+				}
+				
+				/* if (id_CPTCode.textInput.text || id_CPTCode.selectedItem  || 
+					id_Procedure.textInput.text || id_Procedure.selectedItem)
+				{
+					model.CurrentModifiers =new ArrayCollection();
+					edited = true;
+				} */
+				hasViewChanged = (_hasGridChanged)? _hasGridChanged : edited;
+				
+				return edited;
+			}
+			
+			private function validateCPTCode():void
+			{
+				if (id_CPTCode.selectedItem)
+				{
+					var selectedItem:CPTMedicalTypeDTO = id_CPTCode.selectedItem as CPTMedicalTypeDTO;
+					
+					if (selectedItem)
+					{
+						id_Procedure.selectedItem = selectedItem;
+						_previouslySelectedItem = id_Procedure.selectedItem;
+					}
+					else
+					{
+						id_CPTCode.selectedItem = _previouslySelectedItem;
+						id_Procedure.selectedItem = _previouslySelectedItem;
+					}
+				}
+				
+				//id_Add.enableAll = !isInvalid();
+			}
+			
+			private function procedureKeyUpHandler(event:KeyboardEvent):void
+			{
+				if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+				{
+					var searchString:String = id_Procedure.textInput.text;
+					if(searchString.length > 2)
+					{
+						var cptEvent : LoadCPTMedicalTypesEvent = new LoadCPTMedicalTypesEvent(searchString,ReqNo);
+						CairngormEventDispatcher.getInstance().dispatchEvent( cptEvent );
+					}					
+					
+					id_Add.enabled = isGetEdited();
+				}
+			}
+			
+			private function validateProcedure():void
+			{
+				if (id_Procedure.selectedItem)
+				{
+					var selectedItem:CPTMedicalTypeDTO = id_Procedure.selectedItem as CPTMedicalTypeDTO;
+					
+					if (selectedItem)
+					{
+						id_CPTCode.selectedItem = selectedItem;
+						_previouslySelectedItem = selectedItem;
+					}
+					else
+					{
+						id_CPTCode.selectedItem = _previouslySelectedItem;
+						id_Procedure.selectedItem = _previouslySelectedItem;
+					}
+				}
+				
+				//id_Add.enableAll = !isInvalid();
+			}
+			
+			private function addRecordClickHandler():void
+			{
+				
+				if(UtilityFunctions.IsNullOrEmpty(id_CPTCode.textInput.text) || UtilityFunctions.IsNullOrEmpty(id_Procedure.textInput.text))
+				{
+					Alert.show("Please enter valid Procedure","Info",4,FlexGlobals.topLevelApplication.mainContainer);
+					return; // invalid data
+					id_CPTCode.setFocus();
+				}
+				/*
+				var selectedCPT:CPTMedicalTypeDTO;
+				var isValid:Boolean =false;
+				if(ReqNo == 1)
+				{
+					if(model.CPTMedicalTypeList.length)
+					{
+						for(var i:uint=0; i < model.CPTMedicalTypeList.length; i++)
+						{
+							if(id_CPTCode.textInput.text == model.CPTMedicalTypeList[i].ProcedureCode && id_Procedure.textInput.text == model.CPTMedicalTypeList[i].ProcedureDescription)
+							{
+								selectedCPT = model.CPTMedicalTypeList[i];
+								isValid = true;
+								break;
+							}							
+						}
+					}
+				}
+				else
+				{
+					if(model.CPTMedicalTypeListOther.length)
+					{
+						for(var i:uint=0; i < model.CPTMedicalTypeListOther.length; i++)
+						{
+							if(id_CPTCode.textInput.text == model.CPTMedicalTypeListOther[i].ProcedureCode && id_Procedure.textInput.text == model.CPTMedicalTypeListOther[i].ProcedureDescription)
+							{
+								isValid = true;
+								break;
+							}							
+						}
+					}
+				}
+				if(isValid == false )
+				{
+					Alert.show("Invalid Procedure");
+					id_CPTCode.setFocus();
+					return;
+				}
+				*/				
+				
+				
+				if(hasDuplicateValues(id_CPTCode.textInput.text))
+				{
+					Alert.show("This procedure already exists","Info",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+					id_CPTCode.setFocus();
+				}
+				
+				if( UtilityFunctions.IsNullOrEmpty(id_Fee.text))
+				{
+					Alert.show("Please enter amount","Info",4,FlexGlobals.topLevelApplication.mainContainer);					
+					return;
+					id_Fee.setFocus();
+				}
+				if(UtilityFunctions.IsNullOrEmpty(id_Unit.text))
+				{
+					Alert.show("Please enter Unit","Info",4,FlexGlobals.topLevelApplication.mainContainer);					
+					return;
+					id_Unit.setFocus();
+				}
+				
+				var procedureDTO:SuperBillProcedureInfoDTO = new SuperBillProcedureInfoDTO();
+				
+				procedureDTO.VisitDate = ServiceDate;
+				procedureDTO.ModifiedBy ="0";
+				procedureDTO.ProcedureID = "0";
+				procedureDTO.CPTMedicalTypeID = selectedDTO.CPTMedicalTypeID;				
+				procedureDTO.CreatedBy = model.LoggedInUserId.toString();
+				procedureDTO.ProcedureCode = selectedDTO.ProcedureCode;
+				procedureDTO.ProcedureDescription = selectedDTO.ProcedureDescription;
+								
+				procedureDTO.Unit = id_Unit.text;
+				procedureDTO.Fee = id_Fee.text;
+				procedureDTO.PatientID = PatientId;
+				procedureDTO.VisitID = VisitId;				
+				
+				if(model.CurrentModifiers != null &&  model.CurrentModifiers.length >= 1)
+				{
+					var modicode1:CPTModifierTypeDTO = model.CurrentModifiers[0];
+					procedureDTO.Modifier1 =modicode1.ModifierDescription.split("\-")[0] ;
+					procedureDTO.ModifierTypeId1 =modicode1.ModifierTypeId ;
+				}
+				else
+				{
+					procedureDTO.Modifier1 = "";
+					procedureDTO.ModifierTypeId1 = "0";
+				}
+				
+				if(model.CurrentModifiers != null &&  model.CurrentModifiers.length >= 2)
+				{
+					var modicode2:CPTModifierTypeDTO = model.CurrentModifiers[1];
+					procedureDTO.Modifier2 =modicode2.ModifierDescription.split("\-")[0] ;
+					procedureDTO.ModifierTypeId2 =modicode2.ModifierTypeId ;
+				}
+				else
+				{
+					procedureDTO.Modifier2 = "";
+					procedureDTO.ModifierTypeId2 = "0";
+				}
+				if(model.CurrentModifiers != null &&  model.CurrentModifiers.length >= 3)
+				{
+					var modicode3:CPTModifierTypeDTO = model.CurrentModifiers[2];
+					procedureDTO.Modifier3 =modicode3.ModifierDescription.split("\-")[0] ;
+					procedureDTO.ModifierTypeId3 =modicode3.ModifierTypeId ;
+				}
+				else
+				{
+					procedureDTO.Modifier3 = "";
+					procedureDTO.ModifierTypeId3 = "0";
+				}
+				if(model.CurrentModifiers != null &&  model.CurrentModifiers.length == 4)
+				{
+					var modicode4:CPTModifierTypeDTO = model.CurrentModifiers[3];
+					procedureDTO.Modifier4 =modicode4.ModifierDescription.split("\-")[0] ;
+					procedureDTO.ModifierTypeId4 =modicode4.ModifierTypeId ;
+				}				
+				else
+				{
+					procedureDTO.Modifier4 = "";
+					procedureDTO.ModifierTypeId4 = "0";
+				}
+				
+				procedureDTO.IncludeInBilling = "true";
+				procedureDTO.IsCreatedFromSuperBill = "true";
+				procedureDTO.IsDeleted = "false";
+				
+				//NewProcedures.addItem(procedureDTO);
+				
+				
+				if(ReqNo == 1)
+				{
+					if(model.CurrentProcedures == null)
+						model.CurrentProcedures = new ArrayCollection();
+					procedureDTO.Type = "CPT";
+					model.CurrentProcedures.addItem(procedureDTO);
+				}
+				else
+				{
+					if(model.CurrentOtherProcedures == null)
+						model.CurrentOtherProcedures = new ArrayCollection();
+					procedureDTO.Type = "HCPC";
+					model.CurrentOtherProcedures.addItem(procedureDTO);
+				}
+					
+				
+				model.TotalCharges += Number(procedureDTO.Fee) * Number(procedureDTO.Unit);						
+				model.CalculateSuperBill();
+				resetFields();				
+								
+				hasViewChanged = _hasGridChanged = true;
+								
+			}
+			
+			private function resetFields():void
+			{
+				id_Procedure.selectedIndex = -1;
+				id_Procedure.textInput.text = "";
+				
+				id_CPTCode.selectedIndex = -1;
+				id_CPTCode.textInput.text = "";				
+							
+				id_Fee.text = "";
+				id_Unit.text = "";
+				
+				serachTerm	= "";
+				selectedDTO = null;
+				id_Add.enabled = false;					
+			}	
+			
+						
+			[Bindable]
+			public function get includeGridInLayout():Boolean
+			{
+				return _includeInLayout;
+			}
+			
+			private var _includeInLayout:Boolean;
+			private var _includeInLayoutChanged:Boolean;
+			
+			public function set includeGridInLayout(value:Boolean):void
+			{
+				if (_includeInLayout != value)
+				{
+					_includeInLayout = value;
+					_includeInLayoutChanged = true;
+					
+					invalidateProperties();
+					invalidateSize();
+					invalidateDisplayList();
+				}
+			}
+			
+			private function procedureItemEditBeginHandler(event:DataGridEvent):void
+			{
+				var dto:SuperBillProcedureInfoDTO = event.itemRenderer.data as SuperBillProcedureInfoDTO;
+				if( dto.ProcedureID != "0" && (event.columnIndex == 0 || event.columnIndex == 1))
+				{
+					//id_CPTCode.textInput.text = dto.ProcedureCode;
+					//id_Procedure.textInput.text = dto.ProcedureDescription;
+					
+					//id_ProcedureGrid.editable = false;
+					event.preventDefault();
+					event.stopImmediatePropagation();
+					return;					
+				}
+				
+				//id_ProcedureGrid.editable = true;
+				
+				var searchString:String="";
+				
+				if(event.columnIndex == 0)
+				{
+					searchString = event.itemRenderer.data.ProcedureCode;
+					if(searchString.length > 0)
+					{
+						var cptCodeEvent : LoadCPTMedicalTypesEvent = new LoadCPTMedicalTypesEvent(searchString,ReqNo);
+						CairngormEventDispatcher.getInstance().dispatchEvent( cptCodeEvent );
+					}
+				}
+				
+				if(event.columnIndex == 1)
+				{
+					searchString = event.itemRenderer.data.ProcedureDescription;
+					if(searchString.length > 0)
+					{
+						var cptEvent : LoadCPTMedicalTypesEvent = new LoadCPTMedicalTypesEvent(searchString,ReqNo);
+						CairngormEventDispatcher.getInstance().dispatchEvent( cptEvent );
+					}
+				}
+				else if(event.columnIndex == 4)
+				{
+					searchString = event.itemRenderer.data.Modifier1;
+					if(searchString.length > 0)
+					{
+						var modi1Event : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,1);
+						CairngormEventDispatcher.getInstance().dispatchEvent( modi1Event );
+					}
+				}
+				
+				else if(event.columnIndex == 5)
+				{
+					searchString = event.itemRenderer.data.Modifier2;
+					if(searchString.length > 0)
+					{
+						var modi2Event : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,2);
+						CairngormEventDispatcher.getInstance().dispatchEvent( modi2Event );
+					}
+				}
+				else if(event.columnIndex == 6)
+				{
+					searchString = event.itemRenderer.data.Modifier3;
+					if(searchString.length > 0)
+					{
+						var modi3Event : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,3);
+						CairngormEventDispatcher.getInstance().dispatchEvent( modi3Event );
+					}
+				}
+				else if(event.columnIndex == 7)
+				{
+					searchString = event.itemRenderer.data.Modifier4;
+					if(searchString.length > 0)
+					{
+						var modi4Event : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,4);
+						CairngormEventDispatcher.getInstance().dispatchEvent( modi4Event );
+					}
+				}					
+			}
+			
+			private var comboValidator:ComboValidator;
+			private var bMsgShown:Boolean;
+			private function procedureItemEditHandler(event:DataGridEvent):void
+			{	
+				
+				var dto:SuperBillProcedureInfoDTO = event.itemRenderer.data as SuperBillProcedureInfoDTO;
+				if( dto.ProcedureID != "0" && (event.dataField == "ProcedureCode" || event.dataField == "ProcedureDescription"))
+				{
+					id_CPTCode.textInput.text = dto.ProcedureCode;
+					id_Procedure.textInput.text = dto.ProcedureDescription;
+					return;
+				}
+				
+				var validationRes:ValidationResultEvent;
+				
+				if (event.dataField == "ProcedureCode" || event.dataField == "ProcedureDescription")
+				{
+					var editor:LabelComboBox = ComboBoxEditor(id_ProcedureGrid.itemEditorInstance).id_ComboEditor;
+					//var validationRes:ValidationResultEvent;
+								
+					//validationRes = comboValidator.validate(editor.selectedItem)
+					
+					if( editor.selectedItem )						
+					//if( validationRes  && !validationRes.results)
+					{
+						dto.ProcedureCode 	= (editor.selectedItem as CPTMedicalTypeDTO).ProcedureCode;
+						dto.ProcedureDescription 	= (editor.selectedItem as CPTMedicalTypeDTO).ProcedureDescription;
+						dto.CPTMedicalTypeID = (editor.selectedItem as CPTMedicalTypeDTO).CPTMedicalTypeID;
+					}
+					
+				}
+				else if (event.dataField == "Modifier1")
+				{
+					var editorM1:LabelComboBox = ComboBoxEditor(id_ProcedureGrid.itemEditorInstance).id_ComboEditor;
+					//var validationRes:ValidationResultEvent;
+					
+					//validationRes = comboValidator.validate(editorM1.selectedItem)					
+					if( editorM1.selectedItem )					
+					//if( validationRes  && !validationRes.results)					
+					{
+						dto.ModifierTypeId1 	= (editorM1.selectedItem as CPTModifierTypeDTO).ModifierTypeId;
+						dto.Modifier1 	= (editorM1.selectedItem as CPTModifierTypeDTO).ModifierDescription.split("\-")[0];
+					}
+				}				
+				else if (event.dataField == "Modifier2")
+				{
+					var editorM2:LabelComboBox = ComboBoxEditor(id_ProcedureGrid.itemEditorInstance).id_ComboEditor;				
+									
+					if( editorM2.selectedItem )											
+					{
+						dto.ModifierTypeId2 	= (editorM2.selectedItem as CPTModifierTypeDTO).ModifierTypeId;
+						dto.Modifier2 	= (editorM2.selectedItem as CPTModifierTypeDTO).ModifierDescription.split("\-")[0];
+					}
+				}
+				
+				else if (event.dataField == "Modifier3")
+				{
+					var editorM3:LabelComboBox = ComboBoxEditor(id_ProcedureGrid.itemEditorInstance).id_ComboEditor;				
+					
+					if( editorM3.selectedItem )											
+					{
+						dto.ModifierTypeId3 	= (editorM3.selectedItem as CPTModifierTypeDTO).ModifierTypeId;
+						dto.Modifier3 	= (editorM3.selectedItem as CPTModifierTypeDTO).ModifierDescription.split("\-")[0];
+					}
+				}
+				
+				else if (event.dataField == "Modifier4")
+				{
+					var editorM4:LabelComboBox = ComboBoxEditor(id_ProcedureGrid.itemEditorInstance).id_ComboEditor;				
+					
+					if( editorM4.selectedItem )											
+					{
+						dto.ModifierTypeId4 	= (editorM4.selectedItem as CPTModifierTypeDTO).ModifierTypeId;
+						dto.Modifier4 	= (editorM4.selectedItem as CPTModifierTypeDTO).ModifierDescription.split("\-")[0];
+					}
+				}
+				else
+				{						
+					var row:Number = Number(event.rowIndex);
+					var col:int = event.columnIndex;					
+					
+					if (event.dataField == "Fee")
+					{	
+						var feeEditor:mx.controls.TextInput = mx.controls.TextInput(id_ProcedureGrid.itemEditorInstance);
+						
+						
+						id_NumberValidator.domain="Float";
+						id_NumberValidator.source = feeEditor;
+						id_NumberValidator.property = "text";
+						
+						validationRes = id_NumberValidator.validate(UtilityFunctions.TrimString(feeEditor.text));
+						
+						if (validationRes && !validationRes.results)
+						{
+							var oldFee:String = String(id_ProcedureGrid.dataProvider.getItemAt(row)["Fee"]);
+							var newFee:String = String(id_ProcedureGrid.itemEditorInstance[id_ProcedureGrid.columns[col].editorDataField]);														
+							var Unit:String = String(id_ProcedureGrid.dataProvider.getItemAt(row)["Unit"]);
+							if(oldFee != newFee)
+							{
+								model.TotalCharges -= (Number(oldFee) * Number(Unit));
+								dto.Fee = newFee;
+								model.TotalCharges += (Number(newFee) * Number(Unit));
+								model.CalculateSuperBill();
+							}
+						}
+						else
+						{
+							if( ! bMsgShown )
+							{
+								bMsgShown = true;
+								Alert.show("Please enter valid amount","Invalid Data", Alert.OK, FlexGlobals.topLevelApplication.mainContainer, function(e:Event):void{
+									SetFocusOnCell(id_ProcedureGrid,row,col,event.dataField);
+								});
+							}
+							else
+								bMsgShown = false;
+							
+							id_ProcedureGrid.destroyItemEditor();
+							event.stopImmediatePropagation();
+							event.preventDefault();
+						}
+						
+						
+					}				
+					else if (event.dataField == "Unit")
+					{
+						
+						var unitEditor:mx.controls.TextInput = mx.controls.TextInput(id_ProcedureGrid.itemEditorInstance);
+						
+						id_NumberValidator.domain="Float";
+						id_NumberValidator.source = unitEditor;
+						id_NumberValidator.property = "text";
+						
+						validationRes = id_NumberValidator.validate(UtilityFunctions.TrimString(unitEditor.text));
+						
+						if (validationRes && !validationRes.results)
+						{
+							var Fee:String = String(id_ProcedureGrid.dataProvider.getItemAt(row)["Fee"]);
+							var oldUnit:String = String(id_ProcedureGrid.dataProvider.getItemAt(row)["Unit"]);
+							var newUnit:String = String(id_ProcedureGrid.itemEditorInstance[id_ProcedureGrid.columns[col].editorDataField]);
+							
+							dto.Unit = newUnit;						
+							model.TotalCharges -= (Number(Fee) * Number(oldUnit));
+							model.TotalCharges += (Number(Fee) * Number(newUnit));
+							model.CalculateSuperBill();
+							
+						}
+						else
+						{
+							if( ! bMsgShown )
+							{
+								bMsgShown = true;
+								Alert.show("Please enter valid units","Invalid Data", Alert.OK, FlexGlobals.topLevelApplication.mainContainer, function(e:Event):void{
+									SetFocusOnCell(id_ProcedureGrid,row,col,event.dataField);
+								});
+							}
+							else
+								bMsgShown = false;
+							
+							id_ProcedureGrid.destroyItemEditor();
+							event.stopImmediatePropagation();
+							event.preventDefault();
+						}
+						
+					}
+				}	
+				if(dto.IsCreatedFromSuperBill == "false")
+					dto.ModifiedBy = model.LoggedInUserId.toString();
+				
+				event.currentTarget.dataProvider.refresh();
+				id_ProcedureGrid.destroyItemEditor();
+				event.stopImmediatePropagation();
+				event.preventDefault();
+			}
+			
+			private function SetFocusOnCell(id_DataGrid:LabelDataGrid,row:int,col:int,field:String):void
+			{
+				id_DataGrid.editable = true;				
+				var itemToSetInEditableMode:IListItemRenderer = id_DataGrid.indexToItemRenderer(row);
+				var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+				ev.columnIndex = col;
+				ev.rowIndex = row;
+				ev.itemRenderer = itemToSetInEditableMode;
+				ev.dataField = field;
+				id_DataGrid.dispatchEvent(ev);
+
+			}
+			
+			protected function id_CPTCode_clickHandler(event:MouseEvent, index:uint):void
+			{
+				if(procedurePopup && procedurePopup.isPopUp) return;						
+				
+				if(event.target as RichEditableText || event.target as mx.controls.Label)
+				{
+					return;
+				}
+				else 
+				{
+					if(serachTerm == null)
+						return
+					
+					if(serachTerm.length > 2)
+					{
+						openProcedurePopup(index);
+					}
+				}
+			}
+			
+			private var procedurePopup:SuperBillProcedurePopup = null;
+			private function openProcedurePopup(index:int):void
+			{				
+				procedurePopup = new SuperBillProcedurePopup();
+				procedurePopup.VisitId = VisitId;
+				procedurePopup.PatientId = PatientId;
+				procedurePopup.ServiceDate = ServiceDate;
+				procedurePopup.ReqNo = ReqNo;
+				procedurePopup.ShowPopup( this )
+				BillingPopUpManager.addPopUp(procedurePopup,BillingPopUpManager.SUPER_BILL_POPUPS)
+				procedurePopup.title  = "Add Procedure";
+				procedurePopup.height = 410;
+				procedurePopup.width  = 550;
+				//procedurePopup.move((Capabilities.screenResolutionX/4)-(procedurePopup.width/2), Capabilities.screenResolutionY/4);
+				procedurePopup.move((procedurePopup.x) -(procedurePopup.width/2 - 30),Capabilities.screenResolutionY/4);
+				procedurePopup.addEventListener(CloseEvent.CLOSE, function (event:CloseEvent):void
+				{					
+					isGetEdited();
+				});
+				//procedurePopup.move((Capabilities.screenResolutionX/4)-(procedurePopup.width/2), procedurePopup.y - 37);
+				procedurePopup.searchAndLoadLabIn(serachTerm, index);
+				resetFields();
+			}
+
+
+			protected function id_CPTCode_keyDownHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode == 13 )
+				{
+					if(serachTerm == null)
+						return
+					
+					if(serachTerm.length > 2)
+					{
+						openProcedurePopup(0);
+					}
+				}
+			}
+
+
+			protected function id_Procedure_keyDownHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode == 13 )
+				{
+					if(serachTerm == null)
+						return
+					
+					if(serachTerm.length > 2)
+					{
+						openProcedurePopup(1);
+					}
+				}
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:NumberValidator id="id_NumberValidator" />	
+		
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5" />
+	</s:layout>
+	<!--<s:HGroup paddingTop="5" paddingLeft="5">	
+		<s:Label text="CPT Codes (Laboratory, Xray &amp; Immunization)" fontFamily="Calibri Bold"/>
+	</s:HGroup>	-->
+	<s:HGroup width="100%" verticalAlign="middle">
+		<components1:LabelComboBox id="id_CPTCode"  width="20%"  useHandCursor="true" buttonMode="true"								  
+								  keyUp="cptKeyUpHandlerNew()"
+								  keyDown="id_CPTCode_keyDownHandler(event)"
+								  click="id_CPTCode_clickHandler(event, 0)"
+								  prompt="Code" 								  
+								  />
+		<components1:LabelComboBox id="id_Procedure"  labelField="ProcedureDescription" width="20%" 
+								  useHandCursor="true" buttonMode="true"								  
+								  keyUp="testNameChangeHandler()"
+								  keyDown="id_Procedure_keyDownHandler(event)"
+								  click="id_CPTCode_clickHandler(event, 1)"
+								  prompt="Desc" toolTip="Description"  />
+		<components1:LabelTextInput id="id_Fee" width="20%"  prompt="Amount" restrict="[0-9]\."  />
+		<components1:LabelTextInput id="id_Unit" width="20%"  prompt="Unit" restrict="[0-9]\."  />
+		<s:Button label="Modifiers" id="id_AddModifiers" click="btnModifiers_clickHandler(event)"  enabled="{id_Add.enabled}" />
+		<s:Button id="id_Add" label="+"   enabled="false"
+				  skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.superBillAddButton"
+				  click="addRecordClickHandler()"  buttonMode="true" useHandCursor="true" toolTip="Add Record"
+				  />
+	</s:HGroup>	
+	<s:HGroup width="100%">
+		<components1:LabelDataGrid id="id_ProcedureGrid" width="100%" height="70" useRollOver="false" editable="false"
+					 		 includeInLayout="true" visible="true"
+							 itemEditBegin="procedureItemEditBeginHandler(event)" itemEditEnd="procedureItemEditHandler(event)"
+							 verticalScrollPolicy="auto"
+							 horizontalScrollPolicy="auto"
+							 resizableColumns="false"
+							 horizontalScrollBarStyleName="VScrollBar"
+							 headerStyleName="QIGridHeader" maxHeight="150" variableRowHeight="true"							 
+							 dataProvider="{(ReqNo == 1)? model.CurrentProcedures:model.CurrentOtherProcedures}" columnWidths="{['10%','20%','10%','10%','10%','10%','10%','10%','10%']}"
+							 >
+			<components:columns>				
+				<mx:DataGridColumn headerText="CPT" dataField="ProcedureCode" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label">
+					<mx:itemEditor>
+						<fx:Component>
+							<common:ComboBoxEditor dataProvider="{(outerDocument.ReqNo == 1)? outerDocument.model.CPTMedicalTypeList : outerDocument.model.CPTMedicalTypeListOther}" labelField="ProcedureCode" width="50" 
+														keyUp="comboboxeditor2_keyUpHandler(event)"
+														>
+								<fx:Script>
+									<![CDATA[
+										import com.adobe.cairngorm.control.CairngormEventDispatcher;
+										import com.gazuntite.provider.live.services.billing.dto.SuperBill.SuperBillProcedureInfoDTO;
+										import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadCPTMedicalTypesEvent;
+										protected function comboboxeditor2_keyUpHandler(event:KeyboardEvent):void
+										{
+											var searchString:String = event.currentTarget.id_ComboEditor.textInput.text;											
+											if(searchString.length > 2)
+											{
+												var cptEvent : LoadCPTMedicalTypesEvent = new LoadCPTMedicalTypesEvent(searchString,outerDocument.ReqNo);
+												CairngormEventDispatcher.getInstance().dispatchEvent( cptEvent );	
+											}
+										}
+									]]>
+								</fx:Script>
+							</common:ComboBoxEditor>
+														
+						</fx:Component>
+					</mx:itemEditor>
+				</mx:DataGridColumn>
+				<mx:DataGridColumn id="id_CPTDescriptionCol" headerText="Description" dataField="ProcedureDescription" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" >
+					<mx:itemEditor>
+						<fx:Component>
+							<common:ComboBoxEditor dataProvider="{(outerDocument.ReqNo == 1)? outerDocument.model.CPTMedicalTypeList : outerDocument.model.CPTMedicalTypeListOther }" labelField="ProcedureDescription" 
+														keyUp="comboboxeditor1_keyUpHandler(event)" 																												
+														>
+								<fx:Script>
+									<![CDATA[
+										import com.adobe.cairngorm.control.CairngormEventDispatcher;
+										import com.gazuntite.provider.live.services.billing.dto.SuperBill.SuperBillProcedureInfoDTO;
+										import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadCPTMedicalTypesEvent;
+										
+										import spark.components.supportClasses.ItemRenderer;
+										protected function comboboxeditor1_keyUpHandler(event:KeyboardEvent):void
+										{
+											
+											var searchString:String = event.currentTarget.id_ComboEditor.textInput.text;											
+											if(searchString.length > 2)
+											{												
+												var cptEvent : LoadCPTMedicalTypesEvent = new LoadCPTMedicalTypesEvent(searchString,outerDocument.ReqNo);
+												CairngormEventDispatcher.getInstance().dispatchEvent( cptEvent );	
+											}
+										}				
+
+									]]>
+								</fx:Script>
+							</common:ComboBoxEditor>
+							
+						</fx:Component>
+					</mx:itemEditor>
+				</mx:DataGridColumn>			
+				<mx:DataGridColumn headerText="Amount" dataField="Fee" id="id_GridFee"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>				
+				<mx:DataGridColumn headerText="Unit" dataField="Unit" id="id_GridUnit" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" />						
+				<mx:DataGridColumn headerText="Modifier1" dataField="Modifier1" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label">
+					<mx:itemEditor>
+						<fx:Component>
+							<common:ComboBoxEditor dataProvider="{outerDocument.model.CPTModifierTypeList1}" labelField="ModifierDescription"
+														keyUp="comboboxeditor3_keyUpHandler(event)"
+														>
+								<fx:Script>
+									<![CDATA[
+										import com.adobe.cairngorm.control.CairngormEventDispatcher;
+										import com.gazuntite.provider.live.services.billing.dto.SuperBill.SuperBillProcedureInfoDTO;
+										import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadCPTModifierTypesEvent;
+										protected function comboboxeditor3_keyUpHandler(event:KeyboardEvent):void
+										{		
+											var searchString:String = event.currentTarget.id_ComboEditor.textInput.text;											
+											if(searchString.length > 0)
+											{
+												var modiEvent : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,1);
+												CairngormEventDispatcher.getInstance().dispatchEvent( modiEvent );
+											}
+										}
+									]]>
+								</fx:Script>
+							</common:ComboBoxEditor>
+														
+						</fx:Component>
+					</mx:itemEditor>
+				</mx:DataGridColumn>	
+				<mx:DataGridColumn headerText="Modifier2" dataField="Modifier2" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label">
+					<mx:itemEditor>
+						<fx:Component>
+							<common:ComboBoxEditor dataProvider="{outerDocument.model.CPTModifierTypeList2}" labelField="ModifierDescription"
+														keyUp="comboboxeditor4_keyUpHandler(event)"
+														>
+								<fx:Script>
+									<![CDATA[
+										import com.adobe.cairngorm.control.CairngormEventDispatcher;
+										import com.gazuntite.provider.live.services.billing.dto.SuperBill.SuperBillProcedureInfoDTO;
+										import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadCPTModifierTypesEvent;
+										protected function comboboxeditor4_keyUpHandler(event:KeyboardEvent):void
+										{	
+											var searchString:String = event.currentTarget.id_ComboEditor.textInput.text;											
+											if(searchString.length > 0)
+											{
+												var modiEvent : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,2);
+												CairngormEventDispatcher.getInstance().dispatchEvent( modiEvent );
+											}
+										}
+									]]>
+								</fx:Script>
+							</common:ComboBoxEditor>
+														
+						</fx:Component>
+					</mx:itemEditor>
+				</mx:DataGridColumn>
+				<mx:DataGridColumn headerText="Modifier3" dataField="Modifier3" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label">
+					<mx:itemEditor>
+						<fx:Component>
+							<common:ComboBoxEditor dataProvider="{outerDocument.model.CPTModifierTypeList3}" labelField="ModifierDescription" 
+														keyUp="comboboxeditor5_keyUpHandler(event)"
+														>
+								<fx:Script>
+									<![CDATA[
+										import com.adobe.cairngorm.control.CairngormEventDispatcher;
+										import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadCPTModifierTypesEvent;
+										protected function comboboxeditor5_keyUpHandler(event:KeyboardEvent):void
+										{
+											var searchString:String = event.currentTarget.id_ComboEditor.textInput.text;											
+											if(searchString.length > 0)
+											{
+												var modiEvent : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,3);
+												CairngormEventDispatcher.getInstance().dispatchEvent( modiEvent );
+											}
+										}
+									]]>
+								</fx:Script>
+							</common:ComboBoxEditor>
+														
+						</fx:Component>
+					</mx:itemEditor>
+				</mx:DataGridColumn>
+				<mx:DataGridColumn headerText="Modifier4" dataField="Modifier4" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label">
+					<mx:itemEditor>
+						<fx:Component>
+							<common:ComboBoxEditor dataProvider="{outerDocument.model.CPTModifierTypeList4}" labelField="ModifierDescription" 
+														keyUp="comboboxeditor6_keyUpHandler(event)"
+														>
+								<fx:Script>
+									<![CDATA[
+										import com.adobe.cairngorm.control.CairngormEventDispatcher;
+										import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadCPTModifierTypesEvent;
+										protected function comboboxeditor6_keyUpHandler(event:KeyboardEvent):void
+										{
+											var searchString:String = event.currentTarget.id_ComboEditor.textInput.text;											
+											if(searchString.length > 0)
+											{
+												var modiEvent : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,4);
+												CairngormEventDispatcher.getInstance().dispatchEvent( modiEvent );
+											}
+										}
+									]]>
+								</fx:Script>
+							</common:ComboBoxEditor>
+														
+						</fx:Component>
+					</mx:itemEditor>
+				</mx:DataGridColumn>
+				<itemEditors:DataGridColumnDel headerText="" editable="false" itemRenderer="com.gazuntite.provider.live.services.billing.view.common.itemEditors.EditDeleteItemRender"/>
+			</components:columns>
+			
+		</components1:LabelDataGrid>
+	</s:HGroup>
+</s:SkinnableContainer>

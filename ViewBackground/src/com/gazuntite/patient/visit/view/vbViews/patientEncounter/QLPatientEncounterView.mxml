@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:components="com.gazuntite.controls.extended.components.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEvent;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.event.visit.GenerateSoapNotePreviewCommonEvent;
+			import com.gazuntite.common.util.LoggingUtil;
+			import com.gazuntite.common.util.QSConstants;
+			import com.gazuntite.common.view.components.popUps.AuthenticationPopUp;
+			import com.gazuntite.controls.extended.components.PopupWindow;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			import com.gazuntite.patient.visit.view.vbViews.soapNote.VBSoapNoteView;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.IList;
+			import mx.controls.Label;
+			import mx.logging.ILogger;
+			
+			import spark.components.Button;
+			
+			[Bindable]
+			private var model:VBModelLocator = VBModelLocator.getInstance();
+			
+			//Ayesha: 17th May 2011
+			private var authenticationPopUp:AuthenticationPopUp;
+			
+			private var logger : ILogger = LoggingUtil.getLogger( this );
+			
+			private var m_oDataProvider:IList
+			
+			[Bindable]
+			public function get DataProvider():IList
+			{
+				return m_oDataProvider;
+			}
+			
+			public function set DataProvider(value:IList):void
+			{
+				m_oDataProvider = value;
+				/*if(value.length > 0)
+				{
+				id_PatientEncounterGrid.percentHeight = 100;
+				}
+				else
+				{
+				//id_PatientEncounterGrid.percentHeight = 100;
+				id_PatientEncounterGrid.rowCount = 3;
+				id_PatientEncounterGrid.height = 70;
+				}*/
+			}
+			
+			private var StatusWindow:PopupWindow ;
+			
+			
+			public function ShowStatusWindow(statusMessage :String ):void
+			{
+				StatusWindow = UtilityFunctions.ShowStatusMessage( statusMessage, this );
+			}
+			
+			public function RemoveStatusWindow():void
+			{
+				if( StatusWindow )
+					StatusWindow.removePopup();
+				
+				StatusWindow = null;
+			}
+			// on sign - co sign success handler
+			private function onVisitSignCosignSuccess(actionName:String = "", visitID:int = 0):void
+			{
+				switch (actionName)
+				{
+					case QSConstants.VISIT_SIGNED:
+						/* var signEv:PatientVisitEvent = new PatientVisitEvent(PatientVisitEvent.PATIENT_VISIT_SIGNED, true);
+						signEv.visitId = visitID;
+						dispatchEvent(signEv); */
+						break;
+					
+					case QSConstants.VISIT_COSIGNED:
+						/* var cosignEv:PatientVisitEvent = new PatientVisitEvent(PatientVisitEvent.PATIENT_VISIT_COSIGNED, true);
+						cosignEv.visitId = visitID;
+						dispatchEvent(cosignEv); */
+						break;
+				}
+				
+				refreshPatientVisitList();
+			}
+			
+			// Refresh list after sign / co-sign			
+			private function refreshPatientVisitList():void
+			{
+				var pageDto:Object/*PageDTO*/= new Object();//PageDTO();
+				pageDto.fromDate = QSConstants.NULL_DATE;
+				pageDto.toDate = QSConstants.NULL_DATE;
+				pageDto.pageSize = 0;
+				pageDto.pageNumber = 1;
+				pageDto.LastVisitNumber = 1;
+				
+				/* var ql:LoadPatientVisitsByProviderIDEvent = new LoadPatientVisitsByProviderIDEvent(pageDto,	model.loggedInUserDTO.UserId.toString(),	
+					model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchIdSeq.toString(), 'false');
+				
+				CairngormEventDispatcher.getInstance().dispatchEvent( ql ); */
+			}
+			
+			// Grid item click handler
+			protected function PatientEncounterGrid_clickHandler(event:MouseEvent):void
+			{
+				//return;
+				if( event.target is Button )
+				{
+					//Alert.show( event.target.id );
+					var peDTO:Object/*PatientEncounterDTO*/ = id_PatientEncounterGrid.selectedItem;// as PatientEncounterDTO;
+					
+					switch(  event.target.id )
+					{
+						case "id_Sign":
+							//if( QSSecurityUtil.Security.IsModuleSignable( QSSecurityUtil.VB_ENCOUNTER_LIST ) )//Tahir Alvi - on visit sign click implement security check
+							//{
+								authenticationPopUp = new AuthenticationPopUp();
+								
+								if (peDTO.CanSignCosign.toLowerCase() == QSConstants.STRING_TRUE)
+								{	
+									authenticationPopUp.signBtnLabel = "Sign";
+									authenticationPopUp.actionName = QSConstants.VISIT_SIGNED;
+								}
+								else if (peDTO.CanSignCosign.toLowerCase() == QSConstants.STRING_FALSE)
+								{
+									authenticationPopUp.signBtnLabel = "Cosign";
+									authenticationPopUp.actionName = QSConstants.VISIT_COSIGNED;
+								}
+								
+								authenticationPopUp.originName = QSConstants.VIEW_BACKGROUND_MODULE_NAME;
+								authenticationPopUp.visitID = peDTO.VisitId;
+								authenticationPopUp.onVisitSignCosignCallback = onVisitSignCosignSuccess;
+								
+								authenticationPopUp.ShowPopup(this);
+							//}
+							break;
+						
+						case "id_Edit":
+							//if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_ENCOUNTER_LIST ) )//Tahir Alvi - on visit edit click implement security check
+							//{
+								if( peDTO )
+								{
+									
+								}
+							//}
+							break;
+							
+						case "id_WriteNotes":
+							break;
+							
+						case "id_View":
+						case "id_Print":
+							
+							if( peDTO )
+							{
+								var soapNote:VBSoapNoteView = new VBSoapNoteView();
+								soapNote.show(VBSoapNoteView.REVIEW_AND_PRINT, RemoveStatusWindow, ShowStatusWindow );
+								
+								var callback:Function = function( note:String, isURL:Boolean = false ):void
+								{
+									soapNote.SoapNoteURL = note;
+								}
+								
+								var isMale:Boolean = peDTO.Gender.toLowerCase() == "male";
+								var isAllSelected:Boolean 	= false;
+								var isTempVisit:Boolean 	= false;
+								
+								var evt:CairngormEvent;
+								evt = new GenerateSoapNotePreviewCommonEvent( peDTO.VisitId,  
+									model.sessionDTO.SessionID, 
+									model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchIdSeq, 
+									model.userSelectedStationDTO.StationID, 
+									isAllSelected,
+									isMale,
+									isTempVisit,
+									'0',
+									peDTO.VisitProvider,
+									peDTO.VisitEncounterTypeName,
+									peDTO.PlaceOfServiceTypeName,
+									callback);
+								CairngormEventDispatcher.getInstance().dispatchEvent( evt );
+							}
+							break;
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout paddingTop="2"  paddingLeft="2" paddingRight="2" paddingBottom="2"/>
+	</s:layout>
+	
+	<components:LabelDataGrid id="id_PatientEncounterGrid"  width="{this.width-4}" maxWidth="{this.width}" height="100%"
+							  click="PatientEncounterGrid_clickHandler(event)" verticalScrollPolicy="on"
+							  dataProvider="{DataProvider}"  					
+							  rowCount="{DataProvider.length ? DataProvider.length  :1 }" rowHeight="23"
+							  sortableColumns="true"  minHeight="70" maxHeight="250"
+							  horizontalScrollPolicy="off" 
+							  verticalScrollBarStyleName="VScrollBar" columnWidths="{['10%','10%','10%','10%','10%','15%','10%','10%',150]}">
+		<components:columns>
+			<mx:DataGridColumn dataField="FirstName" headerText="Patient" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"  />
+			<mx:DataGridColumn dataField="VisitDate" headerText="Visit Date" headerRenderer="mx.controls.Label" wordWrap="true" itemRenderer="com.gazuntite.common.view.renderers.DateRenderer4DG" />
+			<mx:DataGridColumn dataField="StationName" headerText="Location" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" />
+			<mx:DataGridColumn dataField="VisitEncounterTypeName" headerText="Visit Type"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"  />					
+			<mx:DataGridColumn dataField="PlaceOfServiceTypeName" headerText="Place Of Service" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"  />					
+			<mx:DataGridColumn dataField="VisitStatus" headerText="Status" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"  />
+			<mx:DataGridColumn headerText="" headerRenderer="mx.controls.Label" wordWrap="true"  itemRenderer="com.gazuntite.patient.visit.view.vbViews.renderer.QLEncounterGridLinkRenderer" />
+		</components:columns>
+	</components:LabelDataGrid>
+	
+</s:Group>

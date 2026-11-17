@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			protected function id_logoImg_clickHandler(event:MouseEvent):void
+			{
+				id_connectionLogo.visible = !id_connectionLogo.visible;
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	
+	<!--<mx:Image x="15" y="2" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='logo_main')" />
+	-->
+	
+	<s:VGroup gap="-2" verticalAlign="top" horizontalAlign="right" paddingLeft="5" paddingTop="2">
+		
+		
+		<s:ToggleButton id="id_logoImg" x="6" y="2" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.logoButton" 
+						toolTip="Gazuntite Online Clinic Services for healthcare providers." useHandCursor="true" buttonMode="true"
+						click="id_logoImg_clickHandler(event)"/>	
+		
+		
+		<s:VGroup id="id_connectionLogo" visible="false" x="0" y="0" paddingRight="5">
+			<!--<s:Rect height="31" width="40" x="0" y="0">
+			<s:fill>
+			<s:LinearGradient rotation="90">
+			<s:GradientEntry alpha="1" color="#246D9B" ratio="0.10"/>
+			<s:GradientEntry alpha="1.0" color="#96F2FF" ratio="0.87"/>
+			</s:LinearGradient>
+			</s:fill>
+			</s:Rect>-->
+			<s:Rect height="30" radiusX="0" width="32" x="0" y="2">
+				<s:fill>
+					<s:LinearGradient rotation="90">
+						<s:GradientEntry alpha="1.0" color="#A3A4BF" ratio="0.6745098039215687"/>
+						<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="1"/>
+					</s:LinearGradient>
+				</s:fill>
+			</s:Rect>
+		</s:VGroup>
+		
+		
+	</s:VGroup>
+	
+	
+</s:Group>

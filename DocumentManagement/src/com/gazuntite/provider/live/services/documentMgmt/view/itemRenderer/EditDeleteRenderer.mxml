@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:MXAdvancedDataGridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+								  xmlns:s="library://ns.adobe.com/flex/spark" 
+								  xmlns:mx="library://ns.adobe.com/flex/mx" 
+								  focusEnabled="true"
+								  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.deleteButton;
+			import com.gazuntite.common.view.events.OpenFileOrWithNativeAppEvent;
+			import com.gazuntite.provider.live.services.documentMgmt.util.DMEventStrings;
+			import com.gazuntite.provider.live.services.documentMgmt.view.event.DMActionsEvent;
+			
+			private function onEditClick(event:MouseEvent):void
+			{
+				dispatchEvent(new DMActionsEvent(DMActionsEvent.EDIT_RECORD_CLICK, true));
+			}
+			
+			private function onDeleteClick(event:MouseEvent):void	
+			{
+				dispatchEvent(new DMActionsEvent(DMActionsEvent.DELETE_RECORD_CLICK, true));
+			}
+			
+			
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				//var dto:PatientDocumentDTO = data as PatientDocumentDTO;
+				var e:OpenFileOrWithNativeAppEvent = new OpenFileOrWithNativeAppEvent(true);
+				e.FileName = data.DocumentName;
+				e.FileURL  = data.ServerFilePath;
+				
+				dispatchEvent( e );//new Event( DMEventStrings.VIEW_DOCUMENT, true ) );
+			}
+			
+			public override function set data(value:Object):void
+			{
+				try{
+					super.data = value;
+					if( data && data.DocumentName && data.DocumentName != '' )
+					{
+						id_ViewBtn.visible 	= true;
+						id_Edit.visible 	= true;
+						id_Delete.visible 	= true;
+					}
+					else
+					{
+						id_ViewBtn.visible 	= false;
+						id_Edit.visible 	= false;
+						id_Delete.visible 	= false;
+					}
+				}
+				catch(e:Error){
+					trace(e.message.toString());
+				}
+				
+			}
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+		<s:HorizontalLayout  verticalAlign="top"/>
+	</s:layout>
+	<!--<s:Label id="lblData" top="0" left="0" right="0" bottom="0" text="{listData.label}" />-->
+	
+	<s:Button id="id_ViewBtn" label="View" click="button1_clickHandler(event)" includeInLayout="{id_ViewBtn.visible}"
+			   styleName="viewButtonSkin" buttonMode="true" toolTip="View"  width="18"
+			  
+			  />
+	<s:Button id="id_Edit"  click="onEditClick(event)" styleName="editButtonSkin"
+			  buttonMode="true" toolTip="Edit" />
+	<s:Button id="id_Delete"  click="onDeleteClick(event)" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.deleteButton"
+			  buttonMode="true" toolTip="Delete"/>
+	
+</s:MXAdvancedDataGridItemRenderer>

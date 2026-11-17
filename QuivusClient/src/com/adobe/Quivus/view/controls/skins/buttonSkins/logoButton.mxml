@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:flm="http://ns.adobe.com/flame/2008">
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect height="30" id="rect2" radiusX="2.99979" radiusY="2.99979" visible.disabled="false" visible.disabledAndSelected="false" visible.up="false" width="175" x="0" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="90" rotation.down="270">
+				<s:GradientEntry alpha="1.0" color.disabled="#AFD1FF" color.disabledAndSelected="#AFD1FF" color.down="#AFD1FF" color.downAndSelected="#AFD1FF" color.over="#AFD1FF" color.overAndSelected="#AFD1FF" color.up="#BCCBDF" color.upAndSelected="#D3D4E8" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color.disabled="#6593D5" color.disabledAndSelected="#6593D5" color.down="#6593D5" color.downAndSelected="#6593D5" color.over="#6593D5" color.overAndSelected="#6593D5" color.up="#76859A" color.upAndSelected="#A3A4BA" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.7000000000000001" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" includeIn="disabled,disabledAndSelected,down,downAndSelected,over,overAndSelected,up" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.2" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter includeIn="upAndSelected" blurX="0" blurY="0" distance="1" hideObject="false" color="0x000000" inner="false" strength="1" alpha="0.5" quality="2" knockout="false" angle="90"/>
+		</s:filters>
+	</s:Rect>
+	<s:BitmapImage height="22" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/quivus_icon.png')" width="24" x="6" y="2">
+		<s:filters>
+			<s:DropShadowFilter alpha="0.2" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:BitmapImage>
+	<s:RichText color="#000000" fontSize="15" lineHeight="100%" tabStops="S0 S50 S100" text="Gazuntite Online Clinic" x="32" y="3" fontFamily="Calibri Bold">
+		<s:filters>
+			<s:DropShadowFilter alpha="0.15" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:RichText>
+	<s:RichText textAlign="right" color="#E2E3E3" columnCount="1" fontFamily="Calibri" fontSize="10" kerning="on" tabStops="S0" text="{QuivusClient.appVersion}" whiteSpaceCollapse="preserve" x="135" y="17"></s:RichText>
+</s:Skin>

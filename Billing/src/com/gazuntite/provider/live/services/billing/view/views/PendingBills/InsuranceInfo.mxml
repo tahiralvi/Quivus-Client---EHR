@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"	
+		  creationComplete="CC()"  styleName="torquiseTitleLightGreyBGContainerSkin"
+		  width="100%">
+	<s:layout>
+		<s:VerticalLayout gap="2" paddingLeft="2" paddingRight="2" paddingTop="2" paddingBottom="3" />
+	</s:layout>	
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.SuperBillPatientInsuranceDTO;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			
+			[Bindable]
+			public var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			[Bindable]
+			private var m_sSavedCopay:String
+			
+			[Bindable]
+			public function get SavedCopay():String
+			{
+				return m_sSavedCopay;
+			}			
+			
+			public function set SavedCopay(value:String):void
+			{
+				m_sSavedCopay = value;
+			}
+			
+			[Bindable]
+			private var m_bIsSavedSuperBill:Boolean
+			
+			[Bindable]
+			public function get IsSavedSuperBill():Boolean
+			{
+				return m_bIsSavedSuperBill;
+			}			
+			
+			public function set IsSavedSuperBill(value:Boolean):void
+			{
+				m_bIsSavedSuperBill = value;
+			}
+			
+			public function CC():void
+			{
+				model.Copay = 0.00;
+				model.ReceivedCopay = "";
+				model.IsPercentCopay = false;
+				if(PatientInsuranceInfo != null && PatientInsuranceInfo.length > 0 )
+				{
+					for(var i:int = 0; i < PatientInsuranceInfo.length; i++)
+					{
+						var insDTO:SuperBillPatientInsuranceDTO = PatientInsuranceInfo[i];
+						if(insDTO.InsuranceTypeName == "Primary")
+						{
+							PrimaryInsurance = insDTO;
+							if(UtilityFunctions.IsNullOrEmpty(insDTO.Copay) == false)
+							{
+								if(insDTO.Copay.indexOf("%") > -1)
+								{
+									model.IsPercentCopay = true;
+									model.Copay = parseInt(insDTO.Copay.replace("%",""));
+									model.ReceivedCopay = insDTO.Copay;
+									model.DisplayCopay = insDTO.Copay;
+								}
+								else
+								{
+									model.IsPercentCopay = false;
+									model.Copay = parseInt(insDTO.Copay);
+									model.ReceivedCopay = insDTO.Copay;
+									model.DisplayCopay = insDTO.Copay;
+								}
+							}
+						}
+						else if(insDTO.InsuranceTypeName == "Secondary")
+							SecondaryInsurance = insDTO;
+						
+					}
+					if(PrimaryInsurance == null)
+						PrimaryInsurance = new SuperBillPatientInsuranceDTO();
+					if(SecondaryInsurance == null)
+						SecondaryInsurance = new SuperBillPatientInsuranceDTO();
+					
+					if( IsSavedSuperBill == true &&  UtilityFunctions.IsNullOrEmpty(SavedCopay) == false)
+					{
+						if(SavedCopay.indexOf("%") > -1)
+						{
+							model.IsPercentCopay = true;
+							model.Copay = parseInt(SavedCopay.replace("%",""));							
+							model.DisplayCopay =SavedCopay;
+						}
+						else
+						{
+							model.IsPercentCopay = false;
+							model.Copay = parseInt(SavedCopay);							
+							model.DisplayCopay = SavedCopay;
+						}
+					}
+					
+					model.CalculateSuperBill();
+				}
+				
+			}
+			
+			
+			[Bindable]
+			private var m_oInsuranceInfo:ArrayCollection
+			
+			[Bindable]
+			public function get PatientInsuranceInfo():ArrayCollection
+			{
+				return m_oInsuranceInfo;
+			}			
+			
+			public function set PatientInsuranceInfo(value:ArrayCollection):void
+			{
+				m_oInsuranceInfo = value;
+			}
+			
+			[Bindable]
+			private var m_oPriInsInfo:SuperBillPatientInsuranceDTO
+			
+			[Bindable]
+			public function get PrimaryInsurance():SuperBillPatientInsuranceDTO
+			{
+				return m_oPriInsInfo;
+			}			
+			
+			public function set PrimaryInsurance(value:SuperBillPatientInsuranceDTO):void
+			{
+				m_oPriInsInfo = value;
+			}
+			
+			[Bindable]
+			private var m_oSecInsInfo:SuperBillPatientInsuranceDTO
+			
+			[Bindable]
+			public function get SecondaryInsurance():SuperBillPatientInsuranceDTO
+			{
+				return m_oSecInsInfo;
+			}			
+			
+			public function set SecondaryInsurance(value:SuperBillPatientInsuranceDTO):void
+			{
+				m_oSecInsInfo = value;
+			}				
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:HGroup paddingTop="5" paddingLeft="5">		
+		<s:Label text="INSURANCE INFO" fontFamily="Calibri Bold" />
+	</s:HGroup>
+	<mx:Spacer height="4" />
+	<s:HGroup width="100%">			
+		<s:Label width="60" text="Primary:" fontFamily="Calibri Bold" fontSize="12" />
+		<s:Label width="100" text="{PrimaryInsurance.InsuranceName}"  fontFamily="Calibri" fontSize="11" maxDisplayedLines="1"/>
+	</s:HGroup>
+	<s:HGroup width="100%" >			
+		<s:Label width="60" text="Policy #:" color="#666666" fontFamily="Calibri"  fontSize="11" />
+		<s:Label width="100" text="{PrimaryInsurance.PolicyNumber}"  fontFamily="Calibri" fontSize="11" maxDisplayedLines="1" />
+		<s:Label width="60" text="Plan:" color="#666666" fontFamily="Calibri"  fontSize="11" />
+		<s:Label width="100" text="{PrimaryInsurance.InsurancePlan}"  fontFamily="Calibri" fontSize="11" maxDisplayedLines="1" />
+	</s:HGroup>
+	<s:HGroup width="100%" >			
+		<s:Label width="60" text="Expiry Date:" color="#666666" fontFamily="Calibri"  fontSize="11" />
+		<s:Label width="100" text="{PrimaryInsurance.ExpiryDate}"  fontFamily="Calibri" fontSize="11" maxDisplayedLines="1" />
+		<s:Label width="60" text="Eligibility:"  color="#666666" fontFamily="Calibri"  fontSize="11"/>
+		<s:Label width="100" text="{(PrimaryInsurance.IsEligible == 'True')? 'Yes Eligible' : 'Not Eligible' }"
+				 color="{(PrimaryInsurance.IsEligible == 'True')? 0x336600 : 0xff0000}"  fontFamily="Calibri" fontSize="11" maxDisplayedLines="1"
+				 />
+	</s:HGroup>
+	<mx:Canvas width="99%" height="1" backgroundColor="gray" />
+	<s:HGroup width="100%" >			
+		<s:Label width="60" text="Secondary:" fontFamily="Calibri Bold"  fontSize="12" />
+		<s:Label width="100" text="{SecondaryInsurance.InsuranceName}" fontWeight="bold"  fontFamily="Calibri" fontSize="11" maxDisplayedLines="1"/>
+	</s:HGroup>
+	<s:HGroup width="100%" >			
+		<s:Label width="60" text="Policy #:" color="#666666" fontFamily="Calibri"  fontSize="11" />
+		<s:Label width="100" text="{SecondaryInsurance.PolicyNumber}"  fontFamily="Calibri" fontSize="11" maxDisplayedLines="1" />
+		<s:Label width="60" text="Plan:"  color="#666666" fontFamily="Calibri"  fontSize="11"/>
+		<s:Label width="100" text="{SecondaryInsurance.InsurancePlan}"  fontFamily="Calibri" fontSize="11" maxDisplayedLines="1" />
+	</s:HGroup>
+	<s:HGroup width="100%" >			
+		<s:Label width="60" text="Expiry Date:" color="#666666" fontFamily="Calibri"  fontSize="11" />
+		<s:Label width="100" text="{SecondaryInsurance.ExpiryDate}"  fontFamily="Calibri" fontSize="11" maxDisplayedLines="1" />
+		<s:Label width="60" text="Eligibility:"  color="#666666" fontFamily="Calibri"  fontSize="11"/>
+		<s:Label width="100" text="{(SecondaryInsurance.IsEligible == 'True')? 'Yes Eligible' : 'Not Eligible' }" maxDisplayedLines="1"
+				 color="{(SecondaryInsurance.IsEligible == 'True')? 0x336600 : 0xff0000}"   fontFamily="Calibri" fontSize="11"/>
+	</s:HGroup>
+</s:SkinnableContainer>

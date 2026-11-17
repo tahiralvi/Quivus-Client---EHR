@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  creationComplete="vgroup1_creationCompleteHandler(event)"
+		  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			[Bindable]
+			private var GroupCodes:ArrayCollection =  new ArrayCollection(["Patient Responsible", "Contractual Obligations", "Payor Initiated Reductions", "Correction and Reversals", "Other Adjustments"]);
+			
+			protected function id_reasonCodes_changeHandler(event:TextOperationEvent):void
+			{
+				model.CurrentEDIReceiver.ReasonCodes = id_reasonCodes.text;
+			}
+			
+			protected function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(model.CurrentEDIReceiver.GroupCodeTypeID != "0")
+					id_groupCode.selectedIndex  = parseInt(model.CurrentEDIReceiver.GroupCodeTypeID) - 1;
+				
+				id_groupCode.setFocus();
+			}
+			
+			protected function id_groupCode_changeHandler(event:IndexChangeEvent):void
+			{
+				if(id_groupCode.selectedIndex > -1)
+					model.CurrentEDIReceiver.GroupCodeTypeID = String(id_groupCode.selectedIndex + 1)
+				else
+					model.CurrentEDIReceiver.GroupCodeTypeID  = "0";
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:ComboBox id="id_groupCode" width="100%" dataProvider="{GroupCodes}" change="id_groupCode_changeHandler(event)" fontFamily="Calibri" fontSize="12"  />
+	<s:TextArea id="id_reasonCodes" width="100%" text="{model.CurrentEDIReceiver.ReasonCodes}" fontFamily="Calibri" fontSize="12" 
+				change="id_reasonCodes_changeHandler(event)" toolTip="comma separated adjustment reason codes" restrict="[a-z A-Z , 0-9]"	maxChars="500"/>
+</s:VGroup>

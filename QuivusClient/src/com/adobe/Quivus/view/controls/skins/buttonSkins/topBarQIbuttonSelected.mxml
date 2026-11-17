@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:flm="http://ns.adobe.com/flame/2008">
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect height="18" id="rect2" radiusX="2.99979" radiusY="2.99979" visible.disabledAndSelected="false" visible.down="false" visible.downAndSelected="false" visible.over="false" visible.overAndSelected="false" visible.upAndSelected="false" width="90" x="0" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#BCCBDF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#76859A" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.7000000000000001" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.2" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="18" id="rect4" radiusX="2.99979" radiusY="2.99979" visible.disabled="false" visible.disabledAndSelected="false" visible.downAndSelected="false" visible.overAndSelected="false" visible.up="false" visible.upAndSelected="false" width="90" x="0" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="90" rotation.down="270">
+				<s:GradientEntry alpha="1.0" color="#AFD1FF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#6593D5" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.7000000000000001" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.2" angle="90" blurX="0" blurX.down="2" blurY="0" blurY.down="2" color="#FFFFFF" color.down="#333333" distance="1" distance.down="2" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="18" id="rect5" includeIn="disabledAndSelected,downAndSelected,overAndSelected,upAndSelected" radiusX="2.99979" radiusY="2.99979" width="90" x="0" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#E5E5E5" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="0.6941176470588235"/>
+				<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.7000000000000001" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.2" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Path data="M 0 0 L 4.127 3.843 L 8.254 0 L 0 0 Z" height="5" width="8.347" x="76.449" y="7.418">
+		<s:fill>
+			<s:SolidColor color="#2B2B2B"/>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.2" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Path>
+	<s:RichText color="#141414" fontFamily="Calibri" fontSize="12" tabStops="S0 S50 S100" text="Quick Links" x="7" y="4">
+		<s:filters>
+		</s:filters>
+	</s:RichText>
+	<s:Line x="70.5" y="3.5" yTo="11">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#4C4D51" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+	</s:Line>
+</s:Skin>

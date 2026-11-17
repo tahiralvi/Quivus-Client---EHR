@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="group1_creationCompleteHandler(event)"
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.PingServiceEvent;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			
+			import mx.events.FlexEvent;
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				var pingEvent:PingServiceEvent = new PingServiceEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( pingEvent );
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="center" verticalAlign="middle" />
+	</s:layout>
+	<mx:Image source="@Embed('com/adobe/Quivus/view/controls/skins/assets/gazuntite_splash.swf')" />
+<!--	<mx:Image source="@Embed('com/adobe/Quivus/view/controls/skins/assets/quivus_splash.swf')" />-->
+</s:Group>

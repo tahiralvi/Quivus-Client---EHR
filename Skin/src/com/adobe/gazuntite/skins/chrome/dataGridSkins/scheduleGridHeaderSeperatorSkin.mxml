@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- http://blog.flexexamples.com/2009/07/19/setting-the-header-colors-on-the-halo-datagrid-control-in-flex-4/ -->
+<s:SparkSkin name="CustomDataGridHeaderBackgroundSkin"
+			 xmlns:fx="http://ns.adobe.com/mxml/2009"
+			 xmlns:s="library://ns.adobe.com/flex/spark"
+			 >
+	
+	<!-- layer 2: fill -->
+	
+	<s:Rect height="100%" left="0" right="0" top="0" bottom="0" width="1">
+		<s:fill>
+			<s:SolidColor color="#81909B"/>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.35000000000000003" angle="0" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+</s:SparkSkin>

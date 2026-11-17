@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:components="com.zigron.controls.extended.components.*" 
+		 xmlns:registeration="com.adobe.Quivus.view.controls.registeration.*"
+		 creationComplete="creComp()" 
+		 xmlns:controls="com.gazuntite.provider.eprescription.services.patient.view.controls.*" 
+		 xmlns:skins="com.zigron.common.view.skins.*" 
+		 xmlns:buttonSkins="com.adobe.gazuntite.skins.chrome.buttonSkins.*" xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.event.LoadStateCodesOnlyEvent;
+			import com.gazuntite.provider.eprescription.services.patient.event.SearchPharmaciesEvent;
+			import com.gazuntite.provider.eprescription.services.patient.event.loadServicelevelsEvent;
+			import com.gazuntite.provider.eprescription.services.patient.model.EPrescriptionModelLocator;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			
+			[Bindable]	private var model : EPrescriptionModelLocator = EPrescriptionModelLocator.getInstance();
+			
+			private var _inSearchPopup:Boolean; 
+			private var _userSessionStatus:String;
+			public var _storename:String;
+			public var _NCPDPID:String;
+			public var _AddressLine1:String;
+			public var _Phone:String;
+			public var _ServiceLevel:String;
+			public var pageNo : int = 0;
+			[Bindable]
+			public var npcid:String;
+			private var _pharmacyname:String;
+			public var address:String;
+			public var zipcode:String;
+			public var state:String;
+			public var city:String;
+			public var phone:String;
+			public var fax:String;
+			public var serviceLevel:int;
+			public var changelevel:String = "0";
+			public var isActivated:Boolean = false;
+			// fax:String, serviceLevel:int,  changelevel:String, activated:Boolean
+			private var personalPhoneNumbers:ArrayCollection;
+			
+			[Bindable]
+			public function get inSearchPopup():Boolean
+			{
+				return _inSearchPopup;
+			}
+			
+			public function set inSearchPopup(value:Boolean):void
+			{
+				_inSearchPopup = value;
+			}
+			
+			[Bindable]
+			public function get pharmacyname():String
+			{
+				return _pharmacyname;
+			}
+			
+			public function set pharmacyname(value:String):void
+			{
+				_pharmacyname 	= value;
+			}
+			//--------------- Creation Complete -------------------------------------------
+			protected function creComp():void
+			{
+				if(!model.isSetNewRXView)//only call when New RX is opend from LPS
+				{
+					var loadStateonlyEvent:LoadStateCodesOnlyEvent = new LoadStateCodesOnlyEvent(loadStateCallBack);
+					CairngormEventDispatcher.getInstance().dispatchEvent(loadStateonlyEvent);
+				}
+			}
+			
+			//----- call back for LoadStateCodesOnlyEvent -------------------------
+			private function loadStateCallBack(arrType:ArrayCollection):void
+			{
+				if(null != model.stateCodeList)
+					model.stateCodeList.removeAll();
+				else 
+					model.stateCodeList = new ArrayCollection();
+				
+				model.stateCodeList.addAll(arrType); 
+				
+				PharmacyFields();
+				SearchPharmacies(0);
+			}
+			//------------- call SearchPharmaciesEvent ---------------------------------
+			private function SearchPharmacies(_pageNo:int):void
+			{
+				var pharmacyEvent: SearchPharmaciesEvent = new SearchPharmaciesEvent(_pageNo, npcid, pharmacyname, address, zipcode, state, city, phone, fax, serviceLevel, changelevel, isActivated, getPharmacies);
+				CairngormEventDispatcher.getInstance().dispatchEvent(pharmacyEvent);
+			}
+			// ---------- call back SearchPharmaciesEvent ------------------------
+			private function getPharmacies():void
+			{
+				//resetFields();
+				return;	
+			}
+			//------------ reset fields -------------------
+			private function resetFields():void
+			{
+				ti_npcid.text 					= '';
+				ti_name.text  					= '';
+				ti_address.text 				= '';
+				ti_zip.text 					= '';
+				ti_state.selectedIndex 			= -1;
+				ti_city.text 					= '';
+				ti_phone.text 					= '';
+				ti_fax.text 					= '';
+				ti_servicelevel.selectedIndex 	= -1;
+				ti_changeLevel.text 			= '';
+				id_chActive.selected 			= false;
+			}
+			//--------- select data from Fields -----------------
+			public function PharmacyFields():void
+			{
+				npcid 			= ti_npcid.text;
+				pharmacyname	= ti_name.text;
+				address 		= ti_address.text;
+				zipcode  		= ti_zip.text;
+				if(null != ti_state.selectedItem)
+					state 			= ti_state.selectedItem.StateCode;
+				city 			= ti_city.text;
+				phone 			= ti_phone.text;
+				fax				= ti_fax.text;
+				if(null != ti_servicelevel.selectedItem)
+					serviceLevel 	= ti_servicelevel.selectedItem.code
+				changelevel     = ti_changeLevel.text;
+				isActivated		= id_chActive.selected;
+				
+				if(ti_npcid.text == "") 
+					npcid = "0";
+				if(ti_name.text == "") { 
+					pharmacyname = "0";
+					ti_name.text = "";
+				}
+				if(ti_address.text == "") 
+					address = "0";  
+				if(ti_zip.text == "")
+					zipcode = "0";  
+				if(ti_state.selectedIndex == -1)
+					state = "0"; 
+				if(ti_city.text == "") 
+					city = "0"; 
+				if(ti_phone.text == "") 
+					phone = "0"  
+				if(ti_fax.text == "") 
+					fax = "0"  
+				if(ti_servicelevel.selectedIndex == -1)
+					serviceLevel = -1; 
+				if(ti_changeLevel.text == '')
+					changelevel = '0';
+			}
+			
+			protected function searchNextPharmacy():void
+			{
+				PharmacyFields();
+				pageNo += 20;
+				SearchPharmacies(pageNo);
+			}
+			
+			private function searchPreviousPharmacy():void
+			{
+				PharmacyFields();
+				if(pageNo > 0)
+				{
+					pageNo = pageNo - 20;
+					SearchPharmacies(pageNo);
+				}
+			}
+			// --------------- id_search button click handler ------------------------------
+			public function searchPharmacy():void
+			{
+				PharmacyFields();
+				SearchPharmacies(pageNo);
+			}
+			
+			public function linkbutton1_clickHandler(event:MouseEvent):void
+			{
+				_storename 		= id_pharmaciesGrid.selectedItem.StoreName;
+				_NCPDPID 		= id_pharmaciesGrid.selectedItem.NCPDPID;
+				_AddressLine1 	= id_pharmaciesGrid.selectedItem.AddressLine1;
+				_Phone 			= id_pharmaciesGrid.selectedItem.Phone;
+				_ServiceLevel 	= id_pharmaciesGrid.selectedItem.ServiceLevel;
+				
+				_Phone 			= UtilityFunctions.TrimString(_Phone);
+				
+				if(_Phone == "" || _Phone == null )
+				{
+					var alert:Alert = Alert.show("Primary phone number of Pharmacy is missing. Please choose some other Pharmacy", "Alert", 4, FlexGlobals.topLevelApplication.mainContainer, function(event:Event):void{						
+						return;
+					});
+				}
+				else
+				{			
+					dispatchEvent(new Event("SelectButtonClicked", true, true));
+				}
+			} 
+			
+			//-------------display row no for datagrid
+			public function displayRowNum(oItem:Object,iCol:int):String
+			{
+				var rowNumber:int = id_pharmaciesGrid.dataProvider.getItemIndex(oItem) + pageNo + 1;
+				return String(rowNumber);
+			}
+			[Bindable]
+			public function get PaddingFromTop():int
+			{
+				return _PaddingFromTop;
+			}
+
+			public function set PaddingFromTop(value:int):void
+			{
+				_PaddingFromTop = value;
+			}
+
+			private var _PaddingFromTop:int = 3;
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout paddingBottom="3" paddingLeft="3" paddingRight="3" paddingTop="{PaddingFromTop}" />
+	</s:layout>
+	
+	<s:HGroup width="100%" verticalAlign="top" height="46">
+		<s:VGroup width="18%">
+			<components1:LabelTextInput id="ti_npcid" prompt="NCPDP ID"  toolTip="NCPDP ID" width="100%" tabIndex="1" />
+			<components1:LabelTextInput id="ti_phone" prompt="Phone"  toolTip="Phone" width="100%" tabIndex="7" />
+		</s:VGroup>
+		<s:VGroup width="18%">
+			<components1:LabelTextInput id="ti_name" prompt="Name" width="100%" text="{pharmacyname}" toolTip="Pharmacy Name" tabIndex="2" />
+			<components1:LabelTextInput id="ti_fax" prompt="Fax" width="100%" toolTip="Fax" tabIndex="8" />
+		</s:VGroup>
+		<s:VGroup width="19%">
+			<components1:LabelComboBox id="ti_servicelevel" prompt="Service Level" width="100%" dataProvider="{model.serviceLevelsDTO.ServiceLevels}" labelField="servicename" tabIndex="3" />
+			<components1:LabelTextInput id="ti_zip" prompt="Zip Code" width="100%"  toolTip="Zip Code" tabIndex="9" />
+		</s:VGroup>
+		<s:VGroup width="15%">
+			<components1:LabelTextInput id="ti_changeLevel" prompt="Change Level" width="100%" toolTip="Change Level" tabIndex="4" />
+			<components1:LabelTextInput id="ti_city" prompt="City" width="100%" toolTip="City" tabIndex="10"/>
+		</s:VGroup>
+		<s:VGroup width="15%">
+			<components1:LabelComboBox  id="ti_state" prompt="State" width="100%" toolTip="State" dataProvider="{model.stateCodeList}" labelField="StateName" tabIndex="5" />
+			<components1:LabelTextInput id="ti_address" prompt="Address" width="100%" toolTip="Address" tabIndex="11"/>
+		</s:VGroup>
+		<s:VGroup width="15%" horizontalAlign="right">
+			<s:CheckBox id="id_chActive" toolTip="Active" selected="true" label="Active" width="100%" tabIndex="6" />
+			<s:HGroup width="100%" horizontalAlign="right" >
+				<s:Button id="id_search" label="Search"  click="searchPharmacy()"  skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.ListBtn" buttonMode="true" toolTip="Search" tabIndex="12"/>
+				<!--<s:Spacer width="10%" />-->
+				
+				<s:Button id="id_showPharmaciesPrev"   
+						  click="searchPreviousPharmacy()"  skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.paginationPrevBtn" buttonMode="true" toolTip="Previous" tabIndex="13"/>
+				<buttonSkins:buttonNavSeparator width="1" height="100%"/>
+				<s:Button id="id_showPharmacies" 
+						  click="searchNextPharmacy()"  skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.paginationNextBtn"  buttonMode="true" toolTip="Next" tabIndex="14"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:HGroup>
+	
+	<mx:DataGrid id="id_pharmaciesGrid"  width="100%" dataProvider="{model.PharmacyListDTO.Pharmacies}" 
+				 rowHeight="24"	 height="100%"	 minHeight="200" maxHeight="275"		 
+				 verticalScrollBarStyleName="VScrollBar"
+				 >
+		<mx:columns>
+			<mx:DataGridColumn headerText="Sr.#" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editable="false" labelFunction="displayRowNum"  />
+			<mx:DataGridColumn dataField="NCPDPID" headerText="NCPDP ID"  itemRenderer="mx.controls.Label"/>				
+			<mx:DataGridColumn dataField="PharmaciesID" headerText="Pharmacy ID" itemRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn dataField="StoreName" headerText="Name" itemRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn dataField="AddressLine1" headerText="Address" itemRenderer="mx.controls.Label"/>
+			
+			<mx:DataGridColumn dataField="Zip" headerText="Zip" itemRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn dataField="Phone" headerText="Phone" itemRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn dataField="ServiceLevel" headerText="ServiceLevel" itemRenderer="mx.controls.Label"/>	
+			<mx:DataGridColumn  headerText="" visible="{inSearchPopup}" resizable="false">
+				<mx:itemRenderer>
+					<fx:Component>	
+						<mx:HBox buttonMode="true" useHandCursor="true" width="60" paddingBottom="2" horizontalAlign="center" verticalAlign="middle">
+							<s:Button id="id_selectBtn" width="65"  styleName="blackButtonSkin" label="Select" click="outerDocument.linkbutton1_clickHandler(event)"
+									  buttonMode="true" useHandCursor="true" toolTip="Select"/>																					
+							
+						</mx:HBox>
+					</fx:Component>
+				</mx:itemRenderer>	
+			</mx:DataGridColumn>
+		</mx:columns> 
+	</mx:DataGrid> 
+</s:Group>

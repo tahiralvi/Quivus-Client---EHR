@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  >
+	<fx:Script>
+		<![CDATA[
+			import mx.managers.CursorManager;
+			
+			private var _ClaimDetailText:String = "loading...";
+			private var _ClaimDetailURL:String;
+			
+			[Bindable]
+			public function get ClaimDetailURL():String
+			{
+				return _ClaimDetailURL;
+			}
+
+			public function set ClaimDetailURL(value:String):void
+			{
+				_ClaimDetailURL = value;
+				id_htmlArea.location = value;
+				
+				CursorManager.removeBusyCursor();
+				id_htmlArea.htmlLoader.navigateInSystemBrowser = true;	
+			}
+
+			[Bindable]
+			public function get ClaimDetailText():String
+			{
+				return _ClaimDetailText;
+			}
+
+			public function set ClaimDetailText(value:String):void
+			{
+				_ClaimDetailText = value;
+			}
+
+			protected function id_htmlArea_completeHandler(event:Event):void
+			{
+				if(null != event.currentTarget.location )
+				{
+					CursorManager.removeBusyCursor();
+					id_htmlArea.htmlLoader.navigateInSystemBrowser = true;					 
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<mx:HTML id="id_htmlArea" htmlText="{ClaimDetailText}" height="{Capabilities.screenResolutionY - 175}" width="{(Capabilities.screenResolutionX / 2) - 50}" complete="id_htmlArea_completeHandler(event)" x="2"/>
+	
+</s:VGroup>

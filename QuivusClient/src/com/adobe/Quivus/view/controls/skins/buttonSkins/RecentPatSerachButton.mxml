@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt">
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect height="19" visible="false" width="28" x="0" y="2">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false"
+								inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" 
+								includeIn="down" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="19" id="rect8" radiusX="3" visible.disabled="false" visible.down="false" visible.over="false" visible.up="false"
+			width="26" x="1" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry includeIn="downAndSelected" ratio="0.00784313725490196" color="#E1E2F7" alpha="1.0"/>
+				<s:GradientEntry alpha="1.0" color="#A1A3C3" ratio="0" color.overAndSelected="#E1E2F7" ratio.downAndSelected="0.3607843137254902" 
+								 ratio.disabledAndSelected="0" color.disabledAndSelected="#CCCCCC"/>
+				<s:GradientEntry includeIn="overAndSelected" ratio="0.3411764705882353" color="#A1A3C3" alpha="1.0"/>
+				<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="0.7372549019607844"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="#FFFFFF" distance="1" hideObject="false" inner="true" 
+								knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" inner="false"
+								knockout="false" quality="3" strength="1" distance.disabledAndSelected="1" distance.downAndSelected="1" distance.overAndSelected="1" distance.upAndSelected="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="23" id="rect0" includeIn="down,over,upAndSelected" radiusX="3" visible.upAndSelected="false" width="26" x="1" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#A1A3C3" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#CDCBFF" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:BitmapImage alpha.disabled="0.5" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets//History.png')" visible.disabledAndSelected="false" visible.down="false" visible.downAndSelected="false" visible.over="false" visible.overAndSelected="false" visible.upAndSelected="false" x="11" y="4" visible.disabled="false">
+		<s:filters>
+			<s:DropShadowFilter alpha="1" angle="90" blurX="0" blurY="0" color="#14302F" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:BitmapImage>
+	<s:BitmapImage alpha.disabled="1" includeIn="disabled,disabledAndSelected,up" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/users.png')" x="5" y="5" visible.disabled="false" alpha.disabledAndSelected="1" visible.disabledAndSelected="false">
+		<s:filters>
+			<s:GlowFilter alpha="1.0" blurX="10" blurY="10" color="#999999" includeIn="disabled,disabledAndSelected" inner="true" knockout="false" quality="2" strength="10"/>
+		</s:filters>
+	</s:BitmapImage>
+	<s:BitmapImage smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/patienthistory.png')" x="5" y="5" visible="false"/>
+	<s:BitmapImage smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/history_hover.png')" visible.disabled="false" visible.up="false" x="5" y="4" visible.disabledAndSelected="false"/>
+	<s:BitmapImage alpha="0.5" includeIn="disabled,disabledAndSelected" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/History.png')" x="11" y="4">
+		<s:filters>
+			<s:DropShadowFilter alpha="1" angle="90" blurX="0" blurY="0" color="#14302F" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:BitmapImage>
+	<s:BitmapImage alpha="1" includeIn="disabled,disabledAndSelected" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/users.png')" x="5" y="5">
+		<s:filters>
+			<s:GlowFilter alpha="1.0" blurX="10" blurY="10" color="#999999" inner="true" knockout="false" quality="2" strength="10"/>
+		</s:filters>
+	</s:BitmapImage>
+</s:Skin>

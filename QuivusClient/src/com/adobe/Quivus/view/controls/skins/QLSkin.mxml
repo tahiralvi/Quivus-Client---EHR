@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" 
+    xmlns:fb="http://ns.adobe.com/flashbuilder/2009" alpha.disabled="0.5">
+
+    <fx:Metadata>
+    <![CDATA[ 
+        /** 
+         * @copy spark.skins.spark.ApplicationSkin#hostComponent
+         */
+        [HostComponent("spark.components.SkinnableContainer")]
+    ]]>
+    </fx:Metadata> 
+    
+    <s:states>
+        <s:State name="normal" />
+        <s:State name="disabled" />
+    </s:states>
+    
+    <!--- Defines the appearance of the SkinnableContainer class's background. -->
+	<s:Rect height="155" id="rect3" radiusX="3" width="185" x="0" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#BFBFBF" ratio="0"/>
+				<s:GradientEntry alpha="1" color="#FFFFFF" ratio="0.19215686274509805"/>
+				<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+
+		<!--<s:Rect minHeight="192" height="100%" minWidth="156" width="100%" x="1.5" y="1.5">
+			<s:stroke>
+				<s:LinearGradientStroke caps="none" joints="miter" miterLimit="4" rotation="90" weight="4">
+					<s:GradientEntry alpha="1" color="#246D9B" ratio="0"/>
+					<s:GradientEntry alpha="1.0" color="#6FC9FF" ratio="1"/>
+				</s:LinearGradientStroke>
+			</s:stroke>
+			<s:filters>
+				<s:DropShadowFilter blurX="10" blurY="10" distance="5" hideObject="false" color="0x000000" inner="false" strength="1" alpha="1" quality="3" knockout="false" angle="90"/>
+			</s:filters>
+			<s:fill>
+				<s:LinearGradient rotation="90">
+					<s:GradientEntry color="#666666" alpha="1.0" ratio="0"/>
+					<s:GradientEntry color="#333333" alpha="1.0" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+		</s:Rect>-->
+	
+	
+	<!--<s:Rect height="5" width="55" x="3" y="-0.5">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#666666" ratio="0"/>
+				<s:GradientEntry alpha="1" color="#000000" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Rect height="9.5" id="rect0" width="2" x="59.0" y="-7.5">
+		<s:fill>
+			<s:SolidColor color="#246D9B"/>
+		</s:fill>
+	</s:Rect>-->
+	
+	<!--
+		<s:Button buttonMode="true" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QLAddmoreBtn" x="86" y="167" toolTip="Add More Quick Links"/>
+		
+	-->
+	
+    
+    <!--
+        Note: setting the minimum size to 0 here so that changes to the host component's
+        size will not be thwarted by this skin part's minimum size.   This is a compromise,
+        more about it here: http://bugs.adobe.com/jira/browse/SDK-21143
+    -->
+    <!--- @copy spark.components.SkinnableContainer#contentGroup -->
+    <s:Group id="contentGroup" left="0" right="0" top="0" bottom="0" minWidth="0" minHeight="0">
+        <s:layout>
+            <s:BasicLayout/>
+        </s:layout>
+    </s:Group>
+
+</s:Skin>

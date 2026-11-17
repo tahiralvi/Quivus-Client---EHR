@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:itemEditors="com.adobe.Quivus.view.controls.custom.itemEditors.*"
+		 xmlns:components="com.gazuntite.controls.extended.components.*"
+		 creationComplete="group1_creationCompleteHandler(event)" 
+		 xmlns:paging="com.adobe.Quivus.view.controls.custom.patientExamView.paging.*" 
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.viewBackground.followUp.LoadPatientFollowUpByPatientIdEvent;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.view.controls.custom.itemEditors.SparkComboBoxItemEditor;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.controls.Label;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.events.DataGridEvent;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.formatters.DateFormatter;
+			
+			import valueObjects.MedicalHistoryDTO;
+			import valueObjects.PageDTO;
+			import valueObjects.PatientFollowUpDTO;
+			import valueObjects.PatientFollowupInstructionDTO;
+			import valueObjects.PatientFollowupMergedDTO;
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var _hasGridChanged:Boolean;
+			private var _hasViewChanged:Boolean;
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			
+			
+			public function displayRowNum(item:Object, iCol:int):String
+			{
+				var strRowNum:String = "";
+				
+				if (id_DataGrid.dataProvider)
+				{
+					var rowNum:int = id_DataGrid.dataProvider.getItemIndex(item) + 1;
+					strRowNum = String(rowNum);
+				}
+				
+				return strRowNum;
+			}
+			
+			public function NatureLabelFunction(item:PatientFollowupMergedDTO, iCol:int):String
+			{
+				if( item.IsAcute )
+					return "Acute";
+				if( item.IsChronic )
+					return "Chronic";
+				if( item.IsPreventive )
+					return "Preventive";
+				
+				return "";
+			}
+			
+			public function frequencyLabelFunction(item:Object, iCol:int):String
+			{
+				var label:String = "";
+				var freq:PatientFollowupMergedDTO = PatientFollowupMergedDTO(item);
+				
+				if (freq.IsAgeSelected)
+				{
+					if (freq.AgeTypeDTO && freq.AgeTypeDTO.AgeTypeName)
+						label += freq.AgeTypeDTO.AgeTypeName + " " ;
+					
+					if (freq.AgeValueTypeDTO && freq.AgeValueTypeDTO.AgeValueTypeName)
+						label += freq.AgeValueTypeDTO.AgeValueTypeName;
+				}
+				else if (freq.IsDurationSelected)
+				{
+					if (!isNaN(freq.AfterDurationValue))
+						label += "After " + freq.AfterDurationValue + " ";
+					
+					if (freq.AfterInstructionDurationTypeDTO && freq.AfterInstructionDurationTypeDTO.DurationTypeName)
+						label += freq.AfterInstructionDurationTypeDTO.DurationTypeName + " ";
+					
+					if (!isNaN(freq.ForDurationValue))
+						label += "for " + freq.ForDurationValue + " ";
+					
+					if (freq.ForInstructionDurationTypeDTO && freq.ForInstructionDurationTypeDTO.DurationTypeName)
+						label += freq.ForInstructionDurationTypeDTO.DurationTypeName;
+				} 
+				
+				return label;
+			}
+			
+			public function TypeLabelFunction(item:PatientFollowupMergedDTO,iCol:int) : String
+			{		
+				if( item.IsByDate )
+					return item.FollowUpDate ;
+				else if( item.IsOnCompletion )
+				{
+					if( item.IsDrugselected )
+						return item.DrugName.toString();
+					else if( item.IsLabTestSelected )
+						return '';//item.LabTestName.toString(); 
+				}
+				return "";
+			}
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_DataGrid.addEventListener(DataGridActionsEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+				id_DataGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				id_DataGrid.addEventListener(DataGridActionsEvent.ITEM_EDIT_KEY_UP, itemEditKeyUpHandler, false, 0, true);
+			}
+			
+			private function editRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				id_DataGrid.editable = true;
+				var rowIndex:int = id_DataGrid.selectedIndex;
+				var itemToSetInEditableMode:IListItemRenderer = id_DataGrid.indexToItemRenderer(rowIndex);
+				
+				var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+				ev.columnIndex = 2;
+				ev.rowIndex = rowIndex;
+				ev.itemRenderer = itemToSetInEditableMode;
+				ev.dataField = "DateAdmin";
+				id_DataGrid.dispatchEvent(ev);
+			}
+			
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_FOLLOW_UP ) )//Tahir Alvi - implement security check 
+				{
+					var curTar:DataGrid = DataGrid(event.currentTarget);
+					
+					if (curTar.selectedItem)
+					{
+						var followUpInstructionID:int = PatientFollowupMergedDTO(curTar.selectedItem).PatientFollowUpMergeID;
+						
+						if (followUpInstructionID == 0)
+						{
+							/* model.quickInputDTO.Assessment.PatientFollowupMerged.removeItemAt(curTar.selectedIndex);
+							
+							if (model.quickInputDTO.Assessment.PatientFollowupMerged.length <= 0)
+							{
+							_hasGridChanged = false;
+							//hasViewChanged = isGetEdited();
+							} */
+						}
+						else
+						{
+							UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+							{
+								id_DataGrid.selectedItem.IsDeleted = true;
+								model.patientFollowupDTOListByPatientId.filterFunction   = filterDeletedItems;
+								model.patientFollowupDTOListByPatientId.refresh();
+								
+								hasViewChanged = _hasGridChanged = true;
+							});
+						}
+					}
+				}
+			}
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			private function itemEditKeyUpHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_FOLLOW_UP ) )//Tahir Alvi - implement security check 
+				{
+					
+				}
+			}
+			
+			protected function id_DataGrid_itemEditBeginHandler(event:DataGridEvent):void
+			{
+				// TODO Auto-generated method stub
+			}
+			
+			
+			protected function id_DataGrid_itemEditEndHandler(event:DataGridEvent):void
+			{
+				/* if (event.dataField == "VisitDate")
+				{
+				event.itemRenderer.data.VisitDate = (id_DataGrid.itemEditorInstance as SparkComboBoxItemEditor ).selectedItem;					
+				event.itemRenderer.data.IsDirty = true;
+				
+				id_DataGrid.destroyItemEditor();
+				event.stopImmediatePropagation();
+				event.preventDefault();
+				}
+				
+				else if (event.dataField == "FollowUpDate")
+				{
+				/* isYes = (id_DataGrid2.itemEditorInstance as YesNoItemEditor).isYes;
+				event.itemRenderer.data.Educated = isYes == Constants.STRING_TRUE ? Constants.STRING_YES_UI : Constants.STRING_NO_UI ; * /
+				event.itemRenderer.data.FollowUpDate = (id_DataGrid.itemEditorInstance as SparkComboBoxItemEditor ).selectedItem;	
+				event.itemRenderer.data.IsDirty = true;	
+				
+				id_DataGrid.destroyItemEditor();
+				event.stopImmediatePropagation();
+				event.preventDefault();
+				} */
+			}
+			
+			/////////////
+			private function switchPageForGridView(event:*):void
+			{
+				
+				if( UtilityFunctions.IsNullOrEmpty( model.patientFollowupCurrentPageByPatient ) )
+					model.patientFollowupCurrentPageByPatient = new PageDTO();
+				
+				var pvital:PageDTO 		= model.patientFollowupCurrentPageByPatient;
+				pvital.fromDate 		= model.defaultFilterAndPaging.fromDate;
+				pvital.toDate 			= model.defaultFilterAndPaging.toDate;
+				pvital.pageSize 		= model.defaultFilterAndPaging.pageSize;
+				pvital.LastVisitNumber 	= model.defaultFilterAndPaging.LastVisitNumber;
+				
+				var lpviEvent: LoadPatientFollowUpByPatientIdEvent = new LoadPatientFollowUpByPatientIdEvent(); 
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpviEvent );
+			}
+			
+			protected function id_PaginationFilterView_RefreshViewHandler(event:Event):void
+			{
+				var lpviEvent: LoadPatientFollowUpByPatientIdEvent = new LoadPatientFollowUpByPatientIdEvent(); 
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpviEvent );
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		
+		<s:ArrayCollection id="array_followUpType">
+			<fx:String>By Date</fx:String>
+			<fx:String>Upon Completion Of</fx:String>
+		</s:ArrayCollection>
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout gap="0" horizontalAlign="left" />
+	</s:layout>
+	
+	
+	<!--<s:Button label="Filter" click="button1_clickHandler(event)" visible="false" includeInLayout="{id_applyFiler.visible}" id="id_applyFiler"/>
+	<s:TabBar id="id_TabBar" dataProvider="{id_VBViews}" skinClass="com.adobe.Quivus.view.controls.skins.TabBarSkins.VBrecordingsTabBar" />
+	<mx:ViewStack id="id_VBViews" width="100%" minWidth="500" resizeToContent="true" creationPolicy="all" change="id_VBViews_changeHandler(event)" >
+	<s:NavigatorContent width="100%" label="Type" minWidth="500" >-->
+	<paging:PaginationFilterView id="id_PaginationFilterView" width="100%" Page="{model.patientFollowupCurrentPageByPatient}"
+								 GoToFirstPage="switchPageForGridView(event)" GoToNextPage="switchPageForGridView(event)" 
+								 GoToPreviousPage="switchPageForGridView(event)" GoToLastPage="switchPageForGridView(event)"
+								 RefreshView="id_PaginationFilterView_RefreshViewHandler(event)"
+								 />
+	<mx:DataGrid id="id_DataGrid" width="100%" useRollOver="false"
+				 dataProvider="{model.patientFollowupDTOListByPatientId}" 
+				 rowCount="{id_DataGrid.dataProvider.length + 1}" verticalScrollPolicy="on"
+				 sortableColumns="false" 
+				 maxHeight="150"
+				 itemEditBegin="id_DataGrid_itemEditBeginHandler(event)"
+				 itemEditEnd="id_DataGrid_itemEditEndHandler(event)">
+		<mx:columns>
+			<mx:DataGridColumn headerText="Sr.#" width="30" editable="false" labelFunction="displayRowNum" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Type" width="60" dataField="IsByDate" editable="false" labelFunction="TypeLabelFunction" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" />
+			<mx:DataGridColumn headerText="Method" width="60" dataField="FollowUpMethodType.MethodName" editable="false" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Service"  dataField="objServiceTypeDTO.FollowupService" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:ComboBoxItemEditor dataProvider="{outerDocument.model.serviceTypeDTOList}" labelField="FollowupServiceTypeName"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Frequency" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" width="100" labelFunction="frequencyLabelFunction" />
+			<mx:DataGridColumn headerText="Nature" headerWordWrap="true" wordWrap="true" width="60" labelFunction="NatureLabelFunction" />
+			<mx:DataGridColumn editable="false" width="85" itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.VBRenderer"/>
+		</mx:columns>
+	</mx:DataGrid>
+	
+	<!--		</s:NavigatorContent>
+	
+	
+	</mx:ViewStack>	-->
+	
+</s:Group>

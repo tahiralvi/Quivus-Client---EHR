@@ -1,0 +1,692 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:roleManagement="com.gazuntite.provider.live.services.administration.view.roleManagement.*" 
+					  xmlns:userManagement="com.gazuntite.provider.live.services.administration.view.userManagement.*" 
+					  xmlns:generalSetting="com.gazuntite.provider.live.services.administration.view.generalSetting.*"
+					  width="100%" height="100%"  skinClass="com.adobe.gazuntite.skins.chrome.containerSkins.blackMiniTitleBGContainer" 
+					  xmlns:components="com.gazuntite.controls.extended.components.*"
+					  creationComplete="creComp()" xmlns:components1="com.gazuntite.controls.extended.components.*">
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.provider.live.services.administration.event.locationManagement.LoadClinicRoomByStationIdEvent;
+			import com.gazuntite.provider.live.services.administration.event.locationManagement.SaveAllRoomsByClinicBranchIDEvent;
+			import com.gazuntite.provider.live.services.administration.event.locationManagement.SavePracticeDetailsEvent;
+			import com.gazuntite.provider.live.services.administration.model.AdminAppModelLocator;
+			import com.gazuntite.provider.live.services.administration.util.AdminConstant;
+			import com.gazuntite.provider.live.services.administration.util.AdminUtils;
+			import com.gazuntite.provider.live.services.administration.view.events.DataGridActionEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.controls.Alert;
+			import mx.controls.Label;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.core.FlexGlobals;
+			import mx.events.DataGridEvent;
+			import mx.managers.PopUpManager;
+			import mx.utils.ObjectProxy;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			
+			[Bindable]
+			private var model:AdminAppModelLocator = AdminAppModelLocator.getInstance();
+			
+			private var addLocationView:AddLocationView;
+			[Bindable] private var isEdited:Boolean;
+			
+			//Application creation complete handler
+			private function creComp():void
+			{
+				id_RoomGrid.addEventListener(DataGridActionEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+				id_RoomGrid.addEventListener(DataGridActionEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				id_RoomGrid.addEventListener(DataGridActionEvent.SAVE_RECORD_CLICK, saveRecordClickHandler, false, 0, true);
+				id_LocationName.setFocus();
+			}
+			
+			// Add location button Click handler
+			protected function addLocation_clickHandler():void
+			{
+				addLocationView = PopUpManager.createPopUp(this, AddLocationView, true) as AddLocationView;
+				addLocationView.getLocationsList();
+				PopUpManager.centerPopUp(addLocationView);
+			}
+			// Save click handler
+			private function save_clickHandler():void
+			{
+				if(!isInvalid())
+					savePracticeDetails();
+			}
+			//Save practice detail
+			private function savePracticeDetails():void
+			{
+				model.practiceDetailProxyObj.IsDirty 					= true;
+				model.practiceDetailProxyObj.ClinicBranchName 			= id_LocationName.text;
+				model.practiceDetailProxyObj.Address 					= id_Address.text;
+				model.practiceDetailProxyObj.License1 					= id_License1.text;
+				model.practiceDetailProxyObj.ContactPerson 				= id_contactPerson.text;
+				model.practiceDetailProxyObj.SpecialityID				= id_PracticeType.selectedItem.ID;
+				model.practiceDetailProxyObj.PhoneNumber				= getPhoneNumberWithoutMasking(id_Phone.text);
+				model.practiceDetailProxyObj.License2					= id_License2.text;
+				model.practiceDetailProxyObj.ContactPersonPhoneNo		= getPhoneNumberWithoutMasking(id_contactNo.text);
+				model.practiceDetailProxyObj.AvgPatientPerDay			= id_avgPatient.text;
+				model.practiceDetailProxyObj.Email						= id_email.text;
+				
+				//save practice Details 
+				var sPDe:SavePracticeDetailsEvent = new SavePracticeDetailsEvent(onSave);
+				CairngormEventDispatcher.getInstance().dispatchEvent( sPDe );	
+				cursorManager.setBusyCursor();  
+			}
+			
+			//Validate room Details before submit
+			private function isRoomInvalid() : Boolean 
+			{
+				var isNotValid:Boolean = false;
+				var errorStr:String = ""; 
+				var toSetFocus:Object;
+				AdminUtils.Trim(id_roomCode);
+				AdminUtils.Trim(id_roomName);
+				//Room Code - Mandatory
+				if (id_roomCode.text.length >= 1 && id_roomCode.text.length <= 50)
+				{
+					if (id_roomCode.text.length <= 1 || id_roomCode.text.length >= 51)
+					{
+						isNotValid = true;
+						errorStr += "The data in room code is invalid.\n";
+						
+						if (!toSetFocus)
+							toSetFocus = id_roomCode;
+					}
+				}
+				else
+				{
+					isNotValid = true;
+					errorStr += "Please enter data in  room code.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_roomCode;
+				}
+				//Room Name - Mandatory
+				if (id_roomName.text.length >= 1 && id_roomName.text.length <= 50)
+				{
+					if (id_roomName.text.length <= 1 || id_roomName.text.length >= 51)
+					{
+						isNotValid = true;
+						errorStr += "The data in room name is invalid.\n";
+						
+						if (!toSetFocus)
+							toSetFocus = id_roomName;
+					}
+				}
+				else
+				{
+					isNotValid = true;
+					errorStr += "Please enter data in room name.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_roomName;
+				}
+				if (isNotValid && errorStr.length)
+					Alert.show(errorStr, "Room details Required Fields", 4, FlexGlobals.topLevelApplication.mainContainer, function(event:Event):void{
+						if (toSetFocus)
+							toSetFocus.setFocus();
+					});
+				
+				return isNotValid;
+			}
+			//Validate Prescribe Details before submit
+			private function isInvalid() : Boolean 
+			{
+				var isNotValid:Boolean = false;
+				var errorStr:String = ""; 
+				var toSetFocus:Object;
+				
+				AdminUtils.Trim(id_LocationName);
+				AdminUtils.Trim(id_Address);
+				AdminUtils.Trim(id_License1);
+				AdminUtils.Trim(id_contactPerson);
+				AdminUtils.Trim(id_Phone);
+				AdminUtils.Trim(id_License2);
+				AdminUtils.Trim(id_contactNo);
+				AdminUtils.Trim(id_avgPatient);
+				AdminUtils.Trim(id_email);
+				
+				//Location Name - Mandatory
+				if (id_LocationName.text.length >= 1 && id_LocationName.text.length <= 150)
+				{
+					if (id_LocationName.text.length <= 2 || id_LocationName.text.length >= 151)
+					{
+						isNotValid = true;
+						errorStr += "The data in location name is invalid.\n";
+						
+						if (!toSetFocus)
+							toSetFocus = id_LocationName;
+					}
+				}
+				else
+				{
+					isNotValid = true;
+					errorStr += "Please enter data in location name.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_LocationName;
+				}
+				//Address - Mandatory
+				if (id_Address.text.length >= 1 && id_Address.text.length <= 150)
+				{
+					if (id_Address.text.length <= 2 || id_Address.text.length >= 151)
+					{
+						isNotValid = true;
+						errorStr += "The data in address is invalid.\n";
+						
+						if (!toSetFocus)
+							toSetFocus = id_Address;
+					}
+				}
+				else
+				{
+					isNotValid = true;
+					errorStr += "Please enter data in address.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_Address;
+				}
+				//ContactPerson
+				if (id_contactPerson.text.length >= 1 && id_contactPerson.text.length <= 150)
+				{
+					if (id_contactPerson.text.length <= 2 || id_contactPerson.text.length >= 151)
+					{
+						isNotValid = true;
+						errorStr += "The data in contact Person is invalid.\n";
+						
+						if (!toSetFocus)
+							toSetFocus = id_contactPerson;
+					}
+				}
+				//Practice Types - Mandatory
+				if(id_PracticeType.selectedIndex == -1 )
+				{
+					isNotValid = true;
+					errorStr += "The data in Practice type is invalid.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_PracticeType;
+				} 
+				//Phone
+				if (id_Phone.text.length >= 1)
+				{
+					if (id_Phone.text.length >= 10 && id_Phone.text.length <= 13)
+					{
+						if (!AdminUtils.isValidPhone(getPhoneNumberWithoutMasking(id_Phone.text)))
+						{
+							isNotValid = true;
+							
+							errorStr += "The data in phone number is invalid.\n";
+							
+							if (!toSetFocus)
+								toSetFocus = id_Phone;
+						}
+					}
+				}
+				//Contact person phone No
+				if (id_contactNo.text.length >= 1)
+				{
+					if (id_contactNo.text.length >= 10 && id_contactNo.text.length <= 13)
+					{
+						if (!AdminUtils.isValidPhone(getPhoneNumberWithoutMasking(id_contactNo.text)))
+						{
+							isNotValid = true;
+							
+							errorStr += "The data in contact person phone no is invalid.\n";
+							
+							if (!toSetFocus)
+								toSetFocus = id_contactNo;
+						}
+					}
+				}
+				//License1
+				if (id_License1.text.length >= 1 && id_License1.text.length <= 50)
+				{
+					if (id_License1.text.length >= 51)
+					{
+						isNotValid = true;
+						errorStr += "The data in License 1 is invalid.\n";
+						
+						if (!toSetFocus)
+							toSetFocus = id_License1;
+					}
+				}
+				//License 2
+				if (id_License2.text.length >= 1 && id_License2.text.length <= 50)
+				{
+					if (id_License2.text.length >= 51)
+					{
+						isNotValid = true;
+						errorStr += "The data in License 2 is invalid.\n";
+						
+						if (!toSetFocus)
+							toSetFocus = id_License2;
+					}
+				}
+				//Average Patient /Day
+				if (id_avgPatient.text.length >= 1 && id_avgPatient.text.length <= 6)
+				{
+					if(id_avgPatient.text.length >= 7)
+					{
+						isNotValid = true;
+						errorStr += "The data in average patient/day is invalid.\n";
+						
+						if (!toSetFocus)
+							toSetFocus = id_avgPatient;
+					}
+					
+				}
+				//Email
+				if (id_email.text.length >= 1 && id_email.text.length <= 150)
+				{
+					if (!AdminUtils.isValidEmail(id_email))
+					{
+						isNotValid = true;
+						errorStr += "The data in email is invalid.\n";
+						
+						if (!toSetFocus)
+							toSetFocus = id_email;
+					}
+				}
+				
+				
+				if (isNotValid && errorStr.length)
+					Alert.show(errorStr, "Practice details Required Fields", 4, FlexGlobals.topLevelApplication.mainContainer, function(event:Event):void{
+						if (toSetFocus)
+							toSetFocus.setFocus();
+					});
+				
+				return isNotValid;
+				
+			}
+			//On success of save practice call result
+			private function onSave(val:*=null):void
+			{
+				isEdited = false;
+			}
+			//On success of save practice call result
+			private function onSaveRooms(val:*=null):void
+			{
+				var lcre:LoadClinicRoomByStationIdEvent = new LoadClinicRoomByStationIdEvent(model.loggedInUserSelectedStationId);
+				CairngormEventDispatcher.getInstance().dispatchEvent( lcre );	
+				
+				id_roomCode.text = '';
+				id_roomName.text = '';
+			}
+			// on editing enable save button
+			protected function text_changeHandler(event:TextOperationEvent):void
+			{
+				isEdited = true;
+			}
+			// on change enable save button
+			protected function dropdown_changeHandler(event:IndexChangeEvent):void
+			{
+				isEdited = true;
+			}
+			// get grid row no
+			private function getRowNo(item:Object, iCol:int):String
+			{
+				var strRowNum:String = "";
+				
+				if (id_RoomGrid.dataProvider)
+				{
+					var rowNum:int = id_RoomGrid.dataProvider.getItemIndex(item) + 1;
+					strRowNum = String(rowNum);
+				}
+				
+				return strRowNum;
+			}
+			// edit room record handler
+			private function editRecordClickHandler(event:DataGridActionEvent):void
+			{
+				id_RoomGrid.editable 							= true;
+				var rowIndex:int 								= id_RoomGrid.selectedIndex;
+				var itemToSetInEditableMode:IListItemRenderer 	= id_RoomGrid.indexToItemRenderer(rowIndex);
+				var ev:DataGridEvent 							= new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+				ev.columnIndex 									= 1;
+				ev.rowIndex 									= rowIndex;
+				ev.itemRenderer 								= itemToSetInEditableMode;
+				//ev.dataField 									= "DateAdmin";
+				id_RoomGrid.dispatchEvent(ev);
+			}
+			// delete room record handler
+			private function  deleteRecordClickHandler(event:DataGridActionEvent):void
+			{
+				var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+				var roomID:String = curTar.selectedItem.ClinicRoomId; 
+				var obP:ObjectProxy = curTar.selectedItem as ObjectProxy;
+				
+				if (curTar.selectedItem)
+				{
+					UtilityFunctions.AskMessage(  "Do you want to delete selected record ?", function():void
+					{
+						if (roomID == '0')
+						{
+							model.allRoomsList.removeItemAt(curTar.selectedIndex);
+						}
+						else
+						{
+							id_RoomGrid.selectedItem.IsDeleted 		= true;
+							id_RoomGrid.selectedItem.IsDirty 		= true;
+							model.allRoomsList.filterFunction = filterDeletedItems;
+							model.allRoomsList.refresh();
+							var clinicRoomDTOXML:XML = AdminUtils.ConvertToClinicRoomXML(obP);
+							saveRoomInfo(clinicRoomDTOXML);
+						}
+					});
+				}
+			}
+			// isDeleted bit true for records
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			// save room record handler
+			private function saveRecordClickHandler(event:DataGridActionEvent):void
+			{
+				var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+				var obP:ObjectProxy = curTar.selectedItem as ObjectProxy;
+				id_RoomGrid.selectedItem.IsDirty 		= true;
+				
+				if(obP.RoomCode == '' || obP.RoomTitle == '')
+				{
+					Alert.show('Room code and room name not be empty', AdminConstant.INFO, 4, FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}else
+				{
+					var clinicRoomDTOXML:XML = AdminUtils.ConvertToClinicRoomXML(obP);
+					saveRoomInfo(clinicRoomDTOXML);
+				}
+			}
+			//Save Rooms edit delete to server
+			private function saveRoomInfo(clinicRoomDTO:XML):void
+			{
+				var srDe:SaveAllRoomsByClinicBranchIDEvent = new SaveAllRoomsByClinicBranchIDEvent(clinicRoomDTO,model.loggedInUserId, onSaveRooms);
+				CairngormEventDispatcher.getInstance().dispatchEvent( srDe );	
+				cursorManager.setBusyCursor(); 
+			}
+			//item edit begin handler
+			private function roomGridItemEditBeginHandler(event:DataGridEvent):void
+			{
+				id_RoomGrid.createItemEditor(event.columnIndex, event.rowIndex);
+			}
+			//Item edit end handler
+			private function roomGridItemEditEndHandler(event:DataGridEvent):void
+			{
+				var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+				var roomID:String = curTar.selectedItem.ClinicRoomId; 
+				/*
+				if (roomID != '0')
+				event.itemRenderer.data.IsDirty = true; */
+				if (event.dataField == "RoomCode")
+				{
+					event.itemRenderer.data.RoomCode = event.target.itemEditorInstance.text;
+					if (roomID != '0')
+						event.itemRenderer.data.IsDirty = true;
+				}
+				else if(event.dataField == "RoomTitle")
+				{
+					event.itemRenderer.data.RoomTitle = event.target.itemEditorInstance.text;
+					if (roomID != '0')
+						event.itemRenderer.data.IsDirty = true;
+				}
+				
+				id_RoomGrid.destroyItemEditor();
+				event.stopImmediatePropagation();
+				event.preventDefault();
+			}
+			//Room add button click handler
+			protected function id_addRoom_clickHandler(event:MouseEvent):void
+			{
+				if(!isRoomInvalid())
+				{
+					var obj:ObjectProxy = new ObjectProxy();
+					obj.IsDeleted 			= false;
+					obj.IsDirty	  			= true;
+					obj.ClinicRoomId		= 0;
+					obj.StationId			= model.loggedInUserSelectedStationId;
+					obj.RoomTitle			= id_roomName.text;
+					obj.Roomtype			= 'Roomtype';
+					obj.RoomStatus			= 'RoomStatus';
+					obj.RoomCode			= id_roomCode.text;;
+					obj.CreatedBy			= model.loggedInUserId;
+					obj.CreatedAt			= id_dateformater2.format(new Date());
+					obj.ModifiedBy			= 0;
+					obj.ModifiedAt          = id_dateformater2.format(new Date());
+					
+					UtilityFunctions.AskMessage(  "Do you really want to add new room ?", function():void
+					{
+						var clinicRoomDTOXML:XML = AdminUtils.ConvertToClinicRoomXML(obj);
+						saveRoomInfo(clinicRoomDTOXML);
+					});
+				}
+			}
+			
+			//Tahir Alvi - apply masking on the phone number
+			public function applyMask():void
+			{
+				var s:String      = id_Phone.text.replace(/[^0-9]/g,"");
+				id_Phone.text = '('+s.substring(0,3) + (s.length>3?")"+s.substring(3,6) + (s.length>6?"-"+s.substring(6,10):""):"");
+				id_Phone.selectRange(id_Phone.text.length, id_Phone.text.length);
+				
+				if(id_Phone.text.length == 1 && id_Phone.text == '(')
+					id_Phone.text = '';
+			}
+			//Tahir Alvi - apply masking on the contact phone number
+			public function applyMask2():void
+			{
+				var s:String      = id_contactNo.text.replace(/[^0-9]/g,"");
+				id_contactNo.text = '('+s.substring(0,3) + (s.length>3?")"+s.substring(3,6) + (s.length>6?"-"+s.substring(6,10):""):"");
+				id_contactNo.selectRange(id_contactNo.text.length, id_contactNo.text.length);
+				
+				if(id_contactNo.text.length == 1 && id_contactNo.text == '(')
+					id_contactNo.text = '';
+			}
+			//Tahir Alvi - remove masking on the phone number
+			public function getPhoneNumberWithoutMasking(text:String):String
+			{
+				var val1:String = text;
+				var val2:String = val1.replace('(','');
+				var val3:String = val2.replace(')','');
+				var val4:String = val3.replace('-','');
+				
+				return val4;
+			}
+			//Tahir Alvi - apply masking on the phone number at load time
+			public function setPhoneNumberMasking(val:String):String
+			{
+				var val_Format:String = '(' + val.substring(0,3) + ')' + val.substring(3,6) + '-' + val.substring(6,10);
+				return val_Format;
+			}
+			// Phone No change handler
+			protected function id_Phone_changeHandler(event:TextOperationEvent):void
+			{
+				applyMask();
+				text_changeHandler(event);
+			}
+			//Contact No change handler			
+			protected function id_contactNo_changeHandler(event:TextOperationEvent):void
+			{
+				applyMask2();
+				text_changeHandler(event);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:DateFormatter id="id_dateformater" formatString="MM-DD-YY" />
+		<mx:DateFormatter id="id_dateformater2" formatString="YYYY-MM-DD" />
+	</fx:Declarations>
+	<s:layout>
+		<s:VerticalLayout gap="3" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="15" />
+	</s:layout>
+	
+	<s:Scroller width="100%" height="270" horizontalScrollPolicy="off" styleName="VScrollBar">
+		<s:Group width="100%" height="100%">
+			<s:layout>
+				<s:VerticalLayout />
+			</s:layout>
+			
+			<s:BorderContainer width="100%" backgroundColor="#CCD0D7" borderVisible="true" cornerRadius="3">
+				<s:borderStroke>
+					<s:LinearGradientStroke weight="1" >
+						<s:GradientEntry color="0xA4ABB4"/>
+						<s:GradientEntry color="0xA4ABB4"/>
+					</s:LinearGradientStroke>
+				</s:borderStroke>
+				
+				<s:layout>
+					<s:VerticalLayout gap="0" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5"/>
+				</s:layout>
+				<s:Label fontFamily="Calibri Bold" fontSize="15" fontWeight="bold"
+						 text="PRACTICE INFORMATION"/>
+				<s:Spacer height="5" width="100%"/>
+				<s:HGroup width="100%" height="100%">
+					<s:VGroup width="33%" height="100%">
+						<components1:LabelTextInput id="id_LocationName" 
+												   width="100%" prompt="Location Name" text="{model.practiceDetailProxyObj.ClinicBranchName}"
+												   change="text_changeHandler(event)" maxChars="100" restrict="[A-Z a-z , . 0-9]" toolTip="Location name"
+												   skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin"/>
+						<components1:LabelTextInput id="id_Address" 
+												   width="100%" prompt="Address" text="{model.practiceDetailProxyObj.Address}" toolTip="Address"
+												   change="text_changeHandler(event)" maxChars="100" restrict="[A-Z a-z , . 0-9]"
+												   skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin"/>
+						<components1:LabelTextInput id="id_License1" 
+												   width="100%" prompt="License # 1" text="{model.practiceDetailProxyObj.License1}" toolTip="License1 no"
+												   change="text_changeHandler(event)" maxChars="50" restrict="[0-9]"/>
+						<components1:LabelTextInput id="id_contactPerson"
+												   width="100%" prompt="Contact Person" text="{model.practiceDetailProxyObj.ContactPerson}"
+												   change="text_changeHandler(event)" maxChars="50" restrict="[A-Z a-z]" toolTip="Contact person"/>
+						<components1:LabelTextInput id="id_NPI"
+												   width="100%" prompt="NPI" text="{model.practiceDetailProxyObj.BranchNPI}" 
+												   change="text_changeHandler(event)" maxChars="10" restrict="[0-9]" toolTip="Practice NPI"/>
+					</s:VGroup>
+					<s:VGroup width="33%" height="100%">
+						<s:DropDownList id="id_PracticeType" 
+										width="100%" prompt="Practice Type"
+										dataProvider="{model.arrSpecialtyTypes}"
+										selectedIndex="{model.practiceDetailProxyObj.SpecialityID -1}"
+										labelField="Name" skinClass="com.adobe.gazuntite.skins.chrome.comboBoxSkins.requiredDropDownList"
+										toolTip="Select pratice type"
+										change="dropdown_changeHandler(event)"/>
+						<components1:LabelTextInput id="id_Phone" 
+												   width="100%" prompt="Phone" text="{setPhoneNumberMasking(model.practiceDetailProxyObj.PhoneNumber)}" toolTip="Phone number"
+												   change="id_Phone_changeHandler(event)"  restrict="[0-9]"/>
+						<components1:LabelTextInput id="id_License2"
+												   width="100%" prompt="License # 2" text="{model.practiceDetailProxyObj.License2}"
+												   change="text_changeHandler(event)" maxChars="50" restrict="[0-9]" toolTip="Slicense2 no"/>
+						<components1:LabelTextInput id="id_contactNo" 
+												   width="100%" prompt="Contact #" text="{setPhoneNumberMasking(model.practiceDetailProxyObj.ContactPersonPhoneNo)}"
+												   change="id_contactNo_changeHandler(event)" maxChars="25" restrict="[0-9]" toolTip="Contact No"/>
+						<components1:LabelTextInput id="id_TPI"
+												   width="100%" prompt="Tax Payer ID" text="{model.practiceDetailProxyObj.TaxPayerID}" 
+												   change="text_changeHandler(event)" maxChars="9" restrict="[0-9]" toolTip="Tax Payer ID"/>
+					</s:VGroup>
+					<s:VGroup width="33%" height="100%">
+						<components1:LabelTextInput id="id_avgPatient" 
+												   width="100%" prompt="Average Patients/Day" text="{model.practiceDetailProxyObj.AvgPatientPerDay}"
+												   change="text_changeHandler(event)" maxChars="6" restrict="[0-9]" toolTip="Average patients/day"/>
+						<components1:LabelTextInput id="id_email"
+												   width="100%" prompt="Email" text="{model.practiceDetailProxyObj.Email}" toolTip="Email"
+												   change="text_changeHandler(event)" maxChars="150" restrict="[A-Z a-z @ . 0-9]"/>
+						<!--by shahid munir on 09/13/2012-->
+						<s:HGroup>
+							<s:RadioButton id="id_Individual" width="100" label="Individual" groupName="practiceType" />
+							<s:RadioButton id="id_Group" width="100" label="Group" groupName="practiceType" selected="true" />
+						</s:HGroup>						
+						<s:HGroup>
+							<s:RadioButton id="id_Pserson" width="100" label="Person" groupName="entityType" />
+							<s:RadioButton id="id_NonPerson" width="100" label="Non-Person" groupName="entityType" selected="true"/>
+						</s:HGroup>						
+						<components1:LabelTextInput id="id_Taxonomy"
+												   width="100%" prompt="Taxonomy" text="{model.practiceDetailProxyObj.TaxonomyCode}" 
+												   change="text_changeHandler(event)" maxChars="50" restrict="[0-9 A-Z a-z]" toolTip="Taxonomy Code"/>
+						<s:HGroup>
+							<s:Label  text="Branch ID: " fontFamily="Calibri Bold" fontSize="12"/>
+							<s:Label				   id="id_QLicenseNo"
+													   width="100%"  text="{model.practiceDetailProxyObj.BranchCode}"
+													   toolTip="Branch Id" />
+						</s:HGroup>
+						<!--<components:LabelTextInput id="id_QLicenseNo" 
+						width="100%" prompt="Gazuntite License #" text="{model.practiceDetailProxyObj.BranchCode}"
+						enabled="false" toolTip="Gazuntite license no"/>-->
+					</s:VGroup>
+				</s:HGroup>
+				
+				<s:Group width="100%" >
+					<s:Label left="10" fontFamily="Calibri Bold" fontSize="13" fontWeight="bold"
+							 text="Subscription:" verticalCenter="0"/>
+					<s:Label id="id_StartDate" 
+							 fontFamily="calibri"  toolTip="{'Subscription start date = '+ id_dateformater.format(model.practiceDetailProxyObj.SubscriptionStartDate)}"
+							 left="110" verticalCenter="0" text="{'Start date: ' + id_dateformater.format(model.practiceDetailProxyObj.SubscriptionStartDate)}"	   />
+					<s:Label id="id_EndDate"
+							 fontFamily="calibri" toolTip="{'Subscription end date = ' + id_dateformater.format(model.practiceDetailProxyObj.SubscriptionEndDate)}"
+							  left="220" verticalCenter="0" text="{'End date : '+ id_dateformater.format(model.practiceDetailProxyObj.SubscriptionEndDate)}"/>
+					<s:Button id="id_AddLocation" right="0" width="100" label="Add Location" toolTip="Add Location"
+							  click="addLocation_clickHandler()" styleName="blackButtonSkin"/>
+				</s:Group>
+				
+			</s:BorderContainer>
+			
+			<s:BorderContainer  width="100%" right="5" left="5" backgroundColor="#3A414A" borderVisible="false" >
+				<s:layout>
+					<s:HorizontalLayout verticalAlign="middle" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5"/>
+				</s:layout>
+				
+				<s:Label fontSize="15" fontWeight="bold" text="ROOM MANAGEMENT :" fontFamily="Calibri Bold"/>
+				<components1:LabelTextInput id="id_roomCode" 
+										   prompt="Room Code" width="150" maxChars="50" toolTip="Enter room code" restrict="[a-z A-Z 0-9 . , _ -]"
+										   skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin"/>
+				<components1:LabelTextInput id="id_roomName" 
+										   prompt="Room Name" width="150" maxChars="50" toolTip="Enter room name" restrict="[a-z A-Z 0-9 . , _ -]"
+										   skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin"/>
+				<s:Button id="id_addRoom" 
+						  label="Add Room" toolTip="Add Room" styleName="blackButtonSkin"  width="70" click="id_addRoom_clickHandler(event)"/>
+			</s:BorderContainer>
+			
+			<s:BorderContainer width="100%"  cornerRadius="3" backgroundColor="#CCD0D7" borderVisible="true">
+				<s:borderStroke>
+					<s:LinearGradientStroke weight="1" >
+						<s:GradientEntry color="0xA4ABB4"/>
+						<s:GradientEntry color="0xA4ABB4"/>
+					</s:LinearGradientStroke>
+				</s:borderStroke>
+				
+				<s:layout>
+					<s:VerticalLayout  paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5"/>
+				</s:layout>
+				
+				<components1:LabelDataGrid id="id_RoomGrid"
+										  width="100%" dataProvider="{model.allRoomsList}"
+										  draggableColumns="false" useRollOver="false" sortableColumns="false"
+										  horizontalScrollPolicy="off" verticalScrollBarStyleName="VScrollBar"
+										  itemEditBegin="roomGridItemEditBeginHandler(event)"
+										  itemEditEnd="roomGridItemEditEndHandler(event)"
+										  rowCount="{id_RoomGrid.dataProvider.length + 1}"
+										  columnWidths="{[30, '15%', '70%', 40]}">
+					<components:columns>
+						<mx:DataGridColumn headerText="Sr #" labelFunction="getRowNo" editable="false"/>
+						<mx:DataGridColumn headerText="Room Code" dataField="RoomCode" editable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editorDataField="text"/>
+						<mx:DataGridColumn headerText="Room Name" dataField="RoomTitle" editable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editorDataField="text"/>
+						<mx:DataGridColumn headerText="Action" editable="false" itemRenderer="com.gazuntite.provider.live.services.administration.view.itemRenderer.EditDeleteItemRender"/>
+					</components:columns>
+				</components1:LabelDataGrid>
+				
+				<s:HGroup width="100%" horizontalAlign="right">
+					<s:Button id="id_save" 
+							  label="Save" styleName="blackButtonSkin" width="70" click="save_clickHandler()" enabled="{isEdited}" toolTip="Save"/>
+					<!--<s:Button label="Close" styleName="blackButtonSkin"  width="70"/>-->
+				</s:HGroup>
+			</s:BorderContainer>
+			
+		</s:Group>
+	</s:Scroller>
+</s:SkinnableContainer>

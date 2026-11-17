@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:flm="http://ns.adobe.com/flame/2008">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+	</s:states>
+	<s:Rect height="13" height.disabled="14" height.up="14" includeIn="disabled,over,up" radiusX="2" visible.over="false" width="66" x="0.5" x.disabled="1" x.up="1" y.over="0.5">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#FFAE00" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#F9F1CF" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:fill.up>
+			<s:SolidColor color="#246D9B"/>
+		</s:fill.up>
+		<s:stroke.over>
+			<s:SolidColorStroke caps="none" color="#FFCB00" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke.over>
+		<s:fill.disabled>
+			<s:SolidColor color="#666666"/>
+		</s:fill.disabled>
+	</s:Rect>
+	<s:Rect height="13" includeIn="down,over" radiusX="2" width="66" x="0.5" y="0.5">
+		<s:fill>
+			<s:LinearGradient rotation="270" rotation.down="90">
+				<s:GradientEntry alpha="1.0" color="#FFAE00" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#F9F1CF" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#FFCB00" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	<s:RichText ai:aa="2" color="#FFFFFF" color.disabled="#999999" color.down="#333333" color.over="#333333" columnCount="1" fontFamily="Calibri" fontSize="10" d:id="5" kerning="on" tabStops="S36" tabStops.disabled="S0 S50" tabStops.down="S0 S50" tabStops.over="S0 S50" text="+ ADD MORE" trackingRight="2%" d:userLabel="+ ADD MORE" flm:variant="2" whiteSpaceCollapse="preserve" x.disabled="7" x.down="6" x.over="6" x.up="6" y="3"/>
+</s:Skin>

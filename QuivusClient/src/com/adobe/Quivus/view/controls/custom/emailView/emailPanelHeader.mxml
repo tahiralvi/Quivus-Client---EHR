@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:emailView="com.adobe.Quivus.view.controls.custom.emailView.*" 
+		 xmlns:skins="com.adobe.Quivus.view.controls.skins.*" 
+		 skinClass="com.adobe.Quivus.view.controls.skins.PatientRegHeaderSkin" 
+		 xmlns:custom="com.adobe.Quivus.view.controls.custom.*" xmlns:buttonSeparators="com.adobe.Quivus.view.controls.skins.buttonSeparators.*" 
+		 
+		 >
+	
+	<s:layout>
+		<s:HorizontalLayout verticalAlign="middle" horizontalAlign="left" />
+	</s:layout>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.whiteCloseButton;
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:HGroup>
+		
+	<s:Label paddingLeft="12" color="#ffffff" paddingTop="5" fontFamily="Calibri Bold" text="EMAIL" />
+	<mx:Spacer width="100%" />
+	
+	</s:HGroup>	
+	
+	<s:HGroup width="100%" horizontalAlign="right">
+		
+		
+		
+		<s:HGroup horizontalAlign="right" verticalAlign="middle" width="100%" paddingRight="0" paddingTop="0" gap="0">
+			<emailView:AttachmentButton  id="id_AttachmentButton" />				
+			<buttonSeparators:buttonSeparatorGrey />
+			<s:HGroup paddingTop="0">
+				
+				<s:Button id="id_CloseBtn" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.whiteCloseButton"
+						    buttonMode="true" useHandCursor="true" toolTip="Close Email Section"/>
+			</s:HGroup>
+			<buttonSeparators:buttonSeparatorGrey />
+			<s:HGroup paddingTop="0">
+				
+				<s:ToggleButton id="id_expandBtn" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.expandButton_white" 
+								buttonMode="true" useHandCursor="true" toolTip="{id_expandBtn.selected?'Collapse':'Expand'}"/>
+			</s:HGroup>
+			<buttonSeparators:buttonSeparatorGrey />
+			<s:HGroup paddingTop="0" paddingRight="0">
+				<s:ToggleButton id="id_slideoutBtn" skinClass="com.adobe.gazuntite.skins.chrome.toggleButtonSkins.slideOutBtn_white"
+								buttonMode="true" useHandCursor="true" toolTip="{id_slideoutBtn.selected?'Slide-In':'Slide-Out'}" 
+								width="19" height="21"  />
+			</s:HGroup>
+		</s:HGroup>
+		
+	</s:HGroup>		
+</s:SkinnableContainer>

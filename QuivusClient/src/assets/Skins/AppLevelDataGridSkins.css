@@ -1,0 +1,31 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+
+/*********************************************************************************************/
+/*Grids 
+Grey background grid headers*/
+
+mx|DataGrid.gridStyle 
+{
+	borderAlpha					: 0;
+	borderVisible				: false;
+	fontFamily                  : Verdana;
+	fontSize					: 12;
+	fontWeight					: normal;
+	color						: #333333;			
+	verticalGridLines			: false;
+	headerStyleName				:"gridHeaderStyle";
+	headerSeparatorSkin			: ClassReference("com.adobe.gazuntite.skins.chrome.dataGridSkins.greyGridHeaderSeperatorSkin") ;		
+	headerBackgroundSkin		: ClassReference("com.adobe.gazuntite.skins.chrome.dataGridSkins.greyGridHeaderSkin") ;
+}
+
+.gridHeaderStyle 
+{
+	fontSize 					: 12;
+	text-aligh 					: left;
+	fontFamily                  : Verdana;
+	fontWeight					: normal;
+	
+}
+

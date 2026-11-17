@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   height="{(Capabilities.screenResolutionY)-10}" width="{(Capabilities.screenResolutionX / 2)-20}"
+			   minHeight="350" minWidth="565"
+			   close="titlewindow1_closeHandler(event)"
+			   
+			   skinClass="com.adobe.Quivus.view.controls.skins.titleWindowSkins.reviewAllWindowSkin" >
+	
+	<!--width="{FlexGlobals.topLevelApplication.mainContainer.width -150}"
+	height="{FlexGlobals.topLevelApplication.mainContainer.height - 100}"-->
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.ePrescription.SyncEPrescriptionEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.CursorManager;
+			import mx.managers.PopUpManager;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			protected function slideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+			}
+			
+			
+			protected function id_htmlArea_completeHandler(event:Event):void
+			{
+				CursorManager.removeBusyCursor();
+			}
+			
+			public function show(value:String = "", arg_callback:Function = null):void
+			{
+				
+				
+				PopUpManager.addPopUp(this, FlexGlobals.topLevelApplication.mainContainer, true);
+				
+				
+			}
+			
+			
+			
+			protected function titlewindow1_closeHandler(event:CloseEvent):void
+			{
+				//var luiEvent : SyncEPrescriptionEvent = new SyncEPrescriptionEvent();
+				//CairngormEventDispatcher.getInstance().dispatchEvent( luiEvent );
+				var vId:int = 0;
+				if(model.quickInputDTO.Visit!=null && model.quickInputDTO.Visit.VisitId>0)
+				{
+					vId = model.quickInputDTO.Visit.VisitId;
+				}
+				else if(model.visitDTO!=null && model.visitDTO.VisitId>0)
+				{
+					vId = model.visitDTO.VisitId;
+				}
+				
+				if(vId>0)
+				{
+					var luiEvent : SyncEPrescriptionEvent = new SyncEPrescriptionEvent(vId);
+					CairngormEventDispatcher.getInstance().dispatchEvent( luiEvent );
+				}
+				PopUpManager.removePopUp(this);
+			}
+			
+		]]>
+		
+		
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:Scroller height="{(Capabilities.screenResolutionY)-160}" width="{(Capabilities.screenResolutionX / 2)-30}">
+	<s:VGroup gap="-4" height="100%" width="100%" verticalAlign="top" horizontalAlign="center" >
+		
+		<s:BorderContainer height="100%" width="100%" cornerRadius="3" backgroundColor="#999AAA" 
+						   borderWeight="3" borderAlpha="1" borderColor="#999AAA" borderVisible="true" >
+			<s:layout>
+				<s:HorizontalLayout paddingTop="0" verticalAlign="middle" horizontalAlign="center" />
+			</s:layout>
+			
+			<mx:HTML complete="id_htmlArea_completeHandler(event)" id="id_htmlArea" height="100%" width="100%" location="{model.ePrescriptionEditMedicationURL}"  />
+			
+		</s:BorderContainer>
+		
+	</s:VGroup>
+	</s:Scroller>
+	
+</s:TitleWindow>

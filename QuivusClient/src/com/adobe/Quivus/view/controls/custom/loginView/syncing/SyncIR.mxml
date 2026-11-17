@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false"
+				>
+	
+	
+	<s:layout>
+		<s:HorizontalLayout verticalAlign="middle" horizontalAlign="center" paddingBottom="5" paddingTop="5" paddingLeft="10" paddingRight="10" />
+	</s:layout>
+	<fx:Script>
+		<![CDATA[
+			
+			private function set Progress(value:int):void
+			{
+				id_ProgessBar.setProgress( value, data.ProgressTotal );
+				if( value == 0 )
+				{
+					id_ProgessBar.label = "0 %";
+				}
+				else
+				{
+					id_ProgessBar.label = formatter.format( value / data.ProgressTotal * 100 ) + " %";
+				}
+			}
+			
+			private function set ProgressTotal(value:int):void
+			{
+				id_ProgessBar.minimum = 0;
+				id_ProgessBar.maximum = value;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<s:NumberFormatter id="formatter" fractionalDigits="1" errorText="0 %"/>
+	</fx:Declarations>
+	
+	<fx:Binding source="data.ProgressValue" destination="Progress" /> 
+	<fx:Binding source="data.ProgressTotal" destination="ProgressTotal" /> 
+	
+	
+	
+	<s:HGroup width="15" height="15" horizontalAlign="center" verticalAlign="middle" gap="10">
+		<s:Image id="id_checkMark" source="@Embed(source='assets/icons/checkmark.png')" visible="{data.status == 'sucess'}" includeInLayout="{!id_crossMark.visible}" width="12" height="12" />
+		<s:Image id="id_crossMark" source="@Embed(source='assets/icons/cross.png')"     visible="{data.status == 'fail'}"   includeInLayout="{!id_checkMark.visible}" width="12" height="12" />
+	</s:HGroup>
+	
+	<s:Label width="100%" text="{data.message}" />
+	
+	<mx:ProgressBar id="id_ProgessBar" width="96%" mode="manual" visible="{data.progress == 'show'}" includeInLayout="{id_ProgessBar.visible}"  />
+	
+	
+</s:ItemRenderer>

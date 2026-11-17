@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009">
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect height="20" radiusX="3.99972" radiusY="4.24904" visible.disabledAndSelected="false" visible.down="false" visible.downAndSelected="false" visible.over="false" visible.overAndSelected="false" visible.upAndSelected="false" width="45" x="0" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#C9CACD" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#C9CACD" ratio="0.5450980392156862"/>
+				<s:GradientEntry alpha="1.0" color="#DADADC" ratio="0.5490196078431373"/>
+				<s:GradientEntry alpha="1.0" color="#FBFBFB" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="1" angle="90" blurX="2" blurY="2" color="#333333" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="20" includeIn="disabledAndSelected,down,downAndSelected,over,overAndSelected,upAndSelected" radiusX="3.99972" radiusY="4.24904" visible.disabledAndSelected="false" visible.downAndSelected="false" visible.overAndSelected="false" width="45" x="0" y="0" visible.upAndSelected="false">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#DACFE4" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#A068CD" ratio="0.5450980392156862"/>
+				<s:GradientEntry alpha="1.0" color="#B89BD7" ratio="0.5490196078431373"/>
+				<s:GradientEntry alpha="1.0" color="#FDD1F8" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha.disabledAndSelected="0.5" alpha.down="0.5" alpha.downAndSelected="0.5" alpha.over="1" alpha.overAndSelected="0.5" alpha.upAndSelected="1" angle="90" blurX.disabledAndSelected="1" blurX.down="1" blurX.downAndSelected="1" blurX.over="2" blurX.overAndSelected="1" blurX.upAndSelected="2" blurY.disabledAndSelected="1" blurY.down="1" blurY.downAndSelected="1" blurY.over="2" blurY.overAndSelected="1" blurY.upAndSelected="2" color="#333333" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX.disabledAndSelected="2" blurX.down="2" blurX.downAndSelected="2" blurX.over="1" blurX.overAndSelected="2" blurX.upAndSelected="1" blurY.disabledAndSelected="2" blurY.down="2" blurY.downAndSelected="2" blurY.over="1" blurY.overAndSelected="2" blurY.upAndSelected="1" color.disabledAndSelected="#333333" color.down="#333333" color.downAndSelected="#333333" color.over="#FFFFFF" color.overAndSelected="#333333" color.upAndSelected="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="24" id="rect5" includeIn="disabledAndSelected,downAndSelected,overAndSelected,upAndSelected" radiusX="2.99979" radiusY="2.99979" width="45" x="0" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#CDC3D8" ratio="0.27450980392156865"/>
+				<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.7000000000000001" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.2" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:BitmapImage smooth="true" source="@Embed('../assets/icons/communicationicon.png')" x="7" y="2"/>
+</s:Skin>

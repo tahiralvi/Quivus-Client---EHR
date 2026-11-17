@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				xmlns:registeration="com.adobe.Quivus.view.controls.registeration.*"
+				width="300" height="200" 
+				showCloseButton="true" close="titleWindowCloseHandler(event)" 
+				title="More Contact Numbers" 
+				xmlns:components1="com.gazuntite.controls.extended.components.*"
+				>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.AddBtn;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Label;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.states.OverrideBase;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			[Bindable]
+			public var _isPhoneNumberPopUpShown:Boolean = false;
+			
+			//Close handler
+			private function titleWindowCloseHandler(event:CloseEvent):void
+			{
+				hide();
+			}
+			
+			public function hide():void
+			{
+				_isPhoneNumberPopUpShown = false;
+				
+				PopUpManager.removePopUp(this);	
+			}
+			//Display position
+			public function display(parent:DisplayObject, pt:Point = null):void
+			{
+				if (!_isPhoneNumberPopUpShown)
+				{
+					_isPhoneNumberPopUpShown = true;
+					visible = true;
+					
+					PopUpManager.addPopUp(this, parent);
+					
+					if (pt)
+					{
+						this.x = pt.x - this.width/2;
+						this.y = pt.y;
+					}
+				}
+			}
+			private function getPhoneNo(item:Object, column:DataGridColumn):String
+			{
+				var result:String = '';
+				if(item.PhoneNumber)
+					result = ValidationUtils.setPhoneNumberMasking(item.PhoneNumber);
+				
+				
+				return result;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<components1:LabelDataGrid id="id_AddPhoneNumberGrid" 
+							   editable="false"  width="100%" height="100%" 
+							   rowCount="{id_AddPhoneNumberGrid.dataProvider.length + 1}"
+							   dataProvider="{model.patientPhoneList}"
+							   sortableColumns="false" borderAlpha="0"
+							   verticalScrollBarStyleName="VScrollBar">
+		<components1:columns>
+			<mx:DataGridColumn dataField="PhoneNumber" labelFunction="getPhoneNo" headerText="Phone number" width="0.5" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn dataField="Extension" headerText="Extension" width="0.2" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn dataField="NumberTypeName" headerText="Phone type" width="0.3" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+		</components1:columns>
+	</components1:LabelDataGrid>
+	
+</mx:TitleWindow>

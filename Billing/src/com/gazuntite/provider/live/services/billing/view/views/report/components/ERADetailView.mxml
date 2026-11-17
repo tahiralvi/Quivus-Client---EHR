@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  xmlns:components="com.gazuntite.provider.live.services.billing.view.views.report.components.*"
+		  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.util.xml.XmlUtils;
+			import com.gazuntite.provider.live.services.billing.dto.report.PaymentClaimDTO;
+			import com.gazuntite.provider.live.services.billing.dto.report.PaymentTransactionDTO;
+			import com.gazuntite.provider.live.services.billing.event.report.ERAClaimDetailReportEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.events.IndexChangedEvent;
+			
+			[Bindable]
+			private var model : com.gazuntite.provider.live.services.billing.model.BillingModelLocator = BillingModelLocator.getInstance();
+			
+			protected function id_ERAViewStack_changeHandler(event:IndexChangedEvent):void
+			{
+				if(id_ERAViewStack.selectedIndex == 1)
+				{
+					if(id_claimList.id_pmtClaimGrid.selectedItems.length == 0)
+						id_claimDetailTab.ClaimDetailText = "<b>No claim selected</b>";
+					else
+					{
+						var paymentTransaction:PaymentTransactionDTO = null;
+						for each (var pmtTran:PaymentTransactionDTO in model.PaymentTransactionList) 
+						{
+							 if( (id_claimList.id_pmtClaimGrid.selectedItems[0] as PaymentClaimDTO).PaymentTransactionID == pmtTran.PaymentTransactionID)
+							 {
+								 paymentTransaction = pmtTran;
+								 break;
+							 }
+						}
+						
+						if(paymentTransaction)
+						{
+							var transactionXML:XML = paymentTransaction.ToXML();
+							
+							var claimListXML:XML = XmlUtils.getNodeByTagName("PaymentClaims");
+							
+							for (var i:int = 0; i < id_claimList.id_pmtClaimGrid.selectedItems.length; i++) 
+							{
+								var claim:PaymentClaimDTO = id_claimList.id_pmtClaimGrid.selectedItems[i] as PaymentClaimDTO;
+								
+								claimListXML.appendChild(claim.ToXML());
+							}
+							
+							transactionXML.appendChild(claimListXML);
+							
+							var ere:ERAClaimDetailReportEvent = new ERAClaimDetailReportEvent(transactionXML, ERAReportResponse);
+							CairngormEventDispatcher.getInstance().dispatchEvent(ere);							
+						}
+					}
+				}
+			}
+			
+			private function ERAReportResponse(resp:String):void
+			{
+				if(UtilityFunctions.IsNotNullOrEmpty(resp))
+				{
+					id_claimDetailTab.ClaimDetailURL = resp;				
+				}
+				else
+				{
+					id_claimDetailTab.ClaimDetailText = "<b> Report page not available </b>";
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:TabBar dataProvider="{id_ERAViewStack}" skinClass="com.adobe.gazuntite.skins.chrome.tabBarSkins.lightGreyTabBar" buttonMode="true" useHandCursor="true"
+			  width="380" />
+	<mx:ViewStack id="id_ERAViewStack"  width="100%" height="100%" change="id_ERAViewStack_changeHandler(event)" >		
+		<s:NavigatorContent  label="Claim List" width="100%" height="100%">
+			<components:ERAClaimList id="id_claimList" width="100%" height="100%"/>
+		</s:NavigatorContent>
+		<s:NavigatorContent  label="Claim Detail" width="100%" height="100%">
+			<components:ERAClaimDetail id="id_claimDetailTab" width="100%" height="100%" />
+		</s:NavigatorContent>
+		<s:NavigatorContent  label="Remit Summary" width="100%" height="100%">
+			<s:Label text="coming soon....." width="100%" height="100%" textAlign="center"  fontWeight="bold" />
+		</s:NavigatorContent>
+	</mx:ViewStack>
+</s:VGroup>

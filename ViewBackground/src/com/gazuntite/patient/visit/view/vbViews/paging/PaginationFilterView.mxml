@@ -1,0 +1,435 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  skinClass="com.adobe.gazuntite.skins.chrome.dataGridSkins.filterGridHeaderSkin"
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:skins="com.gazuntite.common.view.skins.*" 
+					  xmlns:components="com.gazuntite.controls.extended.components.*"
+					  creationComplete="cc(event)" 
+					  xmlns:buttonSkins="com.adobe.gazuntite.skins.chrome.buttonSkins.*"
+					  width="100%"
+					  >
+	
+	<fx:Metadata>
+		/* [Event(name="ListOnly", type="flash.events.Event")]
+		[Event(name="ChangeStaus", type="flash.events.Event")] */
+		[Event(name="GoToFirstPage", type="flash.events.Event")]
+		[Event(name="GoToPreviousPage", type="flash.events.Event")]
+		[Event(name="GoToNextPage", type="flash.events.Event")]
+		[Event(name="GoToLastPage", type="flash.events.Event")]
+		[Event(name="RefreshView", type="flash.events.Event")]
+		[Event(name="ClearView", type="flash.events.Event")]
+		/* [Event(name="SearchClick", type="flash.events.Event")] */
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.common.util.QSConstants;
+			import com.gazuntite.patient.visit.dto.PageDTO;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CalendarLayoutChangeEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ItemClickEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			public static const GOTO_FIRST_PAGE		:String = "GoToFirstPage";
+			public static const GOTO_PREVIOUS_PAGE	:String = "GoToPreviousPage";
+			public static const GOTO_NEXT_PAGE		:String = "GoToNextPage";
+			public static const GOTO_LAST_PAGE		:String = "GoToLastPage";
+			public static const REFRESH_VIEW		:String = "RefreshView";
+			public static const CLEAR_VIEW			:String = "ClearView";
+			public static const SEARCH_CLICK		:String = "SearchClick";
+			
+			[Bindable]
+			public var model:VBModelLocator = VBModelLocator.getInstance();
+			
+			[Bindable]
+			private var acNumRecordPerPage:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var acNumVisits:ArrayCollection        = new ArrayCollection([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30]);
+			
+			private var _showFilterControls:Boolean        = true;
+			
+			private var _page:PageDTO;
+			private var _totalPages:int;
+			
+			[Bindable]
+			public function get showFilterControls():Boolean
+			{
+				return _showFilterControls;
+			}
+			
+			public function set showFilterControls(value:Boolean):void
+			{
+				_showFilterControls = value;
+			}
+			
+			[Bindable]
+			public function get totalPages():int
+			{
+				return _totalPages;
+			}
+			
+			public function set totalPages(value:int):void
+			{
+				_totalPages = value;
+			}
+			
+			
+			[Bindable(event="PageChange")]
+			public function get page():PageDTO
+			{
+				return _page;
+			}
+			
+			public function set page(value:PageDTO):void
+			{
+				if( _page !== value)
+				{
+					_page = value;
+					dispatchEvent(new Event("PageChange"));
+					
+					totalPages = Math.ceil(Number(page.totalRecords)/page.pageSize);
+					
+					if (totalPages == 0)
+						totalPages = 1; //default page is always one;
+					
+					id_GoToFirstPage.enabled = !(page.pageNumber == 1);
+					id_GoToNextPage.enabled = (page.pageNumber + 1) <= totalPages;
+					id_GoToPreviousPage.enabled = (page.pageNumber - 1) >= 1;
+					id_GoToLastPage.enabled = !(page.pageNumber == totalPages);
+					
+					selectTypes();
+				}
+			}
+			
+			private function checkAndSetDateRule():Boolean
+			{
+				var canRefresh:Boolean = true;
+				
+				if (isValidDateRangeProvided()) // case if both dates are selected
+				{
+					page.fromDate = id_FromDate.selectedDate;
+					page.toDate = id_ToDate.selectedDate;
+				}
+				
+				else if (!UtilityFunctions.IsNullOrEmpty(id_FromDate.selectedDate)) // case if only from date is selected
+				{
+					page.fromDate = id_FromDate.selectedDate;
+					page.toDate = id_FromDate.selectedDate;
+				}
+				
+				else if (!UtilityFunctions.IsNullOrEmpty(id_ToDate.selectedDate)) // case if only to date is selected
+				{
+					page.fromDate = id_ToDate.selectedDate;
+					page.toDate = id_ToDate.selectedDate;
+				}
+				
+				else if (id_views.selectedIndex == 1)//case if visit date filter option is selected but to and from dates are not selected, then view should not be refreshed
+				{
+					canRefresh = false;
+				}
+				
+				return canRefresh;
+			}
+			
+			private function clearDateRange():void
+			{
+				id_FromDate.selectedDate = null;
+				id_ToDate.selectedDate = null;
+				
+				page.fromDate = QSConstants.NULL_DATE;
+				page.toDate = QSConstants.NULL_DATE;
+			}
+			
+			private function clearVisitRange():void
+			{
+				id_NumLastVisits.textInput.text = "";
+				page.lastVisitNumber = 0;
+			}
+			
+			private function isValidDateRangeProvided():Boolean
+			{
+				if (UtilityFunctions.IsNullOrEmpty(id_FromDate.selectedDate) || UtilityFunctions.IsNullOrEmpty(id_ToDate.selectedDate))
+				{
+					return false;
+				}
+				
+				return true;
+			}
+			
+			private function isValidVisitRangeProvided():Boolean
+			{
+				if (id_NumLastVisits.selectedIndex || id_NumLastVisits.textInput.text.length > 0)
+				{
+					if (isNaN(parseInt(id_NumLastVisits.textInput.text)))
+						return false;
+				}
+				
+				return true;
+			}
+			
+			private function cc(event:FlexEvent):void
+			{
+				loadStaticData();
+			}
+			
+			private function loadStaticData():void
+			{
+				acNumRecordPerPage = new ArrayCollection();
+				
+				var i:int;
+				
+				for (i = 5; i <= 200; i = i + 5)
+				{
+					acNumRecordPerPage.addItem(i);
+				}
+			}
+			
+			private function selectTypes():void
+			{
+				if (!UtilityFunctions.IsNullOrEmpty(page.fromDate) && ! UtilityFunctions.IsNullOrEmpty(page.toDate))
+				{
+					if (page.fromDate.fullYear != QSConstants.NULL_DATE.fullYear && page.toDate.fullYear != QSConstants.NULL_DATE.fullYear)
+					{
+						id_FromDate.selectedDate = page.fromDate;
+						id_ToDate.selectedDate = page.toDate;
+					}
+					
+					id_views.selectedIndex = 1;
+					radioGr.selection = id_rbDateRange;
+				}
+				
+				if (page.lastVisitNumber > 0)
+				{
+					id_NumLastVisits.selectedItem = page.lastVisitNumber;
+					
+					id_views.selectedIndex = 0;
+					radioGr.selection = id_rbNumVisit;
+				}
+				
+				if (page.pageSize > 0)
+				{
+					id_PageSize.selectedItem = page.pageSize;
+				}
+			}
+			
+			private function onPaginationClick(event:MouseEvent):void
+			{
+				var btn:Button = event.currentTarget as Button;
+				
+				switch (btn.id)
+				{
+					case "id_GoToFirstPage":
+						
+						if (page.pageNumber == 1)
+						{
+							Alert.show("This is First Page", "First Page", Alert.OK, FlexGlobals.topLevelApplication.mainContainer);
+						}
+						
+						else
+						{
+							page.pageNumber = 1;
+							dispatchEvent(new Event(GOTO_FIRST_PAGE, true));
+						}
+						
+						break;
+					
+					case "id_GoToPreviousPage":
+						
+						if ((page.pageNumber - 1) > 0)
+						{
+							page.pageNumber -= 1;
+							dispatchEvent(new Event(GOTO_PREVIOUS_PAGE, true));
+						}
+						
+						else
+						{
+							Alert.show("This is First Page", "First Page", Alert.OK, FlexGlobals.topLevelApplication.mainContainer);
+						}
+						
+						break;
+					
+					case "id_GoToNextPage":
+						
+						if ((page.pageNumber + 1) <= totalPages)
+						{
+							page.pageNumber += 1;
+							dispatchEvent(new Event(GOTO_NEXT_PAGE, true));
+						}
+						
+						else
+						{
+							Alert.show("This is Last Page", "Last Page", Alert.OK, FlexGlobals.topLevelApplication.mainContainer);
+						}
+						
+						break;
+					
+					case "id_GoToLastPage":
+						
+						if (page.pageNumber == totalPages)
+						{
+							Alert.show("This is Last Page", "Last Page", Alert.OK, FlexGlobals.topLevelApplication.mainContainer);
+						}
+						
+						else
+						{
+							page.pageNumber = totalPages;
+							dispatchEvent(new Event(GOTO_LAST_PAGE, true));
+						}
+						
+						break;
+					
+					case "id_Refresh":
+					case "id_Apply":
+						
+						page.pageNumber = 1; //new filter is applied, so first page should be requested
+						
+						if (checkAndSetDateRule())
+							dispatchEvent(new Event(REFRESH_VIEW, true));
+						
+						break;
+					
+					case "id_Clear":
+						
+						//QSUtilityFunctions.setDefaultValues( Page );
+						selectTypes();
+						dispatchEvent(new Event(REFRESH_VIEW, true));
+						
+						break;
+				}
+			}
+			
+			private function onFilterOptionsClick(event:ItemClickEvent):void
+			{
+				var value:String = radioGr.selectedValue.toString();
+				
+				if (value == "NumVisit")
+				{
+					id_views.selectedIndex = 0;
+					
+					clearDateRange();
+				}
+				else
+				{
+					id_views.selectedIndex = 1;
+					
+					clearVisitRange();
+				}
+			}
+			
+			private function onDateChange(event:CalendarLayoutChangeEvent):void
+			{
+				if (isValidDateRangeProvided())
+				{
+					page.fromDate = id_FromDate.selectedDate;
+					page.toDate   = id_ToDate.selectedDate;
+				}
+			}
+			
+			private function onLastVisitNumberChange(event:IndexChangeEvent):void
+			{
+				if (isValidVisitRangeProvided())
+				{
+					page.fromDate = QSConstants.NULL_DATE;
+					page.toDate = QSConstants.NULL_DATE;
+					
+					if (id_NumLastVisits.selectedItem)
+						page.lastVisitNumber = Number(id_NumLastVisits.selectedItem);
+					
+					else
+						page.lastVisitNumber = Number(id_NumLastVisits.textInput.text);
+				}
+			}
+			
+			private function onPageSizeChange(event:IndexChangeEvent):void
+			{
+				if (id_PageSize.selectedItem)
+				{
+					if (!isNaN( parseInt(id_PageSize.selectedItem)))
+					{
+						page.pageSize = parseInt(id_PageSize.selectedItem);
+					}
+				}
+				
+				else if (!isNaN(parseInt(id_PageSize.textInput.text)))
+				{
+					page.pageSize = parseInt(id_PageSize.textInput.text);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<s:RadioButtonGroup id="radioGr"  itemClick="onFilterOptionsClick(event)" />
+	</fx:Declarations>
+	<s:Group width="100%">
+		<s:layout>
+			<s:HorizontalLayout verticalAlign="middle" paddingTop="2" paddingLeft="1" paddingRight="1" gap="2" />
+		</s:layout>
+		
+		<s:SkinnableContainer height="19" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.buttonsBG" width="80" left="2" verticalCenter="0">
+			<s:layout>
+				<s:HorizontalLayout gap="0"  verticalAlign="middle" horizontalAlign="right" />
+			</s:layout>
+			
+			<s:Button id="id_GoToFirstPage" width="18" buttonMode="true" toolTip="First"
+					  click="onPaginationClick(event)"
+					  skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.paginationFirstBtn"/>
+			<buttonSkins:buttonNavSeparator width="1" height="100%"/>
+			
+			<s:Button id="id_GoToPreviousPage" width="18" buttonMode="true" toolTip="Previous" 
+					  click="onPaginationClick(event)" 
+					  skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.paginationPrevBtn"/>
+			<buttonSkins:buttonNavSeparator  width="1"  height="100%"/>
+			<s:Button id="id_GoToNextPage" width="18" buttonMode="true" toolTip="Next"			
+					  click="onPaginationClick(event)"  
+					  skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.paginationNextBtn"/>
+			
+			<buttonSkins:buttonNavSeparator  width="1" height="100%"/>
+			<s:Button id="id_GoToLastPage" width="18" buttonMode="true" toolTip="Last" 	 	
+					  click="onPaginationClick(event)" 
+					  skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.paginationLastBtn"/>
+			
+		</s:SkinnableContainer>
+		
+		<s:Label text="Page {page.pageNumber} of { totalPages }" paddingLeft="2" paddingRight="2" color="#FFFFFF" verticalCenter="0" fontFamily="calibri" fontSize="10" maxDisplayedLines="1" maxWidth="80"/>
+		
+		<s:HGroup width="100%" textAlign="left" verticalAlign="middle" paddingLeft="2" paddingRight="3" visible="{showFilterControls}" includeInLayout="{showFilterControls}" verticalCenter="0">
+			
+			<s:RadioButton id="id_rbNumVisit" color="#FFFFFF" label="No. of Visits" value="NumVisit" group="{radioGr}"  selected="true" fontFamily="calibri" fontSize="10" />
+			<s:RadioButton id="id_rbDateRange"  color="#FFFFFF" label="Date Range" value="DateRange" group="{radioGr}" fontFamily="calibri" fontSize="10"  />
+			<components:LabelComboBox id="id_PageSize" width="70" prompt="Page Size" toolTip="Page size" dataProvider="{acNumRecordPerPage}" change="onPageSizeChange(event)"  />
+			
+			<mx:ViewStack id="id_views" width="100%" creationPolicy="all">
+				<s:NavigatorContent  width="100%" height="100%"  >
+					
+					<components:LabelComboBox id="id_NumLastVisits" width="60" prompt="Visits" toolTip="show record for last number of visits" dataProvider="{acNumVisits}"
+											  change="onLastVisitNumberChange(event)" includeInLayout="{id_NumLastVisits.visible}"/>
+					
+				</s:NavigatorContent>
+				
+				<s:NavigatorContent  width="100%" height="100%"  >
+					
+					<s:HGroup width="100%" verticalAlign="middle" >
+						
+						<components:LabelDateField id="id_FromDate" width="100%" prompt="From" minWidth="0" selectableRange="{{rangeEnd:new Date()}}" 
+												   change="onDateChange(event)" textInputStyleName="mandatoryDateSkin"  yearNavigationEnabled="true"/>
+						<components:LabelDateField id="id_ToDate"  width="100%"  prompt="To" minWidth="0" selectableRange="{{rangeEnd:new Date()}}"  
+												   change="onDateChange(event)" textInputStyleName="mandatoryDateSkin"  yearNavigationEnabled="true"/>
+					</s:HGroup>
+					
+				</s:NavigatorContent>
+			</mx:ViewStack>
+		</s:HGroup>
+		
+		<s:Button id="id_Apply" label="Apply" useHandCursor="true" toolTip="Apply" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.ListBtn2" buttonMode="true" click="onPaginationClick(event)" width="40" right="44" verticalCenter="0" visible="{showFilterControls}" includeInLayout="{showFilterControls}"/>
+		<s:Button id="id_Clear" label="Clear" useHandCursor="true" toolTip="Clear" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.ListBtn2" buttonMode="true" click="onPaginationClick(event)" width="40" right="2" verticalCenter="0" visible="{showFilterControls}" includeInLayout="{showFilterControls}"/>
+	</s:Group>
+</s:SkinnableContainer>

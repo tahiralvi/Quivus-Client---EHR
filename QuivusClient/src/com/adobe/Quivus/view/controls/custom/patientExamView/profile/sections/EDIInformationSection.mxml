@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:CollapsiblePanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							 xmlns:s="library://ns.adobe.com/flex/spark" 
+							 xmlns:mx="library://ns.adobe.com/flex/mx" 
+							 title="EDI Details"
+							 creationComplete="collapsiblepanel1_creationCompleteHandler(event)" 
+							 xmlns:components1="com.gazuntite.controls.extended.components.*"
+							 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.TransparentCollapsiblePanelSkin;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+						
+			private var delayReasonCodeList:ArrayCollection = null;			
+			private var exceptionCodeList:ArrayCollection = null;
+			
+			protected function collapsiblepanel1_creationCompleteHandler(event:FlexEvent):void
+			{				
+				
+			}			
+			
+			/*private var _isData:String;
+			
+			[Bindable]
+			public function get isData():String
+			{
+				return _isData;
+			}
+			
+			public function set isData(value:String):void
+			{
+				_isData = value;
+				if(model.patientProfileDTO._PatientDTO.ReferralNumber.length > 0)
+				{
+					hasChange = true;
+					return;
+				}
+				if(model.patientProfileDTO._PatientDTO.PriorAuthorizationNumber.length > 0)
+				{
+					hasChange = true;
+					return;
+				}
+				if(model.patientProfileDTO._PatientDTO.IDENumber.length > 0)
+				{
+					hasChange = true;
+					return;
+				}
+				
+			} */
+			
+			 
+			
+		]]>
+	</fx:Script>
+	<!--<fx:Binding source="model.patientProfileDTO._PatientDTO.ExpiryDate" destination="isData" />
+	<fx:Binding source="model.patientProfileDTO._PatientDTO.AcceptAssignmentTypeID" destination="isData" />
+	<fx:Binding source="model.patientProfileDTO._PatientDTO.FatherName" destination="isData" />
+	<fx:Binding source="model.patientProfileDTO._PatientDTO.OccupationType.OccupationName" destination="isData" />
+	<fx:Binding source="model.patientProfileDTO._PatientDTO.EthinicityType.EthinicityName" destination="isData" />
+	<fx:Binding source="model.motherPrimaryPhoneDTO.PhoneNumber" destination="isData" />
+	<fx:Binding source="model.fatherPrimaryPhoneDTO.PhoneNumber" destination="isData" />
+	<fx:Binding source="model.patientProfileDTO._PatientDTO.EmployerName" destination="isData" />
+	<fx:Binding source="model.patientProfileDTO._PatientDTO.MaritalStatusType.MaritalStatusName" destination="isData" />
+	<fx:Binding source="model.patientLanguageDTO.PatientLanguageAbilityMode.LangaugeAbilityModeDescription" destination="isData" />
+	<fx:Binding source="model.patientlanguage" destination="isData" />
+	<fx:Binding source="model.patientProfileDTO._PatientDTO.MedicareNumber" destination="isData" />-->
+	
+	
+	
+	<components1:layout >
+		<s:VerticalLayout paddingBottom="5" paddingLeft="5" paddingRight="5" gap="0" />
+	</components1:layout >
+	
+	<s:HGroup gap="0" width="100%" paddingBottom="5" paddingRight="5" paddingLeft="5">
+		<s:SkinnableContainer width="100%"  skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.otherInfoSectionBG" >
+			<s:layout>
+				<s:HorizontalLayout paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="2" />
+			</s:layout>	
+			<s:VGroup width="100%" maxWidth="95" gap="7" >
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  tabStops="S0 S50 S100 S150" text="Illness/LMP Date:"  />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  tabStops="S0 S50 S100 S150" text="Last Seen Date:"  />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  tabStops="S0 S50 S100 S150" text="Last X-Ray Date:"  />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  tabStops="S0 S50 S100 S150" text="Last Worked Date:"  />
+			</s:VGroup>
+			
+			<s:VGroup width="100%" maxWidth="95" horizontalAlign="left" gap="7" >
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" text="{model.patientProfileDTO._PatientDTO.IllnessDate}" toolTip="{model.patientProfileDTO._PatientDTO.IllnessDate}" maxDisplayedLines="1" maxWidth="90" />
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" text="{model.patientProfileDTO._PatientDTO.LastSeenDate}" toolTip="{model.patientProfileDTO._PatientDTO.LastSeenDate}" maxDisplayedLines="1" maxWidth="90" />
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" text="{model.patientProfileDTO._PatientDTO.LastXRayDate}" toolTip="{model.patientProfileDTO._PatientDTO.LastXRayDate}" maxDisplayedLines="1" maxWidth="90" />
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" text="{model.patientProfileDTO._PatientDTO.LastWorkedDate}" toolTip="{model.patientProfileDTO._PatientDTO.LastWorkedDate}" maxDisplayedLines="1" maxWidth="90" />
+			</s:VGroup>	
+		</s:SkinnableContainer>
+		<s:SkinnableContainer width="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.otherInfoSectionBG" >
+			<!--  skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.patientProfileColumnBG">-->
+			<s:layout>
+				<s:HorizontalLayout paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5" />
+			</s:layout>
+			<s:VGroup width="100%" maxWidth="90" gap="7">
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  tabStops="S0 S50 S100 S150"  text="Admission Date:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  tabStops="S0 S50 S100 S150"  text="Discharge Date:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  tabStops="S0 S50 S100 S150"  text="Expiry Date:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  tabStops="S0 S50 S100 S150"  text="PA Number:" toolTip="Prior Authorization Number" />
+			</s:VGroup>
+			<s:VGroup width="100%" maxWidth="100" horizontalAlign="left" gap="7">
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" text="{model.patientProfileDTO._PatientDTO.AdmissionDate}" toolTip="{model.patientProfileDTO._PatientDTO.AdmissionDate}" maxDisplayedLines="1" maxWidth="90" />
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" text="{model.patientProfileDTO._PatientDTO.DischargeDate}" toolTip="{model.patientProfileDTO._PatientDTO.DischargeDate}" maxDisplayedLines="1" maxWidth="90" />
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" text="{model.patientProfileDTO._PatientDTO.ExpiryDate}" toolTip="{model.patientProfileDTO._PatientDTO.ExpiryDate}" maxDisplayedLines="1" maxWidth="90" />
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" text="{model.patientProfileDTO._PatientDTO.PriorAuthorizationNumber}" toolTip="{model.patientProfileDTO._PatientDTO.PriorAuthorizationNumber}" maxDisplayedLines="1" maxWidth="90" />
+			</s:VGroup>
+		</s:SkinnableContainer>
+		<s:SkinnableContainer width="100%"  skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.otherInfoSectionBG" >
+			<s:layout>
+				<s:HorizontalLayout paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5" />
+			</s:layout>
+			<s:VGroup width="100%" maxWidth="90" gap="7" >
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  tabStops="S0 S50 S100 S150" text="Referral Access#:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  tabStops="S0 S50 S100 S150" text="IDE Number:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  tabStops="S0 S50 S100 S150" text="Signature On File:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  tabStops="S0 S50 S100 S150" text="Signature Date:" />
+			</s:VGroup>
+			
+			<s:VGroup width="100%" maxWidth="95" horizontalAlign="left" paddingRight="5" gap="7" >
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" text="{model.patientProfileDTO._PatientDTO.ReferralNumber}" toolTip="{model.patientProfileDTO._PatientDTO.ReferralNumber}" maxDisplayedLines="1" maxWidth="90" />
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" text="{model.patientProfileDTO._PatientDTO.IDENumber}" toolTip="{model.patientProfileDTO._PatientDTO.IDENumber}" maxDisplayedLines="1" maxWidth="90" />
+				<s:CheckBox id="id_signaturOnfile" color="#000000" fontFamily="Calibri" fontSize="12"  maxWidth="90" enabled="false" selected="{model.patientProfileDTO._PatientDTO.SignatureOnFile}"/>
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" text="{model.patientProfileDTO._PatientDTO.SignatureDate}" toolTip="{model.patientProfileDTO._PatientDTO.SignatureDate}" maxDisplayedLines="1" maxWidth="90" />
+			</s:VGroup>
+		</s:SkinnableContainer>
+		
+	</s:HGroup>
+	
+	<s:HGroup gap="0" width="100%" paddingBottom="5" paddingRight="5" paddingLeft="5">
+		<s:SkinnableContainer width="100%"  skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.otherInfoSectionBG">
+			<s:layout>
+				<s:HorizontalLayout paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="2" />
+			</s:layout>	
+			<s:VGroup width="100%" maxWidth="115" gap="7" >
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  tabStops="S0 S50 S100 S150" text="Assignment Indicator:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  tabStops="S0 S50 S100 S150" text="Timely Filing Indicator:"  />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  tabStops="S0 S50 S100 S150" text="Pregnancy:"  />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  tabStops="S0 S50 S100 S150" text="EPSDT:"  />
+			</s:VGroup>
+			
+			<s:VGroup width="100%" maxWidth="95" horizontalAlign="left" gap="7" >
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" text="{model.patientProfileDTO._PatientDTO.AcceptAssignment.substring(0,1)}" toolTip="{model.patientProfileDTO._PatientDTO.AcceptAssignment}" maxDisplayedLines="1" maxWidth="90" />
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" text="{model.EDItimelyFilingIndicator.substring(0,2)}" toolTip="{model.EDItimelyFilingIndicator}" maxDisplayedLines="1" maxWidth="90" />
+				<s:CheckBox color="#000000" fontFamily="Calibri" fontSize="12"  maxWidth="90"  enabled="false" selected="{model.patientProfileDTO._PatientDTO.PregnancyIndicator}" />
+				<s:CheckBox color="#000000" fontFamily="Calibri" fontSize="12"  maxWidth="90"  enabled="false" selected="{model.patientProfileDTO._PatientDTO.EPSDT}" />
+			</s:VGroup>	
+		</s:SkinnableContainer>
+		<s:SkinnableContainer width="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.otherInfoSectionBG" >
+			<!--  skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.patientProfileColumnBG">-->
+			<s:layout>
+				<s:HorizontalLayout paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5" />
+			</s:layout>
+			<s:VGroup width="100%" maxWidth="190" gap="7">
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  tabStops="S0 S50 S100 S150"  text="CMS Secondary Type:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  tabStops="S0 S50 S100 S150"  text="Service Authorization Exception Code:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  tabStops="S0 S50 S100 S150"  text="Emergency:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  tabStops="S0 S50 S100 S150"  text="Family Planning:" toolTip="Prior Authorization Number" />
+			</s:VGroup>			
+		</s:SkinnableContainer>
+		<s:SkinnableContainer width="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.otherInfoSectionBG" >
+			<s:layout>
+				<s:HorizontalLayout paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5" />
+			</s:layout>			
+			<s:VGroup width="100%" maxWidth="95" horizontalAlign="left" paddingRight="5" gap="7" >
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" text="{model.patientProfileDTO._PatientDTO.CMSSecondaryType.substring(0,2)}" toolTip="{model.patientProfileDTO._PatientDTO.CMSSecondaryType}" maxDisplayedLines="1" maxWidth="90" />
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" text="{model.EDIexceptionCode.substring(0,2)}" toolTip="{model.EDIexceptionCode}" maxDisplayedLines="1" maxWidth="90" />
+				<s:CheckBox id="id_emergency" color="#000000" fontFamily="Calibri" fontSize="12"  maxWidth="90" enabled="false" selected="{model.patientProfileDTO._PatientDTO.Emergency}"/>
+				<s:CheckBox color="#000000" fontFamily="Calibri" fontSize="12"  maxWidth="90" enabled="false" selected="{model.patientProfileDTO._PatientDTO.FamilyPlanning}" />
+			</s:VGroup>
+		</s:SkinnableContainer>
+		
+	</s:HGroup>
+	
+</components1:CollapsiblePanel>

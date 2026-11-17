@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SparkSkin xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" 
+             xmlns:fb="http://ns.adobe.com/flashbuilder/2009" alpha.disabled="0.5">
+    
+    <!-- host component -->
+    <fx:Metadata>
+        <![CDATA[ 
+        /** 
+         * @copy spark.skins.spark.ApplicationSkin#hostComponent
+         */
+        [HostComponent("spark.components.Button")]
+        ]]>
+    </fx:Metadata>
+    
+    <!-- states -->
+    <s:states>
+        <s:State name="up" />
+        <s:State name="over" />
+        <s:State name="down" />
+        <s:State name="disabled" />
+    </s:states>
+    
+    <!-- layer 1: shadow -->
+    <!--- @private -->
+    
+    <!-- layer 2: fill -->
+    <!--- @private -->
+	<s:Group x="0" y="0">
+		<s:Rect height="16" id="rect2" radiusX="2.99979" radiusY="2.99979" visible.down="false" visible.over="false" width="55" x.disabled="0" x.up="0" y="0">
+			<s:fill>
+				<s:LinearGradient rotation="90">
+					<s:GradientEntry alpha="1.0" alpha.disabled="1.0" color="#FDFDFD" color.disabled="#DBDBDB" ratio="0"/>
+					<s:GradientEntry alpha="1.0" alpha.disabled="1.0" color="#CECECE" color.disabled="#C4C4C4" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+			<s:filters>
+				<s:DropShadowFilter alpha="1" angle="90" blurX="1" blurY="1" color="#666666" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+				<s:DropShadowFilter alpha="0.2" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+			</s:filters>
+		</s:Rect>
+		<s:Rect height="16" id="rect0" includeIn="down,over" radiusX="2.99979" radiusY="2.99979" width="55" x="0" y="0">
+			<s:fill>
+				<s:LinearGradient rotation="90">
+					<s:GradientEntry alpha="1.0" color="#AFD1FF" ratio="0"/>
+					<s:GradientEntry alpha="1.0" color="#6593D5" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+			<s:filters>
+				<s:DropShadowFilter alpha="1" angle="90" blurX="1" blurY="1" color="#666666" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+				<s:DropShadowFilter alpha="0.2" alpha.down="1" angle="90" blurX="0" blurX.down="2" blurY="0" blurY.down="2" color="#FFFFFF" color.down="#000000" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+			</s:filters>
+		</s:Rect>
+		<s:RichText color="#333333"  text="{hostComponent.label}" color.disabled="#888888" fontFamily="Calibri" fontSize="10" kerning="on" tabStops="S0" tabStops.disabled="S0"  verticalCenter="0" horizontalCenter="0"/>
+	</s:Group>
+</s:SparkSkin>

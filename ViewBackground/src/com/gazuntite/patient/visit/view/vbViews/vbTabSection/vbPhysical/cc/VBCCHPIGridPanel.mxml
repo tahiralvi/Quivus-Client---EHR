@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="utf-8"?>
+<common:VBCollapsibleView xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:viewBackground="com.gazuntite.patient.visit.view.vbViews.*"
+					  xmlns:paging="com.gazuntite.patient.visit.view.vbViews.paging.*"
+					  xmlns:common="com.gazuntite.patient.visit.view.common.*"
+					  creationComplete="cc(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.VBdictationBtnSelected;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.VBnotesBtnSelected;
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.VBIconsBlackButton;
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.VBIconsButton;
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.VBIconsButtonFilled;
+			import com.gazuntite.common.dto.physical.ccHpi.HPI_CCDTO;
+			import com.gazuntite.common.util.QSAppUtils;
+			import com.gazuntite.common.util.QSConstants;
+			import com.gazuntite.common.view.events.DataGridActionsEvent;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.patient.visit.dto.PageDTO;
+			import com.gazuntite.patient.visit.event.LoadHPIByPatientIdPagedEvent;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			import com.gazuntite.patient.visit.utlis.VBUtilityFunctions;
+			import com.gazuntite.patient.visit.view.vbViews.VBSectionDictation;
+			import com.gazuntite.patient.visit.view.vbViews.VBSectionNotes;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var model:VBModelLocator = VBModelLocator.getInstance();
+			private var moduleConstantName:String = QSConstants.CHIEF_COMPLAINT_MODULE_NAME;
+			
+			private var dictationGridPanel:VBSectionDictation;
+			private var notesGridPanel:VBSectionNotes;
+			
+			private var _hasViewChanged:Boolean;
+			private var vb_IsModelUpdated:Boolean;
+			private var m_oNotesDTOList:ArrayCollection;
+			
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+
+			public function get IsModelUpdated():Boolean{
+				
+				return vb_IsModelUpdated;
+				
+			}
+			
+			public function set IsModelUpdated(value:Boolean):void{
+				
+				vb_IsModelUpdated = value;
+				
+				if(vb_IsModelUpdated )
+				{
+					var notesDTOList:ArrayCollection = new ArrayCollection();//QSUtilityFunctions.getModuleNoteListForViewBackGround(moduleConstantName);
+					var dictationDTOList:ArrayCollection = new ArrayCollection();//QSUtilityFunctions.getModuleDictationListForViewBackGround(moduleConstantName);
+					
+					if(dictationDTOList && dictationDTOList.length > 0)
+					{
+						id_header.id_Voice.setStyle("skinClass", VBdictationBtnSelected);
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+					}
+					
+					if(notesDTOList && notesDTOList.length > 0)
+					{
+						id_header.id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected);
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+					}
+				}
+			}
+			
+			public function get notesDTOList():ArrayCollection
+			{
+				return m_oNotesDTOList;
+			}
+			
+			public function set notesDTOList(value:ArrayCollection):void
+			{
+				m_oNotesDTOList = value;
+			}
+			
+			public function displayRowNum(item:Object, iCol:int):String
+			{
+				var strRowNum:String = "";
+				
+				/* if (id_DataGrid.dataProvider)
+				{
+				var rowNum:int = id_DataGrid.dataProvider.getItemIndex(item) + 1;
+				strRowNum = String(rowNum);
+				} */
+				
+				return strRowNum;
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				if(model.HPI_CCDTOListByPatient!=null){	
+					model.HPI_CCDTOListByPatient.filterFunction=myFilter;
+					model.HPI_CCDTOListByPatient.refresh();
+				}
+			}
+			
+			private function myFilter(obj:*):Boolean
+			{
+				
+				if(model.vbFilter == QSConstants.BY_VISIT)
+				{
+					if(model.vbVisitId == obj.VisitID)
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+				
+				return true;
+				
+			}
+			
+			//var dictationDTOList:ArrayCollection = UtilityFunctions.getModuleDictationListForViewBackGround(Constants.CHIEF_COMPLAINT_MODULE_NAME);
+			private function cc(event:FlexEvent):void
+			{
+				if (this.expandedView)
+				{
+					id_header.HeadingLable = id_header.HeadingLable.toUpperCase();
+				}
+				else
+				{
+					id_header.HeadingLable = id_header.HeadingLable.toLowerCase();
+				}
+				
+				id_header.id_OptionPopUp.displayPopUp = true;
+				
+				id_header.id_iconButtons.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					//if(id_Area.visible)
+					{
+						
+						if(id_header.id_OptionPopUp.displayPopUp)
+						{
+							id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						}
+						else
+						{
+							id_header.id_iconButtons.setStyle("skinClass", VBIconsButton);	
+						}
+					}
+					
+				});
+				
+				id_header.id_Voice.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					var notesDTOList:ArrayCollection = new ArrayCollection();//QSUtilityFunctions.getModuleNoteListForViewBackGround(moduleConstantName);
+					var dictationDTOList:ArrayCollection = new ArrayCollection();//QSUtilityFunctions.getModuleDictationListForViewBackGround(moduleConstantName);
+					
+					id_notesDictation.notesDTOList = notesDTOList;
+					id_notesDictation.DictationDTOList = dictationDTOList;
+					id_notesDictation.id_Area.visible 		= true;
+					id_notesDictation.id_Area.includeInLayout = true;
+					//id_notesDictation.id_VBViews.selectedIndex = 1;						
+					id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+					id_header.id_iconButtons.selected = false;
+					id_header.id_OptionPopUp.displayPopUp = false;
+					
+					if (this.expandedView)
+					{
+						event.stopImmediatePropagation();
+					}
+				});			
+				
+				id_header.id_NotesBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					var notesDTOList:ArrayCollection = new ArrayCollection();//QSUtilityFunctions.getModuleNoteListForViewBackGround(moduleConstantName);
+					var dictationDTOList:ArrayCollection = new ArrayCollection();//QSUtilityFunctions.getModuleDictationListForViewBackGround(moduleConstantName);
+					
+					id_notesDictation.notesDTOList = notesDTOList;
+					id_notesDictation.DictationDTOList = dictationDTOList;
+					{
+						id_notesDictation.id_Area.visible 		= true;
+						id_notesDictation.id_Area.includeInLayout = true;						
+						//id_notesDictation.id_VBViews.selectedIndex = 0;
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						id_header.id_iconButtons.selected = false;
+						id_header.id_OptionPopUp.displayPopUp = false;
+					}
+					
+					if (this.expandedView)
+					{
+						event.stopImmediatePropagation();
+					}
+				});
+				
+				id_header.id_OptionPopUp.displayPopUp = false;
+				
+				id_List.addEventListener(DataGridActionsEvent.SAVE_RECORD_CLICK, saveRecordClickHandler, false, 0, true);
+				id_List.addEventListener(DataGridActionsEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				
+			}
+			
+			private function saveRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if (!event.data)
+					return;
+				
+				var hpi_ccDTO:HPI_CCDTO;
+				
+				if (event.data is HPI_CCDTO)
+					hpi_ccDTO = event.data as HPI_CCDTO;
+				
+				if (!hpi_ccDTO)
+					return;
+				
+				if (!hpi_ccDTO.IsDirty)
+					return;
+			}
+			
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				/*if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_CCHPI ) )//Tahir Alvi - implement security check 
+				{
+					var selectedIdx:int = id_List.selectedIndex;
+					var dto:HPI_CCDTO 	= HPI_CCDTO(event.currentTarget.selectedItem);
+					var hpiID:int 		= dto.PatientHPIID;
+					
+					if (hpiID == 0)
+					{
+						model.quickInputDTO.Physical.HPI_CC.removeItemAt(selectedIdx);
+						if (model.quickInputDTO.Physical.HPI_CC.length <= 0)
+						{
+							//hasViewChanged = isGetEdited();
+						}
+					}
+					else
+					{
+						UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+						{
+							dto.IsDeleted = true;
+							dto.IsDirty = true;
+							model.HPI_CCDTOListByPatient.filterFunction = filterDeletedItems;
+							model.HPI_CCDTOListByPatient.refresh();
+							
+							hasViewChanged = true;
+						});
+					}
+					
+				}*/
+			}
+			
+			private function switchPageForGridView( event:Event ):void
+			{	
+				if (VBUtilityFunctions.isNullOrEmptyPage(model.HPI_CCCurrentPageByPatient))
+					model.HPI_CCCurrentPageByPatient = VBUtilityFunctions.getNewPageDTOWithDefaultValues();
+				
+				var lphpicc:LoadHPIByPatientIdPagedEvent = new LoadHPIByPatientIdPagedEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent(lphpicc); 
+			}
+			
+			private function id_PaginationFilterView_RefreshViewHandler(event:Event):void
+			{
+				if (!VBUtilityFunctions.isNullOrEmptyPage(id_PaginationFilterView.page))
+				{
+					model.HPI_CCCurrentPageByPatient = id_PaginationFilterView.page;
+				}
+				
+				var lhpi:LoadHPIByPatientIdPagedEvent = new LoadHPIByPatientIdPagedEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent(lhpi); 
+			}	
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<common:headerContents>
+		<s:Group id="id_mainHeader" width="100%" height="24"> <!--minWidth="{ChromeUtil.topLevelMainContainer.width - 70}"-->
+			<s:layout>
+				<s:VerticalLayout verticalAlign="bottom" horizontalAlign="center" />
+			</s:layout>
+			<viewBackground:VBSectionHeader id="id_header" width="{id_mainHeader.width - 8}" HeadingLable="{QSConstants.VB_SECTION_NAME_CC_HPI}" 
+											Skin="com.adobe.gazuntite.skins.viewBackground.skinnableContainers.VBCCPanelSkin"/>	<!-- SectionNameID="{QSSecurityUtil.VB_CCHPI}"	-->				   
+		</s:Group>
+	</common:headerContents>
+	<!--<custom:Contents>-->
+		<s:SkinnableContainer id="id_contents" width="100%" height="100%" skinClass="com.adobe.gazuntite.skins.viewBackground.skinnableContainers.VBCCPanelSkin">
+			<s:layout>
+				<s:VerticalLayout horizontalAlign="center" verticalAlign="top" gap="1" paddingLeft="4" paddingRight="4" paddingBottom="4" paddingTop="0" />
+			</s:layout>			
+			<s:Button label="Filter" click="button1_clickHandler(event)" visible="false" includeInLayout="false" id="id_applyFiler"/>
+			<!--<s:HGroup id="id_NotesArea" width="100%" paddingTop="0" />-->
+			<viewBackground:VBSectionLevelNotesDictation id="id_notesDictation" width="100%" />
+			
+			<paging:PaginationFilterView id="id_PaginationFilterView" width="100%" page="{model.HPI_CCCurrentPageByPatient}"
+										 GoToFirstPage="switchPageForGridView(event)" GoToNextPage="switchPageForGridView(event)" 
+										 GoToPreviousPage="switchPageForGridView(event)" GoToLastPage="switchPageForGridView(event)"
+										 RefreshView="id_PaginationFilterView_RefreshViewHandler(event)"
+										 />
+			
+			<s:List id="id_List" maxHeight="240"  width="100%" itemRenderer="com.gazuntite.patient.visit.view.vbViews.renderer.VBChiefComplaintRenderer"
+					contentBackgroundColor="#ECF0DC" selectionColor="#ECF0DC"					
+					dataProvider="{model.HPI_CCDTOListByPatient}"
+					>
+				<s:layout>
+					<s:VerticalLayout useVirtualLayout="false" requestedRowCount="{id_List.dataProvider.length}" requestedMinRowCount="0" 
+									  paddingLeft="0" paddingRight="0" paddingTop="0" paddingBottom="0" gap="0" verticalAlign="top" horizontalAlign="center"/>
+				</s:layout>
+			</s:List>
+		</s:SkinnableContainer>
+	<!--</custom:Contents>-->
+</common:VBCollapsibleView>

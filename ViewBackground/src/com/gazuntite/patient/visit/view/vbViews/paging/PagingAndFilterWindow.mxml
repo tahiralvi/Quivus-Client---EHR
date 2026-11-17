@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components:PopupGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   creationComplete="popupgroup1_creationCompleteHandler(event)" xmlns:components="com.gazuntite.controls.extended.components.*"
+					   >
+	<fx:Declarations>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.common.util.QSConstants;
+			import com.gazuntite.patient.visit.dto.PageDTO;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CalendarLayoutChangeEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ItemClickEvent;
+			import mx.formatters.DateFormatter;
+			
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable]
+			private var acNumRecordPerPage:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var acNumVisits:ArrayCollection = new ArrayCollection([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30]);
+			
+			private var _page:PageDTO;
+			
+			[Bindable(event="PageChange")]
+			public function get page():PageDTO
+			{
+				return _page;
+			}
+			
+			public function set page(value:PageDTO):void
+			{
+				if( _page !== value)
+				{
+					_page = value;
+					dispatchEvent(new Event("PageChange"));
+				}
+			}
+			
+			protected function labeldatefield1_changeHandler(event:CalendarLayoutChangeEvent):void
+			{
+				// TODO Auto-generated method stub
+			}
+			
+			
+			protected function id_btnSearch_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+			}
+			
+			
+			protected function OK_clickHandler(event:MouseEvent):void
+			{
+				var df:DateFormatter 			= new DateFormatter();
+				df.formatString 				= "MM-DD-YYYY";
+				
+				page.pageNumber = 1;
+				page.pageSize = 200;
+				
+				if( isValidVisitRangeProvided() ) // case if only visit range is selected
+				{
+					page.fromDate 	= QSConstants.NULL_DATE;
+					page.toDate 	= QSConstants.NULL_DATE;
+					
+					page.lastVisitNumber = Number( id_NumLastVisits.textInput.text );
+				}
+				else if( isValidDateRangeProvided() ) // case if both dates are selected
+				{
+					page.fromDate = id_FromDate.selectedDate;
+					page.toDate = id_ToDate.selectedDate;
+				}
+				else if( ! UtilityFunctions.IsNullOrEmpty( id_FromDate.selectedDate ) ) // case if only from date is selected
+				{
+					page.fromDate 	= id_FromDate.selectedDate;
+					page.toDate 	= id_FromDate.selectedDate;
+				}
+				else if( ! UtilityFunctions.IsNullOrEmpty( id_ToDate.selectedDate ) ) // case if only to date is selected
+				{
+					page.fromDate 	= id_ToDate.selectedDate;
+					page.toDate 	= id_ToDate.selectedDate;
+				}
+				else
+				{
+					Alert.show( "provide valid value for Visit Range or Date Range","invalid input", Alert.OK, this );
+					return;
+				}
+				
+				
+				page.pageSize = getPageSixe();
+				
+				
+				removePopup();
+			}
+			
+			private function isValidDateRangeProvided():Boolean
+			{
+				if( UtilityFunctions.IsNullOrEmpty( id_FromDate.selectedDate ) || UtilityFunctions.IsNullOrEmpty( id_ToDate.selectedDate ) )
+				{
+					return false;
+				}
+				
+				return true;
+			}
+			
+			private function isValidVisitRangeProvided():Boolean
+			{
+				if( id_NumLastVisits.selectedIndex < 0 || id_NumLastVisits.textInput.text.length > 0 )
+				{
+					if( isNaN( parseInt( id_NumLastVisits.textInput.text ) ) )
+					{
+						return false;
+					}
+					else
+					{
+						return true;
+					}
+				}
+				
+				return false;
+			}
+			
+			private function getPageSixe():Number
+			{
+				var ps:Number;
+				
+				if( ! isNaN( parseInt( id_PageSize.textInput.text ) ) )
+					ps = parseInt(id_PageSize.textInput.text);
+				
+				ps = UtilityFunctions.IsNullOrEmpty( ps ) ? 200: ps; 
+				
+				if( ps > 999 )
+					ps = 999;
+				
+				return ps;
+			}
+			
+			protected function Cancel_clickHandler(event:MouseEvent):void
+			{
+				removePopup();
+			}
+			
+			
+			protected function popupgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				acNumRecordPerPage = new ArrayCollection();
+				var i:int;
+				for( i = 5; i <= 200; i=i+5 )
+				{
+					acNumRecordPerPage.addItem( i );
+				}
+				
+				if( UtilityFunctions.IsNullOrEmpty(page) || UtilityFunctions.IsNullOrEmpty(page.lastVisitNumber) || UtilityFunctions.IsNullOrEmpty(page.pageSize))
+				{
+					id_NumLastVisits.selectedIndex = 3;
+					id_PageSize.selectedIndex      = 1;
+				}
+				else
+				{
+					id_NumLastVisits.selectedItem = page.lastVisitNumber;
+					id_PageSize.selectedItem = page.pageSize;
+				}
+				
+				selectTypes();
+			}
+			
+			private function selectTypes():void
+			{
+				if( ! UtilityFunctions.IsNullOrEmpty( page.fromDate ) && ! UtilityFunctions.IsNullOrEmpty( page.toDate ) )
+				{
+					if( page.fromDate.fullYear != QSConstants.NULL_DATE.fullYear && page.toDate.fullYear != QSConstants.NULL_DATE.fullYear )
+					{
+						id_FromDate.selectedDate = page.fromDate;
+						id_ToDate.selectedDate = page.toDate;
+					}
+					
+					id_views.selectedIndex 	= 1;
+					radioGr.selection 		= id_rbDateRange;
+				}
+				
+				if( page.lastVisitNumber > 0 )
+				{
+					id_NumLastVisits.selectedItem = page.lastVisitNumber;
+					
+					id_views.selectedIndex 	= 0;
+					radioGr.selection 		= id_rbNumVisit;
+				}
+				
+				if( page.pageSize > 0 )
+				{
+					id_PageSize.selectedItem = page.pageSize;
+				}
+			}
+			
+			protected function radioGr_itemClickHandler(event:ItemClickEvent):void
+			{
+				var val:String = radioGr.selectedValue.toString();
+				if( val == "NumVisit" )
+				{
+					id_views.selectedIndex = 0;
+					
+					clearDateRange();
+				}
+				else
+				{
+					id_views.selectedIndex = 1;
+					
+					clearVisitRange();
+				}
+			}
+			
+			private function clearDateRange():void
+			{
+				id_FromDate.selectedDate = null;
+				id_ToDate.selectedDate = null;
+				
+				page.fromDate = QSConstants.NULL_DATE;
+				page.toDate = QSConstants.NULL_DATE;
+			}
+			
+			private function clearVisitRange():void
+			{
+				id_NumLastVisits.textInput.text = "";
+				id_NumLastVisits.selectedIndex = -1;
+				page.lastVisitNumber = 0;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<s:RadioButtonGroup id="radioGr"  itemClick="radioGr_itemClickHandler(event)" />
+	</fx:Declarations>
+	
+	
+	<s:SkinnableContainer skinClass="com.adobe.gazuntite.skins.chrome.popUpSkins.listonlyPopupSkin" width="100%">
+		<s:layout>
+			<s:VerticalLayout  gap="3"
+				paddingLeft="5" paddingRight="5"  paddingBottom="10"  paddingTop="20" />
+		</s:layout>
+
+		<s:HGroup horizontalAlign="right" verticalAlign="middle"  width="100%" paddingTop="-20">
+			
+			<s:Button buttonMode="true" id="id_CloseBtn" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.whiteCloseButton"  
+					  click="Cancel_clickHandler(event)"
+					  toolTip="Close"  height="16" width="16"/>	
+		</s:HGroup>
+		
+		<s:HGroup width="100%"  textAlign="left" verticalAlign="middle"  paddingTop="15">
+			<s:RadioButton id="id_rbNumVisit" label="Number of Visits" value="NumVisit" group="{radioGr}"  selected="true" fontFamily="Calibri" fontSize="10" />
+			<s:RadioButton id="id_rbDateRange" label="Date Range" value="DateRange" group="{radioGr}" fontFamily="Calibri" fontSize="10"  />
+		</s:HGroup>
+		
+		<mx:ViewStack id="id_views" width="100%" creationPolicy="all">
+			<s:NavigatorContent  width="100%" height="100%"  >
+				<s:HGroup width="100%"  textAlign="left" verticalAlign="middle" >
+					<s:Spacer width="3"/>
+					<components:LabelComboBox id="id_NumLastVisits" width="100%" prompt="Num Visits" toolTip="show record for last number of visits" dataProvider="{acNumVisits}"  />
+				</s:HGroup>
+			</s:NavigatorContent>
+			<s:NavigatorContent  width="100%" height="100%"  >
+				<s:HGroup width="100%"  textAlign="left" verticalAlign="middle" >
+					<s:Spacer width="3"/>
+					<components:LabelDateField id="id_FromDate" width="50%" prompt="From" change="labeldatefield1_changeHandler(event)" yearNavigationEnabled="true" />
+					<components:LabelDateField id="id_ToDate"  width="50%" prompt="To"  selectableRange="{{rangeEnd:new Date()}}" change="labeldatefield1_changeHandler(event)" yearNavigationEnabled="true"/>
+				</s:HGroup>
+			</s:NavigatorContent>
+		</mx:ViewStack>
+		<s:HGroup width="100%"  textAlign="left" verticalAlign="middle" >
+			<s:Spacer width="3"/>
+			<components:LabelComboBox id="id_PageSize" width="100%" prompt="Page Size" toolTip="number of records per page" dataProvider="{acNumRecordPerPage}"  />
+		</s:HGroup>
+		<s:HGroup width="100%" gap="6" horizontalAlign="center">
+			<s:Button id="id_okBtn" label="Apply" click="OK_clickHandler(event)" width="50" toolTip="Apply"   skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.ListBtn2" buttonMode="true" />
+			<s:Button label="Cancel" click="Cancel_clickHandler(event)" width="50" toolTip="Cancel"  skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.ListBtn2" buttonMode="true"/>
+		</s:HGroup>
+	</s:SkinnableContainer>
+</components:PopupGroup>

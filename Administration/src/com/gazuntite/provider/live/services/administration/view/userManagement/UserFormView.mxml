@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:userManagement="com.gazuntite.provider.live.services.administration.view.userManagement.*"
+		 >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.provider.live.services.administration.model.AdminAppModelLocator;
+			
+			
+			[Bindable]
+			public var model : AdminAppModelLocator = AdminAppModelLocator.getInstance();
+			
+			private var _initiateUserSettings:Boolean;
+			
+			[Bindable]
+			public function get initiateUserSettings():Boolean
+			{
+				return _initiateUserSettings;
+			}
+			
+			public function set initiateUserSettings(value:Boolean):void
+			{
+				/* _initiateUserSettings = value;
+				
+				if(id_EditProfileView && value)
+				{
+					if(model.isNewRegistration)
+					{
+						id_EditProfileView.userID 			= 0; 	// for new user registration
+						id_EditProfileView.clinicBranchID 	= model.loggedInUserSelectedBranchId;
+						id_EditProfileView.getStaticDataCalls();
+					//	id_EditProfileView.loadSelectUserInfo(); 	// load static list call....
+						id_EditProfileView.registerEvents(); 		// register all events
+					}
+					else
+					{
+						id_EditProfileView.userID 			= model.selUserID;  // for update user case
+						id_EditProfileView.clinicBranchID 	= model.loggedInUserSelectedBranchId;
+						id_EditProfileView.getStaticDataCalls();
+						id_EditProfileView.loadSelectUserInfo();				// load static list call....
+						id_EditProfileView.registerEvents();		 			// register all events
+						id_EditProfileView.setViewForUpdateUser();		 		// set UI for update case
+					}
+				} */
+			}
+				
+		]]>
+	</fx:Script>
+	
+	<!--<userManagement:EditProfileView id="id_EditProfileView" width="100%" height="100%" />-->
+	
+</s:Group>

@@ -1,0 +1,482 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:followUp="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.followUp.*" 
+		 xmlns:diagnosis="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.*" 
+		 xmlns:treatment="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.treatment.*"
+		 implements="com.adobe.Quivus.view.interfaces.IScrollableView"
+		 xmlns:components="com.gazuntite.controls.extended.components.*"  
+		 creationComplete="group1_creationCompleteHandler(event)" xmlns:plan="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.plan.*"
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.staticData.followUp.LoadInstructionAgeTypeEvent;
+			import com.adobe.Quivus.events.staticData.followUp.LoadInstructionAgeValueTypeEvent;
+			import com.adobe.Quivus.events.staticData.followUp.LoadInstructionDurationTypeEvent;
+			import com.adobe.Quivus.events.staticData.followUp.LoadServiceTypeEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.view.controls.custom.PinableSlideOutPanel;
+			import com.adobe.Quivus.view.controls.custom.SlideOutPanel;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.PMHButtonDeletedSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.PMHButtonSkin;
+			import com.adobe.Quivus.view.events.SelectSection;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.events.FlexEvent;
+			import mx.events.ItemClickEvent;
+			
+			private var currentExpandedPanel:SlideOutPanel ;
+			private var currentSlideOutPanel:SlideOutPanel ;
+			
+			
+			private var currentIndex:int = 0;
+			
+			private var m_bHasChange:Boolean;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			[Bindable]
+			public function get hasChange():Boolean
+			{
+				return m_bHasChange;
+			}
+			
+			public function set hasChange(value:Boolean):void
+			{
+				m_bHasChange = value;
+				
+				if( value || id_DiagnosisPanel.hasChange || id_TreatmentPanel.hasChange || id_PlanPanel.hasChange )
+				{
+					m_bHasChange = true;
+				}
+				else
+				{
+					m_bHasChange = false;
+				}
+			}
+			
+			
+			[Bindable]
+			public var ParentSlideOutPanel:SlideOutPanel;
+			
+			protected function QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( currentExpandedPanel && currentExpandedPanel != event.currentTarget && 
+					event.viewState == QSViewStateEvent.EXPANDED_VIEW &&
+					!currentExpandedPanel.isSlideOut && !event.currentTarget.isSlideOut )
+					currentExpandedPanel.ExpandedView = false;
+				
+				//ignore state change if panel is in SlideOut state
+				if( currentExpandedPanel != event.currentTarget && !event.currentTarget.isSlideOut )
+				{
+					currentExpandedPanel = event.currentTarget as SlideOutPanel;
+					setSelectedById( currentExpandedPanel.id );
+				}
+			}
+			
+			protected function QSSlideStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( currentSlideOutPanel && currentSlideOutPanel != event.currentTarget && 
+					event.viewState == QSViewStateEvent.VIEW_SLIDE_OUT && currentSlideOutPanel.isSlideOut )
+				{
+					//currentSlideOutPanel.ToggleSlideOut();
+					//currentSlideOutPanel["IsNotesPanelVisible"] = false;
+				}
+				
+				currentSlideOutPanel = event.currentTarget as SlideOutPanel;
+				if( event.viewState == QSViewStateEvent.VIEW_SLIDE_IN )
+					currentSlideOutPanel.ExpandedView = true;
+			}
+
+
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				currentIndex ++ ;
+				SelectNextByIndex();
+				
+				addEventListener("SelectSection", function(event:SelectSection):void
+				{
+					SelectNextByID( event.SectionID ) ;
+					
+				});
+				
+				id_DiagnosisPanel.id_Header.id_CloseBtn.addEventListener( MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					event.stopImmediatePropagation();
+					currentIndex = 2 ;
+					SelectNextByIndex();
+					id_DiagnosisPanel.visible = !id_DiagnosisPanel.visible;
+					id_DiagnosisBtn.setStyle("skinClass", PMHButtonDeletedSkin);
+				});
+				
+				id_TreatmentPanel.id_Header.id_CloseBtn.addEventListener( MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					event.stopImmediatePropagation();
+					currentIndex = 3 ;
+					SelectNextByIndex();
+					id_TreatmentPanel.visible = !id_TreatmentPanel.visible;
+					id_TreatmentBtn.setStyle("skinClass", PMHButtonDeletedSkin);
+				});
+				
+				id_PlanPanel.id_Header.id_CloseBtn.addEventListener( MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					event.stopImmediatePropagation();
+					id_PlanPanel.visible = !id_PlanPanel.visible;
+					/* currentIndex += 1 ;
+					SelectNextByIndex(); */
+					id_PlanBtn.setStyle("skinClass", PMHButtonDeletedSkin);
+				});
+				
+			}
+			
+			private function ShowPanel(event:MouseEvent):void
+			{
+				getCurrentSelectedPanel().AllowMoveToNextPanel( function():void
+				{
+					event.currentTarget.selected = true;
+					
+					setSelectedById( event.currentTarget.id )
+				});
+			}
+			
+			private function inActivateBorders():void 
+			{				
+				/* id_DiagnosisBorder.setStyle("borderAlpha", false);
+				id_TreatmentBorder.setStyle("borderAlpha", false);
+				id_PlanBorder.setStyle("borderAlpha", false); */
+				id_DiagnosisPanel.ShowFocusBorder 		= false;
+				id_TreatmentPanel.ShowFocusBorder 		= false;
+				id_PlanPanel.ShowFocusBorder 			= false;
+			}
+			public function setFirstTab():void
+			{
+				setSelectedById( "id_DiagnosisBtn" );
+			}
+			private function setSelectedById(tabId:String):void
+			{
+				DeSelectAllNavButton();
+				
+				switch( tabId )
+				{
+					case "id_DiagnosisPanel":
+					case "id_DiagnosisBtn":
+						inActivateBorders();
+						id_DiagnosisBtn.selected				= true;
+						id_DiagnosisPanel.ExpandedView 			= true;
+						//id_DiagnosisPanel.ShowFocusBorder 		= true;
+						id_DiagnosisPanel.visible		 		= true;
+						id_DiagnosisPage.selected				= true;
+						
+						id_DiagnosisPanel.id_DiagnosisView.id_AssociateVisitzCombo.setFocus();
+						currentIndex							= 1;
+						//id_DiagnosisBorder.setStyle("borderAlpha", true);
+						id_DiagnosisBtn.setStyle("skinClass", PMHButtonSkin);
+						
+						id_Scroller.viewport.verticalScrollPosition = 5;
+						break;
+					
+					case "id_TreatmentPanel":
+					case "id_TreatmentBtn":
+						inActivateBorders();
+						id_TreatmentBtn.selected				= true;
+						id_TreatmentPanel.ExpandedView 			= true;
+						//id_TreatmentPanel.ShowFocusBorder 		= true;
+						id_TreatmentPanel.visible		 		= true;
+						id_TreatmentPage.selected				= true;
+						
+						currentIndex							= 2;
+						//id_TreatmentBorder.setStyle("borderAlpha", true);
+						id_TreatmentBtn.setStyle("skinClass", PMHButtonSkin);
+						
+						if( checkPinAll() )
+							id_Scroller.viewport.verticalScrollPosition = id_DiagnosisPanel.height;
+						else
+							id_Scroller.viewport.verticalScrollPosition = id_DiagnosisPanel.height + 25;
+						
+						break;
+					case "id_PlanPanel":
+					case "id_PlanBtn":
+						inActivateBorders();
+						id_PlanBtn.selected						= true;
+						id_PlanPanel.ExpandedView 				= true;
+						//id_PlanPanel.ShowFocusBorder 			= true;
+						id_PlanPanel.visible		 			= true;
+						id_PlanPage.selected					= true;
+						
+						id_PlanPanel.id_LabOutView.id_TestType.setFocus();
+						currentIndex							= 3;
+						//id_PlanBorder.setStyle("borderAlpha", true);
+						id_PlanBtn.setStyle("skinClass", PMHButtonSkin);
+						
+						if( checkPinAll() )
+							id_Scroller.viewport.verticalScrollPosition = id_DiagnosisPanel.height + 45;
+						else
+							id_Scroller.viewport.verticalScrollPosition = id_DiagnosisPanel.height + id_DiagnosisPanel.height;
+						
+						//for loading data in the static calls
+						if( UtilityFunctions.IsNullOrEmpty( model.serviceTypeDTOList ) )
+						{
+							var lstEvent : LoadServiceTypeEvent = new LoadServiceTypeEvent(model.followupServiceTypeControlId);
+							CairngormEventDispatcher.getInstance().dispatchEvent( lstEvent );
+						}
+						//load DateType Static Data
+						if( UtilityFunctions.IsNullOrEmpty( model.DateServiceTypeDTOList ) )
+						{
+							lstEvent = new LoadServiceTypeEvent( model.followupDateTypeControlId );
+							CairngormEventDispatcher.getInstance().dispatchEvent( lstEvent );
+						}
+						//Load 
+						if(model.instructionDurationTypeDTOList ==null || model.instructionDurationTypeDTOList.length==0)
+						{
+							var ldtEvent : LoadInstructionDurationTypeEvent = new LoadInstructionDurationTypeEvent();
+							CairngormEventDispatcher.getInstance().dispatchEvent( ldtEvent );
+						}
+						//Frequency Age type ststic data
+						if(model.instructionAgeTypeDTOList == null || model.instructionAgeTypeDTOList.length == 0)
+						{
+							var le:LoadInstructionAgeTypeEvent = new LoadInstructionAgeTypeEvent();
+							CairngormEventDispatcher.getInstance().dispatchEvent( le );
+						}
+						//Frequency Age Value ststic data
+						if(model.instructionAgeValueTypeDTOList == null || model.instructionAgeValueTypeDTOList.length == 0)
+						{
+							var ler:LoadInstructionAgeValueTypeEvent = new LoadInstructionAgeValueTypeEvent();
+							CairngormEventDispatcher.getInstance().dispatchEvent( ler );
+						}
+						
+						break;
+				}
+			}
+			
+			private function SelectNextByIndex():void
+			{
+				
+				switch( currentIndex )
+				{
+					case 1:
+						setSelectedById( "id_DiagnosisBtn" );
+						break;
+					case 2:
+						setSelectedById( "id_TreatmentBtn" );
+						break;
+					case 3:
+						setSelectedById( "id_PlanBtn" );
+						break;
+					
+					default:
+						setSelectedById( "id_DiagnosisBtn" );
+						break;
+				}
+			}
+			
+			private function SelectNextByID( sectionID:String ):void
+			{
+				removeAllPopups();
+				
+				switch( sectionID )
+				{
+					case "id_DiagnosisPanel":
+						setSelectedById( "id_TreatmentPanel" );
+						break;
+					case "id_PlanPanel":
+						setSelectedById( "id_DiagnosisPanel" );
+						break;
+					case "id_TreatmentPanel":
+						setSelectedById( "id_PlanPanel" );
+						break;
+					
+					default:
+						setSelectedById( "id_DiagnosisPanel" );
+						break;
+				}
+			}
+			
+			
+			private function DeSelectAllNavButton():void
+			{
+				id_DiagnosisBtn.selected		=	false;
+				id_TreatmentBtn.selected		=	false;
+				id_PlanBtn.selected				=	false;
+			}
+			
+			
+			
+			protected function pagination_itemClickHandler(event:ItemClickEvent):void
+			{
+				getCurrentSelectedPanel().AllowMoveToNextPanel( function():void
+				{
+					setSelectedById( event.item as String );
+				});
+			}
+			
+			
+			protected function next_clickHandler(event:MouseEvent):void
+			{
+				currentIndex += 1 ;
+				SelectNextByIndex()
+			}
+			
+			
+			protected function previous_clickHandler(event:MouseEvent):void
+			{
+				currentIndex -= 1 ;
+				SelectNextByIndex()
+			}
+			
+			
+			public function ScrollUp():void
+			{
+				id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition + 15;
+			}
+			
+			public function ScrollDown():void
+			{
+				id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition - 15;
+			}
+			
+			public function PinAll( value:Boolean ):void
+			{
+				id_DiagnosisPanel.PinView 							= value;
+				id_DiagnosisPanel.id_Header.id_Pin.selected 		= value;
+				
+				id_TreatmentPanel.PinView 						= value;
+				id_TreatmentPanel.id_Header.id_Pin.selected 	= value;
+				
+				id_PlanPanel.PinView 							= value;
+				id_PlanPanel.id_Header.id_Pin.selected 			= value;
+				
+				if( !value )
+					currentExpandedPanel.ExpandedView = true;
+				
+			}
+			
+			public function checkPinAll():Boolean
+			{
+				return id_DiagnosisPanel.PinView 	&&
+					id_TreatmentPanel.PinView 		&&
+					id_PlanPanel.PinView 			;
+				
+			}
+			
+			public function removeAllPopups():void
+			{
+				id_DiagnosisPanel.AllowOtherPopup		= false;
+				id_TreatmentPanel.AllowOtherPopup		= false;
+				id_PlanPanel.AllowOtherPopup			= false;
+			}
+
+
+			protected function id_DiagnosisPanel_creationCompleteHandler(event:FlexEvent):void
+			{
+				
+			}
+			
+			private function getCurrentSelectedPanel():PinableSlideOutPanel
+			{
+				if( id_DiagnosisPanel.ExpandedView )
+				{
+					return id_DiagnosisPanel;
+				}
+				else if( id_TreatmentPanel.ExpandedView )
+				{
+					return id_TreatmentPanel;
+				}
+				else if( id_PlanPanel.ExpandedView )
+				{
+					return id_PlanPanel;
+				}
+				
+				return id_DiagnosisPanel;
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<s:RadioButtonGroup id="pagination" itemClick="pagination_itemClickHandler(event)"/>
+	</fx:Declarations>
+	
+	
+	<fx:Binding source="id_DiagnosisPanel.hasChange" destination="hasChange" /> 
+	<fx:Binding source="id_TreatmentPanel.hasChange" destination="hasChange"  /> 
+	<fx:Binding source="id_PlanPanel.hasChange" destination="hasChange"  /> 
+	
+	<s:layout>
+		<s:VerticalLayout gap="0" horizontalAlign="center"/>
+	</s:layout>
+	
+	<s:HGroup width="100%" horizontalAlign="center" height="40" verticalAlign="middle">
+		<s:Button skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBPMHPrevBtn"  click="previous_clickHandler(event)" toolTip="Previous Section" buttonMode="true"/>
+		
+		<s:HGroup width="100%" horizontalAlign="left">		
+		<s:ToggleButton id="id_DiagnosisBtn" width="100" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.PMHButtonSkin" label="DIAGNOSIS"
+						 click="ShowPanel(event)" buttonMode="true" useHandCursor="true"
+						 /><!--selected="{ !id_DiagnosisPanel.visible}"-->
+		<s:ToggleButton id="id_TreatmentBtn" width="100" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.PMHButtonSkin" label="TREATMENT"
+						selected="{ !id_TreatmentPanel.visible}" click="ShowPanel(event)" buttonMode="true" useHandCursor="true"
+						 />
+		<s:ToggleButton id="id_PlanBtn" width="80" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.PMHButtonSkin" label="PLAN"
+						selected="{ !id_PlanPanel.visible}" click="ShowPanel(event)" buttonMode="true" useHandCursor="true"
+						 />
+			</s:HGroup>
+		<s:Button skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBPMHNextBtn" click="next_clickHandler(event)" 
+				  toolTip="Next Section" buttonMode="true"/>
+	</s:HGroup>
+	
+	<s:BorderContainer width="100%" height="100%" cornerRadius="3" backgroundColor="#999AAA" 
+					   borderAlpha="0" borderColor="#999AAA" backgroundAlpha="0">
+		<s:layout>
+			<s:VerticalLayout paddingTop="0" horizontalAlign="left" gap="1" />
+		</s:layout>
+		
+		<s:Scroller id="id_Scroller" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off" >
+			<s:Group width="100%" height="100%" >
+				<s:layout>
+					<s:VerticalLayout paddingTop="2" horizontalAlign="center" verticalAlign="top" gap="1" clipAndEnableScrolling="true" />
+				</s:layout>
+				
+				
+			
+								<diagnosis:DiagnosisPanel id="id_DiagnosisPanel" width="100%" allowSlideOut="true" ExpandedView="true" 
+														  SlideOutXOffset="35" SlideOutYOffset="-8" creationComplete="id_DiagnosisPanel_creationCompleteHandler(event)"
+														  includeInLayout="{id_DiagnosisPanel.visible}"  
+														  ParentSlideOutPanel="{this.ParentSlideOutPanel}"
+														  QSViewStateChange="QSViewStateChangeHandler(event)"
+														  QSSlideStateChange="QSSlideStateChangeHandler(event)" slideoutPanelName="Diagnosis" />
+				
+								<treatment:TreatmentPanel id="id_TreatmentPanel" width="100%" allowSlideOut="true" ExpandedView="false" allowExpandedView="true" 
+														  SlideOutXOffset="35" SlideOutYOffset="-8" 
+														  includeInLayout="{id_TreatmentPanel.visible}"
+														  ParentSlideOutPanel="{this.ParentSlideOutPanel}"
+														  QSViewStateChange="QSViewStateChangeHandler(event)"
+														  QSSlideStateChange="QSSlideStateChangeHandler(event)" slideoutPanelName="Treatment" />
+				
+				
+		<!--<followUp:FollowUpPanel id="id_PlanPanel" width="100%" allowSlideOut="true" ExpandedView="false"
+								ParentSlideOutPanel="{this.ParentSlideOutPanel}"
+								QSViewStateChange="QSViewStateChangeHandler(event)" />-->
+							<plan:PlanPanel id="id_PlanPanel" width="100%" allowSlideOut="true" ExpandedView="false" 
+											SlideOutXOffset="35" SlideOutYOffset="-8"
+											includeInLayout="{id_PlanPanel.visible}"
+											ParentSlideOutPanel="{this.ParentSlideOutPanel}"
+											QSViewStateChange="QSViewStateChangeHandler(event)"
+											QSSlideStateChange="QSSlideStateChangeHandler(event)" slideoutPanelName="Plan" />
+				
+		
+				
+				
+				
+			</s:Group>
+		</s:Scroller>
+
+		<s:HGroup width="100%" horizontalAlign="center" paddingTop="5" paddingBottom="0">
+
+			<s:RadioButton id="id_DiagnosisPage" 		groupName="pagination" value="id_DiagnosisBtn" 		skinClass="com.adobe.Quivus.view.controls.skins.QIPaginationRadioBtn"	buttonMode="true" useHandCursor="true" toolTip="Diagnosis"/>
+			<s:RadioButton id="id_TreatmentPage" 		groupName="pagination" value="id_TreatmentBtn" 		skinClass="com.adobe.Quivus.view.controls.skins.QIPaginationRadioBtn"	buttonMode="true" useHandCursor="true" toolTip="Treatment"/>
+			<s:RadioButton id="id_PlanPage" 			groupName="pagination" value="id_PlanBtn" 			skinClass="com.adobe.Quivus.view.controls.skins.QIPaginationRadioBtn"	buttonMode="true" useHandCursor="true" toolTip="Plan"/>
+		</s:HGroup>
+		
+	</s:BorderContainer>
+</s:Group>

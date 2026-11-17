@@ -1,0 +1,1656 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:SlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+					  xmlns:profile="com.adobe.Quivus.view.controls.custom.patientExamView.profile.*" 
+					  xmlns:patientExamView="com.adobe.Quivus.view.controls.custom.patientExamView.*" 
+					  xmlns:viewBackground="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.*" 
+					  move="slideoutpanel1_moveHandler(event)" 
+					  allowSlideOut="false"
+					  creationComplete="creationCompleteHandler()" 
+					  QSViewStateChange="slideoutpanel1_QSViewStateChangeHandler(event)"
+					  xmlns:view1="com.gazuntite.patient.visit.view.*"
+					  xmlns:view2="com.gazuntite.provider.search.services.patient.view.*" 
+					  xmlns:components2="com.gazuntite.controls.extended.components.*"  >
+	<!--headerOverBody="{model.loadedPatientId == 0?false:true}"-->
+	<fx:Metadata>
+		[Event(name="CloseQIPanel", type="flash.events.Event")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.LoadUserMostRecentPatientEvent;
+			import com.adobe.Quivus.events.email.GetEmailByUserIdEvent;
+			import com.adobe.Quivus.events.patientProfileCustomization.LoadPatientProfileCustomizedSettingEvent;
+			import com.adobe.Quivus.events.patientProfileCustomization.LoadPatientProfilePopUpDataEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppEventStrings;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QuivusCombineEventDispatcher;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.utils.sql.LocalPatientsListUtility;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.NotesPanel;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.RXPanel;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.recentPatient.RecentPatientPanel;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.patientSearchBGSkin;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.patientSearchBGSkinNew;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.gazuntite.skins.chrome.textInputSkins.transparentTextInput;
+			import com.gazuntite.common.dto.AllergDTO;
+			import com.gazuntite.common.dto.PatientDTO;
+			import com.gazuntite.common.event.GetPatientGaxenIdEvent;
+			import com.gazuntite.common.event.LoadPatientMedEvent;
+			import com.gazuntite.common.event.LoadPatientbyPatientIDEvent;
+			import com.gazuntite.common.event.QSAllergyEvent;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.patient.visit.dto.visit.VisitDTO;
+			import com.gazuntite.patient.visit.event.NotesDictation.LoadModuleDictationByVisitIdEvent;
+			import com.gazuntite.patient.visit.event.NotesDictation.LoadModuleNotesByVisitIdEvent;
+			import com.gazuntite.patient.visit.event.assessment.diagnosis.LoadPatientChronicDiagnosisByPatientIdEvent;
+			import com.gazuntite.patient.visit.event.visit.CreateVisitEvent;
+			import com.gazuntite.patient.visit.model.QIModelLocator;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			import com.gazuntite.patient.visit.view.ViewBackgroundPanel;
+			import com.gazuntite.patient.visit.view.event.CreateVisitUIEvent;
+			import com.gazuntite.patient.visit.view.events.PatientVisitEvent;
+			import com.gazuntite.provider.live.services.waitingRoom.view.event.LoadPatientEvent;
+			import com.gazuntite.provider.search.services.patient.event.SearchPatientInLocalDBEvent;
+			import com.gazuntite.provider.search.services.patient.view.events.PatientSelectedEvent;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.events.MoveEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.resize.ResizeManager;
+			import spark.resize.verticalResizeHandle;
+			
+			//------------------- Vars & Const -------------------------
+			[Bindable]	private var model : AppModelLocator = AppModelLocator.getInstance();
+			private var m_oCurrentSlideOutPanel:SlideOutPanel;
+			private var currentExpandedPanel:SlideOutPanel;
+			//public var m_oQuickInputPanel:QuickInputPanel;
+			private var m_oViewbackgroundPanel:ViewBackgroundPanel;
+			private var patientName:String;
+			private var innerTimer:Timer = new Timer((1000 * 60)* 5 , 0); // is one sec *  60 = 3 min 
+			[Bindable] private var patientEmail:String;
+			//-------------------END Vars & Const -----------------------
+			
+			//----------------- GETER & SETTERS ---------------------------------
+			public function get ViewbackgroundPanel():ViewBackgroundPanel {
+				return m_oViewbackgroundPanel;
+			}
+			
+			public function set ViewbackgroundPanel(value:ViewBackgroundPanel):void	{
+				m_oViewbackgroundPanel = value;
+			}
+			
+			public function get currentSlideOutPanel():SlideOutPanel {
+				return m_oCurrentSlideOutPanel;
+			}
+			//----------------- END - GETER & SETTERS ---------------------------------
+			public function set currentSlideOutPanel(value:SlideOutPanel):void
+			{
+				m_oCurrentSlideOutPanel = value;
+				if( value )
+				{
+					m_oCurrentSlideOutPanel.addEventListener( AppEventStrings.QS_VIEW_STATE_CHANGE, QSViewStateChangeHandler );
+					m_oCurrentSlideOutPanel.addEventListener( AppEventStrings.QS_SLIDE_STATE_CHANGE, QSSlideStateChangeHandler );
+					m_oCurrentSlideOutPanel.ExpandedView 		= true;
+					m_oCurrentSlideOutPanel.ParentSlideOutPanel 	= this;
+					
+					removeAllPopups();
+				}
+			}
+			//-- creation complete --------------------------------------
+			protected function creationCompleteHandler():void
+			{
+				id_patientExamControls.id_OptionPopUp.displayPopUp = true;
+				
+				FlexGlobals.topLevelApplication.mainContainer.addEventListener(MouseEvent.CLICK, function(event:Event):void
+				{
+					if( model.loadedPatientId != 0 && id_MainBGPanel.includeInLayout == false)
+					{
+						//id_patientExamControls.id_patientSearch.visible= true;
+						id_patientExamControls.id_PatientNameGroup.visible			              = true;
+						id_patientExamControls.id_PatientNameGroup.includeInLayout               = true;
+						//id_patientSearch.id_patientSearchTextInput.prompt = "Patient Search" ;
+						id_patientExamControls.id_patientSearch.visible 			              = false;
+						id_patientExamControls.id_patientSearch.includeInLayout 	              = false;
+					}
+					/* else if(model.loadedPatientId != 0 && id_MainBGPanel.includeInLayout == true)
+					{
+					
+					id_patientSearch.visible			                  = true;
+					id_patientSearch.includeInLayout               	      = true;
+					id_patientSearchView.visible 			              = false;
+					id_patientSearchView.includeInLayout 	              = false; 
+					} */
+				});
+				/* id_patientExamControls.id_slideoutBtn.addEventListener(MouseEvent.CLICK, button1_clickHandler); */
+				id_patientExamControls.id_emailBtn.addEventListener(MouseEvent.CLICK, onEmailClick);
+				id_patientExamControls.id_RecentPatientBtn.addEventListener(MouseEvent.CLICK, onRecentPatientClick);
+				/* id_patientExamControls.id_RxBtn.addEventListener(MouseEvent.CLICK, function(event:Event):void
+				{
+				CursorManager.setBusyCursor();
+				event.stopImmediatePropagation();
+				if( ! id_patientExamControls.id_RxBtn.selected &&
+				currentSlideOutPanel is RXPanel )
+				{
+				removeCurrentSlidePanel();
+				id_patientExamControls.id_RxBtn.selected = false;
+				return;
+				
+				}
+				RXPage( "PRESCRIPTION" );
+				switchSearchView();
+				id_patientExamControls.id_RxBtn.selected = true;
+				}); */
+				/* id_patientExamControls.id_NotesBtn.addEventListener(MouseEvent.CLICK,  function(event:Event):void
+				{
+				event.stopImmediatePropagation();
+				if( ! id_patientExamControls.id_NotesBtn.selected &&
+				currentSlideOutPanel is NotesPanel )
+				{
+				removeCurrentSlidePanel();
+				id_patientExamControls.id_NotesBtn.selected = false;
+				return;
+				
+				}
+				notesPage( "NOTES" );
+				switchSearchView();
+				id_patientExamControls.id_NotesBtn.selected = true;
+				}); */
+				
+				id_patientExamControls.id_ClosePatnBtn.addEventListener(MouseEvent.CLICK, function(event:Event):void
+				{
+					Alert.show(Constants.MSG_SURE_CLOSE_PATIENT, Constants.MSG_CLOSE_PATIENT, Alert.YES | Alert.NO, FlexGlobals.topLevelApplication.mainContainer, 
+						function quickInputCloseHandler(event:CloseEvent):void
+						{
+							if( event.detail == Alert.YES )
+								onClosePatientClick( null );
+						});
+					
+					//reseting widths for patient search
+					id_patientSearchView.width  					= 283;
+					id_patientExamControls.id_patientSearch.width 	= 283;
+					event.stopImmediatePropagation();
+					event.preventDefault();
+				});		 
+				
+				FlexGlobals.topLevelApplication.mainContainer.vs.addEventListener(IndexChangedEvent.CHANGE, function(event:Event):void
+				{
+					slideoutpanel1_hideHandler( null );
+					onClosePatientClick( null );
+				});
+				
+				allowUserControl( false );
+				
+				addEventListener(PatientVisitEvent.PATIENT_VISIT_SAVED, patientVisitSavedHandler, false, 0, true);
+				addEventListener(PatientVisitEvent.PATIENT_VISIT_SIGNED, patientVisitSignedHandler, false, 0, true);
+				addEventListener(PatientVisitEvent.PATIENT_VISIT_COSIGNED, patientVisitCosignedHandler, false, 0, true);
+				
+				id_patientExamControls.id_OptionPopUp.displayPopUp = false;
+				
+				
+				addEventListener("CloseQIPanel", function(event:Event):void
+				{
+					id_QIPanel.quickInputCloseHandler();
+					id_QIPanel.ExpandedView = false;
+					id_QIPanel.visible = false;
+				});
+			}
+			
+			private function patientVisitSavedHandler(event:PatientVisitEvent):void
+			{
+				
+				id_QIPanel.quickInputCloseHandler();
+				id_QIPanel.ExpandedView = false;
+				id_QIPanel.visible = false;
+			}
+			
+			private function patientVisitSignedHandler(event:PatientVisitEvent):void
+			{
+				id_QIPanel.quickInputCloseHandler();
+				id_QIPanel.ExpandedView = false;
+				id_QIPanel.visible = false;
+				
+			}
+			
+			private function patientVisitCosignedHandler(event:PatientVisitEvent):void
+			{
+				id_QIPanel.quickInputCloseHandler();
+				id_QIPanel.ExpandedView = false;
+				id_QIPanel.visible = false;
+				/* if (model.visitDTO && model.visitDTO.VisitId == event.visitId)
+				{
+					RemoveQuickInputPanel();
+				} */
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				this.ToggleSlideOut();
+				event.stopImmediatePropagation();
+			}
+			
+			private function onClosePatientClick(event:MouseEvent):void
+			{
+				//id_patientExamControls.id_patientSearchTextInput.text	= "";
+				patientEmail = "";
+				if( this.isSlideOut )
+					this.ToggleSlideOut();
+				//DTOInitializationUtility.unLoadLoadedPatient();
+				id_PatientProfilePanel.InitComponent();
+				//id_ViewBackgroundPanel.InitComponent();
+				
+				allowUserControl( false );
+				slideoutpanel1_hideHandler( null );
+				this.ExpandedView 	= false;
+				this.percentHeight	= 100;
+				this.id_contents.percentHeight 	= 100;
+				if( event )
+					event.stopImmediatePropagation();
+				
+				id_PatientProfilePanel.ExpandedView = false;
+				id_QIPanel.quickInputCloseHandler(); // after creating QuickInput , hide it & empty all grids.
+				id_QIPanel.ExpandedView = false;
+				id_QIPanel.visible = false;
+				
+				//id_ViewBackgroundPanel.ExpandedView = false;
+				
+				//Moeen Mohsin
+				/*  var PatientClose:Event = new Event("CloseQIPanel",true,true);
+				dispatchEvent( PatientClose); */ 
+				
+				//AutoSaveUtility.deleteQuickInput();
+				model.loadedPatientId = 0;
+				//Thair Alvi
+				id_patientExamControls.id_patientImage_small.visible = false;
+				id_patientExamControls.id_patientImage_small.includeInLayout = false;
+				switchSearchView();
+				clearPatientData();
+				clearOldData();
+			}
+			
+			private function showComingSoonPage(headerLabel:String):void
+			{
+				removeCurrentSlidePanel();
+				var comingSoonPanel:ComingSoonPanel 	= new ComingSoonPanel();
+				comingSoonPanel.headerLabel 			= headerLabel;					
+				currentSlideOutPanel 						= comingSoonPanel;
+				currentSlideOutPanel.percentWidth 			= 100;
+				id_patientExamArea.addElementAt( currentSlideOutPanel, 0 );
+				
+				comingSoonPanel.addEventListener( CloseEvent.CLOSE, removeCurrentSlidePanel); 
+				
+				id_MainBGPanel.addElementAt(currentSlideOutPanel, 0);
+				id_MainBGPanel.includeInLayout 	= true;
+				id_MainBGPanel.visible			= true;
+			}
+			
+			private function notesPage(headerLabel:String):void
+			{
+				removeCurrentSlidePanel();
+				var comingSoonPanel:NotesPanel 			= new NotesPanel();
+				comingSoonPanel.headerLabel 			= headerLabel;					
+				currentSlideOutPanel 						= comingSoonPanel;
+				currentSlideOutPanel.percentWidth 			= 100;
+				id_patientExamArea.addElementAt( currentSlideOutPanel, 0 );
+				
+				comingSoonPanel.addEventListener( CloseEvent.CLOSE, removeCurrentSlidePanel); 
+				
+				id_MainBGPanel.addElementAt(currentSlideOutPanel, 0);
+				id_MainBGPanel.includeInLayout 	= true;
+				id_MainBGPanel.visible			= true;
+			}
+			private function RXPage(headerLabel:String):void
+			{
+				removeCurrentSlidePanel();
+				var rxPanel:RXPanel 			= new RXPanel();
+				rxPanel.headerLabel 			= headerLabel;					
+				currentSlideOutPanel 						= rxPanel;
+				currentSlideOutPanel.percentWidth 			= 100;
+				id_patientExamArea.addElementAt( currentSlideOutPanel, 0 );
+				
+				rxPanel.addEventListener( CloseEvent.CLOSE, removeCurrentSlidePanel); 
+				
+				id_MainBGPanel.addElementAt(currentSlideOutPanel, 0);
+				id_MainBGPanel.includeInLayout 	= true;
+				id_MainBGPanel.visible			= true;
+			}
+			
+			private function onRecentPatientClick(event:MouseEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.RECENT_PATIENT_PANEL ) )
+				{
+					event.stopImmediatePropagation(); //button is clicked not the header itself, stop it...
+					if( ! id_patientExamControls.id_RecentPatientBtn.selected &&
+						currentSlideOutPanel is RecentPatientPanel )
+					{
+						RemoveRecentPatientPanel();
+						return;
+					}
+					
+					removeCurrentSlidePanel();
+					
+					if( null == currentSlideOutPanel )
+					{
+						AddRecentPatientPanel();
+					}
+					
+					event.stopImmediatePropagation();
+					
+					this.ExpandedView  = true;
+					//				this.allowSlideOut = true;
+				}
+			}
+			
+			private function onEmailClick(event:MouseEvent):void
+			{
+				event.stopImmediatePropagation();
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.EMAIL ) )
+				{
+					if( currentSlideOutPanel is emailPanel ) //! id_patientExamControls.id_emailBtn.selected &&
+					{
+						removeCurrentSlidePanel();
+						return;
+					}
+					
+					if( null == currentSlideOutPanel )
+					{
+						AddEmailPanel();
+						id_patientExamControls.id_OptionPopUp.displayPopUp = false;
+						this.ExpandedView = true;
+						switchSearchView();
+					}
+				}
+			}
+			
+			public function removeConnectors():void
+			{
+				if(id_patientExamControls)
+				{
+					if(id_patientExamControls.id_RecentPatientBtn.selected)
+					{
+						id_patientExamControls.id_RecentPatientBtn.selected = false;				
+					}
+				}
+			}
+			
+			private function removeCurrentSlidePanel(event:CloseEvent = null):void
+			{
+				if( currentSlideOutPanel && currentSlideOutPanel != id_PatientProfilePanel )	//don't remove above panels.
+					//currentSlideOutPanel != m_oQuickInputPanel 			//user will explicitly remove this panel.
+					
+				{
+					if( id_MainBGPanel.contains( currentSlideOutPanel ) )
+					{
+						id_MainBGPanel.removeElement( currentSlideOutPanel );
+						id_MainBGPanel.includeInLayout 	= false;
+						id_MainBGPanel.visible			= false;
+						switchSearchView();
+					}
+					else if(id_VB.contains( currentSlideOutPanel ) )
+					{
+						id_VB.removeElement( currentSlideOutPanel );
+					}
+					else
+						id_patientExamArea.removeElement( currentSlideOutPanel );
+					
+					removeConnectors();		
+				}
+				currentSlideOutPanel = null;
+				ExpandDefaultPanel();
+			}
+			
+			private function ExpandDefaultPanel():void
+			{
+				var openDefault:Boolean = false;
+				if( null == currentExpandedPanel )
+				{
+					openDefault = true;
+				}
+				/* else if( m_oQuickInputPanel != currentExpandedPanel )
+				{
+					openDefault = true;
+				}
+				else if( m_oQuickInputPanel == currentExpandedPanel )
+				{
+						id_ViewBackgroundPanel.ExpandedView = false;
+				} */
+				
+				/* if( openDefault && id_ViewBackgroundPanel && currentExpandedPanel != id_ViewBackgroundPanel)
+				{
+				currentExpandedPanel = id_ViewBackgroundPanel;
+				currentExpandedPanel.ExpandedView = true; 
+				} */
+			}
+			
+			protected function id_patientExamControls_PatientSelectedHandler(event:PatientSelectedEvent):void
+			{
+				clearOldData();
+				var selectedPatient:PatientDTO 	= event.selection as PatientDTO;
+				model.selectedPatientDTO        = event.selection as PatientDTO;
+				model.gaxenID					= selectedPatient.GAXENID;
+				if( !AppUtils.IsNullOrEmpty( model.loadedPatientId ) )
+				{					
+					Alert.show(Constants.MSG_SURE_CLOSE_PATIENT, Constants.MSG_CLOSE_PATIENT, Alert.YES | Alert.NO, FlexGlobals.topLevelApplication.mainContainer, 
+						function quickInputCloseHandler(e:CloseEvent):void
+						{
+							if( e.detail == Alert.YES )
+							{
+								//RemoveQuickInputPanel();
+								RemoveViewbackgroundPanel();
+								OnLoadingPatient( event );
+								AddViewbackgroundPanel();
+							}
+						});
+				}
+				else
+				{
+					OnLoadingPatient( event );
+					AddViewbackgroundPanel();
+				}
+				//AddViewbackgroundPanel(); When patient loaded and remove old patient just hide the VB summary and visible it on new Load
+				
+				if(selectedPatient.GAXENID != '')
+				{
+					model.gaxenIDSaved 				= true;
+					loadAllergyPrescription(selectedPatient.GAXENID)
+				}else
+				{
+					//clearOldData();
+				}
+				
+				event.stopImmediatePropagation();
+				event.preventDefault();
+			}
+			private function loadAllergyPrescription(gaxenID:String):void
+			{
+				loadAllergies(gaxenID);
+				loadPrescription(gaxenID);
+			}
+			
+			private function OnLoadingPatient(event:PatientSelectedEvent):void
+			{
+				RemoveRecentPatientPanel();
+				this.ExpandedView 								= true;
+				//this.allowSlideOut							= true;
+				//id_PatientProfilePanel.ExpandedView 			= true;
+				id_PatientProfilePanel.includeInLayout			= true;
+				id_PatientProfilePanel.visible					= true;
+				switchSearchView();
+				RemoveQuickInputPanel();
+				allowUserControl( true );
+				//time to load patient data, user sucessfully selected a patient...
+				dispachServiceEvents( event.selection.ID, event.selection.UserID);
+				clearPatientData();
+			}
+			
+			private function OnEmailAddressResult(value:String):void
+			{
+				patientEmail = value;
+				if( currentSlideOutPanel is emailPanel)
+				{
+					(currentSlideOutPanel as emailPanel).id_emailView.id_email.text = value;
+					//trace("OnEmailAddressResult", value);
+				}
+			}
+			
+			private function AddEmailPanel():void
+			{
+				var emailui:emailPanel 		= new emailPanel();
+				emailui.EmailAddress		= patientEmail;
+				emailui.percentWidth 		= 100;
+				currentSlideOutPanel 			= emailui;
+				emailui.ShowAttachButton 	= true;
+				emailui.ExpandedView 		= true;
+				id_patientExamArea.addElementAt( emailui, 0 );
+				emailui.addEventListener(CloseEvent.CLOSE, removeCurrentSlidePanel);
+				
+				id_MainBGPanel.addElementAt(currentSlideOutPanel, 0);
+				id_MainBGPanel.includeInLayout 	= true;
+				id_MainBGPanel.visible			= true;
+			}
+			
+			private function LoadRecentPatientList():void
+			{
+				if( ! LoadUserMostRecentPatientEvent.isAlreadyLoaded  )// load only if not loaded ... 
+				{
+					var mrpEvent : LoadUserMostRecentPatientEvent = new LoadUserMostRecentPatientEvent();
+					CairngormEventDispatcher.getInstance().dispatchEvent( mrpEvent );
+				}
+			}
+			
+			private function AddRecentPatientPanel():void
+			{
+				LoadRecentPatientList();
+				
+				var recentPatientPanel:RecentPatientPanel	= new RecentPatientPanel();
+				BindingUtils.bindProperty( recentPatientPanel, "DataProvider", model, "mostRecentPatientList" );
+				recentPatientPanel.DataProvider 			= model.mostRecentPatientList;
+				recentPatientPanel.percentWidth				= 100;
+				recentPatientPanel.ExpandedView 			= true;
+				id_patientExamArea.addElementAt( recentPatientPanel, 0 );
+				recentPatientPanel.addEventListener(CloseEvent.CLOSE, function (event:Event):void
+				{
+					RemoveRecentPatientPanel();
+				});
+				recentPatientPanel.id_RecentPatientView.addEventListener(AppEventStrings.PATIENT_SELECTED_EVENT, onRecentPaitentSelected);
+				currentSlideOutPanel 							= recentPatientPanel;
+				
+				id_MainBGPanel.addElementAt(currentSlideOutPanel, 0);
+				id_MainBGPanel.includeInLayout 	= true;
+				id_MainBGPanel.visible			= true;
+				
+				switchSearchView();			
+			}
+			
+			private function RemoveRecentPatientPanel():void
+			{
+				removeCurrentSlidePanel();
+				id_patientExamControls.id_RecentPatientBtn.selected = false;
+				if( id_PatientProfilePanel.visible == false )
+				{
+					this.ExpandedView = false;
+				}
+				
+				switchSearchView();
+			}
+			
+			protected function onRecentPaitentSelected(event:PatientSelectedEvent):void
+			{
+				if( model.loadedPatientId == event.selection.PatientId )
+				{
+					Alert.show(Constants.MSG_ALREADY_LOADED_PATIENT, Constants.MSG_SAME_PATIENT, Alert.OK, FlexGlobals.topLevelApplication.mainContainer );
+					switchSearchView();
+					return;
+					
+				}
+				if( !AppUtils.IsNullOrEmpty( model.loadedPatientId ) )
+				{
+					Alert.show(Constants.MSG_SURE_CLOSE_PATIENT, Constants.MSG_CLOSE_PATIENT, Alert.YES | Alert.NO, FlexGlobals.topLevelApplication.mainContainer, 
+						function quickInputCloseHandler(e:CloseEvent):void
+						{
+							if( e.detail == Alert.YES )
+							{
+								onRecentPaitentSelected2(event );
+							}
+						});
+				}
+				else
+				{
+					onRecentPaitentSelected2(event );
+				}
+				
+				if(model.loadedPatientId)
+				{
+					switchSearchView();
+				}
+				
+				AddViewbackgroundPanel();
+				//ShowProgressWindow("Loading Patient");
+				//UtilityFunctions.showBusyPointer();
+			}
+			
+			protected function onRecentPaitentSelected2(event:PatientSelectedEvent):void
+			{
+				try
+				{
+					clearOldData();
+					clearPatientData();
+					allowUserControl( true );
+					id_PatientProfilePanel.InitComponent();
+					//model.selectedPatientDTO        				=  event.selection as PatientDTO;//For Qi Load
+					id_patientExamControls.id_emailBtn.enabled 		=  event.selection.IsEmailIdAvailable;
+					id_patientExamControls.id_snailBtn.enabled 		=  event.selection.IsSnailIdAvailable;
+					id_patientExamControls.id_messageBtn.enabled 	=  event.selection.IsChatIdAvailable;
+					id_patientExamControls.id_commentBtn.enabled 	=  event.selection.IsSMSNoAvalable;
+					id_patientExamControls.id_PhoneBtn.enabled 		=  event.selection.IsPhoneNoAvailable;
+					
+					//time to load patient data, user sucessfully selected a patient...
+					dispachServiceEvents( event.selection.PatientId, event.selection.PatientUserID);
+					RemoveQuickInputPanel();
+					switchSearchView();
+					
+					//get patient gaxenId service..
+					var gaxenIdevent: GetPatientGaxenIdEvent = new GetPatientGaxenIdEvent(event.selection.PatientUserID.toString(), function(response:XML):void
+					{
+						//trace("patient Gaxen ID "+response.toXMLString());
+						model.gaxenID					= response.toString();
+						if(model.gaxenID != '')
+						{
+							model.gaxenIDSaved 				= true;
+							loadAllergyPrescription(model.gaxenID);
+						}else
+						{
+							//clearOldData();
+						}
+					});									
+					CairngormEventDispatcher.getInstance().dispatchEvent(gaxenIdevent); 
+					//Tahir Alvi  - load PatientDTO via PatientID for New RX in QI-----
+					var lp:LoadPatientbyPatientIDEvent = new LoadPatientbyPatientIDEvent(event.selection.PatientId, function(patientDTO:PatientDTO):void
+					{
+						model.selectedPatientDTO = patientDTO;
+					});
+					CairngormEventDispatcher.getInstance().dispatchEvent(lp); 
+				}
+				catch(e:Error)
+				{
+					//trace("error in method patientExamPanle::onRecentPaitentSelected", e.message );
+				}
+			}
+			//-- Tahir Alvi - Load Patient is called from LPS
+			public function loadRequestedpatient(event:LoadPatientEvent):void    //--Tahir Alvi ----- Load Patient from Waiting Room
+			{
+				clearOldData();
+				clearPatientData();
+				allowUserControl( true );
+				id_PatientProfilePanel.InitComponent();
+				dispachServiceEvents( event.PatientID, event.PatientUserID);
+				RemoveQuickInputPanel();
+				switchSearchView();	
+				AddViewbackgroundPanel();
+				
+				//get patient gaxenId service..
+				var gaxenIdevent: GetPatientGaxenIdEvent = new GetPatientGaxenIdEvent(event.PatientUserID.toString(), function(response:XML):void
+				{
+					model.gaxenID					= response.toString();
+					if(model.gaxenID != '')
+					{
+						model.gaxenIDSaved 				= true;
+						loadAllergyPrescription(model.gaxenID);
+					}
+				});									
+				CairngormEventDispatcher.getInstance().dispatchEvent(gaxenIdevent); 
+			}
+			//Tahir Alvi ----- - search on base of search term and Query case -------
+			public function serachInLocalDB(event:SearchPatientInLocalDBEvent):void
+			{
+				var patUtil:LocalPatientsListUtility = new LocalPatientsListUtility();
+				patUtil.loadPatientsListData(event.searchString, event.qcase);
+			}
+			
+			
+			protected function header_clickHandler(event:MouseEvent):void
+			{
+				if ( model.loadedPatientId == 0 )
+					event.stopImmediatePropagation(); 
+				// event.target as SkinnableContainer)
+			}
+			
+			protected function slideoutpanel1_moveHandler(event:MoveEvent):void
+			{
+				try
+				{
+					//id_PatientProfilePanel.dispatchEvent( event );
+					id_PatientProfilePanel.id_ProfilePanelHeader.OnMoveHandler( event );
+					//id_patientExamControls.removePopup();
+					currentSlideOutPanel.dispatchEvent( event );
+				}
+				catch(e:Error)
+				{
+					//trace( "PatientExamPanel::moveHandler", e.message );
+				}
+			}
+			
+			
+			protected function slideoutpanel1_hideHandler(event:Event):void
+			{
+				try
+				{
+					id_PatientProfilePanel.id_ProfilePanelHeader.ClosePopups();
+				}
+				catch(e:Error)
+				{
+					//trace( "PatientExamPanel::removedFromStage", e.message );
+				}
+			}
+			
+			private function allowUserControl(value:Boolean):void
+			{
+				if( ! value )
+				{
+					removeCurrentSlidePanel();
+				}
+				
+				id_patientExamControls.id_ClosePatnBtn.enabled 			= value;
+				id_patientExamControls.id_optionsBtn.enabled			= value;
+				/*id_patientExamControls.id_NotesBtn.enabled 				= value;
+				id_patientExamControls.id_RxBtn.enabled 				= value; */
+				
+				
+				id_patientExamControls.id_emailBtn.enabled 				= value;
+				id_patientExamControls.id_snailBtn.enabled 				= value;
+				id_patientExamControls.id_messageBtn.enabled 			= value;
+				id_patientExamControls.id_commentBtn.enabled 			= value;
+				id_patientExamControls.id_PhoneBtn.enabled				= value;
+				
+				id_PatientProfilePanel.includeInLayout					= value;
+				id_PatientProfilePanel.visible							= value;
+				//id_PatientProfilePanel.ExpandedView 					= value;
+				//	id_ViewBackgroundPanel.includeInLayout					= value;
+				//	id_ViewBackgroundPanel.visible							= value;
+				
+				//Ayesha: 23rd May 2011
+				//select first tab
+				id_PatientProfilePanel.id_PatientProfileBodyView.id_ProfileViews.selectedIndex = 0;
+				id_PatientProfilePanel.id_PatientProfileBodyView.id_PatientProfileView.id_ProfileViews.selectedIndex = 0;
+				//user will explicitly open QuickInputPanel by clicking on CreateVisit button or
+				//by editing econter in Encounter Grid. 
+				RemoveQuickInputPanel();
+				//RemoveViewbackgroundPanel();
+				
+				if( null != m_oViewbackgroundPanel && value == false)
+				{
+					m_oViewbackgroundPanel.visible 			= false;
+					m_oViewbackgroundPanel.includeInLayout	= false;
+					//id_patientExamArea.removeElement(m_oViewbackgroundPanel);					
+				}
+				
+				//				this.allowSlideOut										= value;
+				this.ExpandedView 										= value;
+			}
+			
+			public override function set ExpandedView(value:Boolean):void
+			{
+				if( ! value )
+				{
+					removeCurrentSlidePanel();
+					
+					if( id_PatientProfilePanel && id_PatientProfilePanel.id_ProfilePanelHeader )
+						id_PatientProfilePanel.id_ProfilePanelHeader.ClosePopups();
+				}
+				super.ExpandedView = value;
+			}
+			
+			private function dispachServiceEvents( PatientId:int,  PatientUserID:int):void
+			{
+				var gueEvent : GetEmailByUserIdEvent = new GetEmailByUserIdEvent( PatientUserID, OnEmailAddressResult );
+				CairngormEventDispatcher.getInstance().dispatchEvent( gueEvent );
+				
+				QuivusCombineEventDispatcher.onPatientSelection( PatientId );
+				QuivusCombineEventDispatcher.onPatientLoadUICallBack = DispatchQICreateEvent;
+				QuivusCombineEventDispatcher.patientLoadedCallBackFunction = setPatientName; 
+			}
+			
+			private function DispatchQICreateEvent(date:Date):void
+			{
+				
+			}
+			
+			// VB Load or show
+			private function AddViewbackgroundPanel():void
+			{
+				//Ayesha 26/02/2013
+				updateModelForViewBackground();
+				
+				if (null != m_oViewbackgroundPanel)
+				{
+					//RemoveViewbackgroundPanel();
+					m_oViewbackgroundPanel.visible 			= true;
+					m_oViewbackgroundPanel.includeInLayout	= true;
+					//currentSlideOutPanel			= m_oViewbackgroundPanel; 
+					id_VB.addElement( m_oViewbackgroundPanel );
+					m_oViewbackgroundPanel.loadVBSummary();
+					return; //add once
+				}  
+				
+				m_oViewbackgroundPanel 			= new ViewBackgroundPanel();
+				//currentSlideOutPanel			= m_oViewbackgroundPanel; 
+				m_oViewbackgroundPanel.percentWidth = 100;
+				//m_oViewbackgroundPanel.ExpandedView = true;
+				
+				m_oViewbackgroundPanel.id = "id_ViewBackgroundPanel";
+				
+				m_oViewbackgroundPanel.loadVBSummary();
+				
+				// old Implementation
+				m_oViewbackgroundPanel.addEventListener("CreateVisitUI", ViewBackgroundPanel_CreateVisitUIHandler );
+				
+				//m_oViewbackgroundPanel.slideoutPanelName = "Viewbackground";
+				//m_oViewbackgroundPanel.allowSlideOut = true;
+				
+				id_VB.addElement(m_oViewbackgroundPanel);
+			}
+			
+			private function RemoveViewbackgroundPanel():void
+			{
+				innerTimer.stop();
+				
+				if( m_oViewbackgroundPanel && id_patientExamArea.contains( m_oViewbackgroundPanel ) )
+				{
+					//id_patientExamArea.removeElement( m_oViewbackgroundPanel );	
+					m_oViewbackgroundPanel.visible 			= false;
+					m_oViewbackgroundPanel.includeInLayout 	= false;
+				}
+				currentSlideOutPanel 	= null;
+				//m_oQuickInputPanel 	 	= null;
+				
+				ExpandDefaultPanel();
+			}
+			
+						
+			private function AddQuickInputPanel(doCreateNewVisit:Boolean):void
+			{
+				// By Moeen Old implemintation
+				
+				/* if( null != m_oQuickInputPanel )
+					RemoveQuickInputPanel();
+				
+				var tmr:Timer = new Timer(200, 1);
+				tmr.start();
+				tmr.addEventListener(TimerEvent.TIMER_COMPLETE, function(evt:TimerEvent):void 
+				{
+					updateModelForQuickInput();
+					
+					m_oQuickInputPanel 				= new QuickInputPanel();
+					currentSlideOutPanel			= m_oQuickInputPanel; 
+					m_oQuickInputPanel.percentWidth = 100;
+					m_oQuickInputPanel.ExpandedView = true;
+					
+					QIModelLocator.getInstance().VisitID;
+					
+					
+					m_oQuickInputPanel.slideoutPanelName = "Quick Input";
+					m_oQuickInputPanel.allowSlideOut = true;
+					m_oQuickInputPanel.styleName = "QICSS";
+						
+					m_oQuickInputPanel.isNewVisit = doCreateNewVisit;
+					id_patientExamArea.addElement( m_oQuickInputPanel );
+					m_oQuickInputPanel.addEventListener(FlexEvent.CREATION_COMPLETE, function(event:FlexEvent):void
+					{
+						if( null == m_oQuickInputPanel ) return;
+						m_oQuickInputPanel.addEventListener("visitSaved", function(event:Event):void
+						{
+							RemoveQuickInputPanel();
+						});
+						
+						m_oQuickInputPanel.id_CloseVisit.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{
+							Alert.show(Constants.MSG_SURE_CLOSE_WITHOUT_SAVE, Constants.MSG_SAVE_ALERT, Alert.YES | Alert.NO, FlexGlobals.topLevelApplication.mainContainer, 
+								function quickInputCloseHandler(event:CloseEvent):void
+								{
+									if (event.detail == Alert.YES)
+										RemoveQuickInputPanel();
+								});
+						});
+						//removeProgress();
+						//RemoveProgressWindow();
+						//m_oQuickInputPanel.id_AssessmentView.id_TreatmentPanel.id_Prescription.id_PrescriptionGrid.dataProvider = patientMedAC;
+					});
+				}); */
+			}
+			
+			private function RemoveQuickInputPanel():void
+			{
+				innerTimer.stop();
+				
+				/* if( m_oQuickInputPanel == currentSlideOutPanel )
+				removeCurrentSlidePanel(); 
+				else */
+				/* if( m_oQuickInputPanel && id_patientExamArea.contains( m_oQuickInputPanel ) )
+				{
+					id_patientExamArea.removeElement( m_oQuickInputPanel );
+					QSUtilityFunctions.closeQuickInput();
+				}
+				currentSlideOutPanel = null;
+				m_oQuickInputPanel 	 = null; */
+				
+				ExpandDefaultPanel();
+				
+				//TODO
+				/* id_ViewBackgroundPanel.id_header.id_VBButtonsGroup.visible = true;
+				id_ViewBackgroundPanel.id_header.id_VBButtonsGroup.includeInLayout = true;
+				id_ViewBackgroundPanel.id_header.id_CreateVisitBtn.setStyle("skinClass",createVisitBtn);
+				*/
+			}
+			
+			
+	////////////////////////// New QuickInputPanel Start ///////////////////////////////////////////////////////////////////////		
+			
+			//New quickInput implementation true
+			protected function ViewBackgroundPanel_CreateVisitUIHandler(event:CreateVisitUIEvent):void
+			{
+				if(id_QIPanel.visible)
+				{
+					return ;
+				}
+					
+				else
+				{
+					updateModelForQuickInput();
+					
+					QIModelLocator.getInstance().patientID = model.patientDTO.PatientId;
+					QIModelLocator.getInstance().gaxenID = model.gaxenID;
+					
+					var lp:LoadPatientbyPatientIDEvent = new LoadPatientbyPatientIDEvent(model.patientDTO.PatientId, function(patientDTO:PatientDTO):void
+					{
+						QIModelLocator.getInstance().patientDTO = patientDTO;
+						QIModelLocator.getInstance().gaxenID 	= patientDTO.GAXENID;
+					});	
+					
+					CairngormEventDispatcher.getInstance().dispatchEvent(lp); 
+					
+					if(event.createNewVisit)
+					{
+						CreateVisit(event.visitDate);// New Visit
+					}
+					else // Load previous visit
+					{
+						var NV: LoadModuleNotesByVisitIdEvent = new LoadModuleNotesByVisitIdEvent();
+						CairngormEventDispatcher.getInstance().dispatchEvent(NV);
+						
+						var DE: LoadModuleDictationByVisitIdEvent= new LoadModuleDictationByVisitIdEvent();
+						CairngormEventDispatcher.getInstance().dispatchEvent(DE);
+					}
+					
+					
+					/**
+					 * Ayesha 19/02/2013
+					 * Every time quickinput is loaded, Chronic diagnosis of that patient will also be loaded*/
+					var ev:LoadPatientChronicDiagnosisByPatientIdEvent = new LoadPatientChronicDiagnosisByPatientIdEvent();
+					CairngormEventDispatcher.getInstance().dispatchEvent(ev);
+					
+					id_QIPanel.AppearUI(event.createNewVisit);
+					id_QIPanel.visible = true;
+					id_QIPanel.ExpandedView = true;
+					
+					m_oViewbackgroundPanel.expandedView = false;
+					id_PatientProfilePanel.ExpandedView = false;
+					
+				}
+			}
+			
+			// By Moeen , to bind the values to the newQI			
+			public function CreateVisit(createDate:Date):void
+			{
+				var visit:VisitDTO = new VisitDTO(	model.patientDTO.PatientId,
+					model.loggedInUserDTO.UserId,
+					model.userSelectedRoleDTO.UserTypeRole.UserTypeId,
+					0,
+					0,
+					model.userSelectedStationDTO.StationID,
+					model.placeOfServiceID ,
+					model.loggedInUserDTO.UserId,
+					createDate,
+					createDate,model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchIdSeq);
+				
+				QIModelLocator.getInstance().VisitDate = createDate;
+				
+				var cve:CreateVisitEvent = new CreateVisitEvent(visit);
+				CairngormEventDispatcher.getInstance().dispatchEvent( cve );
+			}
+			
+			/**
+			 * Ayesha 21/02/2013:
+			 * */
+			private function updateModelForViewBackground():void
+			{
+				VBModelLocator.getInstance().updateModel(model.loggedInUserDTO.UserId,
+					model.userSelectedRoleDTO.UserTypeProfileID,
+					model.userSelectedRoleDTO.UserTypeRole.UserTypeId,
+					model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchIdSeq,
+					model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchName,
+					model.userSelectedStationDTO.StationName,
+					model.userSelectedStationDTO.StationID,
+					model.securityProxyObject,
+					model.userSelectedRoleDTO.UserTypeRole.IsProvider,
+					isFemale(),
+					model.sessionDTO.SessionID);
+				
+				model.stationIdsForVB = new ArrayCollection();
+				
+				model.stationIdsForVB.addItem(model.userSelectedStationDTO.StationID);
+				
+				model.isAllStationSelected = false;
+				
+				VBModelLocator.getInstance().updateRequiredValues(model.loadedPatientId, model.gaxenID, model.stationIdsForVB, model.isAllStationSelected);
+			}
+			
+			private function updateModelForQuickInput():void 
+			{
+				QIModelLocator.getInstance().updateModel(model.loggedInUserDTO.UserId,
+					model.userSelectedRoleDTO.UserTypeProfileID,
+					model.userSelectedRoleDTO.UserTypeRole.UserTypeId,
+					model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchIdSeq,
+					model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchName,
+					model.userSelectedStationDTO.StationName,
+					model.userSelectedStationDTO.StationID,
+					model.securityProxyObject,
+					model.userSelectedRoleDTO.UserTypeRole.IsProvider,
+					isFemale(),
+					model.sessionDTO.SessionID);
+			}
+			
+			
+			
+			protected function id_NewQuickInputPanel_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_QIPanel.quickInputCloseHandler(); // after creating QuickInput , hide it & empty all grids.
+				id_QIPanel.ExpandedView = false;
+				id_QIPanel.visible = false;
+				
+			}
+			
+
+			private function isFemale():Boolean
+			{
+				if(model.loggedInUserDTO.Gender == 'Female' || model.loggedInUserDTO.Gender.toLowerCase() == 'female')
+					return true;
+				else 
+					return false;
+			}
+			
+			//////////////////////////////////
+			
+			
+			//Old implementation , comment By Moeen
+			protected function ViewBackgroundPanel_CreateVisitUIHandle(event:CreateVisitUIEvent):void
+			{
+				/*if( null != m_oQuickInputPanel )
+				{
+					m_oQuickInputPanel.ExpandedView = true;//panel is already loaded just open it
+					return;
+				}
+				
+				 if(event.createNewVisit)
+				{
+				id_ViewBackgroundPanel.id_header.id_CreateVisitBtn.setStyle("skinClass",yellowCreateVisitButton);
+				}
+				else 
+				{
+				id_ViewBackgroundPanel.id_header.id_CreateVisitBtn.setStyle("skinClass",createVisitBtn);
+				} */
+				//AddQuickInputPanel(event.createNewVisit);
+				
+				/* if( event.createNewVisit )
+				{
+					model.createdVisitDate 							= event.visitDate;
+					AppModelLocator.getInstance().moduleNoteDTOList = new ArrayCollection();
+					
+					//service 
+					DTOInitializationUtility.initializeQuickInputDTO();
+					QuivusCombineEventDispatcher.createVisitBtnClickEvents();
+				}
+				
+				innerTimer.addEventListener(TimerEvent.TIMER, handleAutoSave);
+				innerTimer.start(); */
+			}
+			
+			private function handleAutoSave(event:TimerEvent):void 
+			{	
+				if(model.quickInputDTO!=null) //&& model.autoSaveCount == 0)
+				{
+					model.quickInputDTO.Visit = model.visitDTO; 
+					warningTimer= new Timer(1000*10,1);
+					warningTimer.addEventListener(TimerEvent.TIMER, onCompeteWarningTimer);
+					warningTimer.start();
+					//AutoSaveUtility.saveQuickInput(model.quickInputDTO);
+				}
+			}
+			private var warningTimer:Timer;
+			private var alert:Alert;
+			private function onCompeteWarningTimer(e:Event):void
+			{				
+				try{
+					
+					PopUpManager.removePopUp(alert);
+					warningTimer.reset();
+					warningTimer.stop();						
+					
+				}catch(e:*){
+				}				
+			}
+			
+			protected function QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( currentExpandedPanel && currentExpandedPanel != event.currentTarget && 
+					event.viewState == QSViewStateEvent.EXPANDED_VIEW &&
+					!currentExpandedPanel.isSlideOut && !event.currentTarget.isSlideOut )
+				{
+					currentExpandedPanel.ExpandedView = false;
+					id_QIPanel.ExpandedView = false;
+				}
+				
+				 if(currentExpandedPanel && currentExpandedPanel == event.currentTarget && !event.currentTarget.isSlideOut &&
+					 event.viewState == QSViewStateEvent.EXPANDED_VIEW && id_QIPanel.ExpandedView == true )
+				{
+					id_QIPanel.ExpandedView = false;
+					//currentExpandedPanel.ExpandedView = true;
+				} 
+				
+				if( currentExpandedPanel != event.currentTarget && !event.currentTarget.isSlideOut )
+				{
+					currentExpandedPanel = event.currentTarget as SlideOutPanel;
+				}
+			}
+			
+			protected function QIViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				
+				id_QIPanel.ExpandedView = event.viewState == QSViewStateEvent.EXPANDED_VIEW;
+				
+				if(id_QIPanel.ExpandedView && currentExpandedPanel)
+					currentExpandedPanel.ExpandedView = false;
+				
+			}
+			
+			protected function QSSlideStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( currentSlideOutPanel && currentSlideOutPanel != event.currentTarget && 
+					event.viewState == QSViewStateEvent.VIEW_SLIDE_OUT && currentSlideOutPanel.isSlideOut )
+				{
+					//currentSlideOutPanel.ToggleSlideOut();
+					//currentSlideOutPanel["IsNotesPanelVisible"] = false;
+				}
+				
+				currentSlideOutPanel = event.currentTarget as SlideOutPanel;
+				if( event.viewState == QSViewStateEvent.VIEW_SLIDE_IN )
+					currentSlideOutPanel.ExpandedView = true;
+			}
+			
+			public function collapseAllSlideOutPanels():void
+			{
+				if( currentExpandedPanel && ! currentExpandedPanel.isSlideOut)
+					currentExpandedPanel.ExpandedView = false;
+			}
+			
+			public function removeAllPopups():void
+			{
+				try
+				{
+					/* if( m_oQuickInputPanel )
+					{
+						m_oQuickInputPanel.removeAllPopups();
+					} */
+				}
+				catch(e:Error)
+				{
+					//there are several views not constructed because of deferred instantiation,
+					//ignore null views ... TH
+				}
+			}
+			
+			protected function ScrollUp(event:MouseEvent):void
+			{
+				id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition + 15;
+			}
+			
+			protected function ScrollDown(event:MouseEvent):void
+			{
+				id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition - 15;
+			}
+			
+			
+			protected function QSBroughtToFrontHandler(event:Event):void
+			{
+				if(event.currentTarget.id == "id_ViewBackgroundPanel")
+				{
+					//id_ViewBackgroundPanel.id_glowFocus.alpha = 1;
+					id_PatientProfilePanel.id_glowFocus.alpha = 0;
+				}
+				else if(event.currentTarget.id == "id_PatientProfilePanel")
+				{
+					id_PatientProfilePanel.id_glowFocus.alpha = 1;
+					//	id_ViewBackgroundPanel.id_glowFocus.alpha = 0;
+				} 
+			}
+			
+			public function setPatientName():void
+			{
+				return; 
+			}
+			
+			public function switchSearchView():void
+			{
+				if( !AppUtils.IsNullOrEmpty( model.loadedPatientId ) )
+				{
+					if(model.basicUserDTO)
+					{
+						patientName = model.basicUserDTO.FirstName+' '+ model.basicUserDTO.LastName;
+					}
+					//patientName = model.userPatientProfileBarInfoPopUpData.PatientProfileBasicInfoData.FirstName + ' ' +  model.userPatientProfileBarInfoPopUpData.PatientProfileBasicInfoData.LastName;					
+					patientName = patientName.toUpperCase();
+				}
+				else
+				{
+					patientName = "Patient Search";
+				}
+				
+				if(model.loadedPatientId != 0 && id_MainBGPanel.includeInLayout == false)
+				{
+					//if patient is loaded then change the skin..
+					// patient loaded at first level..
+					id_patientExamControls.id_patientSearchBoxContainer.visible = true;
+					id_patientExamControls.id_patientSearchBoxContainer.setStyle("skinClass", patientSearchBGSkinNew);
+					//remove patient search view from profile header..
+					id_patientExamControls.id_PatientImage.includeInLayout = true;
+					id_patientExamControls.id_PatientImage.visible = true;
+					id_patientExamControls.id_PatientNameGroup.includeInLayout = true;
+					id_patientExamControls.id_PatientNameGroup.visible = true;
+					//Tahir			id_patientExamControls.lbl_PatientName.text = patientName;
+					id_patientExamControls.id_patientSearch.visible = false;
+					id_patientExamControls.id_patientSearch.includeInLayout = false;
+					id_patientSearchBoxContainer.includeInLayout = false;
+					id_patientSearchBoxContainer.visible = false;
+					//id_PatientProfilePanel.headerOverBody = false;
+				}
+				else if(model.loadedPatientId != 0 && id_MainBGPanel.includeInLayout == true)
+				{
+					//if patient is loaded then change the skin..
+					id_patientExamControls.id_patientSearchBoxContainer.visible = false;
+					id_patientExamControls.id_patientSearch.visible = false;
+					id_patientExamControls.id_patientSearch.includeInLayout = false;
+					//id_patientExamControls.id_patientSearchBoxContainer.includeInLayout = false;
+					
+					id_patientSearchBoxContainer.includeInLayout = true;
+					id_patientSearchBoxContainer.visible = true;
+					
+					id_patientSearch.includeInLayout	 = true;
+					id_patientSearch.visible			 = true;
+					id_PatientImage.includeInLayout      = true;
+					id_PatientImage.visible	             = true;
+					//Tahir		lbl_PatientName.text 				= patientName;
+					//id_PatientProfilePanel.headerOverBody = true;
+				}
+					/* 	else if(model.loadedPatientId == 0 && id_MainBGPanel.includeInLayout == false)
+					{z
+					
+					} */
+				else if( model.loadedPatientId == 0)
+				{
+					id_patientExamControls.id_patientSearchBoxContainer.visible = true;
+					id_patientExamControls.id_patientSearchBoxContainer.alpha = 1;
+					id_patientExamControls.id_patientSearchBoxContainer.setStyle("skinClass", patientSearchBGSkin);			
+					
+					id_patientExamControls.id_PatientImage.includeInLayout = false;
+					id_patientExamControls.id_PatientImage.visible = false;
+					//id_patientExamControls.id_patientSearch.id_patientSearchTextInput.setStyle("skinClass",noHudTextInput );
+					id_patientExamControls.id_PatientNameGroup.includeInLayout = false;
+					id_patientExamControls.id_PatientNameGroup.visible = false;
+					id_patientSearch.visible 			= false;
+					id_patientSearch.includeInLayout 	= false;
+					id_patientSearchBoxContainer.includeInLayout = false;
+					id_patientSearchBoxContainer.visible = false;
+					id_patientExamControls.id_patientSearch.visible = true;
+					id_patientExamControls.id_patientSearch.includeInLayout = true;
+					id_patientExamControls.id_patientSearch.id_textInput.prompt = "Patient Search";
+					id_patientExamControls.id_patientSearch.width = 283 ;
+					id_patientExamControls.id_patientSearch.id_textInput.setStyle("skinClass",transparentTextInput);
+				}
+			}
+			
+			protected function searchpatientview1_PatientSelectedHandler(event:PatientSelectedEvent):void
+			{
+				clearOldData();
+				var selectedPatient:PatientDTO 	= event.selection as PatientDTO;
+				model.selectedPatientDTO		= event.selection as PatientDTO;
+				//todo.. jawad
+				
+				/* id_emailBtn.enabled 			= selectedPatient.IsEmailIdAvailable;
+				id_snailBtn.enabled 			= selectedPatient.IsSnailIdAvailable;
+				id_messageBtn.enabled 			= selectedPatient.IsChatIdAvailable;
+				id_commentBtn.enabled 			= selectedPatient.IsSMSNoAvalable;
+				id_PhoneBtn.enabled 			= selectedPatient.IsPhoneNoAvailable;  */
+				
+				//update ui / FE event
+				var ps:PatientSelectedEvent = new PatientSelectedEvent(AppEventStrings.PATIENT_SELECTED_EVENT);
+				ps.selection = selectedPatient;
+				dispatchEvent( ps );
+				
+				//update model / BE events
+				var lppEvent : LoadPatientProfilePopUpDataEvent = new LoadPatientProfilePopUpDataEvent(selectedPatient.ID);
+				CairngormEventDispatcher.getInstance().dispatchEvent( lppEvent );
+				
+				if(model.userPatientProfileBarSettingTemp==null)
+				{
+					var lppcsEvent : LoadPatientProfileCustomizedSettingEvent = new LoadPatientProfileCustomizedSettingEvent(selectedPatient.ID,true);
+					CairngormEventDispatcher.getInstance().dispatchEvent( lppcsEvent );
+				}
+				else
+				{
+					lppcsEvent = new LoadPatientProfileCustomizedSettingEvent( selectedPatient.ID, false);
+					CairngormEventDispatcher.getInstance().dispatchEvent( lppcsEvent );
+				}
+				
+				switchSearchView();
+				AddViewbackgroundPanel();
+				//load 
+				model.gaxenID  = selectedPatient.GAXENID;
+				if( model.gaxenID != '')
+				{
+					model.gaxenIDSaved 		= true;
+					loadAllergyPrescription(selectedPatient.GAXENID);
+				}
+				else
+				{
+					//clearOldData();
+				}
+			}
+			
+			public function loadAllergies(GaxenID:String):void
+			{
+				if(GaxenID.length > 0 && GaxenID != "" && GaxenID != "0")
+				{
+					var alEvent : QSAllergyEvent = new QSAllergyEvent(2, GaxenID, callBackAllergy);
+					CairngormEventDispatcher.getInstance().dispatchEvent( alEvent ); 
+				}
+			}
+			private function callBackAllergy(arrAllergy:ArrayCollection):void
+			{
+				model.ThirdSectionLabel = '';
+				if(model.QIAllergyDTOList)
+					model.QIAllergyDTOList.removeAll();
+				else
+					model.QIAllergyDTOList = new ArrayCollection();
+				
+				model.QIAllergyDTOList.addAll(arrAllergy);
+				
+				if(model.QIAllergyDTOList.length > 0)
+				{					
+					var allergyDto:AllergDTO = new AllergDTO();
+					allergyDto			= model.QIAllergyDTOList.getItemAt(0) as AllergDTO;
+					//Tahir Alvi - Set Third Section data && NKDA LAbel Flag
+					
+					if(!allergyDto.isNKDA)
+					{
+						model.ThirdSectionLabel = allergyDto.AllergyName;
+						model.AllergyNKDAFlag 	= false;
+					}
+					else if(allergyDto.isNKDA)
+					{
+						model.ThirdSectionLabel = 'No Known Drug Allergies';
+						model.AllergyNKDAFlag 	= true;
+					}
+				}
+				
+				//Ayesha 28/02/2013
+				//on loading allergies, VB Model should be updated
+				VBModelLocator.getInstance().updateVBAllergies(model.gaxenID, model.QIAllergyDTOList, model.ThirdSectionLabel, model.AllergyNKDAFlag);
+			}
+			
+			public function loadPrescription(GaxenID:String):void
+			{
+				var securityHeaderXML:XML;
+				securityHeaderXML	 			= <Header />;					
+				securityHeaderXML.@EUserName	= "TESTUSER";
+				securityHeaderXML.@EPassword	= "TESTPASS";
+				securityHeaderXML.@ClinicID		= "sad";
+				//trace("Going to load prescription for "+GaxenID);
+				model.gaxenID = GaxenID;//Tahir Alvi - assign patient gaxen id
+				
+				if(GaxenID.length > 0 && GaxenID != "" && GaxenID != "0")
+				{
+					var loadPatientPrescriptionEvent: LoadPatientMedEvent = new LoadPatientMedEvent("0", GaxenID, PrescriptionLoaded);				
+					loadPatientPrescriptionEvent.data = securityHeaderXML; 				
+					CairngormEventDispatcher.getInstance().dispatchEvent(loadPatientPrescriptionEvent);
+				}
+				else
+				{
+					if(model.patientMedACList)
+						model.patientMedACList.removeAll();
+					if(model.patientChronicMedACList)
+						model.patientChronicMedACList.removeAll();
+					if(model.patientMedAC_inactiveList)
+						model.patientMedAC_inactiveList.removeAll();
+					if(model.patientChronicMedAC_inactiveList)
+						model.patientChronicMedAC_inactiveList.removeAll();
+				}
+			}
+			
+			public function PrescriptionLoaded(patientMedAC:ArrayCollection, patientChronicMedAC:ArrayCollection, patientMedAC_inactive:ArrayCollection, patientChronicMedAC_inactive:ArrayCollection):void
+			{
+				if(model.patientMedACList)
+					model.patientMedACList.removeAll();
+				else
+					model.patientMedACList = new ArrayCollection();
+				
+				if(model.patientMedAC_inactiveList)
+					model.patientMedAC_inactiveList.removeAll();
+				else
+					model.patientMedAC_inactiveList = new ArrayCollection();
+				
+				if(model.patientChronicMedAC_inactiveList)
+					model.patientChronicMedAC_inactiveList.removeAll();
+				else
+					model.patientChronicMedAC_inactiveList = new ArrayCollection();
+				
+				if(model.patientChronicMedACList)
+					model.patientChronicMedACList.removeAll();
+				else
+					model.patientChronicMedACList = new ArrayCollection();
+				
+				//For QI load
+				if(model.chMedicationDTOList)
+					model.chMedicationDTOList.removeAll();
+				else
+					model.chMedicationDTOList = new ArrayCollection();
+				
+				if(model.prescriptionDToList)
+					model.prescriptionDToList.removeAll();
+				else
+					model.prescriptionDToList = new ArrayCollection();
+				
+				model.patientMedACList 						= patientMedAC;//prescription list
+				model.patientChronicMedACList 				= patientChronicMedAC;//medication list
+				model.patientMedAC_inactiveList			 	= patientMedAC_inactive;
+				model.patientChronicMedAC_inactiveList	 	= patientChronicMedAC_inactive;
+				model.chMedicationDTOList 					= patientChronicMedAC;//for Qi
+				model.prescriptionDToList 					= patientMedAC;//for Qi
+				
+				//Ayesha 28/02/2013
+				//on loading prescription, VB Model should be updated
+				VBModelLocator.getInstance().updateVBPrescription(model.gaxenID, model.patientMedACList, model.patientChronicMedACList, model.patientMedAC_inactiveList, 
+					model.patientChronicMedAC_inactiveList, model.chMedicationDTOList, model.prescriptionDToList);
+			}
+			// Clear Allergies Prescription and chronic medication on every patient Load
+			// Tahir Alvi - Clear All previous visit or VB summary data when patient is switch to new patient
+			private function clearOldData():void
+			{
+				// for VB summary and detail
+				if(model.patientMedACList)
+					model.patientMedACList.removeAll();
+				if(model.patientChronicMedACList)
+					model.patientChronicMedACList.removeAll();
+				if(model.patientMedAC_inactiveList)
+					model.patientMedAC_inactiveList.removeAll();
+				if(model.patientChronicMedAC_inactiveList)
+					model.patientChronicMedAC_inactiveList.removeAll();
+				
+				//For QI load
+				if(model.chMedicationDTOList)
+					model.chMedicationDTOList.removeAll();
+				if(model.prescriptionDToList)
+					model.prescriptionDToList.removeAll();
+				
+				if(model.QIAllergyDTOList)
+					model.QIAllergyDTOList.removeAll();
+			}
+			//--clear fron end data before close/load and load new patient
+			private function clearPatientData():void
+			{
+				model.patientName 			='';
+				model.gaxenID 				= '';
+				model.ThirdSectionLabel 	= '';
+				model.gaxenIDSaved 			= false;
+				if(model.QIAllergyDTOList)
+					model.QIAllergyDTOList.removeAll();
+			}
+
+			
+			protected function lbl_PatientName_clickHandler(event:MouseEvent):void
+			{
+				id_patientSearch.visible			        			= false;
+				id_patientSearch.includeInLayout            			= false;
+				id_patientSearchView.visible 			    			= true;
+				id_patientSearchView.includeInLayout 	    			= true;
+				id_patientSearchView.id_textInput.prompt 	= "Patient Search" ;
+				id_patientSearchView.width 							  	= 255;
+			}
+			
+			protected function id_patientExamControls_clickHandler(event:MouseEvent):void
+			{
+				/* if(event.currentTarget == this.id_patientExamControls.id_patientSearchBoxContainer)
+				{
+				//if(event.currentTarget == this.id_patientExamControls.id_patientSearchBoxC
+				trace("clicked on hood");
+				event.stopImmediatePropagation();
+				} */
+				if(null != m_oViewbackgroundPanel &&  this.ExpandedView == false && model.loadedPatientId != 0)
+				{
+					m_oViewbackgroundPanel.visible			= true;
+					m_oViewbackgroundPanel.includeInLayout	= true;
+					//currentSlideOutPanel					= m_oViewbackgroundPanel; 
+					id_VB.addElement( m_oViewbackgroundPanel ); 
+					
+				} 
+			}
+			
+			protected function id_patientSearchView_focusOutHandler(event:FocusEvent):void
+			{
+				if( model.loadedPatientId != 0) // do it when patient is loaded..
+				{
+					id_patientSearch.visible			              = true;
+					id_patientSearch.includeInLayout               	  = true;
+					//id_patientSearch.id_patientSearchTextInput.prompt = "Patient Search" ;
+					id_patientSearchView.visible 			              = false;
+					id_patientSearchView.includeInLayout 	              = false; 
+				}
+			}
+			
+			/* public var StatusWindow:PopupGroup;
+			public function ShowProgressWindow(statusMessage :String ):void
+			{
+			StatusWindow = UtilityFunctions.ShowProgressBar( statusMessage, this );
+			}
+			
+			public function RemoveProgressWindow():void
+			{
+			if( StatusWindow )
+			StatusWindow.removePopup();
+			
+			StatusWindow = null;
+			} */
+			
+			protected function slideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if(id_patientExamControls)
+				{
+					if(this.ExpandedView)
+					{
+						id_patientExamControls.id_expandBtn.enabled = true;
+						id_patientExamControls.id_expandBtn.selected = true;
+					}
+					else
+					{
+						id_patientExamControls.id_expandBtn.selected = false;
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<custom:HeaderContents>
+		<s:Group id="id_header" width="{ChromeUtil.topLevelMainContainer.width - 6}" click="header_clickHandler(event)">
+			<s:layout>
+				<s:VerticalLayout horizontalAlign="center" paddingLeft="{isSlideOut? 5:0}"  />
+			</s:layout>
+			<patientExamView:PatientExamPanelHeader id="id_patientExamControls"	click="id_patientExamControls_clickHandler(event)"  PatientSelected="id_patientExamControls_PatientSelectedHandler(event)" width="100%"/>
+		</s:Group>	
+	</custom:HeaderContents>
+	
+	<custom:SlideHeaderContents>
+		<s:HGroup width="100%" paddingLeft="0">			
+			<s:SkinnableContainer width="100%" height="26" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.shade_patientExamSkin" />
+		</s:HGroup>
+	</custom:SlideHeaderContents>
+	
+	<custom:Contents>
+		<components2:ResizeableGroup id="id_contents" 
+									 width="{id_header.width - 0.2 }" maxHeight="{this.maxHeight-29}"  height="100%" bottom="0" 
+									 minHeight="110"	resizeDirection="{ResizeManager.DIRECTION_VERTICAL}" resizeHandle="{new verticalResizeHandle()}">
+			<components2:layout>
+				<s:VerticalLayout gap="-1" horizontalAlign="center" paddingTop="{this.ExpandedView?-4:-5}" paddingLeft="{isSlideOut? 5:0}" paddingRight="0" paddingBottom="0"  />
+			</components2:layout>
+			<s:SkinnableContainer height="100%" width="100%" bottom="0" minHeight="30" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.patientExamBodySkin">
+				<s:layout>
+					<s:VerticalLayout horizontalAlign="center" gap="2" paddingLeft="5" paddingRight="5" paddingTop="6" paddingBottom="10" />
+				</s:layout>
+				
+				<s:Scroller id="id_Scroller" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off" >
+						
+					<s:Group id="id_patientExamArea"  width="100%" height="100%" >
+						<s:layout>
+							<s:VerticalLayout paddingTop="{id_MainBGPanel.includeInLayout?3:3}" horizontalAlign="center" gap="2" />
+						</s:layout>
+						<s:HGroup id="id_MainBGPanel" paddingTop="-2" width="100%" maxHeight="250" includeInLayout="false" >					
+							<!--<components1:MainBGPanel id="id_MainBGPanel" width="100%" includeInLayout="false" visible="false" />-->
+						</s:HGroup>
+						<mx:Spacer height="1" maxHeight="5"/>
+						<s:VGroup horizontalAlign="center" gap="2" width="100%">
+							<!--visible="{model.loadedPatientId == 0? false:true}" 
+							includeInLayout="{model.loadedPatientId == 0 ? false: true}"-->
+							<s:SkinnableContainer id="id_patientSearchBoxContainer"
+												  visible="false" includeInLayout="false"
+												  skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.patientSearchBGSkinNew"  height="23" width="285">
+								<s:layout>
+									<s:HorizontalLayout paddingLeft="{model.loadedPatientId == 0 ? 1 : 8}" paddingTop="2"  verticalAlign="middle" paddingRight="1" />
+								</s:layout>
+								<s:BitmapImage id="id_PatientImage" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/patientpic.png')" width="15" includeInLayout="false" visible="false"/>
+								<s:HGroup id="id_patientSearch"
+										  width="100%"     verticalAlign="middle" horizontalAlign="center"
+										  includeInLayout="{id_patientSearchBoxContainer.includeInLayout}" visible="{id_patientSearchBoxContainer.visible}">	
+									<s:Label id="lbl_PatientName" 
+											 fontFamily="Calibri Bold" fontSize="19"  textAlign="center"
+											 typographicCase="uppercase" maxDisplayedLines="1"  width="235" click="lbl_PatientName_clickHandler(event)"/>
+									<s:Button  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.RecentPatientSearchButton"
+											   buttonMode="true" useHandCursor="true" click="lbl_PatientName_clickHandler(event)"  width="25"/>
+								</s:HGroup>
+								<view2:SearchPatientView id="id_patientSearchView"  
+														height="15" width="283"  includeInLayout="false" visible="false"
+														PatientSelected="searchpatientview1_PatientSelectedHandler(event)"  
+														focusOut="id_patientSearchView_focusOutHandler(event)" patientLoaded="{model.loadedPatientId == 0 ? false : true}"   />
+							</s:SkinnableContainer>
+							
+								<profile:PatientProfilePanel id="id_PatientProfilePanel" 
+															 width="100%" ExpandedView="false" allowSlideOut="true" 
+															 ParentSlideOutPanel="{this}" visible="false" includeInLayout="false"
+															 QSSlideStateChange="QSSlideStateChangeHandler(event)" headerOverBody="false" 
+															 QSBroughtToFront="QSBroughtToFrontHandler(event)"
+															 QSViewStateChange="QSViewStateChangeHandler(event)" 
+															 minHeight="22" slideoutPanelName="Patient Profile"  />
+								
+							<s:Group id="id_VB" width="100%" top="1">
+								<!-- VB will be added here-->
+							</s:Group>
+					<s:Spacer height="-5"/>
+							<!--NEW QUICK INPUTVIEW-->
+							<view1:QuickInputPanel id="id_QIPanel"  QSViewStateChange="QIViewStateChangeHandler(event)" ExpandedView="false" includeInLayout="{id_QIPanel.visible}"
+												   creationComplete="id_NewQuickInputPanel_creationCompleteHandler(event)" 
+												   height="100%"  width="100%" />
+							
+						</s:VGroup>	
+						
+					</s:Group>
+					
+				</s:Scroller>
+				<s:HGroup width="100%" horizontalAlign="right" paddingTop="2" paddingLeft="2" paddingRight="10" paddingBottom="2">
+					<s:Button height="8" width="40" toolTip="Scroll Up" mouseDown="ScrollDown(event)" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.PEscrollUp" 
+							  buttonMode="true" useHandCursor="true"/>
+					<s:Button height="8" width="40" toolTip="Scroll Down" mouseDown="ScrollUp(event)" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.PEScrollDown" 
+							  buttonMode="true" useHandCursor="true"/>
+				</s:HGroup>
+			</s:SkinnableContainer>
+		</components2:ResizeableGroup>
+	</custom:Contents>
+</custom:SlideOutPanel>

@@ -1,0 +1,573 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:components="com.gazuntite.controls.extended.components.*" 
+		 xmlns:LiveGridView="com.gazuntite.common.view.LiveGridView.*" 
+		 creationComplete="creationCompleteHandler(event)" xmlns:common="com.gazuntite.provider.live.services.billing.view.common.*" xmlns:components1="com.gazuntite.controls.extended.components.*"		 
+		 >
+	<s:layout>
+		<s:VerticalLayout paddingTop="1" paddingBottom="7" paddingLeft="2" paddingRight="2"/>
+	</s:layout>
+	
+	<fx:Script>
+		
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.util.ValidationUtils;
+			import com.gazuntite.common.view.events.ListOnlySelectionEvent;
+			import com.gazuntite.provider.live.services.billing.event.BillingEventString;
+			import com.gazuntite.provider.live.services.billing.event.LoadAllPendingBillsbyProviderIdEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.util.BillingConstants;
+			import com.gazuntite.provider.live.services.billing.util.BillingPopUpManager;
+			import com.gazuntite.provider.live.services.billing.view.itemrender.ActionButtonRender;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			private var searchedType:int = 0;
+			private var searchedString:String = "";
+			
+			protected function id_PendingBillsGrid_itemDoubleClickHandler(event:ListEvent):void
+			{
+				// TODO Auto-generated method stub
+			}
+			
+			[Bindable] 
+			private var m_aSearchTypes:ArrayCollection = new ArrayCollection(["Patient Name","Provider","Date of Service"]);
+			
+			[Bindable]
+			public function get SearchTypes():ArrayCollection
+			{
+				return m_aSearchTypes;
+			}
+			
+			public function set SearchTypes(value:ArrayCollection):void
+			{
+				m_aSearchTypes = value;
+			}
+			
+			
+			public function filterBar_RefreshViewHandler(event:Event):void
+			{
+				//model.isPendingBillRemoved = false;
+				var pendingBillsvent:LoadAllPendingBillsbyProviderIdEvent;
+				if(searchedType > 0)
+				{
+					pendingBillsvent = new LoadAllPendingBillsbyProviderIdEvent(0,model.LoggedInUserSelectedBranchId,searchedType,searchedString, model.PendingBillSearchPageNo, RecordStatus);				
+					CairngormEventDispatcher.getInstance().dispatchEvent(pendingBillsvent);
+				}
+				else
+				{
+					pendingBillsvent = new LoadAllPendingBillsbyProviderIdEvent(0,model.LoggedInUserSelectedBranchId,9,model.LoggedInUserProviderId.toString(), model.PendingBillSearchPageNo, RecordStatus);				
+					CairngormEventDispatcher.getInstance().dispatchEvent(pendingBillsvent);
+				}
+			}
+
+
+			protected function OnSearchClick(MouseEvent:Event):void
+			{	
+				//model.isPendingBillRemoved = false;
+				searchedType = 0;
+				searchedString = "";
+				
+				var visitDate:String = "";
+				
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == -1)
+				{
+					Alert.show("Please select search type", "Search Type Not Selected",4,FlexGlobals.topLevelApplication.mainContainer);					
+					return;
+					id_FilterBar.id_FieldsCmbo.setFocus();
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex < 0 && id_FilterBar.id_FieldsCmbo.textInput.text.length > 0)
+				{
+					Alert.show("Please select proper search type from list", "Search Type Not Selected");					
+					return;
+					id_FilterBar.id_FieldsCmbo.setFocus();
+				}
+				if(UtilityFunctions.IsNullOrEmpty(id_FilterBar.id_SearchTextInput.text))	
+				{
+					Alert.show("Please enter something to search ", "Search Field Empty",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+					id_FilterBar.id_SearchTextInput.setFocus();
+				}
+					
+				id_FilterBar.id_SearchTextInput.text = UtilityFunctions.TrimString(id_FilterBar.id_SearchTextInput.text);
+				
+				var searchName:String = "";
+				var searchFirstName:String = "";
+				var searchLastName:String = "";
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == 0 || id_FilterBar.id_FieldsCmbo.selectedIndex == 1)
+				{	
+					searchName = id_FilterBar.id_SearchTextInput.text;
+					if(searchName.indexOf(' ') > -1)
+					{
+						searchFirstName = UtilityFunctions.TrimString(searchName.split(' ')[0]);
+						searchLastName = UtilityFunctions.TrimString(searchName.split(' ')[1]);
+					}
+					else if(searchName.indexOf(',') > -1)
+					{
+						searchLastName = UtilityFunctions.TrimString(searchName.split(',')[0]);
+						searchFirstName = UtilityFunctions.TrimString(searchName.split(',')[1]);
+					}
+					else 
+						searchFirstName = searchName;					
+				}
+				
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == 0 )
+				{
+					
+					if (searchFirstName.length >= 1 && searchFirstName.length <= 50)
+					{
+						if (!isValidAlphaNumericWithSpaces(searchFirstName))
+						{
+							Alert.show("Please enter valid patient first name", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+							return;
+							id_FilterBar.id_SearchTextInput.setFocus();
+						}
+					}
+					else if (searchFirstName.length > 0 && searchFirstName.length > 50)
+					{						
+						Alert.show("patient first name is too long", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					}
+					
+					if (searchLastName.length >= 1 && searchLastName.length <= 50)
+					{
+						if (!isValidAlphaNumericWithSpaces2(searchLastName))
+						{
+							Alert.show("Please enter valid patient last name", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+							return;
+							id_FilterBar.id_SearchTextInput.setFocus();
+						}
+					}
+					else if (searchLastName.length > 0 && searchLastName.length > 50)
+					{						
+						Alert.show("patient last name is too long", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					}
+					
+					/* if( !  ValidationUtils.isValidNameString(id_FilterBar.id_SearchTextInput.text))
+					{
+						Alert.show("Please enter correct patient name", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					} */
+					
+					var searchPatientevent:LoadAllPendingBillsbyProviderIdEvent = new LoadAllPendingBillsbyProviderIdEvent(0,model.LoggedInUserSelectedBranchId,1,id_FilterBar.id_SearchTextInput.text + model.VisitDateRange, BillingConstants.FIRST_PAGE_NUMBER, RecordStatus);
+					CairngormEventDispatcher.getInstance().dispatchEvent(searchPatientevent);
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 1 )
+				{
+					if (searchFirstName.length >= 1 && searchFirstName.length <= 50)
+					{
+						if (!isValidAlphaNumericWithSpaces(searchFirstName))
+						{
+							Alert.show("Please enter valid provider first name", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+							return;
+							id_FilterBar.id_SearchTextInput.setFocus();
+						}
+					}
+					else if (searchFirstName.length > 0 && searchFirstName.length > 50)
+					{						
+						Alert.show("Provider first name is too long", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					}
+					
+					if (searchLastName.length >= 1 && searchLastName.length <= 50)
+					{
+						if (!isValidAlphaNumericWithSpaces2(searchLastName))
+						{
+							Alert.show("Please enter valid provider last name", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+							return;
+							id_FilterBar.id_SearchTextInput.setFocus();
+						}
+					}
+					else if (searchLastName.length > 0 && searchLastName.length > 50)
+					{						
+						Alert.show("Provider last name is too long", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					}
+					
+					/* if( ! ValidationUtils.isValidNameString(id_FilterBar.id_SearchTextInput.text))
+					{
+						Alert.show("Please enter correct provider name", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					} */
+					
+					var searchProviderevent:LoadAllPendingBillsbyProviderIdEvent = new LoadAllPendingBillsbyProviderIdEvent(0,model.LoggedInUserSelectedBranchId,2,id_FilterBar.id_SearchTextInput.text + model.VisitDateRange , BillingConstants.FIRST_PAGE_NUMBER, RecordStatus);
+					CairngormEventDispatcher.getInstance().dispatchEvent(searchProviderevent);
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 2 )
+				{
+					if( ! ValidationUtils.isValidDateFormat(id_FilterBar.id_SearchTextInput.text))
+					{
+						Alert.show("Please enter date in valid format: [MM/DD/YYYY]", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					}
+					
+					var checkFutureDate:String = ValidationUtils.isValidAndNotFutureDate(id_FilterBar.id_SearchTextInput.text);
+					if( checkFutureDate != "true")
+					{
+						if(checkFutureDate == "future")
+							Alert.show("You have entered a future date, please enter a valid date", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+						else
+							Alert.show("Please enter a valid date", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					}
+					
+					visitDate = UtilityFunctions.FormatDate(id_FilterBar.id_SearchTextInput.text);
+					var searchVisitDateevent:LoadAllPendingBillsbyProviderIdEvent = new LoadAllPendingBillsbyProviderIdEvent(0,model.LoggedInUserSelectedBranchId,3,visitDate, BillingConstants.FIRST_PAGE_NUMBER, RecordStatus);
+					CairngormEventDispatcher.getInstance().dispatchEvent(searchVisitDateevent);
+				}
+				
+				searchedType = id_FilterBar.id_FieldsCmbo.selectedIndex + 1;
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == 2)
+					searchedString = visitDate;
+				else
+					searchedString = id_FilterBar.id_SearchTextInput.text + model.VisitDateRange;
+				
+				model.PendingBillSearchPageNo = 1;
+			}		
+			
+			public static function isValidAlphaNumericWithSpaces2(str:String = ""):Boolean
+			{
+				var isValid:Boolean = true;
+				
+				var reg:RegExp = /[a-zA-Z0-9,.'()\/\s]{1,200}/ig;
+				var result:Object;
+				
+				do
+				{
+					result = reg.exec(str);
+					
+					if ((result == null) || (result && result.index !=0))
+					{
+						isValid = false;
+						break;
+					}
+					
+				}while (reg.lastIndex < str.length)
+				
+				return isValid;
+			}
+			
+			private function isValidAlphaNumericWithSpaces(str:String = ""):Boolean
+			{
+				var isValid:Boolean = true;
+				
+				var reg:RegExp = /[a-zA-Z0-9,.'()\/\s]{1,200}/ig;
+				var result:Object;
+				
+				do
+				{
+					result = reg.exec(str);
+					
+					if ((result == null) || (result && result.index !=0))
+					{
+						isValid = false;
+						break;
+					}
+					
+				}while (reg.lastIndex < str.length)
+				
+				return isValid;
+			}
+			
+			private function RecordStatus():void
+			{
+				if(model.totalrecords_PB < BillingConstants.PAGE_SIZE)
+				{
+					id_FilterBar.id_GoToFirstPage.enabled = false;
+					id_FilterBar.id_GoToLastPage.enabled = false;
+					id_FilterBar.id_GoToNextPage.enabled = false;
+					id_FilterBar.id_GoToPreviousPage.enabled = false;
+				}
+				else
+				{
+					if(model.PendingBillSearchPageNo == 1)
+					{
+						id_FilterBar.id_GoToFirstPage.enabled = false;
+						id_FilterBar.id_GoToPreviousPage.enabled = false;
+					}
+					else
+					{
+						id_FilterBar.id_GoToFirstPage.enabled = true;
+						id_FilterBar.id_GoToPreviousPage.enabled = true;
+					}
+					if(model.PendingBillSearchPageNo == model.PendingBillTotalPageNo)
+					{
+						id_FilterBar.id_GoToNextPage.enabled = false;
+						id_FilterBar.id_GoToLastPage.enabled = false;
+					}
+					else
+					{
+						id_FilterBar.id_GoToNextPage.enabled = true;
+						id_FilterBar.id_GoToLastPage.enabled = true;
+					}
+					
+					
+				}
+					
+			}				
+			
+			public function addEventListeners():void
+			{
+				id_FilterBar.id_FieldsCmbo.addEventListener(ListEvent.CHANGE,searchTypeChanged);
+				id_FilterBar.id_btnSearch.addEventListener(MouseEvent.CLICK, OnSearchClick);
+				id_FilterBar.id_SearchTextInput.addEventListener(KeyboardEvent.KEY_UP, OnSearchKeyUp);
+				id_FilterBar.id_SearchTextInput.addEventListener(KeyboardEvent.KEY_DOWN, OnSearchKeyDown);
+				id_FilterBar.addEventListener( BillingEventString.LIST_ONLY , 			id_FilterBar_ListOnlyHandler );
+				id_FilterBar.addEventListener( BillingEventString.GOTO_FIRST_PAGE , 	switchPageForPendingBills );
+				id_FilterBar.addEventListener( BillingEventString.GOTO_LAST_PAGE , 		switchPageForPendingBills );
+				id_FilterBar.addEventListener( BillingEventString.GOTO_NEXT_PAGE , 		switchPageForPendingBills );
+				id_FilterBar.addEventListener( BillingEventString.GOTO_PREVIOUS_PAGE ,  switchPageForPendingBills );
+				id_FilterBar.addEventListener( BillingEventString.REFRESH_VIEW , 		filterBar_RefreshViewHandler);
+			}
+			
+			public function removeAllEventListeners():void
+			{
+				id_FilterBar.id_FieldsCmbo.removeEventListener(BillingEventString.COMBO_CHANGE,searchTypeChanged);
+				id_FilterBar.id_btnSearch.removeEventListener(MouseEvent.CLICK, OnSearchClick);
+				id_FilterBar.removeEventListener( BillingEventString.LIST_ONLY , 			id_FilterBar_ListOnlyHandler );
+				id_FilterBar.removeEventListener( BillingEventString.GOTO_FIRST_PAGE , 	    switchPageForPendingBills );
+				id_FilterBar.removeEventListener( BillingEventString.GOTO_LAST_PAGE , 		switchPageForPendingBills );
+				id_FilterBar.removeEventListener( BillingEventString.GOTO_NEXT_PAGE , 		switchPageForPendingBills );
+				id_FilterBar.removeEventListener( BillingEventString.GOTO_PREVIOUS_PAGE ,   switchPageForPendingBills );
+				id_FilterBar.removeEventListener( BillingEventString.REFRESH_VIEW , 		filterBar_RefreshViewHandler );
+			}
+			
+			private function OnSearchKeyUp(event:KeyboardEvent): void
+			{
+				if(id_FilterBar.id_SearchTextInput.text.length == 0)
+						model.VisitDateRange = "";				
+			}	
+			
+			private function OnSearchKeyDown(event:KeyboardEvent): void
+			{
+				if(event.keyCode == 13)
+					OnSearchClick(null);
+							
+			}
+			
+			private function searchTypeChanged( event:Event ):void
+			{
+				model.VisitDateRange = "";
+				/* searchedType = 0;
+				if( ! UtilityFunctions.IsNullOrEmpty(searchedString))
+				{
+					model.PendingBillSearchPageNo = 1;
+					searchedString = "";
+				} */
+				id_FilterBar.id_SearchTextInput.text = "";
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == 2 )
+					id_FilterBar.id_ListOnly.enabled = false;
+				else
+					id_FilterBar.id_ListOnly.enabled = true;				
+			}
+			
+			private function switchPageForPendingBills( event:Event ):void
+			{
+				//model.isPendingBillRemoved = false;
+				switch( event.type ) 
+				{
+					case BillingEventString.GOTO_FIRST_PAGE:
+						model.PendingBillSearchPageNo = 1;											
+						break;
+					case BillingEventString.GOTO_NEXT_PAGE:
+						model.PendingBillSearchPageNo += 1; 						
+						break;
+					case BillingEventString.GOTO_PREVIOUS_PAGE:
+						model.PendingBillSearchPageNo -= 1;						
+						break;
+					case BillingEventString.GOTO_LAST_PAGE:
+						model.PendingBillSearchPageNo = model.PendingBillTotalPageNo;
+						break;
+				}
+				
+				if(searchedType > 0)
+				{
+					var searchFirstPageEvent:LoadAllPendingBillsbyProviderIdEvent = new LoadAllPendingBillsbyProviderIdEvent(0,model.LoggedInUserSelectedBranchId,searchedType,searchedString, model.PendingBillSearchPageNo, RecordStatus);
+					CairngormEventDispatcher.getInstance().dispatchEvent(searchFirstPageEvent);
+				}
+				else
+				{
+					var pendingBillsvent:LoadAllPendingBillsbyProviderIdEvent = new LoadAllPendingBillsbyProviderIdEvent(0,model.LoggedInUserSelectedBranchId,9,model.LoggedInUserProviderId.toString(),model.PendingBillSearchPageNo, RecordStatus);
+					CairngormEventDispatcher.getInstance().dispatchEvent(pendingBillsvent);
+				}	
+				
+				id_FilterBar.EnableNavigationButtons( model.PendingBillTotalPageNo, model.PendingBillSearchPageNo );
+			}
+
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{				
+				addEventListeners();
+				//model.isPendingBillRemoved = false;
+				var pageNumber:int = 1;
+				model.PendingBillSearchPageNo = 1;
+				var pendingBillsvent:LoadAllPendingBillsbyProviderIdEvent = new LoadAllPendingBillsbyProviderIdEvent(0,model.LoggedInUserSelectedBranchId,9,model.LoggedInUserProviderId.toString(),pageNumber,RecordStatus);
+				CairngormEventDispatcher.getInstance().dispatchEvent(pendingBillsvent);
+				
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == -1 )
+					id_FilterBar.id_ListOnly.enabled = false;
+				
+				model.VisitDateRange = "";
+				
+				id_FilterBar.id_FieldsCmbo.setFocus();
+			}
+			public var popup:PendingBillsListOnlyPopup;
+									
+			protected function id_FilterBar_ListOnlyHandler(event:Event):void
+			{
+				if( popup && popup.isPopUp )
+				{
+					//popup.removePopup();					
+					return; 
+				}			
+				
+				popup = new PendingBillsListOnlyPopup();				
+				
+				popup.addEventListener( ListOnlySelectionEvent.LIST_ONLY_SELECTION, ListOnlySelectionEventHandler );
+				
+				var pLoc:Point = id_FilterBar.id_ListOnly.parent.localToGlobal(new Point(id_FilterBar.id_ListOnly.x ,id_FilterBar.id_ListOnly.height));
+				
+				popup.x 		= pLoc.x - 100; 
+				popup.y 		= pLoc.y  + 10 ;			
+				
+				popup.ShowPopup( this );
+				BillingPopUpManager.addPopUp(popup,BillingPopUpManager.PENDING_BILLS_POPUPS);
+			}		
+			
+			protected function ListOnlySelectionEventHandler(event:ListOnlySelectionEvent):void
+			{	
+				//model.isPendingBillRemoved = false;
+				
+				searchedType = 0;
+				searchedString = "";
+				
+				model.VisitDateRange = "^";
+				var from:String					= event.from;
+				var to:String					= event.to;
+				if(from.length > 0)
+					model.VisitDateRange +=  UtilityFunctions.FormatDate(from);
+				
+				model.VisitDateRange +=",";
+				
+				if(to.length > 0)
+					model.VisitDateRange +=  UtilityFunctions.FormatDate(to);				
+				
+				
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == -1)
+				{
+					Alert.show("Please select search type", "Search Type Not Selected",4,FlexGlobals.topLevelApplication.mainContainer);					
+					return;
+					id_FilterBar.id_FieldsCmbo.setFocus();
+				}
+				if(UtilityFunctions.IsNullOrEmpty(id_FilterBar.id_SearchTextInput.text))	
+				{
+					Alert.show("Please enter something to search ", "Search Field Empty",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+					id_FilterBar.id_SearchTextInput.setFocus();
+				}					
+				
+				id_FilterBar.id_SearchTextInput.text = UtilityFunctions.TrimString(id_FilterBar.id_SearchTextInput.text);
+				
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == 0 )
+				{					
+					if( ! ValidationUtils.isValidNameString(id_FilterBar.id_SearchTextInput.text))
+					{
+						Alert.show("Please enter correct patient name", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					}
+					
+					var searchPatientevent:LoadAllPendingBillsbyProviderIdEvent = new LoadAllPendingBillsbyProviderIdEvent(0,model.LoggedInUserSelectedBranchId,1,id_FilterBar.id_SearchTextInput.text + model.VisitDateRange, BillingConstants.FIRST_PAGE_NUMBER, RecordStatus);
+					CairngormEventDispatcher.getInstance().dispatchEvent(searchPatientevent);
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 1 )
+				{
+					if( !  ValidationUtils.isValidNameString(id_FilterBar.id_SearchTextInput.text))
+					{
+						Alert.show("Please enter correct provider name", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					}
+					
+					var searchProviderevent:LoadAllPendingBillsbyProviderIdEvent = new LoadAllPendingBillsbyProviderIdEvent(0,model.LoggedInUserSelectedBranchId,2,id_FilterBar.id_SearchTextInput.text + model.VisitDateRange , BillingConstants.FIRST_PAGE_NUMBER, RecordStatus);
+					CairngormEventDispatcher.getInstance().dispatchEvent(searchProviderevent);
+				}	
+				
+				searchedType = id_FilterBar.id_FieldsCmbo.selectedIndex + 1;
+				searchedString = id_FilterBar.id_SearchTextInput.text + model.VisitDateRange;
+				model.PendingBillSearchPageNo = 1;
+			}			
+			
+			public function removePopUp():void
+			{
+				if( popup && popup.isPopUp )
+				{
+					popup.removePopup();
+					return; 
+				}
+			}			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<!--<s:HGroup width="100%" horizontalAlign="right">
+		<s:Label text="{ 'Page ' + model.PendingBillSearchPageNo + '/' + model.PendingBillTotalPageNo}"   horizontalCenter="0" fontFamily="Calibri"  color="#F1BE6E" fontWeight="bold" fontSize="13" visible="{ (model.SearchPendingBillsResults.PendingBills != null &amp;&amp;  model.SearchPendingBillsResults.PendingBills.length > 0 ) ? true : false}" includeInLayout="true" textAlign="right"/>
+		<s:Label text="{model.totalRecordMessage_PB}"   horizontalCenter="0" fontFamily="Calibri"  color="#F1BE6E" fontWeight="bold" fontSize="13" visible="true" includeInLayout="true" textAlign="right"/>		
+		
+	</s:HGroup>-->
+	<!--<LiveGridView:FilterViewForGrid id="id_FilterBar" width="100%"
+									DataProvider="{SearchTypes}"									
+									/>-->
+	<common:BillingGridFilterView width="100%" id="id_FilterBar"									
+								  PagingMessage="{ 'Page ' + model.PendingBillSearchPageNo + '/' + model.PendingBillTotalPageNo}" 
+								  MessageVisible="{ (model.SearchPendingBillsResults.PendingBills != null &amp;&amp;  model.SearchPendingBillsResults.PendingBills.length > 0 ) ? true : false}"
+								  RecordMessage="{model.totalRecordMessage_PB}" DataProvider="{SearchTypes}"
+								  tabIndex="1"
+								  />
+	<components1:LabelDataGrid id="id_PendingBillsGrid" width="100%" height="100%" 
+						 dataProvider="{model.SearchPendingBillsResults.PendingBills}" 
+						 itemDoubleClick="id_PendingBillsGrid_itemDoubleClickHandler(event)"
+						 useRollOver=" true" editable="false"
+						 verticalScrollBarStyleName="VScrollBar"
+						 verticalScrollPolicy="on"  horizontalScrollPolicy="auto"
+						 maxHeight="150" variableRowHeight="true"						 
+						 columnWidths="{['30%'],['30%'],['10%'],['20%'],['10%']}"
+						 tabIndex="12"
+						 >
+		
+		<components:columns>	
+			<!--<mx:DataGridColumn headerText="Sr.#" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editable="false" labelFunction="displayRowNum"  />-->
+			<mx:DataGridColumn headerText="Sr.#" dataField="SNo"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Patient Name" dataField="Patient" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" />
+			<mx:DataGridColumn headerText="Provider" dataField="Provider"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" />	
+			<mx:DataGridColumn headerText="Date of Service" dataField="VisitDate" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" />
+			<mx:DataGridColumn headerText="Bill Payment" dataField="BillPayment" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"  />
+			<mx:DataGridColumn headerText="Action" dataField="Action" 
+									   itemRenderer="com.gazuntite.provider.live.services.billing.view.itemrender.ActionButtonRender" />
+			
+			
+		</components:columns>
+	</components1:LabelDataGrid>
+	
+</s:SkinnableContainer>

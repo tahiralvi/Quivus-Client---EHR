@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:skins="com.adobe.Quivus.view.controls.skins.*" 
+		 xmlns:buttonSeparators="com.adobe.Quivus.view.controls.skins.buttonSeparators.*"
+		 creationComplete="init()" focusEnabled="true" xmlns:components="com.gazuntite.controls.extended.components.*" 
+		 >
+	<fx:Metadata>
+		[DefaultProperty("Content")] 
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.view.controls.skins.QIinternalBarFocusSkin;
+			import com.adobe.Quivus.view.controls.skins.QIinternalBarSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSeparators.buttonSeparator;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.VBdictationBtn;
+			import com.adobe.quivus.skins.chrome.buttonSkins.VBdictationBtnSelected;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.VBnotesBtn;
+			import com.adobe.quivus.skins.chrome.buttonSkins.VBnotesBtnSelected;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridDictationButtonSkin;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBIconsButton;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.VBIconsButtonFilled;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.VBIconsButtonFilled2;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.writeNotesButton;
+			
+			
+			
+			private var _showSaveButton:Boolean = false;
+			
+			private var m_sHeadingLable:String;
+			
+			private var m_aContent:Array;
+			
+			
+			private var sSectionNameID:String;
+			
+			[Bindable]
+			public function get showSaveButton():Boolean
+			{
+				return _showSaveButton;
+			}
+
+			public function set showSaveButton(value:Boolean):void
+			{
+				_showSaveButton = value;
+			}
+
+			private function init():void 
+			{
+				if( m_aContent == null ) return;
+				for(var i:int=0; i < m_aContent.length; i++) 
+				{
+					commons.addElementAt( m_aContent[i], i );
+				}
+				
+				/* ChromeUtil.topLevelMainContainer.addEventListener(MouseEvent.MOUSE_DOWN, function(event:MouseEvent):void
+				{
+					id_OptionPopUp.displayPopUp = false;
+					id_iconButtons.selected = false;
+				}, true); */
+				
+				id_OptionPopUp.addEventListener(FocusEvent.FOCUS_OUT, function(event:MouseEvent):void
+				{
+					id_OptionPopUp.displayPopUp = false;
+					id_iconButtons.selected = false;
+				}, true);  
+				
+			}
+			
+			public function set Content(a:Array):void 
+			{
+				m_aContent = a;
+			}        
+			
+			public function get Content():Array 
+			{
+				return m_aContent;
+			}
+
+			
+			[Bindable]
+			public function get HeadingLable():String
+			{
+				return m_sHeadingLable;
+			}
+			
+			public function set HeadingLable(value:String):void
+			{
+				m_sHeadingLable = value;
+			}
+
+
+			protected function group1_focusInHandler(event:FocusEvent):void
+			{
+				id_pmhHeader.setStyle("skinClass", QIinternalBarFocusSkin);
+				trace("focused");
+			}
+
+
+			protected function group1_focusOutHandler(event:FocusEvent):void
+			{
+				id_pmhHeader.setStyle("skinClass", QIinternalBarSkin);
+				trace("focus OUT");
+			}
+			
+			public function setIcons(hasDictation:Boolean, hasNotes:Boolean):void
+			{
+				//if(id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0)
+				
+				if(hasNotes && hasDictation)
+				{
+					id_iconButtons.setStyle("skinClass", VBIconsButtonFilled2);
+					id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected);
+					id_Voice.setStyle("skinClass", VBdictationBtnSelected);
+				}				
+				else if(hasNotes)
+				{
+					id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+					id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected);
+					id_Voice.setStyle("skinClass", VBdictationBtn);
+				}
+				else if(hasDictation)
+				{
+					id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+					id_Voice.setStyle("skinClass", VBdictationBtnSelected);	
+					id_NotesBtn.setStyle("skinClass", VBnotesBtn);
+				}				
+				else
+				{
+					id_iconButtons.setStyle("skinClass", VBIconsButton);
+					id_NotesBtn.setStyle("skinClass", VBnotesBtn);
+					id_Voice.setStyle("skinClass", VBdictationBtn);					
+				}				
+			}
+
+
+			protected function id_OptionPopUp_focusOutHandler(event:FocusEvent):void
+			{
+				id_OptionPopUp.displayPopUp = false ;
+				id_iconButtons.selected		= false ;
+				
+			}
+
+
+			protected function id_CloseButton_clickHandler(event:MouseEvent):void
+			{
+				id_OptionPopUp.displayPopUp = false ;
+				id_iconButtons.selected		= false ;
+			}
+
+			protected function id_iconButtons_clickHandler(event:MouseEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( SectionNameID ) )
+				{
+					id_OptionPopUp.displayPopUp = !id_OptionPopUp.displayPopUp;  
+				}
+			}
+
+			[Bindable]
+			public function get SectionNameID():String
+			{
+				return sSectionNameID;
+			}
+
+			public function set SectionNameID(value:String):void
+			{
+				sSectionNameID = value;
+			}
+
+			
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<!--<s:BorderContainer skinClass="com.adobe.Quivus.view.controls.skins.QuickInputInternalBarsSkin" width="100%"  
+					   >-->
+	
+	<s:SkinnableContainer id="id_pmhHeader" width="100%" height="22" skinClass="com.adobe.Quivus.view.controls.skins.QIinternalBarSkin">
+		
+	
+	
+	<!--<s:BorderContainer width="100%" backgroundAlpha="1" cornerRadius="3" borderVisible="false" backgroundColor="#F9D234" height="22" >
+	-->	<s:layout>
+			<s:HorizontalLayout verticalAlign="middle" />
+		</s:layout>
+
+		<s:HGroup verticalAlign="middle" horizontalAlign="left" width="100%" paddingLeft="1">
+			
+			<s:HGroup gap="0" horizontalAlign="left" verticalAlign="middle" width="24">
+				
+				<s:HGroup verticalAlign="top" paddingTop="-1">				
+				<s:Button id="id_CloseBtn" width="23" height="21" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QICrossButtonSkin" toolTip="Close" useHandCursor="true" buttonMode="true"  />
+				</s:HGroup>
+				
+				<buttonSeparators:buttonSeparator />
+				<!--<s:HGroup verticalAlign="top" paddingTop="-1">	
+				<s:ToggleButton id="id_Pin" toolTip="Pin" width="21" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.QIPMH_PinBtn" useHandCursor="true" buttonMode="true"  />
+				</s:HGroup>
+				<buttonSeparators:buttonSeparator />-->
+				
+			</s:HGroup>
+			
+			<s:HGroup verticalAlign="middle" horizontalAlign="left" width="100%" paddingLeft="4">
+				<s:Label id="id_headingLbl" color="#000000" fontFamily="Calibri" text="{HeadingLable}" 
+
+						 />	
+			</s:HGroup>
+			
+		<!--<mx:Spacer width="46%" />-->
+		
+		<!--<s:Button id="id_Tick"  />-->
+			
+		<s:HGroup id="commons" horizontalAlign="right" verticalAlign="middle" width="100%" paddingRight="5" gap="0">
+			
+				
+			<!--<s:HGroup paddingTop="-2">				
+				<s:ToggleButton id="id_NotesBtn" height="20" width="21" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.writeNotesButton" buttonMode="true" useHandCursor="true" toolTip="Write Notes" />
+			</s:HGroup>
+				<buttonSeparators:buttonSeparator />
+			
+			<s:HGroup paddingTop="-2">
+			<s:ToggleButton id="id_Voice" height="20" width="21" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.gridDictationButtonSkin" buttonMode="true" useHandCursor="true" toolTip="Dictation"/>
+			</s:HGroup>
+			<buttonSeparators:buttonSeparator />-->
+			
+			<s:VGroup width="77"  horizontalAlign="right" paddingTop="1" gap="-2">
+				<s:HGroup gap="0" width="{id_ChangeIndicator.visible ? 40 : 25}" horizontalAlign="right">
+					<buttonSeparators:buttonSeparator visible="{id_ChangeIndicator.visible}" />
+					<s:HGroup paddingTop="3" paddingLeft="4">						
+					<s:ToggleButton id="id_ChangeIndicator" skinClass="com.adobe.Quivus.view.controls.skins.changeIndicator"
+										includeInLayout="false" visible="false"/>
+					</s:HGroup>		
+											
+					<buttonSeparators:buttonSeparatorBlue visible="false" includeInLayout="false"/>
+					<s:HGroup paddingTop="0" paddingLeft="0" paddingRight="1">	
+						<s:Button id="id_SaveHistory" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QIHeaderSaveBtnBlack" width="21" height="21" 
+								  toolTip="Save {AppUtils.TitleCase(HeadingLable)}" buttonMode="true" useHandCursor="true" enabled="false" visible="false" includeInLayout="false"/>
+					</s:HGroup>
+					
+					
+					<buttonSeparators:buttonSeparator />
+					<s:ToggleButton id="id_iconButtons" height="26" toolTip="Other Options" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBIconsButton" buttonMode="true" useHandCursor="true" 
+									click="id_iconButtons_clickHandler(event)"/>
+				</s:HGroup>
+				
+				
+				
+				<s:PopUpAnchor id="id_OptionPopUp" width="138"
+							   popUpPosition="below"								   
+							   displayPopUp="false"	
+							   focusOut="id_OptionPopUp_focusOutHandler(event)"
+							   styleName="popUpBox">
+					<s:SkinnableContainer skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.communicationIconsBG" width="100%">
+						<s:layout>
+							<s:VerticalLayout gap="2" verticalAlign="bottom" horizontalAlign="left" paddingBottom="5" paddingLeft="7" paddingTop="4" />
+						</s:layout>
+						<s:HGroup width="100%" paddingRight="5">
+							<s:RichText color="#000000" fontSize="12" height="12" kerning="off" text="Other Options" whiteSpaceCollapse="preserve" fontFamily="Calibri Bold"/>
+							<mx:Spacer width="100%"/>
+							<s:Button buttonMode="true" id="id_CloseButtonn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.popupCloseBtnSkin" 
+									  toolTip="Close" height="16" width="16"
+									  click="id_CloseButton_clickHandler(event)"/>
+						</s:HGroup>
+
+						<s:Button id="id_Voice" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBdictationBtn" 
+								  buttonMode="true" useHandCursor="true" toolTip="Record Dictation" />
+						<s:Button id="id_NotesBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBnotesBtn" 
+								  buttonMode="true" useHandCursor="true" toolTip="Write Notes" />		
+						<s:ToggleButton  id="id_Pin" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.pinToggleButton"
+										buttonMode="true" useHandCursor="true" toolTip="pin / Un-pin" />	
+						
+					</s:SkinnableContainer>
+				</s:PopUpAnchor>
+			</s:VGroup>
+			<buttonSeparators:buttonSeparator />
+			
+			<s:HGroup paddingTop="-2">
+			<s:ToggleButton id="id_expandBtn"  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.expandButton_grey"
+							buttonMode="true" useHandCursor="true" toolTip="{id_expandBtn.selected?'Collapse':'Expand'}"/>
+			</s:HGroup>
+			<buttonSeparators:buttonSeparator />
+			<s:HGroup paddingTop="-2">
+			<s:ToggleButton id="id_slideoutBtn" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.slideOutBtn"
+							buttonMode="true" useHandCursor="true" toolTip="{id_slideoutBtn.selected?'Slide-In':'Slide-Out'}" 
+							width="18" height="21" />
+			</s:HGroup>
+			
+		</s:HGroup>
+			
+			
+			
+		</s:HGroup>
+	<!--</s:BorderContainer>-->
+	</s:SkinnableContainer>
+	
+</s:Group>

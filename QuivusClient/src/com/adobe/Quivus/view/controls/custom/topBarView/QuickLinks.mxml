@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="Init()" xmlns:components1="com.gazuntite.controls.extended.components.*" >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.quickLink.LoadUserQuickLinksEvent;
+			import com.adobe.Quivus.events.staticData.patientsData.LoadCurrentDayAddedPatientsEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.MyFonts;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.itemRenderer.IconDescriptionItemRenderer;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.recentPatient.CurrentDayRecentPatientView;
+			import com.adobe.Quivus.view.controls.panel.ComingSoonPanel;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.addmoreBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.topBarQIbutton;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.topBarQIbuttonSelected;
+			import com.adobe.Quivus.view.events.ComingSoonEvent;
+			import com.adobe.Quivus.view.events.EprescriptionEvent;
+			import com.adobe.Quivus.view.events.PatientEncounterEvent;
+			import com.adobe.Quivus.view.events.QLRegisterUser;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.LinkButton;
+			import mx.core.FlexGlobals;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.components.List;
+			import spark.layouts.VerticalLayout;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			[Embed('assets/icons/dummy100x100.png')]
+			private var dummy:Class;
+			private var popGroup:Group;
+			private var popGroupCurrenDay:Group;
+			
+			private var m_acDataProvider:ArrayCollection = new ArrayCollection(/* [
+				{icon:dummy, label:"link 1", description:"This is link description"},
+				{icon:dummy, label:"link 1", description:"This is link description"},
+				{icon:dummy, label:"link 1", description:"This is link description"},
+				{icon:dummy, label:"link 1", description:"This is link description"}		
+			] */);
+			
+			import com.adobe.Quivus.utils.ChromeUtil;
+			
+			[Bindable]
+			public function get DataProvider():ArrayCollection
+			{
+				return m_acDataProvider;
+			}
+			
+			public function set DataProvider(value:ArrayCollection):void
+			{
+				m_acDataProvider = value;
+			}
+			
+			private function Init():void
+			{
+				//this.DataProvider= model.userQuickLinks;
+				//BindingUtils.bindProperty(this,"DataProvider",model,"userQuickLinksDTOList");
+				
+				FlexGlobals.topLevelApplication.addEventListener(MouseEvent.CLICK, function(event:Event):void
+				{
+					if( popGroup && popGroup.isPopUp )
+					{
+						PopUpManager.removePopUp( popGroup );
+						//id_linkbtn.selected = false;
+						//id_linkbtn.setStyle("skinClass", topBarQIbutton);
+						id_linkbtn.selected = false;
+					}
+				});
+			}
+			
+			private function LoadQuickLinks():void
+			{
+				if( ! LoadUserQuickLinksEvent.isAlreadyLoaded )// load only if not loaded ... 
+				{
+					var qlEvent : LoadUserQuickLinksEvent = new LoadUserQuickLinksEvent();
+					CairngormEventDispatcher.getInstance().dispatchEvent( qlEvent );
+				}
+			}
+			
+			public function toggleButtonSkin():void{
+				/* id_linkbtn.alpha = 0.5;
+				id_linkbtn.x = 400;
+				id_linkbtn.y = 300;  */
+			}
+			
+			protected function linkbutton1_clickHandler(event:MouseEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.QUICK_LINK ) )//Tahir Alvi - on Quick Link click implement security check
+				{
+					LoadQuickLinks();
+					
+					if( popGroup && popGroup.isPopUp )
+					{
+						PopUpManager.removePopUp( popGroup );
+						//id_linkbtn.selected = false;
+						//id_linkbtn.setStyle("skinClass", topBarQIbutton);
+						id_linkbtn.selected = false;
+						return;
+					}
+					
+					if( popGroup && popGroup.isPopUp )
+					{
+						//id_linkbtn.setStyle("skinClass", topBarQIbutton);
+					}
+					else
+					{
+						//id_linkbtn.setStyle("skinClass", topBarQIbuttonSelected);
+						id_linkbtn.selected = true;
+					}
+					popGroup = new Group();
+					
+					var list:AddMoreList 		= new AddMoreList();
+					BindingUtils.bindProperty( list, "DataProvider", this, "DataProvider" );
+					list.DataProvider 			= this.DataProvider;
+					list.itemRendererClass		= IconDescriptionItemRenderer ;
+					list.itemClickListener 		= OnItemClick;
+					list.addMoreClickListener 	= AddMore;
+					list.y = id_linkbtn.y - 31;
+					list.x = id_linkbtn.x;
+					
+					list.width = 185;
+					list.height = 155;
+					
+					popGroup.addElement( list );
+					PopUpManager.addPopUp( popGroup, FlexGlobals.topLevelApplication as DisplayObject );
+					popGroup.x = this.x; //+ (this.width - 15);
+					popGroup.y = this.y + this.height - 4; 
+					
+					event.stopImmediatePropagation();
+				}
+			}
+			
+			public function RemoveConnectionSkin():void
+			{
+				//id_linkbtn.setStyle("skinClass", topBarQIbutton);
+				id_linkbtn.selected = false;
+			}
+			
+			private function AddMore(event:MouseEvent):void
+			{
+				//Alert.show("you'll be able to add more soon...", "ADD MORE", 4, popGroup );
+			}
+			
+			private function OnItemClick(event:MouseEvent):void
+			{
+				try
+				{
+					var selection:String = event.currentTarget.selectedItem.label;
+					if( selection == Constants.PATIENT_REGISTRATION )
+					{
+						if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.PATIENT_REGISTRATION ) )//Tahir Alvi - on Quick Link click implement security check
+						{
+							var pr:QLRegisterUser = new QLRegisterUser();
+							this.dispatchEvent( pr );
+							model.isNewPatientReg = true;
+							if(model.QIAllergyDTOList)
+								model.QIAllergyDTOList.removeAll();
+						}
+					}
+					else if (selection == 'Prescription')
+					{
+						//if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.EPRESCRIPTION ))//Tahir Alvi - on Quick Link click implement security check
+						//{
+						var epe:EprescriptionEvent = new EprescriptionEvent();
+						this.dispatchEvent( epe );
+						//}
+					}
+					else if (selection == 'Document Mgmt.')
+					{
+						if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.DOCUMENT_MANAGER ))//Tahir Alvi - on Quick Link click implement security check
+						{
+							comingSoon(selection);
+						}
+					}
+					else if (selection == 'Scheduler')
+					{
+						if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.SCHEDULING ))//Tahir Alvi - on Quick Link click implement security check
+						{
+							comingSoon(selection);
+						}
+					}
+					else if (selection == 'Un-signed Encounters')
+					{
+						//if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.SCHEDULING ))//Tahir Alvi - on Quick Link click implement security check
+						//{
+						var pe:PatientEncounterEvent = new PatientEncounterEvent();
+						this.dispatchEvent( pe );
+						//}
+					}
+					
+					if( popGroup && popGroup.isPopUp )
+						PopUpManager.removePopUp( popGroup );
+					
+					if(selection)
+					{					
+						//id_linkbtn.label = " Quick Links  " + selection;
+					}
+					//id_linkbtn.width = 200;
+				}
+				catch(e:Error)
+				{
+					trace('Error on Quick Links item click handler', e.message)
+				}
+			}
+			
+			private function comingSoon(HeaderLabel:String):void
+			{
+				var comingSoon:ComingSoonEvent = new ComingSoonEvent(HeaderLabel);
+				this.dispatchEvent( comingSoon );
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Binding source="model.userQuickLinksDTOList" destination="DataProvider" /> 
+	
+	<!--<s:ToggleButton id="id_linkbtn" skinClass="com.adobe.Quivus.view.controls.skins.quicklinksBtnSkin"
+	click="linkbutton1_clickHandler(event)" label=" Quick Links"
+	x="12" y="34" visible="{model.quicklinkEnabled}"/>
+	-->
+	<s:ToggleButton id="id_linkbtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.topBarQIbutton"
+					click="linkbutton1_clickHandler(event)" label=" Quick Links"
+					x="10" y="35" visible="{model.quicklinkEnabled}"
+					toolTip="Quick Links for Registeration, Prescription, Billing"
+					buttonMode="true" useHandCursor="true"/>
+	<components1:CounterToggleButton id="id_currentDayList" x="55"  y="35" skinClass="com.adobe.gazuntite.skins.chrome.toggleButtonSkins.recentPatient" buttonMode="true" useHandCursor="true" 
+									toolTip="View patients added in last 24 hours" visible="{model.quicklinkEnabled}" counter="{model.totalRecords_CDP.toString()}" 
+									/>
+	
+	<!--<s:Rect height="7" id="id_QIBG" width="108" x="{id_linkbtn.x}" y="{id_linkbtn.y + id_linkbtn.height}">
+	<s:fill>
+	<s:LinearGradient rotation="90">
+	<s:GradientEntry alpha="1.0" color="0x3D7889" ratio="0"/>
+	<s:GradientEntry alpha="1.0" color="0x95EFFC" ratio="1"/>
+	</s:LinearGradient>
+	</s:fill>
+	</s:Rect>-->
+	
+	<!--<mx:LinkButton id="id_linkbtn"
+	upSkin="@Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='btn_quicklinks')"
+	overSkin="@Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='btn_quicklinks_over')"
+	downSkin = "@Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='btn_quicklinks_over')"
+	click="linkbutton1_clickHandler(event)" 
+	x="15" y="32" visible="{model.quicklinkEnabled}"/>-->
+</s:Group>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"	
+		 skinClass="com.gazuntite.provider.services.view.skins.toolButtonsBGSkin"
+		 >
+	<s:layout>
+		<s:VerticalLayout paddingLeft="10" paddingRight="10" paddingTop="4" horizontalAlign="center" paddingBottom="4" />
+	</s:layout>
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			public function ClearAllButtons():void
+			{
+				id_ScheduleBtn.selected 		= false;
+				id_WaitingRoomBtn.selected 		= false;
+				id_AlertBtn.selected 			= false;
+				id_PrescriptionBtn.selected 	= false;
+				id_LabsBtn.selected 			= false;
+				id_BillingBtn.selected 			= false;
+				id_DocumentMgmtBtn.selected 	= false;
+				id_ReferalMgmtBtn.selected 		= false;
+				id_AdministrationBtn.selected 	= false;
+				id_ReportsBtn.selected 			= false;
+				
+				id_ScheduleBtn.label 		= UtilityFunctions.TitleCase(id_ScheduleBtn.label         );
+				id_WaitingRoomBtn.label 	= UtilityFunctions.TitleCase( id_WaitingRoomBtn.label 		);
+				id_AlertBtn.label			= UtilityFunctions.TitleCase( id_AlertBtn.label 			);
+				id_PrescriptionBtn.label	= UtilityFunctions.TitleCase( id_PrescriptionBtn.label 		);
+				id_LabsBtn.label			= UtilityFunctions.TitleCase( id_LabsBtn.label 				);
+				id_BillingBtn.label			= UtilityFunctions.TitleCase( id_BillingBtn.label 			);
+				id_DocumentMgmtBtn.label	= UtilityFunctions.TitleCase( id_DocumentMgmtBtn.label 		);
+				id_ReferalMgmtBtn.label 	= UtilityFunctions.TitleCase( id_ReferalMgmtBtn.label 		);
+				id_AdministrationBtn.label	= UtilityFunctions.TitleCase( id_AdministrationBtn.label 	);
+				id_ReportsBtn.label			= UtilityFunctions.TitleCase( id_ReportsBtn.label 			);
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<!--<s:Rect height="100%" width="100%" radiusX="3" >
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#cccccc" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#cccccc" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+
+	</s:Rect>-->
+	
+		<s:HGroup width="100%" horizontalAlign="center" >
+			<mx:Spacer width="100%"/>
+			<s:ToggleButton id="id_ScheduleBtn" toolTip="Schedule" skinClass="com.gazuntite.provider.services.view.skins.liveProviderButtonsSkin" label="Schedule" buttonMode="true" enabled="true" />
+			<mx:Spacer width="100%"/>
+			<s:ToggleButton id="id_WaitingRoomBtn"  toolTip="Waiting Room" skinClass="com.gazuntite.provider.services.view.skins.liveProviderButtonsSkin" label="Waiting Room" buttonMode="true" enabled="true"/>
+			<mx:Spacer width="100%"/>
+			<s:ToggleButton id="id_AlertBtn" skinClass="com.gazuntite.provider.services.view.skins.liveProviderButtonsSkin" label="Gazuntite Alert" buttonMode="true" enabled="false"/>
+			<mx:Spacer width="100%"/>
+			<s:ToggleButton id="id_PrescriptionBtn" skinClass="com.gazuntite.provider.services.view.skins.liveProviderButtonsSkin" toolTip="e-Prescription" label="e-Prescription" buttonMode="true" enabled="true"/>
+			<mx:Spacer width="100%"/>
+			<s:ToggleButton id="id_LabsBtn" skinClass="com.gazuntite.provider.services.view.skins.liveProviderButtonsSkin" label="E-Labs" buttonMode="true" enabled="true"/>
+			<mx:Spacer width="100%"/>
+		</s:HGroup>
+		<s:HGroup width="100%" horizontalAlign="center" >
+			<mx:Spacer width="100%"/>
+			<s:ToggleButton id="id_BillingBtn" toolTip="Billing" skinClass="com.gazuntite.provider.services.view.skins.liveProviderButtonsSkin" label="Billing" buttonMode="true" />
+			<mx:Spacer width="100%"/>
+			<s:ToggleButton id="id_DocumentMgmtBtn" toolTip="Document Mgmt" skinClass="com.gazuntite.provider.services.view.skins.liveProviderButtonsSkin" label="Document Mgmt" buttonMode="true" />
+			<mx:Spacer width="100%"/>
+			<s:ToggleButton id="id_ReferalMgmtBtn" skinClass="com.gazuntite.provider.services.view.skins.liveProviderButtonsSkin" label="Referal Mgmt" buttonMode="true" enabled="false"/>
+			<mx:Spacer width="100%"/>
+			<s:ToggleButton id="id_AdministrationBtn" skinClass="com.gazuntite.provider.services.view.skins.liveProviderButtonsSkin" toolTip="Administration" label="Administration" buttonMode="true" enabled="true"/>
+			<mx:Spacer width="100%"/>
+			<s:ToggleButton id="id_ReportsBtn" skinClass="com.gazuntite.provider.services.view.skins.liveProviderButtonsSkin" label="Reports" buttonMode="true" enabled="false"/>
+			<mx:Spacer width="100%"/>
+		</s:HGroup>
+	
+</s:SkinnableContainer>

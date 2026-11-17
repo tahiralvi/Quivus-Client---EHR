@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:flm="http://ns.adobe.com/flame/2008" xmlns:ATE="http://ns.adobe.com/ate/2009" xmlns:lib="assets.graphics.*" xmlns:fc="http://ns.adobe.com/flashcatalyst/2009">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/>
+	</s:states>
+	<s:Path data="M 43.392 0.066 L 43.392 0.005 L 42.951 0 L 42.951 0.01 L 41.061 0.036 L 39.171 0.01 L 39.171 0 L 38.731 0.005 L 38.73 0.066 L 0 0.583 C 7.583 0.583 11.815 10.667 11.815 10.667 C 13.605 15.417 15.959 16.458 18.905 16.427 L 41.061 16.419 L 63.217 16.427 C 66.164 16.458 68.517 15.417 70.306 10.667 C 70.306 10.667 74.539 0.583 82.123 0.583 L 43.392 0.066 Z" includeIn="up" winding="nonZero" x="-0.061" x.over="0" y="0.208" y.over="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#858699" ratio="0.1843137254901961" ratio.over="0.396078431372549"/>
+				<s:GradientEntry alpha="1.0" color="#999AAD" ratio="0.5803921568627451"/>
+				<!--<s:GradientEntry alpha="1.0" color.over="#CCCEEA" color.up="#494A63" ratio="1" color.down="#C5C7DD"/>-->
+			</s:LinearGradient>
+		</s:fill>
+		<!--<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="4" blurY="4" color="0x000000" distance="2" hideObject="false" inner="false" knockout="false" quality="2" strength="1" />
+			<s:DropShadowFilter blurX="2" blurY="2" distance="2" hideObject="false" color="0x000000" inner="true" strength="1" alpha="0.5" quality="2" knockout="false" angle="270"/>
+		</s:filters>-->
+	</s:Path>
+	
+	<s:Path data="M 43.392 0.066 L 43.392 0.005 L 42.951 0 L 42.951 0.01 L 41.061 0.036 L 39.171 0.01 L 39.171 0 L 38.731 0.005 L 38.73 0.066 L 0 0.583 C 7.583 0.583 11.815 10.667 11.815 10.667 C 13.605 15.417 15.959 16.458 18.905 16.427 L 41.061 16.419 L 63.217 16.427 C 66.164 16.458 68.517 15.417 70.306 10.667 C 70.306 10.667 74.539 0.583 82.123 0.583 L 43.392 0.066 Z" includeIn="over, down" winding="nonZero" x="-0.061" x.over="0" y="0.208" y.over="0">
+		
+	<s:fill>
+		<s:LinearGradient rotation="270">
+			<s:GradientEntry alpha="1.0" color="#FF7200" ratio="0"/>
+			<s:GradientEntry alpha="1.0" color="#FF7800" ratio="0.00784313725490196"/>
+			<s:GradientEntry alpha="1.0" color="#FF7800" ratio="0.19215686274509805"/>
+			<s:GradientEntry alpha="1.0" color="#FF4B13" ratio="0.47058823529411764"/>
+			<s:GradientEntry alpha="1.0" color="#FFBB5A" ratio="1"/>
+		</s:LinearGradient>
+	</s:fill>
+	<!--<s:filters>
+		<s:DropShadowFilter alpha="0.99" angle="90" blurX="2" blurY="2" color="#F6C32D" distance="0" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		<s:DropShadowFilter alpha="0.98" angle="270" blurX="0" blurY="0" color="#333333" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+	</s:filters>-->
+	</s:Path>
+	
+	<s:RichText color="#FFFFFF" color.down="#333333" color.over="#333333" columnCount="1" fontFamily="Calibri Bold" fontSize="10"  tabStops="S36" tabStops.down="S0" tabStops.over="S0" text="CLOSE" whiteSpaceCollapse="preserve" x="20" y="5"/>
+	<s:RichText color="#FFFFFF" color.down="#333333" color.over="#333333" columnCount="1" fontFamily="Calibri Bold" fontSize="10" tabStops="S36" tabStops.down="S0" tabStops.over="S0" text="X" whiteSpaceCollapse="preserve" x="57" y="5"/>
+</s:Skin>

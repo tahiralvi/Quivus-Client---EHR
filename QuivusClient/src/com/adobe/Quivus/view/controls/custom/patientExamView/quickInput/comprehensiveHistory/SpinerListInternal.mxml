@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 
+		 
+		 >
+	<fx:Metadata>
+		[Event(name="change", type="spark.events.IndexChangeEvent")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.IList;
+			
+			import spark.events.IndexChangeEvent;
+			
+
+			private var m_oDataProvider:IList
+			
+			[Bindable]
+			public var currIndex:Number = 0;
+
+			[Bindable]
+			public function get DataProvider():IList
+			{
+				return m_oDataProvider;
+			}
+
+			public function set DataProvider(value:IList):void
+			{
+				m_oDataProvider = value;
+			}
+
+			protected function id_MinBtn_clickHandler(event:MouseEvent):void
+			{
+				var oldIndex:int = currIndex;
+				
+				if( null == DataProvider )
+					return;
+				
+				if( currIndex > 0 )
+					--currIndex;
+				else
+					currIndex = DataProvider.length - 1;
+				
+				var e:IndexChangeEvent = new IndexChangeEvent( IndexChangeEvent.CHANGE, true, false, oldIndex, currIndex );
+				dispatchEvent( e );
+			}
+
+
+			protected function id_MaxBtn_clickHandler(event:MouseEvent):void
+			{
+				var oldIndex:int = currIndex;
+				
+				if( null == DataProvider )
+					return;
+				
+				if( currIndex < DataProvider.length - 1 )
+					++currIndex;
+				else
+					currIndex = 0;
+				
+				var e:IndexChangeEvent = new IndexChangeEvent( IndexChangeEvent.CHANGE, true, false, oldIndex, currIndex );
+				dispatchEvent( e );
+			}
+
+
+			protected function id_DDList_changeHandler(event:IndexChangeEvent):void
+			{
+				dispatchEvent( event );
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+		<s:HorizontalLayout gap="0" verticalAlign="middle" paddingRight="20" paddingTop="-2"/>
+	</s:layout>
+	
+	<s:HGroup paddingTop="2">		
+	<s:Button id="id_minBtn" click="id_MinBtn_clickHandler(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QIHistoryHeader_prevBtn"
+			   buttonMode="true" useHandCursor="true" toolTip="Previous"/>
+	</s:HGroup>
+	
+	<!--<s:Label id="id_Label" width="100%" text="{DataProvider.getItemAt( currIndex )}" textAlign="center" backgroundColor="#666666" color="#ffffff" fontFamily="Calibri Bold" />-->
+	<s:DropDownList id="id_DDList" width="100%" height="15" dataProvider="{DataProvider}" change="id_DDList_changeHandler(event)" selectedIndex="{currIndex}" textAlign="center" fontFamily="Calibri Bold" 
+					skinClass="com.adobe.Quivus.view.controls.skins.comboBoxSkins.SpinerList" />
+	
+	<s:HGroup paddingTop="2">
+	<s:Button id="id_MaxBtn" click="id_MaxBtn_clickHandler(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QIHistoryHeader_nextBtn" 
+			  buttonMode="true" useHandCursor="true" toolTip="Next"/>
+		</s:HGroup>
+	
+</s:Group>

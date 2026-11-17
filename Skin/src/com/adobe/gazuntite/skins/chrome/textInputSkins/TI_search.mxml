@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:flm="http://ns.adobe.com/flame/2008">
+	<fx:Metadata>[HostComponent("spark.components.TextInput")]</fx:Metadata>
+	<s:states>
+		<s:State name="normal"/><s:State name="normalWithPrompt"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+	</s:states>
+	<s:Rect height="20" radiusX="3.99972" radiusY="4.24904" width="100%" x="0.5" y="0.5">
+		<s:fill>
+			<s:SolidColor color="#FFFFFF"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#9EA1AF" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill.normal>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="#FFFFFF" alpha="1" ratio="0"/>
+				<s:GradientEntry color="#CCCCCC" alpha="1.0" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill.normal>
+	</s:Rect>
+	<s:RichEditableText ai:aa="2" color="#000000" columnCount="1" fontFamily="Calibri" d:id="8" kerning="on" tabStops="S36 S72" whiteSpaceCollapse="preserve" x="9" y="4" width="236" heightInLines="1" id="textDisplay"/>
+	
+	<s:Label 
+		id="promptView"
+		bottom="1"
+		color="#333333"	
+		left="1"
+		paddingBottom="3"
+		paddingLeft="3"
+		paddingRight="3"
+		paddingTop="3"
+		right="1"
+		top="1"
+		fontFamily="Calibri"
+		fontSize="11"
+		
+		/>
+	
+</s:Skin>

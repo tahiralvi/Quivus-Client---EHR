@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  xmlns:accountsAndReceivables="com.gazuntite.provider.live.services.billing.view.views.accountsAndReceivables.*"
+		  >
+	<fx:Script>
+		<![CDATA[
+			import mx.events.IndexChangedEvent;
+			
+			protected function id_vsViews_changeHandler(event:IndexChangedEvent):void
+			{
+				// TODO Auto-generated method stub
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:ButtonBar  id= "id_Tabs"   width="625" dataProvider = "{id_vsViews}"  styleName="blackButtonBarSkin" buttonMode="true" useHandCursor="true" />	
+	
+	<mx:ViewStack id="id_vsViews" width = "100%" height = "100%"  
+				  change="id_vsViews_changeHandler(event)" resizeToContent="true"				  
+				  >
+		<s:NavigatorContent label="Transactions" width = "100%" height = "100%">
+			<s:Scroller width="100%" height="200">
+				<accountsAndReceivables:AccountTransactions width="100%" />
+			</s:Scroller>
+		</s:NavigatorContent>
+		<!--<s:NavigatorContent label = "Apply Payments" width = "100%" height = "100%"  >
+		<s:Label text="Work in Progress"  fontFamily="Calibri" fontSize="14" verticalCenter="0" horizontalCenter="0"   />
+		</s:NavigatorContent>-->
+		<s:NavigatorContent  label="ERA Adjustment Mapping" width = "100%" height = "100%" >
+			<accountsAndReceivables:AdjustmentMappingView width="100%" />
+		</s:NavigatorContent>		
+		<s:NavigatorContent  label="Statement Management" width = "100%" height = "100%" >
+			<accountsAndReceivables:PatientStatementView width="100%" />
+		</s:NavigatorContent>
+	</mx:ViewStack>	
+	
+</s:VGroup>

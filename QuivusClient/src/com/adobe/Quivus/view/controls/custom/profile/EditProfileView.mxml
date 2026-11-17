@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:components="com.zigron.controls.extended.components.*" 
+		 xmlns:registeration="com.adobe.Quivus.view.controls.registeration.*" xmlns:components1="com.gazuntite.controls.extended.components.*" >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.staticData.addressBook.LoadCitiesByStateIdEvent;
+			import com.adobe.Quivus.events.staticData.addressBook.LoadZipcodesByStateIdAndCityNameEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.view.controls.registeration.PhoneNumberAddMoreTitleWindow;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin;
+			import com.gazuntite.controls.extended.skins.comboBoxRegisterationRequiredSkin;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			import valueObjects.CityDTO;
+			import valueObjects.StateDTO;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var phoneNumberAddMorePopUp:PhoneNumberAddMoreTitleWindow;
+			private var personalPhoneNumbers:ArrayCollection;
+			
+			protected function id_PhoneNumberAddMore_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_PhoneNumberAddMore.id_TelNumber.setStyle("skinClass", LabelTextInputRequiredSkin);
+				id_PhoneNumberAddMore.id_TelNumberKind.setStyle("skinClass", comboBoxRegisterationRequiredSkin);
+			}
+			
+			protected function id_Gender_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_Gender.setStyle("skinClass", comboBoxRegisterationRequiredSkin);
+			}
+			
+			protected function id_State_changeHandler(event:IndexChangeEvent):void
+			{
+				if (event.newIndex > -1)
+				{
+					var state:StateDTO  = id_State.selectedItem;
+					if(model.zipcodeList!=null){
+						model.zipcodeList.removeAll();
+					}
+					var qlEvent : LoadCitiesByStateIdEvent = new LoadCitiesByStateIdEvent(state.StateID,Constants.PERSONAL);
+					CairngormEventDispatcher.getInstance().dispatchEvent( qlEvent );
+				}
+				else
+				{
+					id_City.selectedIndex = -1;
+					id_ZIP.selectedIndex = -1;
+					
+					id_City.dataProvider = null;
+					id_ZIP.dataProvider = null;
+				}
+			}
+			
+			protected function id_City_changeHandler(event:IndexChangeEvent):void
+			{
+				var city:CityDTO  	= id_City.selectedItem as CityDTO;
+				var state:StateDTO  = id_State.selectedItem as StateDTO;
+				if(model.zipcodeList!=null)
+				{
+					model.zipcodeList.removeAll();
+				}
+				if( city && state )
+				{
+					var qlEvent : LoadZipcodesByStateIdAndCityNameEvent = new LoadZipcodesByStateIdAndCityNameEvent(state.StateID,city.CityName,Constants.PERSONAL);
+					CairngormEventDispatcher.getInstance().dispatchEvent( qlEvent );
+				}
+			}
+			
+			private function AddMorePhoneNumbers(event:Event):void
+			{
+				if (!personalPhoneNumbers)
+					personalPhoneNumbers = new ArrayCollection();
+				
+				if (!personalPhoneNumbers.length)
+				{
+					var result:Object = id_PhoneNumberAddMore.isInValid(true);
+					if (result.hasOwnProperty("isNotValid") && result.isNotValid)
+					{
+						if (result.hasOwnProperty("errorStr") && result.errorStr)
+						{
+							Alert.show(result.errorStr, "Phone number entry error", 4, FlexGlobals.topLevelApplication.mainContainer, function():void
+							{
+								if (result.hasOwnProperty("toSetFocus") && result.toSetFocus)
+									result.toSetFocus.setFocus();
+							});
+						}
+						return;
+					}
+					personalPhoneNumbers.addItem(id_PhoneNumberAddMore.getPhoneNumberDetails());
+				}
+				
+				if (!phoneNumberAddMorePopUp)
+					phoneNumberAddMorePopUp = new PhoneNumberAddMoreTitleWindow();
+				
+				if (!phoneNumberAddMorePopUp.phoneNumbers)
+					phoneNumberAddMorePopUp.phoneNumbers = personalPhoneNumbers;
+				
+				var btn:Button = Button(event.currentTarget);
+				
+				var pt:Point = btn.parent.localToGlobal(new Point(btn.x, btn.y));
+				
+				pt.x += btn.width/2 - 100;
+				pt.y += btn.height;
+				
+				phoneNumberAddMorePopUp.display(this, pt);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:layout>
+		<s:VerticalLayout paddingBottom="3" paddingLeft="3" paddingRight="3" paddingTop="3" gap="1"/>
+	</s:layout>
+	
+	<components1:CollapsiblePanel width="100%" title="LOGIN INFORMATION:" skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin" >
+		<components:layout>
+			<s:HorizontalLayout />
+		</components:layout>
+		
+		<s:BorderContainer width="100" height="95" borderWeight="1" borderColor="0">
+			<mx:Image id="id_ProfileImage" width="95" height="90" maintainAspectRatio="false" />
+		</s:BorderContainer>
+		
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Role" />
+			<components1:LabelTextInput id="id_Role" prompt="Role" width="150" />
+			
+			<s:Label text="LogIn ID" />
+			<components1:LabelTextInput id="id_LogInID" prompt="Log-In" width="150" />
+			
+			<s:Label text="Password" />
+			<components1:LabelTextInput id="id_Password" prompt="Password" displayAsPassword="true" width="150"  />
+			<s:Button label="Change" fontSize="9" height="15" />
+			
+		</s:HGroup>
+		
+	</components1:CollapsiblePanel>
+	
+	
+	<components1:CollapsiblePanel width="100%" title="PERSONAL INFORMATION:"  collapsed="true"
+								 skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin" >
+		<components:layout>
+			<s:VerticalLayout />
+		</components:layout>
+		
+				<s:HGroup width="100%">
+					<components1:LabelComboBox id="id_Prefix"  prompt="Prefix" width="55"
+											  dataProvider="{model.registrationStaticDataDTO.PrefixTypes}" labelField="PrefixName" paddingLeft="3" 
+											  paddingRight="3" paddingTop="5" paddingBottom="3" tabIndex="0"/>
+					<components1:LabelTextInput id="id_FName" fontFamily="Calibri" fontSize="11" fontWeight="normal"  restrict="[A-Z a-z , . ' 0-9]"
+											   skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin" prompt="First Name"  
+											   contentBackgroundColor="#EDDA8C" borderColor="#444444" 
+											   width="100%" paddingLeft="3" paddingRight="3" paddingTop="5" paddingBottom="3"  tabIndex="1"/>
+					
+					<components1:LabelTextInput  id="id_MName" fontFamily="Calibri " fontSize="11"  prompt="Middle Name" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+												skinClass="com.adobe.Quivus.view.controls.skins.LabelTextInputSkin" paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="2"/>
+					
+					<components1:LabelTextInput id="id_LName" fontFamily="Calibri" fontSize="11" prompt="Last Name" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+											   contentBackgroundColor="#EDDA8C" skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin"	 
+											   paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="3"/>
+				</s:HGroup>
+				<s:HGroup width="100%">
+					<components1:LabelTextInput id="id_SSN" prompt="SSN / ID Number" width="100%" tabIndex="4" 
+											   fontFamily="Calibri" fontSize="11" contentBackgroundColor="#EDDA8C" 
+											   skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin"/>
+					<components1:LabelComboBox id="id_Gender" prompt="Gender" width="100%" skinClass="com.gazuntite.controls.extended.skins.comboBoxRegisterationRequiredSkin" 	 
+											  dataProvider="{model.registrationStaticDataDTO.GenderTypes}" labelField="GenderName"  tabIndex="5" 
+											  creationComplete="id_Gender_creationCompleteHandler(event)"
+											  />
+				</s:HGroup>
+				
+				<s:HGroup width="100%">
+					<components1:LabelTextInput id="id_Address" fontFamily="Calibri" fontSize="11" prompt="Address" width="50%"  tabIndex="7"  
+											   skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin"/>
+					
+					<components1:LabelComboBox id="id_State" prompt="State" width="20%" change="id_State_changeHandler(event)"
+											  dataProvider="{model.addressBookStaticDataDTO.AllStatesList}" 
+											  labelField="StateName" tabIndex="8" skinClass="com.gazuntite.controls.extended.skins.comboBoxRegisterationRequiredSkin"/>
+					
+					<components1:LabelComboBox id="id_City" prompt="City" width="20%" change="id_City_changeHandler(event)" dataProvider="{model.citiesList}" 
+											  labelField="CityName" tabIndex="9" skinClass="com.gazuntite.controls.extended.skins.comboBoxRegisterationRequiredSkin"/>
+					<components1:LabelComboBox id="id_ZIP" prompt="Zip" fontFamily="Calibri" fontSize="11" width="10%" dataProvider="{model.zipcodeList}" 
+											  labelField="ZipCode" tabIndex="10" skinClass="com.gazuntite.controls.extended.skins.comboBoxRegisterationRequiredSkin"/>
+					
+				</s:HGroup>
+				
+			<!--</s:VGroup>-->
+			
+			<s:HGroup width="100%" verticalAlign="middle">
+				<registeration:PhoneNumberAddMore id="id_PhoneNumberAddMore" width="66%" tabIndex="13" 
+												  creationComplete="id_PhoneNumberAddMore_creationCompleteHandler(event)"
+												  
+												  />
+				
+				<s:Button click="AddMorePhoneNumbers(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.AddMoreAllergiesBtn"
+						  buttonMode="true" useHandCursor="true" toolTip="Add More" tabIndex="16"/>
+				
+			</s:HGroup>
+			
+	</components1:CollapsiblePanel>
+	<components1:CollapsiblePanel width="100%" title="PROFESSIONAL INFORMATION:"  collapsed="true"
+								 skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin" >
+		<components:layout>
+			<s:VerticalLayout />
+		</components:layout>
+		
+		<s:HGroup width="100%">
+			<components1:LabelComboBox id="id_Title"  prompt="Title" width="55"
+									  paddingLeft="3" paddingRight="3" paddingTop="5" paddingBottom="3" tabIndex="0"/>
+			<components1:LabelTextInput id="id_WorkDays" fontFamily="Calibri" fontSize="11" fontWeight="normal"  restrict="[A-Z a-z , . ' 0-9]"
+									   skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin" prompt="Work Days"  
+									   contentBackgroundColor="#EDDA8C" borderColor="#444444" 
+									   width="100%" paddingLeft="3" paddingRight="3" paddingTop="5" paddingBottom="3"  tabIndex="1"/>
+			
+			<components1:LabelTextInput  id="id_WorkStart" fontFamily="Calibri " fontSize="11"  prompt="Work Start" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+										skinClass="com.adobe.Quivus.view.controls.skins.LabelTextInputSkin" paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="2"/>
+			
+			<components1:LabelTextInput id="id_WorkEnd" fontFamily="Calibri" fontSize="11" prompt="Work End" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+									   contentBackgroundColor="#EDDA8C" skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin"	 
+									   paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="3"/>
+		</s:HGroup>
+		<s:HGroup width="100%">
+			<components1:LabelTextInput id="id_NPI" fontFamily="Calibri" fontSize="11" fontWeight="normal"  restrict="[A-Z a-z , . ' 0-9]"
+									   skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin" prompt="NPI"  
+									   contentBackgroundColor="#EDDA8C" borderColor="#444444" 
+									   width="100%" paddingLeft="3" paddingRight="3" paddingTop="5" paddingBottom="3"  tabIndex="1"/>
+			
+			<components1:LabelTextInput  id="id_UPIN" fontFamily="Calibri " fontSize="11"  prompt="UPIN" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+										skinClass="com.adobe.Quivus.view.controls.skins.LabelTextInputSkin" paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="2"/>
+			
+			<components1:LabelTextInput id="id_DEA" fontFamily="Calibri" fontSize="11" prompt="DEA" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+									   contentBackgroundColor="#EDDA8C" skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin"	 
+									   paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="3"/>
+		</s:HGroup>
+		<s:HGroup width="100%">
+			<components1:LabelTextInput id="id_TPI" fontFamily="Calibri" fontSize="11" fontWeight="normal"  restrict="[A-Z a-z , . ' 0-9]"
+									   skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin" prompt="TPI"  
+									   contentBackgroundColor="#EDDA8C" borderColor="#444444" 
+									   width="100%" paddingLeft="3" paddingRight="3" paddingTop="5" paddingBottom="3"  tabIndex="1"/>
+			
+			<components1:LabelTextInput  id="id_LicenseNo" fontFamily="Calibri " fontSize="11"  prompt="License #" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+										skinClass="com.adobe.Quivus.view.controls.skins.LabelTextInputSkin" paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="2"/>
+			
+			<components1:LabelTextInput id="id_EIN" fontFamily="Calibri" fontSize="11" prompt="EIN" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+									   contentBackgroundColor="#EDDA8C" skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin"	 
+									   paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="3"/>
+		</s:HGroup>
+		
+	</components1:CollapsiblePanel>
+	
+	<components1:CollapsiblePanel width="100%" title="E-PRESCRIPTION INFORMATION:" collapsed="true"
+								 skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin" >
+		<components:layout>
+			<s:VerticalLayout />
+		</components:layout>
+		
+		<s:HGroup width="100%">
+			<components1:LabelTextInput id="id_Txt1" fontFamily="Calibri" fontSize="11" fontWeight="normal"  restrict="[A-Z a-z , . ' 0-9]"
+									   skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin" prompt="Txt"  
+									   contentBackgroundColor="#EDDA8C" borderColor="#444444" 
+									   width="100%" paddingLeft="3" paddingRight="3" paddingTop="5" paddingBottom="3"  tabIndex="1"/>
+			
+			<components1:LabelTextInput  id="id_Txt2" fontFamily="Calibri " fontSize="11"  prompt="Txt" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+										skinClass="com.adobe.Quivus.view.controls.skins.LabelTextInputSkin" paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="2"/>
+			
+			<components1:LabelTextInput id="id_3" fontFamily="Calibri" fontSize="11" prompt="Txt" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+									   contentBackgroundColor="#EDDA8C" skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin"	 
+									   paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="3"/>
+		</s:HGroup>
+		<s:HGroup width="100%">
+			<components1:LabelTextInput id="id_Txt4" fontFamily="Calibri" fontSize="11" fontWeight="normal"  restrict="[A-Z a-z , . ' 0-9]"
+									   skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin" prompt="Txt"  
+									   contentBackgroundColor="#EDDA8C" borderColor="#444444" 
+									   width="100%" paddingLeft="3" paddingRight="3" paddingTop="5" paddingBottom="3"  tabIndex="1"/>
+			
+			<components1:LabelTextInput  id="id_Txt5" fontFamily="Calibri " fontSize="11"  prompt="Txt" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+										skinClass="com.adobe.Quivus.view.controls.skins.LabelTextInputSkin" paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="2"/>
+			
+			<components1:LabelTextInput id="id_Txt6" fontFamily="Calibri" fontSize="11" prompt="Txt" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+									   contentBackgroundColor="#EDDA8C" skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin"	 
+									   paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="3"/>
+		</s:HGroup>
+		<s:HGroup width="100%">
+			<components1:LabelTextInput id="id_Txt7" fontFamily="Calibri" fontSize="11" fontWeight="normal"  restrict="[A-Z a-z , . ' 0-9]"
+									   skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin" prompt="Txt"  
+									   contentBackgroundColor="#EDDA8C" borderColor="#444444" 
+									   width="100%" paddingLeft="3" paddingRight="3" paddingTop="5" paddingBottom="3"  tabIndex="1"/>
+			
+			<components1:LabelTextInput  id="id_Txt8" fontFamily="Calibri " fontSize="11"  prompt="Txt #" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+										skinClass="com.adobe.Quivus.view.controls.skins.LabelTextInputSkin" paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="2"/>
+			
+			<components1:LabelTextInput id="id_Txt9" fontFamily="Calibri" fontSize="11" prompt="Txt" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+									   contentBackgroundColor="#EDDA8C" skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin"	 
+									   paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="3"/>
+		</s:HGroup>
+		
+	</components1:CollapsiblePanel>
+	
+</s:Group>

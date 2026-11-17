@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:components="com.zigron.controls.extended.components.*" xmlns:components1="com.gazuntite.controls.extended.components.*">
+	<fx:Metadata>
+	/* 	[HostComponent("spark.components.ToggleButton")] */
+		[HostComponent("com.gazuntite.controls.extended.components.MultiLabelToggleButton")]
+	</fx:Metadata>
+		<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect alpha="0.25" height="17" radiusX="2" visible.disabledAndSelected="false" visible.down="false" visible.downAndSelected="false" visible.over="false" visible.overAndSelected="false" visible.upAndSelected="false" width="100%" y="0">
+		<s:fill>
+			<s:SolidColor color="#FFFFFF"/>
+		</s:fill>
+	</s:Rect>
+	<s:Rect height="17" includeIn="disabled,disabledAndSelected,down,downAndSelected,over,overAndSelected,upAndSelected" radiusX="2" visible.disabled="false"  width="100%" x="0" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#AA1515" ratio="0.4235294117647059"/>
+				<s:GradientEntry alpha="1.0" color="#7F0505" ratio="0.5333333333333333"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="0.1" angle="90" blurX="1" blurY="1" color="#FFFFFF" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="17" radiusX="2" visible.disabled="false" visible.up="false" visible.upAndSelected="false" width="65" x="0" y="0" visible.downAndSelected="false" visible.overAndSelected="false" visible.disabledAndSelected="false">
+		<s:fill>
+			<s:LinearGradient rotation="270" rotation.down="90">
+				<s:GradientEntry alpha="1.0" color="#F49595" ratio="0.5254901960784314"/>
+				<s:GradientEntry alpha="1.0" color="#EFBDBD" ratio="0.6"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="4.0" blurY="4.0" color="0x000000" distance="0" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" includeIn="down" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="19" includeIn="disabledAndSelected,downAndSelected,overAndSelected,upAndSelected" radiusX="2" width="65" x="0" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry ratio="0" color="#DDDEDE" alpha="1.0"/>
+				<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="4.0" blurY="4.0" color="0x000000" distance="0" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	
+	
+	<!--<s:RichText id="labelDisplay" color="#FFFFFF" color.disabled="#000000" color.up="#460000" fontFamily="Calibri" fontSize="12" height="12" kerning="off" tabStops="S0 S50" text="" whiteSpaceCollapse="preserve" width="98" x="57" y="3"/>-->
+	
+	<components1:DotedLabel id="labelDisplay" DesiredLength="15" color="#FFFFFF" color.disabled="#000000" color.up="#111111" fontFamily="Calibri" fontSize="12" height="12" kerning="off" text="" minWidth="90" width="100%" x="73" y="3"/>
+	
+	<s:RichText id="lblDisplay" alpha="1" color="#000000" color.disabled="#FFFFFF" color.up="#FFFFFF" fontFamily="Calibri" fontSize="12" height="12" kerning="off" lineHeight="100%" tabStops="S0" text="{this.hostComponent.lbl}" width="49" x="4" y="3"/>
+
+	
+	<s:BitmapImage smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/modifyinfo_icon.gif')" visible="false" x="37" y="2"/>
+	<s:Rect alpha="1" height="17" id="rect6" includeIn="disabled,over,up" visible.over="false" width="1" x="68" y="0" x.up="68" y.up="1">
+		<s:fill>
+			<s:SolidColor alpha="0.7" color="#FFFFFF"/>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="1" angle="0" blurX="0" blurY="0" color="#222222" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Path data="M 5.49 4.73 L 0.01 4.73 2.75 -0.01 Z " height="4" rotation="180" visible.disabledAndSelected="false" visible.down="false" visible.downAndSelected="false" visible.over="false" visible.overAndSelected="false" visible.upAndSelected="false" width="7" x="62" y="13.992">
+		<s:fill>
+			<s:SolidColor color="#727272"/>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="0.25" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Path>
+	<s:Path data="M 5.49 4.73 L 0.01 4.73 2.75 -0.01 Z " height="4" includeIn="disabled,over,up" visible.over="false" width="7" x="55" y="2.992">
+		<s:fill>
+			<s:SolidColor color="#727272"/>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Path>
+	<s:Path data="M 5.49 4.73 L 0.01 4.73 2.75 -0.01 Z " height="4" includeIn="disabled,disabledAndSelected,down,downAndSelected,over,overAndSelected,upAndSelected" rotation="180" visible.disabled="false" width="7" x="62" y="13.992">
+		<s:fill>
+			<s:SolidColor color="#960000"/>
+		</s:fill>
+		<s:filters>
+		</s:filters>
+	</s:Path>
+	<s:Path data="M 5.49 4.73 L 0.01 4.73 2.75 -0.01 Z " height="4" includeIn="disabled,disabledAndSelected,down,downAndSelected,over,overAndSelected,upAndSelected" visible.disabled="false" width="7" x="55" y="2.992">
+		<s:fill>
+			<s:SolidColor color="#960000"/>
+		</s:fill>
+		<s:filters>
+		</s:filters>
+	</s:Path>
+</s:Skin>  

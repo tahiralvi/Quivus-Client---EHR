@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:extended="com.adobe.Quivus.view.controls.extended.*" 
+		 xmlns:components="com.adobe.Quivus.view.controls.extended.components.*" 
+		 xmlns:buttonSeparators="com.adobe.Quivus.view.controls.skins.buttonSeparators.*" 
+		
+		 >
+	<s:layout>
+		<s:HorizontalLayout verticalAlign="middle" horizontalAlign="left" />
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			private var _sectionLabel:String = "";
+			
+			[Bindable]
+			public function get sectionLabel():String
+			{
+				return _sectionLabel;
+			}
+
+			public function set sectionLabel(value:String):void
+			{
+				_sectionLabel = value;
+			}
+
+		]]>
+	</fx:Script>
+	
+	
+	
+	
+	
+	<s:Group width="100%">
+		<s:layout>
+			<s:HorizontalLayout paddingLeft="15" verticalAlign="middle" horizontalAlign="left" paddingTop="2" />
+		</s:layout>	
+		<s:Label textAlign="left" id="id_HeaderLabel" color="#000000" fontFamily="Calibri Bold" fontSize="13" text="Gazuntite Live Provider Service"  />
+		<s:Path data="M 21.66 24.99 L 0.03 12.50 21.66 0.01 Z " height="15" id="path1" rotation="180" width="8">
+			<s:fill>
+				<s:LinearGradient rotation="270">
+					<s:GradientEntry alpha="1.0" color="#956332" ratio="0"/>
+					<s:GradientEntry alpha="1.0" color="#794716" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+			<s:filters>
+				<s:DropShadowFilter alpha="0.25" angle="90" blurX="1" blurY="1" color="#FFFFFF" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			</s:filters>
+		</s:Path>
+		<s:Label id="id_sectionName" textAlign="left" color="#111111" fontFamily="Calibri Bold" fontSize="13" text="{sectionLabel}" typographicCase="uppercase" />
+		<s:HGroup gap="2" width="100%" horizontalAlign="right">
+		
+			<buttonSeparators:buttonSeparatorLS />
+			<s:HGroup paddingTop="0">
+				
+				<s:ToggleButton id="id_expandBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.expandButton_grey" 
+								selected="false"  width="24" height="24" buttonMode="true" useHandCursor="true" toolTip="{id_expandBtn.selected?'Collapse':'Expand'}"/>
+			</s:HGroup>
+			<buttonSeparators:buttonSeparatorLS />
+			<s:HGroup paddingTop="0" paddingRight="0">
+				<s:ToggleButton id="id_slideoutBtn" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.slideOutBtn_PE"
+								buttonMode="true" useHandCursor="true" toolTip="{id_slideoutBtn.selected?'Slide-In':'Slide-Out'}" 
+								width="24" height="24"  />
+			</s:HGroup>
+		</s:HGroup>
+	</s:Group>
+</s:SkinnableContainer>

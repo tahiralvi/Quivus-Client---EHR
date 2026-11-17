@@ -1,0 +1,822 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:PinableSlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							 xmlns:s="library://ns.adobe.com/flex/spark" 
+							 xmlns:mx="library://ns.adobe.com/flex/mx" 
+							 xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+							 xmlns:history="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.history.*" 
+							 xmlns:quickInput="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.*"
+							 xmlns:comprehensiveHistory="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.comprehensiveHistory.*" 
+							 xmlns:general="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.comprehensiveHistory.general.*" 
+							 xmlns:family="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.comprehensiveHistory.family.*" 
+							 xmlns:social="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.comprehensiveHistory.social.*"
+							 xmlns:notes="com.adobe.Quivus.view.controls.custom.patientExamView.notes.*" 
+							 xmlns:VBHistory="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbPMH.VBHistory.*" 
+							 xmlns:components="com.gazuntite.controls.extended.components.*" 
+							 move="slideoutpanel1_moveHandler(event)"
+							 QSSlideStateChange="pinableslideoutpanel1_QSSlideStateChangeHandler(event)"
+							 QSViewStateChange="slideoutpanel1_QSViewStateChangeHandler(event)" 
+							 creationComplete="slideoutpanel1_creationCompleteHandler(event)" xmlns:chCombined="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.comprehensiveHistory.chCombined.*" 
+							 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.customDTO.AssociatedVisit;
+			import com.adobe.Quivus.events.quickInput.SaveFamilyHistoryEvent;
+			import com.adobe.Quivus.events.quickInput.SaveMedicalHistoryEvent;
+			import com.adobe.Quivus.events.quickInput.SaveSocialHistoryEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.utils.QuivusCombineEventDispatcher;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.DictationPopup;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPanel;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPopup;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.Quivus.view.controls.skins.QIinternalBarFocusSkin;
+			import com.adobe.Quivus.view.controls.skins.QIinternalBarSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.createVisitBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridDictationButtonSelectedSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridDictationButtonSkin;
+			import com.adobe.Quivus.view.controls.skins.components.sparkPanelActiveSkin;
+			import com.adobe.Quivus.view.controls.skins.components.sparkPanelSkin;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBIconsButton;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.writeNotesButton;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.writeNotesButtonSelected;
+			import com.adobe.Quivus.view.events.SelectSection;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.quivus.skins.chrome.buttonSkins.VBdictationBtnSelected;
+			import com.adobe.quivus.skins.chrome.buttonSkins.VBnotesBtnSelected;
+			import com.adobe.quivus.skins.chrome.containerSkins.dateToolTipBG;
+			import com.adobe.quivus.skins.chrome.containerSkins.planPanel;
+			import com.adobe.quivus.skins.chrome.tabBarSkins.QIrecordingsTabBar;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.VBIconsBlackButton;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.VBIconsButtonFilled;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.controls.extended.components.SelectablePanel;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.events.MoveEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.components.SkinnableContainer;
+			import spark.events.IndexChangeEvent;
+			
+			import valueObjects.MedicalHistoryDTO;
+			import valueObjects.ModuleDictationDTO;
+			import valueObjects.ModuleNoteDTO;
+			import valueObjects.PageDTO;
+			import valueObjects.VisitDTO;				
+			
+			private var notesPanel:NotesPanel;
+			//private var dictationPanel:DictationPopup;
+			private var notesDTO:ModuleNoteDTO;
+			
+			private var m_bHasChange:Boolean;
+			private var m_bIsModelUpdated:Boolean;
+			
+			private var moduleConstantName:String = Constants.COMPREHENSIVE_HISTORY_MODULE_NAME;
+			
+			[Bindable]
+			private var arrAssociateTypes:ArrayCollection = new ArrayCollection(['This Visit', 'Previous Visit', 'N/A']);
+			
+			[Bindable]
+			public function get hasChange():Boolean
+			{
+				return m_bHasChange;
+			}
+			
+			public function set hasChange(value:Boolean):void
+			{
+				m_bHasChange = value;
+				
+				if( value || id_HistoryView.id_FamilySection.hasChange || id_HistoryView.id_SocialSection.hasChange )
+				{
+					id_Header.id_ChangeIndicator.visible		 = true;
+					id_Header.id_ChangeIndicator.includeInLayout = true;
+				}
+				else
+				{
+					id_Header.id_ChangeIndicator.visible		 = false;
+					id_Header.id_ChangeIndicator.includeInLayout = false;
+				}
+			}			
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			public override function set AllowOtherPopup(value:Boolean):void
+			{
+				super.AllowOtherPopup = value;
+				if( ! value && notesPanel)
+					notesPanel.removePopup();
+				
+				/* if( ! value && dictationPanel)
+				dictationPanel.removePopup(); */
+			}
+			
+			public function get IsModelUpdated():Boolean
+			{
+				return m_bIsModelUpdated;
+			}
+			
+			public function set IsModelUpdated(value:Boolean):void
+			{
+				m_bIsModelUpdated = value;
+				
+				if( value )
+				{
+					
+					var dictationDto:ModuleDictationDTO = QSUtilityFunctions.getModuleDictationDTO(moduleConstantName);					
+					var noteDto:ModuleNoteDTO = QSUtilityFunctions.getModuleNoteDTO( moduleConstantName);
+					
+					if(dictationDto.DictationID && dictationDto.DictationID != Constants.GUID_FORMAT)
+					{
+						id_Header.id_Voice.setStyle("skinClass", VBdictationBtnSelected);
+						id_Header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+						//id_dictationIndicator.visible = true;
+					}
+					
+					if(noteDto.Note && noteDto.Note != "")
+					{
+						id_Header.id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected);
+						id_Header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+						//id_noteIndicator.visible = true;
+					}				
+					
+					//not associated with visit now....
+					/* id_HistoryView.id_GeneralSection.LoadData();
+					id_HistoryView.id_FamilySection.LoadData();
+					id_HistoryView.id_SocialSection.LoadData();
+					*/
+					setViewForEditMode();
+					//isEditMode = true;
+				}
+			}
+			
+			//private var isEditMode:Boolean = false;
+			
+			protected function slideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				addEventListener("data_added", function(event:Event):void
+				{
+					id_Header.id_SaveHistory.enabled = true;
+				});
+				//Tahir Alvi - direct save CH 
+				addEventListener("save_CH", function(event:Event):void
+				{
+					saveComprehensiveHistory();
+				});
+				addEventListener("reLoad_CH", function(event:Event):void
+				{
+					ReLoadCHData();
+				});
+				//*******End Tahir Alvi**************************
+				id_Header.id_OptionPopUp.displayPopUp = true;
+				id_Header.id_iconButtons.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					
+					if(id_notesDictation.id_Area.visible)
+					{
+						if(id_Header.id_OptionPopUp.displayPopUp)
+						{
+							id_Header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						}
+						else
+						{
+							id_Header.id_iconButtons.setStyle("skinClass", VBIconsButton);	
+						}
+					}
+					
+					event.stopImmediatePropagation();
+					
+				});		
+				id_Header.id_Voice.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_COMPREHENSIVE_HISTORY ) )
+					{
+						id_notesDictation.notesDTO = QSUtilityFunctions.getModuleNoteDTO( moduleConstantName );
+						id_notesDictation.DictationDTO = QSUtilityFunctions.getModuleDictationDTO(moduleConstantName);
+						id_notesDictation.id_Area.visible 		= true;
+						id_notesDictation.id_Area.includeInLayout = true;	
+						id_notesDictation.id_VBViews.selectedIndex = 1;						
+						//id_Header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						id_Header.id_iconButtons.selected = false;
+						id_Header.id_OptionPopUp.displayPopUp = false;
+						
+						id_notesDictation.dictationPanel.rec_btn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{													
+							id_Header.setIcons(true, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							hasChange = true;
+						});	
+						id_notesDictation.id_notesPanel.id_body.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{						
+							id_Header.setIcons(id_notesDictation.DictationDTO.DictationID && id_notesDictation.DictationDTO.DictationID != Constants.GUID_FORMAT, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							id_notesDictation.id_Area.visible 		= false;
+							id_notesDictation.id_Area.includeInLayout = false;
+						});
+						
+						ExpandedView = true;
+						if(this.ExpandedView)
+						{
+							//event.stopImmediatePropagation();
+						}
+					}
+				});			
+				
+				id_Header.id_NotesBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_COMPREHENSIVE_HISTORY ) )
+					{
+						id_notesDictation.notesDTO = QSUtilityFunctions.getModuleNoteDTO( moduleConstantName );
+						id_notesDictation.DictationDTO = QSUtilityFunctions.getModuleDictationDTO(moduleConstantName);
+						id_notesDictation.id_Area.visible 		= true;
+						id_notesDictation.id_Area.includeInLayout = true;						
+						id_notesDictation.id_VBViews.selectedIndex = 0;
+						//	id_Header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						id_Header.id_iconButtons.selected = false;
+						id_Header.id_OptionPopUp.displayPopUp = false;
+						
+						id_notesDictation.id_notesPanel.id_body.id_subject.setFocus();
+						
+						id_notesDictation.dictationPanel.rec_btn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{													
+							id_Header.setIcons(true, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							hasChange = true;
+						});	
+						id_notesDictation.id_notesPanel.id_body.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{						
+							id_Header.setIcons(id_notesDictation.DictationDTO.DictationID && id_notesDictation.DictationDTO.DictationID != Constants.GUID_FORMAT, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							id_notesDictation.id_Area.visible 		= false;
+							id_notesDictation.id_Area.includeInLayout = false;
+						});
+						ExpandedView = true;
+						if(this.ExpandedView)
+						{
+							//event.stopImmediatePropagation();
+						}
+					}
+				});
+				
+				id_HistoryView.collapseAndDeselectAll();
+				id_HistoryView.id_GeneralSection.IsSelected 	= true;
+				id_HistoryView.id_GeneralSection.AllowContents 	= true;
+				id_HistoryView.id_GeneralSection.percentWidth 	= 100;
+				
+				id_Header.id_slideoutBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					ToggleSlideOut();
+					event.stopImmediatePropagation();
+				});
+				
+				id_Header.id_Pin.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_COMPREHENSIVE_HISTORY ) )
+					{
+						PinView = event.currentTarget.selected;
+						//event.stopImmediatePropagation();
+					}
+				});
+				
+				id_Header.id_SpinerList.addEventListener(IndexChangeEvent.CHANGE, function(event:IndexChangeEvent):void
+				{
+					id_HistoryView.collapseAndDeselectAll();
+					id_HistoryView.showOnlySection( event.newIndex );
+					
+					event.stopImmediatePropagation();						
+					
+				});
+				
+				id_Header.id_SaveHistory.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					//******* Commment by tahir *******
+					//save Comprehensive history here ....
+					/* UtilityFunctions.AskMessage("Do you really want to save?", function():void
+					{
+					saveComprehensiveHistory();
+					}); */
+					//**************
+					saveComprehensiveHistory();
+					event.stopImmediatePropagation();
+					event.preventDefault();
+				});
+				id_Header.id_SpinerList.currIndex = 0;
+				id_Header.id_OptionPopUp.displayPopUp = false;
+				
+				
+				
+			}
+			//Tahir Alvi - 16 june, 2012
+			private function saveComprehensiveHistory():void
+			{
+				var evt:SaveMedicalHistoryEvent = new SaveMedicalHistoryEvent( model.quickInputDTO.PatientId, model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchIdSeq, model.medicalHistoryList, clearComprehensiveHistory );
+				CairngormEventDispatcher.getInstance().dispatchEvent( evt );
+			}
+			
+			private function clearComprehensiveHistory():void
+			{
+				id_HistoryView.clearMedicalHistory();
+				id_HistoryView.clearFamilyHistory();
+				id_HistoryView.clearSocialHistory();
+				
+				id_HistoryView.id_GeneralSection.hasChange = false;
+				id_HistoryView.id_FamilySection.hasChange = false;
+				id_HistoryView.id_SocialSection.hasChange = false;
+				
+				if(model.isQISocHistorySave)
+					addNewHistoryView();
+				
+				ReLoadCHData();
+			}
+			private function addNewSocialHistory():void
+			{
+				id_HistoryView.removeElement( id_HistoryView.id_SocialSection );
+				
+				id_HistoryView 					= new HistoryView();
+				id_HistoryView.percentWidth		= 100;
+				id_HistoryView.visible			= false;
+				id_HistoryView.includeInLayout	= false;
+				id_HistoryView.enabled			= false;
+				
+				id_mainGroup.addElementAt( id_HistoryView, 0 );
+				
+				id_AddMoreBtn.label				= 'Add More';
+				id_AddMoreBtn.toolTip			= "Add More";
+				id_AddMoreBtn.width				= 80;
+				
+				id_HistoryView.showOnlySection( 0 );//show all section
+			}
+			
+			protected function slideoutpanel1_moveHandler(event:MoveEvent):void
+			{
+				/* if( notesPanel )
+				{
+				var loc:Point = getNotesPopupPosition();
+				notesPanel.move( loc.x, loc.y );	
+				}
+				
+				if( dictationPanel )
+				{
+				var loc:Point = getDictationPopupPosition();
+				dictationPanel.move( loc.x, loc.y );	
+				} */
+			}
+			
+			
+			
+			
+			protected function slideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( event.viewState == QSViewStateEvent.EXPANDED_VIEW )
+				{
+					QuivusCombineEventDispatcher.getComprehensiveHistoryStaticData();
+					
+					if( id_Header )
+					{
+						id_Header.HeadingLable = id_Header.HeadingLable.toUpperCase();
+						id_Header.id_pmhHeader.setStyle("skinClass", QIinternalBarFocusSkin);
+						id_Header.id_headingLbl.setStyle("color", 0xffffff);
+						id_Header.id_expandBtn.selected = true;
+					}
+				}
+				else
+				{
+					if( id_Header )
+					{
+						id_Header.id_iconButtons.selected = false;
+						id_Header.id_OptionPopUp.displayPopUp = false;
+						
+						id_Header.HeadingLable = AppUtils.TitleCase(id_Header.HeadingLable);
+						id_Header.id_pmhHeader.setStyle("skinClass", QIinternalBarSkin);
+						id_Header.id_headingLbl.setStyle("color", 0x000000);
+						id_Header.id_expandBtn.selected = false;
+					}
+					
+					QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.COMPREHENSIVE_HISTORY);
+				}
+			}
+			
+			protected function id_noteIndicator_clickHandler(event:MouseEvent):void
+			{
+				var popup:NotesPopup = new NotesPopup();
+				popup.height = 30;
+				popup.ShowPopup( this );
+				popup.HeaderLabel = "Notes";
+				
+				var noteDto:ModuleNoteDTO = QSUtilityFunctions.getModuleNoteDTO( Constants.COMPREHENSIVE_HISTORY_MODULE_NAME );
+				if( noteDto.Note )
+					popup.id_message.text  = noteDto.Note;
+				
+				var pLoc:Point = id_IndicatorGrp.localToGlobal( new Point( id_noteIndicator.x - 15 +  (id_noteIndicator.width /2) , id_noteIndicator.y + 10) ); 
+				popup.move(pLoc.x,pLoc.y );
+				
+			}
+			
+			/* 	protected function id_GeneralSection_focusInHandler(event:FocusEvent):void
+			{
+			trace("general section selected");
+			//id_GeneralSection.setStyle("skinClass", sparkPanelActiveSkin);
+			
+			}
+			
+			protected function id_GeneralSection_focusOutHandler(event:FocusEvent):void
+			{
+			trace("general section Unselected");
+			//id_GeneralSection.setStyle("skinClass", sparkPanelSkin);
+			}
+			
+			protected function id_FamilySection_focusInHandler(event:FocusEvent):void
+			{
+			//id_FamilySection.setStyle("skinClass", sparkPanelActiveSkin);
+			}
+			
+			protected function id_FamilySection_focusOutHandler(event:FocusEvent):void
+			{
+			//id_FamilySection..setStyle("skinClass", sparkPanelSkin);
+			}
+			
+			protected function id_SocialSection_focusInHandler(event:FocusEvent):void
+			{
+			//id_SocialSection.setStyle("skinClass", sparkPanelActiveSkin);
+			}
+			
+			protected function id_SocialSection_focusOutHandler(event:FocusEvent):void
+			{
+			//id_SocialSection.setStyle("skinClass", sparkPanelSkin);
+			model.quickInputDataLoadedFlag
+			}
+			*/
+			
+			protected function id_dictationIndicator_clickHandler(event:MouseEvent):void
+			{
+				/* var module:ModuleDictationDTO = QSUtilityFunctions.getModuleDictationDTO(Constants.COMPREHENSIVE_HISTORY_MODULE_NAME);
+				
+				if( dictationPanel )
+				{
+				dictationPanel.removePopup();					
+				}
+				
+				dictationPanel.DictationID	 	= module.DictationID;
+				
+				dictationPanel.ModuleID	 		= module.ModuleTypeID.toString();
+				dictationPanel.ShowPopup( this );
+				
+				var pLoc:Point = id_IndicatorGrp.localToGlobal( new Point( id_dictationIndicator.x - 130 +  (id_dictationIndicator.width /2) , id_dictationIndicator.y + 15) );
+				dictationPanel.move( pLoc.x, pLoc.y ); */
+			}
+			
+			protected function dictationpopup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				/* var module:ModuleDictationDTO = QSUtilityFunctions.getModuleDictationDTO(Constants.MEDICAL_HISTORY_MODULE_NAME);
+				dictationPanel.HeadingLable 	= "Dictation";
+				dictationPanel.DictationID	 	= module.DictationID;
+				dictationPanel.ModuleID	 		= module.ModuleTypeID.toString(); */
+			}
+			
+			protected function id_contents_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_contents.id_TabBar2.setStyle('skinClass', QIrecordingsTabBar);
+				id_contents.id_VS.setStyle('skinClass', planPanel);
+				
+				//change the call with respective page set with default values;
+				if( UtilityFunctions.IsNullOrEmpty( model.medicalHistoryCurrentPageByPatient ) )
+				{
+					model.medicalHistoryCurrentPageByPatient = new PageDTO();
+				}
+				
+				if( UtilityFunctions.IsNullOrEmpty( model.familyHistoryCurrentPageByPatient ) )
+				{
+					model.familyHistoryCurrentPageByPatient = new PageDTO();
+				}
+				
+				if( UtilityFunctions.IsNullOrEmpty( model.socialHistoryCurrentPageByPatient ) )
+				{
+					model.socialHistoryCurrentPageByPatient = new PageDTO();
+				}
+				
+				LoadCHData();
+				id_Header.id_SpinerList.enabled = false;
+			}
+			
+			private function LoadCHData():void
+			{
+				QSUtilityFunctions.CheckUserPageOrSetPageToZero( model.medicalHistoryCurrentPageByPatient );
+				QSUtilityFunctions.CheckUserPageOrSetPageToZero( model.familyHistoryCurrentPageByPatient );
+				QSUtilityFunctions.CheckUserPageOrSetPageToZero( model.socialHistoryCurrentPageByPatient );
+				
+				QuivusCombineEventDispatcher.loadComprehensiveHistoryForVB();
+			}
+			
+			private function ReLoadCHData():void
+			{
+				LoadCHData();
+			}
+			
+			protected function id_AddMoreBtn_clickHandler():void
+			{
+				if(id_AddMoreBtn.label == 'Add More')
+				{
+					
+					//dateToolTipContainer.includeInLayout =  true;
+					//dateToolTipContainer.visible =  true;
+					id_AddMoreBtn.label = '';
+					id_HistoryView.visible = true;
+					id_HistoryView.enabled = true;
+					id_HistoryView.includeInLayout = true;
+					id_Header.id_SpinerList.enabled = true;
+					id_AddMoreBtn.label		 	= 'Close';
+					id_AddMoreBtn.toolTip 		= 'Close';
+					id_AddMoreBtn.width			= 60;
+					/* if(!isEditMode)
+					{
+					//id_AssociateVisitzCombo.visible = true;
+					//id_AssociateVisitzCombo.selectedIndex = -1;
+					id_HistoryView.enabled = false;
+					}else{
+					id_HistoryView.enabled = true;
+					} */
+				}else if(id_AddMoreBtn.label == 'Close')
+				{
+					
+					//dateToolTipContainer.includeInLayout =  false;
+					//dateToolTipContainer.visible =  false;
+					id_AddMoreBtn.label = '';
+					id_HistoryView.visible = false;
+					id_HistoryView.includeInLayout = false;
+					
+					id_Header.id_SpinerList.enabled = false;
+					id_AddMoreBtn.label = 'Add More';
+					id_AddMoreBtn.toolTip = 'Add More';
+					id_AddMoreBtn.width = 80;
+					/* if(!isEditMode)
+					{
+					if(id_HistoryView.enabled == true)
+					id_HistoryView.enabled = false;
+					id_AssociateVisitzCombo.visible = false;
+					if(id_VisitDatesCombo.visible == true)
+					id_VisitDatesCombo.visible = false;
+					id_VisitDatesCombo.selectedIndex = -1;
+					} */
+				}
+			}
+			
+			/*protected function id_AssociateVisitzCombo_changeHandler():void
+			{
+			if(model.CHistoryAssociatedVisit == null)
+			model.CHistoryAssociatedVisit = new AssociatedVisit();
+			
+			if(id_AssociateVisitzCombo.selectedIndex != -1)
+			id_HistoryView.enabled = true;
+			
+			if(id_AssociateVisitzCombo.selectedIndex == 1)
+			{
+			dateToolTipContainer.visible = true;
+			dateToolTipContainer.includeInLayout=true;
+			id_Date.text = "Please select visit date" ;
+			id_HistoryView.enabled = false;
+			id_VisitDatesCombo.visible = true;
+			
+			}
+			else
+			{
+			id_VisitDatesCombo.visible = false;
+			if(id_AssociateVisitzCombo.selectedIndex == 0)
+			{
+			dateToolTipContainer.visible = false;
+			dateToolTipContainer.includeInLayout=false;
+			model.CHistoryAssociatedVisit.VisitDate = model.visitDTO.VisitDate;
+			model.CHistoryAssociatedVisit.ID   = model.visitDTO.VisitId;
+			}else if(id_AssociateVisitzCombo.selectedIndex == 2){
+			dateToolTipContainer.visible = false;
+			dateToolTipContainer.includeInLayout=false;
+			model.CHistoryAssociatedVisit.VisitDate = Constants.NULL_DATE;
+			model.CHistoryAssociatedVisit.ID   = 0;
+			}
+			}
+			}*/
+			
+			private function getVisitDate(item:Object):String 
+			{
+				var strDate:String ='';;
+				if(item != null)
+					strDate = formatDateTime.format(item.VisitDate);
+				
+				return strDate;
+			}
+			
+			/* protected function id_VisitDatesCombo_changeHandler():void
+			{
+			dateToolTipContainer.visible   = false;
+			dateToolTipContainer.includeInLayout = false;
+			if(model.CHistoryAssociatedVisit == null)
+			model.CHistoryAssociatedVisit = new AssociatedVisit();
+			
+			if(id_VisitDatesCombo.selectedIndex != -1)
+			id_HistoryView.enabled = true;
+			
+			if(model.medicalHistoryDTOListByPatient != null)
+			{
+			if(model.medicalHistoryDTOListByPatient.length > 0)
+			for(var i:uint =0; i< model.medicalHistoryDTOListByPatient.length; i++)
+			{
+			if(formatDateTime.format(model.medicalHistoryDTOListByPatient[i].VisitDate) == formatDateTime.format(id_VisitDatesCombo.selectedItem.VisitDate) )
+			{
+			callLater(showAlert);
+			break;
+			}else{
+			if(model.CHistoryAssociatedVisit != null)
+			{
+			model.CHistoryAssociatedVisit.VisitDate = id_VisitDatesCombo.selectedItem.VisitDate;
+			model.CHistoryAssociatedVisit.ID   		= id_VisitDatesCombo.selectedItem.VisitId;
+			}
+			}
+			
+			}
+			}
+			} */
+			
+			//Call later - First close the dropdown and then show alert.
+			private function showAlert():void
+			{
+				Alert.show('Record already exists against this visit', 'Please select another date');
+				id_HistoryView.enabled = false;
+			}
+			//If QIHistorypanel Load in Edit mode 
+			private function setViewForEditMode():void
+			{
+				//				id_AssociateVisitzCombo.visible = false;
+				//				id_VisitDatesCombo.visible = false;
+				
+				id_HistoryView.enabled = true;
+				id_HistoryView.visible = true;
+				id_HistoryView.includeInLayout = true;
+				id_Header.id_SpinerList.enabled = true;
+				id_AddMoreBtn.label 	= 'Close';
+				id_AddMoreBtn.toolTip 	= "Close";
+				id_AddMoreBtn.width		= 60;
+				
+			}
+			
+			
+			protected function pinableslideoutpanel1_QSSlideStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if(this.isSlideOut)
+				{
+					//id_Header.id_pmhHeader.setStyle("skinClass", QIinternalBarBorderSkin);										
+					/* id_AllergiesGrid.rowHeight = 23;
+					id_AllergiesGrid.headerHeight = 25; */
+					
+				}
+			}
+			// on Save Social create new Histoy complete view
+			private function addNewHistoryView():void
+			{
+				id_mainGroup.removeElement( id_HistoryView );
+				
+				id_HistoryView 					= new HistoryView();
+				id_HistoryView.percentWidth		= 100;
+				id_HistoryView.visible			= false;
+				id_HistoryView.includeInLayout	= false;
+				id_HistoryView.enabled			= false;
+				
+				id_mainGroup.addElementAt( id_HistoryView, 0 );
+				
+				id_AddMoreBtn.label				= 'Add More';
+				id_AddMoreBtn.toolTip			= "Add More";
+				id_AddMoreBtn.width				= 80;
+				
+				id_HistoryView.showOnlySection( 0 );//show all section
+				model.isQISocHistorySave = false;
+			}
+			
+			[Bindable]
+			public function get collectionChange():ArrayCollection
+			{
+				return _collectionChange;
+			}
+			
+			public function set collectionChange(value:ArrayCollection):void
+			{
+				_collectionChange = value;
+				if(model.medicalHistoryDTOListByPatient && model.medicalHistoryDTOListByPatient.length >0)
+					hasChange = true;
+				if(model.familyHistoryDTOListByPatient && model.familyHistoryDTOListByPatient.length >0)
+					hasChange = true;
+				if(model.socialHistoryDTOListByPatient && model.socialHistoryDTOListByPatient.length >0)
+					hasChange = true;
+			}
+			
+			
+			private var _collectionChange:ArrayCollection
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				AllowMoveToNextPanel ( dispactchSelectSectionEvent );
+				
+			}
+			
+			public override function AllowMoveToNextPanel( callBack:Function ):void
+			{
+				if( id_HistoryView.id_GeneralSection.hasChange || id_HistoryView.id_FamilySection.hasChange || id_HistoryView.id_SocialSection.hasChange )
+				{
+					UtilityFunctions.AskMessage( "There are changes in the form, do you still want to leave form in current state?", function ():void
+					{
+						callBack(); 
+					}); 
+				}
+				else
+				{
+					callBack();
+				}
+			}
+			
+			private function dispactchSelectSectionEvent():void
+			{
+				dispatchEvent( new SelectSection('SelectSection','id_QIHistoryPanel', true, true) )
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YY" />
+	</fx:Declarations>
+	<fx:Binding source="model.quickInputDataLoadedFlag" destination="IsModelUpdated" /> 
+	<fx:Binding source="id_HistoryView.id_GeneralSection.hasChange" destination="hasChange" /> 
+	<fx:Binding source="id_HistoryView.id_FamilySection.hasChange" destination="hasChange"  /> 
+	<fx:Binding source="id_HistoryView.id_SocialSection.hasChange" destination="hasChange"  /> 
+	<fx:Binding source="model.medicalHistoryDTOListByPatient"     destination="collectionChange"  /> 
+	<fx:Binding source="model.familyHistoryDTOListByPatient"     destination="collectionChange"  /> 
+	<fx:Binding source="model.socialHistoryDTOListByPatient"     destination="collectionChange"  /> 
+	
+	
+	
+	<custom:HeaderContents>
+		<s:Group width="100%" height="24" minWidth="{ChromeUtil.topLevelMainContainer.width - 70}">
+			<s:layout>
+				<s:VerticalLayout verticalAlign="bottom"  />
+			</s:layout>
+			<comprehensiveHistory:QIHistoryHeader id="id_Header" minWidth="500" width="100%" height="22" HeadingLable="Comprehensive History" showSaveButton="false" />
+		</s:Group>
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		
+		<quickInput:QISectionSlideoutHeader width="100%" label="{id_Header.HeadingLable}" />		   
+		
+	</custom:SlideHeaderContents>
+	<custom:Contents>
+		<s:VGroup width="{id_Header.width}" verticalAlign="top" gap="0" 
+				  horizontalAlign="{isSlideOut? 'right':'center'}" paddingTop="{isSlideOut? -2:0}" paddingLeft="{isSlideOut? 1:1}">
+			
+			
+			<notes:QISectionLevelNotesDictation id="id_notesDictation" width="100%" />
+			
+			<s:SkinnableContainer id="id_mainGroup" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.QISectionBGSkin" height="100%"  width="{id_Header.width}"
+								  visible="{model.securityProxyObject.PatientExam.QuickInput.PMH.ComprehensiveHistory.IsViewAllowed}" includeInLayout="{id_mainGroup.visible}">
+				
+				<s:layout>
+					<s:VerticalLayout gap="3" horizontalAlign="right"  paddingLeft="3" paddingRight="5" paddingTop="5" paddingBottom="5"/>
+				</s:layout>
+				
+				<history:HistoryView id="id_HistoryView" width="100%" visible="false" includeInLayout="false" enabled="false" />
+				
+				<s:HGroup width="100%">					
+					<s:HGroup id="id_IndicatorGrp" width="100%" horizontalAlign="left" >
+						
+						<s:Button id="id_noteIndicator" label="Notes" visible="false" includeInLayout="{id_noteIndicator.visible}"
+								  click="id_noteIndicator_clickHandler(event)" toolTip="View Notes" 
+								  useHandCursor="true" buttonMode="true" 
+								  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.notesIndicatorBtnSkin" />
+						
+						<s:Button id="id_dictationIndicator" label="Dictation" visible="false" includeInLayout="{id_dictationIndicator.visible}"
+								  click="id_dictationIndicator_clickHandler(event)" toolTip="Play Dictation" 
+								  useHandCursor="true" buttonMode="true" 
+								  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.dictationIndicatorBtnSkin"/>
+					</s:HGroup>
+					
+					<s:Group id="id_spacer" width="100%" height="2" />
+					
+					
+					<s:Button id="id_AddMoreBtn" label="Add More" click="id_AddMoreBtn_clickHandler()" 
+							  skinClass="com.adobe.quivus.skins.chrome.toggleButtonSkins.addMoreButton"
+							  buttonMode="true" useHandCursor="true" toolTip="Add Comprehensive History" width="80"/>
+					
+					<s:Button label="Next" click="button1_clickHandler(event)" 
+							  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QInextBtnSkin" toolTip="Next Section" buttonMode="true" />
+				</s:HGroup>
+				<chCombined:QICombinedHistoryView  id="id_contents" width="100%" height="100%" creationComplete="id_contents_creationCompleteHandler(event)"/>
+			</s:SkinnableContainer>
+			<!--</s:BorderContainer>-->
+			<!--</s:SkinnableContainer>-->
+		</s:VGroup>
+		
+	</custom:Contents>
+</custom:PinableSlideOutPanel>

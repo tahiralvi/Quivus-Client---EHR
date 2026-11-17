@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:itemEditors="com.adobe.Quivus.view.controls.custom.itemEditors.*" 
+		 xmlns:commons="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.*" 
+		 xmlns:validators="com.adobe.Quivus.utils.validators.*"
+		 creationComplete="cc()" 
+		 xmlns:components1="com.gazuntite.controls.extended.components.*" 
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.staticData.lab.LoadLIONICLabTestTypeEvent;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.Quivus.view.controls.custom.itemEditors.SparkComboBoxItemEditor;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.controls.DateField;
+			import mx.controls.Label;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.events.DataGridEvent;
+			import mx.events.ValidationResultEvent;
+			
+			import spark.components.ComboBox;
+			
+			import valueObjects.LabDTO;
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			public function GridRowNumber(item:Object, iCol:int):String
+			{
+				var strRowNum:String = "";
+				
+				if (id_LabsRecordGrid.dataProvider)
+				{
+					var rowNum:int = id_LabsRecordGrid.dataProvider.getItemIndex(item) + 1;
+					strRowNum = String(rowNum);
+				}
+				
+				return strRowNum;
+			}
+			private function labsRecordItemEditBegin(event:DataGridEvent):void
+			{
+			}
+			private function processData(event:DataGridEvent):void
+			{
+				var labID:int = LabDTO(event.currentTarget.selectedItem).PatientLabID;
+				var res:ValidationResultEvent;
+				
+				if (event.dataField == "CollectionDate")
+				{
+					var dateEditor:DateField = DateField(id_LabsRecordGrid.itemEditorInstance);
+					
+					collectionDateValidator.source = dateEditor;
+					res = collectionDateValidator.validate(dateEditor.text);
+					
+					if (res && !res.results)
+					{
+						event.itemRenderer.data.CollectionDate = dateEditor.selectedDate;
+						
+						if (labID != 0)
+							event.itemRenderer.data.IsDirty = true;
+						
+						hasViewChanged = _hasGridChanged = true;
+					}
+					else
+					{
+						id_LabsRecordGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+					}
+				}
+					
+				else if (event.dataField == "LabTestType.TestTypeName")
+				{
+					var editor:ComboBox = SparkComboBoxItemEditor(id_LabsRecordGrid.itemEditorInstance).id_ComboEditor;
+					
+					comboValidator.source = editor;
+					comboValidator.property = "selectedItem";
+					
+					comboValidator.error = "Select valid test type name";
+					
+					res = comboValidator.validate(editor.selectedItem);
+					
+					if (res && !res.results && editor.selectedItem != event.itemRenderer.data.LabTestType)
+					{
+						event.itemRenderer.data.LabTestType = editor.selectedItem;
+						
+						model.lionicLabTestTypeDTOList = null;
+						//Alert.show("Please enter lab code", "Required field missing", Alert.OK, FlexGlobals.topLevelApplication.mainContainer, alertCloseHandler);
+						
+						if (labID != 0)
+							event.itemRenderer.data.IsDirty = true;
+						
+						hasViewChanged = _hasGridChanged = true;
+					}
+					else
+					{
+						id_LabsRecordGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+					}
+				}
+					
+				else if (event.dataField == "LIONICLabTestType.LOINC_NUM" || event.dataField == "LIONICLabTestType.SHORTNAME")
+				{
+					var lionicEditor:ComboBox = SparkComboBoxItemEditor(id_LabsRecordGrid.itemEditorInstance).id_ComboEditor;
+					
+					comboValidator.source = lionicEditor;
+					comboValidator.property = "selectedItem";
+					
+					res = comboValidator.validate(lionicEditor.selectedItem);
+					
+					if (res && !res.results && lionicEditor.selectedItem != event.itemRenderer.data.LIONICLabTestType)
+					{
+						event.itemRenderer.data.LIONICLabTestType = lionicEditor.selectedItem;
+						
+						if (labID != 0)
+							event.itemRenderer.data.IsDirty = true;
+						
+						hasViewChanged = _hasGridChanged = true;
+					}
+					else
+					{
+						//Alert.show("Please enter lab test type", "Required field missing", Alert.OK, FlexGlobals.topLevelApplication.mainContainer, alertCloseHandler);
+						
+						id_LabsRecordGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+					}
+				}
+					
+				else if (event.dataField == "LabType.LabName")
+				{
+					var editor:ComboBox = SparkComboBoxItemEditor(id_LabsRecordGrid.itemEditorInstance).id_ComboEditor;
+					
+					comboValidator.source = editor;
+					comboValidator.property = "selectedItem";
+					
+					res = comboValidator.validate(editor.selectedItem);
+					
+					if (res && !res.results && editor.selectedItem != event.itemRenderer.data.LabType)
+					{
+						event.itemRenderer.data.LabType = editor.selectedItem;
+						
+						if (labID != 0)
+							event.itemRenderer.data.IsDirty = true;
+						
+						hasViewChanged = _hasGridChanged = true;
+					}
+					else
+					{
+						id_LabsRecordGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+					}
+				}
+			}
+			
+			private var _hasGridChanged:Boolean;
+			private var _hasViewChanged:Boolean;
+			[Bindable]
+			public var deleteColumnData:Object;
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			private function cc():void
+			{
+				//addEventListener("writeDictationClick", writeDictationClickHandler, false, 0, true);
+				
+				id_LabsRecordGrid.addEventListener(DataGridActionsEvent.ITEM_EDIT_KEY_UP, itemEditKeyUpHandler, false, 0, true);
+				id_LabsRecordGrid.addEventListener(DataGridActionsEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+				id_LabsRecordGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, true, 0, false);
+				id_LabsRecordGrid.addEventListener(DataGridActionsEvent.WRITE_NOTES_CLICK, writeNotesClickHandler, false, 0, true);
+				
+				if (!deleteColumnData)
+					deleteColumnData = {};
+				
+				deleteColumnData["noteDataFields"] = {subject: "NoteSubject", note: "LabNote", header: "LIONICLabTestType.SHORTNAME"};
+				deleteColumnData["dictationDataField"] = "DictationID";
+				deleteColumnData["recordIDField"] = "PatientLabID";
+				deleteColumnData["section"] = QIPopUpManager.LAB_OUT;
+			}
+			private function editRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_LAB_OUT ) )//Tahir Alvi - implement security check 
+				{
+					id_LabsRecordGrid.editable = true;
+					
+					var rowIndex:int = id_LabsRecordGrid.selectedIndex;
+					var itemToSetInEditableMode:IListItemRenderer = id_LabsRecordGrid.indexToItemRenderer(rowIndex);
+					
+					var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+					ev.columnIndex = 2;
+					ev.rowIndex = rowIndex;
+					ev.itemRenderer = itemToSetInEditableMode;
+					ev.dataField = "CollectionDate";
+					id_LabsRecordGrid.dispatchEvent(ev);
+					
+				}
+			}
+			
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_CCHPI ) )//Tahir Alvi - implement security check 
+				{
+					var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+					
+					var labID:int = LabDTO(event.currentTarget.selectedItem).PatientLabID;
+					
+					if (labID == 0)
+					{
+						model.labDTOListByPatient.removeItemAt(curTar.selectedIndex);
+						if (model.labDTOListByPatient.length <= 0)
+						{
+							_hasGridChanged = false;
+							//hasViewChanged = isGetEdited();
+						}
+					}
+					else
+					{
+						UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+						{
+							id_LabsRecordGrid.selectedItem.IsDeleted = true;
+							model.labDTOListByPatient.filterFunction = filterDeletedItems;
+							model.labDTOListByPatient.refresh();
+							
+							hasViewChanged = _hasGridChanged = true;
+						});
+					}
+				}
+			}
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			private function itemEditKeyUpHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_LAB_OUT ) )//Tahir Alvi - implement security check 
+				{
+					if (event.data)
+					{
+						var testTypeId:int = LabDTO(event.data).LabTestType.LabTestTypeID;
+						var lblFld:String = SparkComboBoxItemEditor(event.target).labelField;
+						
+						if (lblFld == "LOINC_NUM" || lblFld == "SHORTNAME")
+						{
+							if(event.searchString.length > 2)
+							{
+								var loinCodeEvent : LoadLIONICLabTestTypeEvent = new LoadLIONICLabTestTypeEvent(event.searchString, testTypeId);
+								CairngormEventDispatcher.getInstance().dispatchEvent( loinCodeEvent );
+							}
+						}
+					}
+					
+				}
+			}
+			
+			private function writeNotesClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_CCHPI ) )//Tahir Alvi - implement security check 
+				{
+					
+				}
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				if(model.labDTOListByPatient!=null){	
+					model.labDTOListByPatient.filterFunction=myFilter;
+					model.labDTOListByPatient.refresh();
+				}
+			}
+			
+			private function myFilter(obj:*):Boolean
+			{
+				
+				if(model.vbFilter == Constants.BY_VISIT)
+				{
+					if(model.vbVisitId == obj.VisitID)
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+				
+				return true;
+				
+			}
+			
+			protected function id_LabsRecordGrid_clickHandler(event:MouseEvent):void
+			{
+				if(id_LabsRecordGrid.selectedItem != null && !id_LabsRecordGrid.selectedItem["IsRecordEditable"])
+				{
+					id_LabsRecordGrid.editable = false;
+					return;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<validators:ComboValidator id="comboValidator"/>
+		<validators:FutureDateValidator id="collectionDateValidator"   property="text" error="Select valid collection date"/>
+		
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout />
+	</s:layout>
+	
+	
+	<s:Button label="Filter" click="button1_clickHandler(event)" visible="false" includeInLayout="false" id="id_applyFiler"/>
+	<components1:LabelDataGrid id="id_LabsRecordGrid" width="100%" useRollOver="false" height="100%"
+							  dataProvider="{model.labDTOListByPatient}" rowCount="{id_LabsRecordGrid.dataProvider.length + 1}" verticalScrollPolicy="on"
+							  itemEditBegin="labsRecordItemEditBegin(event)" itemEditEnd="processData(event);"
+							  click="id_LabsRecordGrid_clickHandler(event)" maxHeight="150">
+		<components1:columns>
+			<mx:DataGridColumn headerText="Sr.#" width="60" labelFunction="GridRowNumber" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn id="visitDate" headerRenderer="mx.controls.Label" wordWrap="true" headerText="Visit Date"  dataField="VisitDate" width="100" itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG" editable="false"/>
+			<mx:DataGridColumn id="collectionDate" headerRenderer="mx.controls.Label" wordWrap="true" headerText="Collection Date" width="120" dataField="CollectionDate" editorDataField="selectedDate" itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG">
+				<mx:itemEditor>
+					<fx:Component>
+						<mx:DateField width="80" editable="true" />
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn id="testType" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" headerText="Test Type" width="90" dataField="LabTestType.TestTypeName" editable="true" editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.labTestTypeDTOList}" labelField="TestTypeName"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn id="testCode" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" width="90"  dataField="LIONICLabTestType.LOINC_NUM" editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>	
+						<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.lionicLabTestTypeDTOList}" labelField="LOINC_NUM" width="70"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn id="testName" headerText="Test Name" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" width="90" dataField="LIONICLabTestType.SHORTNAME" editable="true" editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.lionicLabTestTypeDTOList}" labelField="SHORTNAME" width="100%"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn id="lab" headerText="Laboratory" width="100" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="LabType.LabName" editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor width="110" dataProvider="{outerDocument.model.labTypeDTOList}" labelField="LabName"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<!--<mx:DataGridColumn headerText="Result" width="90" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"  />-->
+			<commons:DataGridColumnEx data="{deleteColumnData}" headerText="" id="buttons" width="85" itemRenderer="com.gazuntite.patient.visit.view.itemrenderers.DeleteRecordRenderer" editable="false"/>
+			
+		</components1:columns>
+	</components1:LabelDataGrid>
+	
+</s:Group>

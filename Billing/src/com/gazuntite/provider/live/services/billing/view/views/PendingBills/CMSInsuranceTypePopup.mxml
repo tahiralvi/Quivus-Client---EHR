@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						xmlns:s="library://ns.adobe.com/flex/spark" 
+						xmlns:mx="library://ns.adobe.com/flex/mx" 
+						title="Choose Insurance Type"						
+						xmlns:components="com.gazuntite.controls.extended.components.*"
+						creationComplete="popupwindow1_creationCompleteHandler(event)"
+						skinClass="com.adobe.gazuntite.skins.chrome.containerSkins.TitleWindowSkin" xmlns:components1="com.gazuntite.controls.extended.components.*"
+						>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			[Bindable] public var viewTertiary:Boolean = false;
+			
+			public function hide():void
+			{
+				removePopup();
+			}
+			
+			protected function id_ButtonChanged(event:Event):void
+			{
+				model.CMSViewInsuranceType = (event.currentTarget as RadioButton).label.substring(0,1);					
+			}			
+			
+			protected function popupwindow1_creationCompleteHandler(event:FlexEvent):void
+			{
+				model.CMSViewInsuranceType = "P";
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<components:layout>
+		<s:VerticalLayout paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" gap="5" />
+	</components:layout>
+	<s:HGroup width="100%" horizontalAlign="center" >
+		<s:RadioButton id="id_Primary" label="Primary" fontFamily="Calibri" fontSize="11"  groupName="InsType" click="id_ButtonChanged(event)" selected="true" tabIndex="1" />
+		<s:RadioButton id="id_Secondary" label="Secondary" fontFamily="Calibri" fontSize="11"  groupName="InsType" click="id_ButtonChanged(event)" tabIndex="2" />
+		<s:RadioButton id="id_Tertiary" label="Tertiary" fontFamily="Calibri" fontSize="11" width="100%"  click="id_ButtonChanged(event)" groupName="InsType" 
+					   visible="{viewTertiary}" includeInLayout="{viewTertiary}" tabIndex="3"
+					   />
+	</s:HGroup>
+	<s:HGroup width="100%" horizontalAlign="center" >
+		<s:Button id="id_Ok" width="70"  label="Ok" styleName="blackButtonSkin" useHandCursor="true" buttonMode="true" toolTip="Ok" tabIndex="4" />
+		<s:Button id="id_Cancel" width="70"  label="Cancel" styleName="blackButtonSkin" useHandCursor="true" buttonMode="true" toolTip="Cancel" tabIndex="5" />
+	</s:HGroup>
+</components1:PopupWindow>

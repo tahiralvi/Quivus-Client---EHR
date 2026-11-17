@@ -1,0 +1,738 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"  
+		  xmlns:components="com.zigron.controls.extended.components.*"
+		  creationComplete="vgroup1_creationCompleteHandler(event)"
+		  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" xmlns:components1="com.gazuntite.controls.extended.components.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.dto.InsOrganizationDTO;
+			import com.gazuntite.provider.live.services.billing.dto.ClaimManagement.CarrierDTO;
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.FrequencyCodeTypeDTO;
+			import com.gazuntite.provider.live.services.billing.dto.settings.EDIReceiverDTO;
+			import com.gazuntite.provider.live.services.billing.event.settings.LoadEDIReceiverByCriteriaEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.ValidationResultEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable]
+			public var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			private var m_oClaimCarrier:CarrierDTO;
+			private var m_sBatchID:String;
+			private var m_sIniBillDate:String;
+			
+			private var m_isCarrierExists:Boolean;
+			
+			[Bindable]
+			public function get IsCarrierExists():Boolean
+			{
+				return m_isCarrierExists;
+			}
+			
+			public function set IsCarrierExists(value:Boolean):void
+			{
+				m_isCarrierExists = value;
+			}
+			
+			private var m_iCarrierNo:int;
+			
+			[Bindable]
+			public function get CarrierNo():int
+			{
+				return m_iCarrierNo;
+			}
+			
+			public function set CarrierNo(value:int):void
+			{
+				m_iCarrierNo = value;
+			}
+			
+			//[Bindable]
+			//private var EDIReceivers:ArrayCollection = null;//new ArrayCollection(["Direct","Clearing House"]);			
+			
+			private var m_oInsuranceListforCarrier:ArrayCollection;
+			
+			[Bindable]
+			public function get InsuranceListforCarrier():ArrayCollection
+			{
+				return m_oInsuranceListforCarrier;
+			}
+			
+			public function set InsuranceListforCarrier(value:ArrayCollection):void
+			{
+				m_oInsuranceListforCarrier = value;
+			}			
+			
+			[Bindable]
+			public function get IniBillDate():String
+			{
+				return m_sIniBillDate;
+			}
+			
+			public function set IniBillDate(value:String):void
+			{
+				m_sIniBillDate = value;
+			}
+			
+			[Bindable]
+			public function get BatchID():String
+			{
+				return m_sBatchID;
+			}
+			
+			public function set BatchID(value:String):void
+			{
+				m_sBatchID = value;
+			}
+			
+			[Bindable]
+			public function get ClaimCarrier():CarrierDTO
+			{
+				return m_oClaimCarrier;
+			}
+			
+			public function set ClaimCarrier(value:CarrierDTO):void
+			{
+				m_oClaimCarrier = value;
+			}
+			
+			protected function id_InsuranceCmb_keyUpHandler(event:KeyboardEvent):void
+			{
+				// TODO Auto-generated method stub				
+			}
+			
+			private function SetTabIndexes():void
+			{
+				//var incrementer:int = 0;
+				//id_POSTypes.tabIndex = tabIndex + (++incrementer);
+				id_Hold.tabIndex = 1;	
+				id_Alert.tabIndex = 2;
+				id_Ready.tabIndex = 3;
+				id_Done.tabIndex = 4;
+				id_Sent.tabIndex = 5;
+				id_Pending.tabIndex = 6;
+				id_Rejected.tabIndex = 7;
+				id_Challenge.tabIndex = 8;
+				id_Paper.tabIndex = 9;
+				id_Electronic.tabIndex = 10;
+				id_BillDate.tabIndex = 11;
+				id_InsuranceCmb.tabIndex = 12;
+				//id_EDIReceiverCmb.tabIndex = 13;
+				id_FrequencyCmb.tabIndex = 14;				
+			}	
+			
+			protected function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				/* if(model.EDIReceiverList == null || model.EDIReceiverList.length == 0)
+				{
+					var lerEvent:LoadEDIReceiverByCriteriaEvent = new LoadEDIReceiverByCriteriaEvent(0,"0",0);
+					CairngormEventDispatcher.getInstance().dispatchEvent(lerEvent);
+				}
+				
+				 if(model.EDIReceiverList != null && model.EDIReceiverList.length > 0)
+				{
+					EDIReceivers = new ArrayCollection();
+					
+					for each (var receiver:EDIReceiverDTO in model.EDIReceiverList) 
+					{
+						EDIReceivers.addItem(receiver);
+					}					
+				}  */
+				
+				IniBillDate = model.ClaimCarrierIniBillDate
+				
+				ClaimCarrier = null;
+				id_addRemoveButton.visible = false;
+					
+				if(CarrierNo == 1)
+				{
+					InsuranceListforCarrier = model.InsuranceListforCarrier1;
+					ClaimCarrier = model.ClaimCarrier1;					
+				}
+				else if(CarrierNo == 2)
+				{
+					InsuranceListforCarrier = model.InsuranceListforCarrier2;
+					ClaimCarrier = model.ClaimCarrier2;					
+				}
+				else if(CarrierNo == 3)
+				{
+					InsuranceListforCarrier = model.InsuranceListforCarrier3;
+					ClaimCarrier = model.ClaimCarrier3;					
+				}
+				else if(CarrierNo == 4)
+				{					
+					ClaimCarrier = model.ClaimPatientBilling;					
+				}
+				
+				if( ClaimCarrier == null) 
+				{
+					id_BillDate.enabled = false;
+					IsCarrierExists = false;
+					return;
+				}
+				
+				id_addRemoveButton.visible = true;
+				InitializeValues();
+				
+				/* if(ClaimCarrier.InsOrganizationID != "0" )
+				{
+					InitializeValues();
+				}	 */	
+				
+				if(ClaimCarrier.isAddedToClaim)
+				{	IsCarrierExists = true;
+					id_addRemoveButton.label = "Remove From Claim";
+				}
+				else
+				{
+					IsCarrierExists = false;
+					id_addRemoveButton.label = "Add To Claim";
+				}
+			}
+			
+			private function InitializeValues():void
+			{
+				id_BillDate.enabled = false;
+				switch(ClaimCarrier.StatusTypeID)
+				{
+					case "1":
+					{
+						id_Hold.selected = true;						
+						break;
+					}
+					case "2":
+					{
+						id_Alert.selected = true;
+						break;
+					}
+					case "3":
+					{
+						id_Ready.selected = true;
+						id_BillDate.enabled = true;
+						break;
+					}
+					case "4":
+					{
+						id_Done.selected = true;
+						break;
+					}
+					case "5":
+					{
+						id_Sent.selected = true;
+						break;
+					}
+					case "6":
+					{
+						id_Pending.selected = true;
+						break;
+					}
+					case "7":
+					{
+						id_Rejected.selected = true;
+						break;
+					}
+					case "8":
+					{
+						id_Challenge.selected = true;
+						break;
+					}
+					default:
+					{
+						id_Hold.selected = true;
+						break;
+					}
+				}
+				
+				if(ClaimCarrier.MediaTypeID == "2")				
+					id_Electronic.selected = true;				
+				else
+					id_Paper.selected = true;
+				
+				if(CarrierNo == 4)
+				{					
+					id_standard.selected = ClaimCarrier.StatementTypeID == "1";
+					id_remainder.selected = ClaimCarrier.StatementTypeID == "2";
+				}
+				
+				if(UtilityFunctions.IsNullOrEmpty(ClaimCarrier.BillDate) == false)
+					id_BillDate.text = ClaimCarrier.BillDate;
+				
+				/* if(ClaimCarrier.EDIReceiverTypeID != "0")
+				{
+					if(EDIReceivers != null && EDIReceivers.length > 0)
+					{	
+						for each (var receiver:EDIReceiverDTO in EDIReceivers) 
+						{
+							if(receiver.EDIReceiverID == ClaimCarrier.EDIReceiverTypeID)
+							{
+								id_EDIReceiverCmb.selectedItem = receiver;
+								break;
+							}
+						}					
+					}
+					//id_EDIReceiverCmb.selectedIndex = parseInt(ClaimCarrier.EDIReceiverTypeID) - 1;	
+				} 
+				
+				id_EDIReceiverCmb.enabled = false;*/
+				
+				if(CarrierNo == 1 && ClaimCarrier.FrequencyTypeID != "0")
+				{
+					var selectedCode:FrequencyCodeTypeDTO = model.FrequencyCodeList[parseInt(ClaimCarrier.FrequencyTypeID) - 1] as FrequencyCodeTypeDTO;
+					id_FrequencyCmb.textInput.text = selectedCode.FrequencyCode.split("\-")[0];					
+				}
+				
+				if(CarrierNo == 1 && ClaimCarrier.InsOrganizationID != "0")
+				{
+					for(var i:int = 0; i < model.InsuranceListforCarrier1.length; i++ )
+					{
+						var selectedIns:InsOrganizationDTO = model.InsuranceListforCarrier1[i] as InsOrganizationDTO;
+						if(selectedIns.InsOrganizationID == ClaimCarrier.InsOrganizationID)
+						{
+							id_InsuranceCmb.selectedItem = selectedIns;
+							//id_InsuranceCmb.textInput.text = selectedIns.InsuranceName;
+							break;
+						}
+					}
+				}
+				else if(CarrierNo == 2 && ClaimCarrier.InsOrganizationID != "0")
+				{
+					for(var k:int = 0; k < model.InsuranceListforCarrier2.length; k++ )
+					{
+						var selectedIns2:InsOrganizationDTO = model.InsuranceListforCarrier2[k] as InsOrganizationDTO;
+						if(selectedIns2.InsOrganizationID == ClaimCarrier.InsOrganizationID)
+						{
+							id_InsuranceCmb.selectedItem = selectedIns2;
+							//id_InsuranceCmb.textInput.text = selectedIns.InsuranceName;
+							break;
+						}
+					}				
+				}
+				else if(CarrierNo == 3 && ClaimCarrier.InsOrganizationID != "0")
+				{
+					for(var j:int = 0; j < model.InsuranceListforCarrier3.length; j++ )
+					{
+						var selectedIns3:InsOrganizationDTO = model.InsuranceListforCarrier3[j] as InsOrganizationDTO;
+						if(selectedIns3.InsOrganizationID == ClaimCarrier.InsOrganizationID)
+						{
+							id_InsuranceCmb.selectedItem = selectedIns3;
+							//id_InsuranceCmb.textInput.text = selectedIns.InsuranceName;
+							break;
+						}
+					}					
+				}
+			}			
+			
+			protected function id_FrequencyCmb_changeHandler(event:IndexChangeEvent):void
+			{
+				if(id_FrequencyCmb.selectedIndex < 0)
+				{
+					if(CarrierNo == 1)
+						model.ClaimCarrier1.FrequencyTypeID = "0";
+					else if(CarrierNo == 2)
+						model.ClaimCarrier2.FrequencyTypeID = "0";
+					else if(CarrierNo == 3)
+						model.ClaimCarrier3.FrequencyTypeID = "0";
+					return;
+				}
+				var selectedCode:FrequencyCodeTypeDTO = id_FrequencyCmb.selectedItem as FrequencyCodeTypeDTO;
+				id_FrequencyCmb.textInput.text = selectedCode.FrequencyCode.split("\-")[0];	
+				
+				if(CarrierNo == 1)
+					model.ClaimCarrier1.FrequencyTypeID = selectedCode.FrequencyTypeID;
+				else if(CarrierNo == 2)
+					model.ClaimCarrier2.FrequencyTypeID = selectedCode.FrequencyTypeID;
+				else if(CarrierNo == 3)
+					model.ClaimCarrier3.FrequencyTypeID = selectedCode.FrequencyTypeID;
+			}
+			
+			protected function RadioChangeHandler(event:Event):void
+			{
+				/* if(id_Ready.selected)
+					id_BillDate.enabled = true;
+				else
+					id_BillDate.enabled = false; */
+				
+				var rdo:RadioButton = event.currentTarget as RadioButton;
+				
+				switch(rdo.id)
+				{
+					case "id_Hold":
+						if(rdo.selected == true)
+						{
+							if(CarrierNo == 1)
+								model.ClaimCarrier1.StatusTypeID = "1";
+							else if(CarrierNo == 2)
+								model.ClaimCarrier2.StatusTypeID = "1";
+							else if(CarrierNo == 3)
+								model.ClaimCarrier3.StatusTypeID = "1";
+							else if(CarrierNo == 4)
+								model.ClaimPatientBilling.StatusTypeID = "1";
+						}
+						break;
+					
+					case "id_Alert":
+						if(rdo.selected == true)
+						{
+							if(CarrierNo == 1)
+								model.ClaimCarrier1.StatusTypeID = "2";
+							else if(CarrierNo == 2)
+								model.ClaimCarrier2.StatusTypeID = "2";
+							else if(CarrierNo == 3)
+								model.ClaimCarrier3.StatusTypeID = "2";
+							else if(CarrierNo == 4)
+								model.ClaimPatientBilling.StatusTypeID = "2";
+						}
+						break;
+					
+					case "id_Ready":
+						if(rdo.selected == true)
+						{
+							if(CarrierNo == 1)
+								model.ClaimCarrier1.StatusTypeID = "3";
+							else if(CarrierNo == 2)
+								model.ClaimCarrier2.StatusTypeID = "3";
+							else if(CarrierNo == 3)
+								model.ClaimCarrier3.StatusTypeID = "3";
+							else if(CarrierNo == 4)
+								model.ClaimPatientBilling.StatusTypeID = "3";				
+							
+						}
+						break;					
+					case "id_Done":
+						if(rdo.selected == true)
+						{
+							if(CarrierNo == 1)
+								model.ClaimCarrier1.StatusTypeID = "4";
+							else if(CarrierNo == 2)
+								model.ClaimCarrier2.StatusTypeID = "4";
+							else if(CarrierNo == 3)
+								model.ClaimCarrier3.StatusTypeID = "4";
+							else if(CarrierNo == 4)
+								model.ClaimPatientBilling.StatusTypeID = "4";
+						}
+						break;					
+					case "id_Sent":
+						if(rdo.selected == true)
+						{
+							if(CarrierNo == 1)
+								model.ClaimCarrier1.StatusTypeID = "5";
+							else if(CarrierNo == 2)
+								model.ClaimCarrier2.StatusTypeID = "5";
+							else if(CarrierNo == 3)
+								model.ClaimCarrier3.StatusTypeID = "5";
+							else if(CarrierNo == 4)
+								model.ClaimPatientBilling.StatusTypeID = "5";
+						}						
+						break;					
+					case "id_Pending":
+						if(rdo.selected == true)
+						{
+							if(CarrierNo == 1)
+								model.ClaimCarrier1.StatusTypeID = "6";
+							else if(CarrierNo == 2)
+								model.ClaimCarrier2.StatusTypeID = "6";
+							else if(CarrierNo == 3)
+								model.ClaimCarrier3.StatusTypeID = "6";
+							else if(CarrierNo == 4)
+								model.ClaimPatientBilling.StatusTypeID = "6";
+						}						
+						break;
+					case "id_Rejected":
+						if(rdo.selected == true)
+						{
+							if(CarrierNo == 1)
+								model.ClaimCarrier1.StatusTypeID = "7";
+							else if(CarrierNo == 2)
+								model.ClaimCarrier2.StatusTypeID = "7";
+							else if(CarrierNo == 3)
+								model.ClaimCarrier3.StatusTypeID = "7";
+							else if(CarrierNo == 4)
+								model.ClaimPatientBilling.StatusTypeID = "7";
+						}
+						break;					
+					case "id_Challenge":
+						if(rdo.selected == true)
+						{
+							if(CarrierNo == 1)
+								model.ClaimCarrier1.StatusTypeID = "8";
+							else if(CarrierNo == 2)
+								model.ClaimCarrier2.StatusTypeID = "8";
+							else if(CarrierNo == 3)
+								model.ClaimCarrier3.StatusTypeID = "8";
+							else if(CarrierNo == 4)
+								model.ClaimPatientBilling.StatusTypeID = "8";
+						}					
+						break;
+					case "id_Paper":
+						if(rdo.selected == true)
+						{
+							if(CarrierNo == 1)
+								model.ClaimCarrier1.MediaTypeID = "1";
+							else if(CarrierNo == 2)
+								model.ClaimCarrier2.MediaTypeID = "1";
+							else if(CarrierNo == 3)
+								model.ClaimCarrier3.MediaTypeID = "1";
+							else if(CarrierNo == 4)
+								model.ClaimPatientBilling.MediaTypeID = "1";
+						}					
+						break;
+					case "id_Electronic":
+						if(rdo.selected == true)
+						{
+							if(CarrierNo == 1)
+								model.ClaimCarrier1.MediaTypeID = "2";
+							else if(CarrierNo == 2)
+								model.ClaimCarrier2.MediaTypeID = "2";
+							else if(CarrierNo == 3)
+								model.ClaimCarrier3.MediaTypeID = "2";
+							else if(CarrierNo == 4)
+								model.ClaimPatientBilling.MediaTypeID = "2";
+						}					
+						break;
+					case "id_standard":
+						if(rdo.selected == true && CarrierNo == 4)
+						{ 							
+								model.ClaimPatientBilling.StatementTypeID = "1";
+						}					
+						break;
+					case "id_remainder":
+						if(rdo.selected == true && CarrierNo == 4)
+						{ 							
+								model.ClaimPatientBilling.StatementTypeID = "2";
+						}					
+						break;
+				}
+			}
+			
+			protected function id_InsuranceCmb_changeHandler(event:IndexChangeEvent):void
+			{
+				if(id_InsuranceCmb.selectedIndex < 0) 
+				{
+					if(CarrierNo == 1)
+						model.ClaimCarrier1.InsOrganizationID = "0";
+					else if(CarrierNo == 2)
+						model.ClaimCarrier2.InsOrganizationID = "0";
+					else if(CarrierNo == 3)
+						model.ClaimCarrier3.InsOrganizationID = "0";
+					
+					return;
+				}
+				var selectedIns:InsOrganizationDTO = id_InsuranceCmb.selectedItem as InsOrganizationDTO;
+				if(CarrierNo == 1)
+				{
+					if(model.ClaimCarrier2.InsOrganizationID == selectedIns.InsOrganizationID && model.ClaimCarrier2.isAddedToClaim && model.ClaimCarrier2.IsDeleted == "false")
+					{
+						id_InsuranceCmb.setFocus();
+						Alert.show("This Insurance is already secondary carrier for the claim.","Invalid Selection", 4, FlexGlobals.topLevelApplication.mainContainer);
+						id_InsuranceCmb.selectedIndex -1;
+						return;
+					}
+					else if(model.ClaimCarrier3.InsOrganizationID == selectedIns.InsOrganizationID && model.ClaimCarrier3.isAddedToClaim && model.ClaimCarrier3.IsDeleted == "false")
+					{
+						id_InsuranceCmb.setFocus();
+						Alert.show("This Insurance is already tertiary carrier for the claim.","Invalid Selection", 4, FlexGlobals.topLevelApplication.mainContainer);
+						id_InsuranceCmb.selectedIndex -1;
+						return;
+					}
+					model.ClaimCarrier1.InsOrganizationID = selectedIns.InsOrganizationID;
+				}
+				else if(CarrierNo == 2)
+				{
+					if(model.ClaimCarrier1.InsOrganizationID == selectedIns.InsOrganizationID && model.ClaimCarrier1.isAddedToClaim && model.ClaimCarrier1.IsDeleted == "false")
+					{
+						id_InsuranceCmb.setFocus();
+						Alert.show("This Insurance is already primary carrier for the claim.","Invalid Selection", 4, FlexGlobals.topLevelApplication.mainContainer);
+						id_InsuranceCmb.selectedIndex -1;
+						return;
+					}
+					else if(model.ClaimCarrier3.InsOrganizationID == selectedIns.InsOrganizationID && model.ClaimCarrier3.isAddedToClaim && model.ClaimCarrier3.IsDeleted == "false")
+					{
+						id_InsuranceCmb.setFocus();
+						Alert.show("This Insurance is already tertiary carrier for the claim.","Invalid Selection", 4, FlexGlobals.topLevelApplication.mainContainer);
+						id_InsuranceCmb.selectedIndex -1;
+						return;
+					}
+					model.ClaimCarrier2.InsOrganizationID = selectedIns.InsOrganizationID;
+				}
+				else if(CarrierNo == 3)
+				{
+					if(model.ClaimCarrier2.InsOrganizationID == selectedIns.InsOrganizationID && model.ClaimCarrier2.isAddedToClaim && model.ClaimCarrier2.IsDeleted  == "false")
+					{						
+						id_InsuranceCmb.setFocus();
+						Alert.show("This Insurance is already secondary carrier for the claim.","Invalid Selection", 4, FlexGlobals.topLevelApplication.mainContainer);
+						id_InsuranceCmb.selectedIndex -1;
+						return;
+					}
+					else if(model.ClaimCarrier1.InsOrganizationID == selectedIns.InsOrganizationID && model.ClaimCarrier1.isAddedToClaim && model.ClaimCarrier1.IsDeleted == "false")
+					{
+						
+						id_InsuranceCmb.setFocus();
+						Alert.show("This Insurance is already primary carrier for the claim.","Invalid Selection", 4, FlexGlobals.topLevelApplication.mainContainer);
+						id_InsuranceCmb.selectedIndex -1;
+						return;
+					}
+					model.ClaimCarrier3.InsOrganizationID = selectedIns.InsOrganizationID;
+				}
+				
+			}
+			
+			/* protected function id_EDIReceiverCmb_changeHandler(event:IndexChangeEvent):void
+			{				
+				if(CarrierNo == 1)
+					model.ClaimCarrier1.EDIReceiverTypeID = String(id_EDIReceiverCmb.selectedIndex + 1);
+				else if(CarrierNo == 2)
+					model.ClaimCarrier2.EDIReceiverTypeID = String(id_EDIReceiverCmb.selectedIndex + 1);
+				else if(CarrierNo == 3)
+					model.ClaimCarrier3.EDIReceiverTypeID = String(id_EDIReceiverCmb.selectedIndex + 1);
+			} */
+			
+			private var vResult:ValidationResultEvent;
+			protected function id_BillDate_focusOutHandler(event:FocusEvent):void
+			{
+				if(UtilityFunctions.IsNullOrEmpty(id_BillDate.text) == false )
+				{
+					vResult = dateVal.validate(id_BillDate.text);
+					if(vResult.type == ValidationResultEvent.VALID)					
+					{
+						if(CarrierNo == 1)
+							model.ClaimCarrier1.BillDate = UtilityFunctions.FormatDate(id_BillDate.text);
+						else if(CarrierNo == 2)
+							model.ClaimCarrier2.BillDate = UtilityFunctions.FormatDate(id_BillDate.text);
+						else if(CarrierNo == 3)
+							model.ClaimCarrier3.BillDate = UtilityFunctions.FormatDate(id_BillDate.text);	
+						else if(CarrierNo == 4)
+							model.ClaimPatientBilling.BillDate = UtilityFunctions.FormatDate(id_BillDate.text);
+					}
+					else
+					{
+						Alert.show('Please write date in following format'+'\n'+'MM/DD/YYYY', 'Wrong date/format',4,FlexGlobals.topLevelApplication.mainContainer);						
+					}
+				}
+			}
+			
+			[Bindable] public var EDIReceiverName:String = "";
+			
+			protected function id_addRemoveButton_clickHandler(event:MouseEvent):void
+			{
+				if(id_addRemoveButton.label == "Remove From Claim")
+				{
+					if(ClaimCarrier.InsuranceID != "0")
+						ClaimCarrier.IsDeleted = "true";
+					
+					IsCarrierExists = false;
+					id_addRemoveButton.label = "Add To Claim";
+				} 
+				else if(id_addRemoveButton.label == "Add To Claim")
+				{
+					if(ClaimCarrier.InsuranceID != "0")
+						ClaimCarrier.IsDeleted = "false";
+					
+					ClaimCarrier.isAddedToClaim = true;
+					IsCarrierExists = true;
+					id_addRemoveButton.label = "Remove From Claim";
+				}
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:DateFormatter id="dateFormatter" formatString="MM/DD/YYYY"/>
+		<mx:DateValidator id="dateVal"  inputFormat="MM/DD/YYYY"  />
+	</fx:Declarations>
+		
+	<s:HGroup width="100%">
+		<s:VGroup width="50%">
+			<s:Label text="CLAIM STATUS:" fontFamily="Calibri" fontSize="11"  color="#333333"/>
+			<s:HGroup width="100%">
+				<s:RadioButton id="id_Hold" width="100"  fontFamily="Calibri" fontSize="11"  color="#333333" label="Hold" 
+							   groupName="Status" change="RadioChangeHandler(event)" enabled="{IsCarrierExists}" />
+				<s:RadioButton id="id_Alert" width="100" label="Alert" groupName="Status" fontFamily="Calibri" fontSize="11"  color="#333333"
+							   change="RadioChangeHandler(event)" enabled="{IsCarrierExists}" />
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<s:RadioButton id="id_Ready" width="100" fontFamily="Calibri" fontSize="11"  color="#333333"
+							   label="Ready to Send" groupName="Status" change="RadioChangeHandler(event)" enabled="{IsCarrierExists}" />
+				<s:RadioButton id="id_Done" width="100" label="Done" fontFamily="Calibri" fontSize="11"  color="#333333"
+							   groupName="Status" change="RadioChangeHandler(event)" enabled="{IsCarrierExists}" />
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<s:RadioButton id="id_Sent" width="100" label="Sent" fontFamily="Calibri" fontSize="11"  color="#333333"
+							   groupName="Status" change="RadioChangeHandler(event)"  enabled="{IsCarrierExists}" />
+				<s:RadioButton id="id_Pending" width="100" label="Pending" groupName="Status" fontFamily="Calibri" fontSize="11"  color="#333333" 
+							   change="RadioChangeHandler(event)"  enabled="{IsCarrierExists}"/>
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<s:RadioButton id="id_Rejected" width="100" label="Rejected"
+							   fontFamily="Calibri" fontSize="11"  color="#333333"
+							   groupName="Status" change="RadioChangeHandler(event)"  enabled="{IsCarrierExists}"/>
+				<s:RadioButton id="id_Challenge" width="100" label="Challenge" fontFamily="Calibri" fontSize="11"  color="#333333"
+							   groupName="Status" change="RadioChangeHandler(event)"  enabled="{IsCarrierExists}"/>
+			</s:HGroup>
+		</s:VGroup>
+		<s:VGroup width="50%">
+			<s:Label text="BILLING METHOD:"  fontFamily="Calibri" fontSize="11"  color="#333333"/>
+			<s:HGroup width="100%">
+				<s:RadioButton id="id_Paper" width="100" fontFamily="Calibri" fontSize="11"  color="#333333"
+							   label="Paper" groupName="Method" change="RadioChangeHandler(event)"  enabled="{IsCarrierExists}"/>
+				<s:RadioButton id="id_Electronic" width="100" fontFamily="Calibri" fontSize="11"  color="#333333"
+							   label="Electronic" groupName="Method" change="RadioChangeHandler(event)"  enabled="{IsCarrierExists}"/>
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<s:Label width="100" text="Initial Bill Date:" fontFamily="Calibri" fontSize="11"  color="#333333"/>
+				<s:Label width="100"  text="{IniBillDate}" fontFamily="Calibri" fontSize="11"  color="#333333"/>
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<s:Label width="100" text="Batch:" fontFamily="Calibri" fontSize="11"  color="#333333"/>
+				<s:Label width="100"  text="{BatchID}" fontFamily="Calibri" fontSize="11"  color="#333333"/>
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<s:Label width="100" text="Submission Count:" fontFamily="Calibri" fontSize="11"  color="#333333"/>
+				<s:Label width="100"  text="{ClaimCarrier.SubmissionCount}" fontFamily="Calibri" fontSize="11"  color="#333333"/>
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<s:Label width="100" text="Billing Date:" fontFamily="Calibri" fontSize="11"  color="#333333"/>
+				<components1:LabelDateField id="id_BillDate" width="100" fontFamily="calibri" fontSize="11" yearNavigationEnabled="true"
+										   minYear="1901" maxYear="{new Date().getFullYear()}" selectableRange="{{rangeStart:new Date() + 1}}"
+										   enabled="{IsCarrierExists &amp;&amp; id_Ready.selected ? true : false }" focusOut="id_BillDate_focusOutHandler(event)" disabledRanges="{[{rangeEnd: new Date()}]}"
+										   />
+			</s:HGroup>
+		</s:VGroup>
+	</s:HGroup>
+	<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="center">
+		<components1:LabelComboBox id="id_InsuranceCmb" width="30%" prompt="{'Insurance ' + ClaimCarrier.InsuranceTypeId}" 
+								  keyUp="id_InsuranceCmb_keyUpHandler(event)" labelField="InsuranceName"
+								  dataProvider="{InsuranceListforCarrier}" change="id_InsuranceCmb_changeHandler(event)"
+								  enabled="{IsCarrierExists}" visible="{ CarrierNo == 4 ? false : true }"
+								  />
+		<!--<components:LabelComboBox id="id_EDIReceiverCmb" width="30%" prompt="{'EDI Receiver ' + ClaimCarrier.InsuranceTypeId}" dataProvider="{EDIReceivers}"
+								  change="id_EDIReceiverCmb_changeHandler(event)" labelField="Name"
+								  enabled="{IsCarrierExists}"
+								  />-->
+		<s:Label id="id_Receiver" width="30%" text="{'EDI Receiver: ' + EDIReceiverName  }" visible="{ CarrierNo == 4 ? false : true }" />
+		<components1:LabelComboBox id="id_FrequencyCmb" width="30%" prompt="Frequency Code" visible="{ClaimCarrier.InsuranceTypeId == '1' ? true : false}" 
+								  dataProvider="{model.FrequencyCodeList}" labelField="FrequencyCode" change="id_FrequencyCmb_changeHandler(event)" enabled="{IsCarrierExists}" />
+	</s:HGroup>
+	<s:HGroup width="100%" includeInLayout="{ClaimCarrier.InsuranceTypeId == '4' ? true : false}" visible="{ClaimCarrier.InsuranceTypeId == '4' ? true : false}">
+		<s:Label text="STATEMENT TYPE:" fontFamily="Calibri" fontSize="11"  color="#333333"/>
+		<s:RadioButton id="id_standard" width="100" label="Standard"
+					   fontFamily="Calibri" fontSize="11"  color="#333333"
+					   groupName="stmntType" change="RadioChangeHandler(event)"  enabled="{IsCarrierExists}"/>
+		<s:RadioButton id="id_remainder" width="100" label="Rmainder" fontFamily="Calibri" fontSize="11"  color="#333333"
+					   groupName="stmntType" change="RadioChangeHandler(event)"  enabled="{IsCarrierExists}"/>
+	</s:HGroup>
+	<s:HGroup width="100%">
+		<s:Button id="id_addRemoveButton" width="250" click="id_addRemoveButton_clickHandler(event)"/>		
+	</s:HGroup>
+</s:VGroup>

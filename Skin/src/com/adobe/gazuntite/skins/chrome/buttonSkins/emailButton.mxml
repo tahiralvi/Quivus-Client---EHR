@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:ATE="http://ns.adobe.com/ate/2009" xmlns:flm="http://ns.adobe.com/flame/2008" xmlns:lib="assets.graphics.*" xmlns:fc="http://ns.adobe.com/flashcatalyst/2009">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/>
+	</s:states>
+	<s:Path data="M 25 20 L 5 20 C 2.238 20 0 17.761 0 15 L 0 5 C 0 2.239 2.238 0 5 0 L 25 0 C 24.948 0.052 25 20.333 25 20 Z" height="19" includeIn="down,over,up" width="24" y="0" visible.up="false" x="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1" color="#FFFFFF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter includeIn="down" blurX="2" blurY="2" distance="2" hideObject="false" color="0x000000" inner="true" strength="1" alpha="0.5" quality="2" knockout="false" angle="90"/>
+		</s:filters>
+	</s:Path>
+	<s:Path data="M 6.264 8.297 C 6.342 8.449 6.464 8.566 6.63 8.648 C 6.796 8.73 7.014 8.771 7.283 8.771 C 8.127 8.771 8.904 8.377 9.615 7.588 C 10.412 6.709 10.811 5.703 10.811 4.57 C 10.811 3.777 10.621 3.043 10.242 2.367 C 9.797 1.582 9.188 0.991 8.417 0.595 C 7.645 0.198 6.775 0 5.807 0 C 4.557 0 3.493 0.281 2.616 0.844 C 1.739 1.406 1.062 2.217 0.586 3.275 C 0.195 4.139 0 5.047 0 6 C 0 6.855 0.164 7.652 0.492 8.391 C 0.754 8.973 1.143 9.487 1.658 9.935 C 2.174 10.382 2.798 10.717 3.53 10.939 C 4.263 11.162 5.062 11.273 5.93 11.273 C 6.871 11.273 7.676 11.149 8.344 10.901 C 9.012 10.653 9.588 10.316 10.072 9.891 C 10.557 9.465 10.898 9.047 11.098 8.637 L 10.037 8.637 C 9.693 9.129 9.176 9.547 8.484 9.891 C 7.793 10.234 6.935 10.406 5.912 10.406 C 4.955 10.406 4.083 10.241 3.296 9.911 C 2.509 9.581 1.907 9.07 1.491 8.379 C 1.075 7.687 0.867 6.863 0.867 5.906 C 0.867 4.992 1.075 4.136 1.491 3.337 C 1.907 2.538 2.493 1.925 3.249 1.497 C 4.005 1.069 4.84 0.855 5.754 0.855 C 6.555 0.855 7.286 1.025 7.948 1.365 C 8.61 1.705 9.108 2.158 9.442 2.725 C 9.776 3.291 9.943 3.9 9.943 4.553 C 9.943 5.111 9.813 5.653 9.554 6.179 C 9.294 6.704 8.941 7.123 8.496 7.436 C 8.16 7.674 7.889 7.793 7.682 7.793 C 7.568 7.793 7.472 7.755 7.392 7.679 C 7.311 7.603 7.271 7.512 7.271 7.406 C 7.271 7.348 7.33 7.045 7.447 6.498 L 8.291 2.566 L 7.242 2.566 L 7.043 3.475 C 6.82 3.111 6.555 2.841 6.246 2.663 C 5.937 2.485 5.613 2.396 5.273 2.396 C 4.828 2.396 4.369 2.553 3.896 2.865 C 3.424 3.178 3.028 3.646 2.71 4.269 C 2.392 4.892 2.232 5.514 2.232 6.135 C 2.232 6.639 2.335 7.102 2.54 7.523 C 2.745 7.945 3.012 8.258 3.34 8.461 C 3.668 8.664 4.006 8.766 4.354 8.766 C 4.67 8.766 4.985 8.677 5.3 8.499 C 5.614 8.321 5.898 8.086 6.152 7.793 C 6.176 8.031 6.213 8.199 6.264 8.297 L 6.264 8.297 Z M 3.504 5.098 C 3.629 4.695 3.795 4.354 4.002 4.072 C 4.209 3.791 4.423 3.587 4.644 3.46 C 4.864 3.333 5.1 3.27 5.35 3.27 C 5.728 3.27 6.05 3.416 6.313 3.709 C 6.577 4.002 6.709 4.414 6.709 4.945 C 6.709 5.344 6.639 5.741 6.498 6.138 C 6.357 6.534 6.177 6.861 5.956 7.119 C 5.735 7.377 5.504 7.571 5.262 7.702 C 5.019 7.833 4.789 7.898 4.57 7.898 C 4.242 7.898 3.951 7.75 3.697 7.453 C 3.443 7.156 3.316 6.74 3.316 6.205 C 3.316 5.869 3.379 5.5 3.504 5.098 Z" d:id="3" includeIn="over" flm:variant="1" visible="false" winding="nonZero" x="8" y="4">
+		<s:filters>
+			<s:DropShadowFilter alpha="1" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="0.5" angle="270" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#5B7185" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#2A4863" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Path>
+	<s:RichText color="#FFFFFF" fontSize="12" tabStops="S0" text="@" visible.down="false" visible.over="false" y="4" x.up="6" x.over="7" x.down="7" x.disabled="7" fontFamily="Arial" fontWeight="bold">
+		<s:filters>
+			<s:DropShadowFilter alpha="0.75" angle="90" blurX="2" blurY="2" color="#250F73" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:RichText>
+	<s:RichText color="#234F75" fontSize="12" includeIn="down,over,up" text="@" y="4" tabStops="S0" visible.up="false" x="6" fontFamily="Arial" fontWeight="bold">
+	</s:RichText>
+	
+	</s:Skin>

@@ -1,0 +1,51 @@
+package com.gazuntite.provider.eprescription.services.patient.delegate
+{
+	import com.gazuntite.provider.eprescription.services.patient.util.EConstants;
+	import com.gazuntite.provider.search.services.provider.util.PSConstants;
+	import com.gazuntite.provider.search.services.provider.util.PSServiceMethods;
+	
+	import mx.logging.ILogger;
+	import mx.logging.Log;
+	import mx.logging.LogEvent;
+	import mx.logging.LogEventLevel;
+	import mx.logging.LogLogger;
+	import mx.rpc.AsyncToken;
+	import mx.rpc.IResponder;
+	import mx.rpc.events.FaultEvent;
+	import mx.rpc.events.ResultEvent;
+	import mx.rpc.http.HTTPService;
+	
+	public class RemoveFavoritePharmacyDelegate
+	{
+		private var responder	:IResponder;
+		private var service		:HTTPService;
+		
+		
+		public function RemoveFavoritePharmacyDelegate( responder : IResponder )
+		{
+			this.responder 		= responder;
+			var url:String 		= EConstants.RESTFULL_QM_SERVICE_BASE_URL + "RemovePatientPharm/";
+			service 			= new HTTPService(url);
+			service.url 		= url;
+			
+			service.addEventListener(FaultEvent.FAULT,onFault);
+			service.addEventListener(ResultEvent.RESULT,onResult);
+		}
+		
+		public function RemovePharmacies(patientID:int, ncpdid:String):void
+		{
+			service.url += patientID.toString() + "/"+ncpdid;
+			service.send();	
+		}
+		
+		private function onResult(event:ResultEvent):void
+		{
+			responder.result(event);
+		}
+		
+		private function onFault(event:FaultEvent):void
+		{
+			responder.fault(event);			
+		}	
+	}
+}

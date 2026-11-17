@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:vbViews="com.gazuntite.patient.visit.view.vbViews.*" 
+		 xmlns:patientEncounter="com.gazuntite.patient.visit.view.vbViews.patientEncounter.*" 
+		 xmlns:vbTabSection="com.gazuntite.patient.visit.view.vbViews.vbTabSection.*"  
+		 creationComplete="group1_creationCompleteHandler(event)" 
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.patient.visit.event.summary.LoadSummaryEvent;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var model:VBModelLocator = VBModelLocator.getInstance();
+			
+			/**
+			 * Tahir Alvi - 4th March 2013
+			 * Call from MainContainer(QuivusClient)
+			 * Refresh the Summery List and Encounter List
+			 * **/
+			public function updateSummaryAndEncounterList():void
+			{
+				var loadSummaryEvent:LoadSummaryEvent = new LoadSummaryEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( loadSummaryEvent );
+				
+				id_PatientEncounterPanel.id_PatientEncounterView.refreshPatientVisitList();
+			}
+			protected function ScrollUp(event:MouseEvent):void
+			{
+				
+				//id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition + 15;
+				// id_viewBackgroundBody.id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition + 15;
+				/* id_PatientEncounterPanel.ScrollUp(event);
+				id_backgroundTabView.id_PMHView.ScrollUp(); */
+				
+				
+				//id_viewBackgroundBody.id_backgroundTabView.id_PMHView(event);
+				/* switch( id_backgroundTabView.id_VBViews.selectedIndex )
+				{
+				case 0:
+				id_backgroundTabView.id_PMHView.ScrollUp();
+				break;
+				case 1:
+				id_backgroundTabView.id_physicalView.ScrollUp();
+				break;
+				case 2:
+				id_backgroundTabView.id_assesment.ScrollUp();
+				break;
+				} */
+			}
+			protected function ScrollDown(event:MouseEvent):void
+			{
+				
+				//id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition - 15;
+				
+				/* 
+				id_PatientEncounterPanel.ScrollDown(event);
+				id_backgroundTabView.id_PMHView.ScrollDown(); */
+				
+				//id_viewBackgroundBody.id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition - 15;
+				
+				/* switch( id_backgroundTabView.id_VBViews.selectedIndex )
+				{
+				case 0:
+				id_backgroundTabView.id_PMHView.ScrollDown();
+				break
+				case 1:
+				id_backgroundTabView.id_physicalView.ScrollDown();
+				break
+				case 2:
+				id_backgroundTabView.id_assesment.ScrollDown();
+				break
+				}	 */		
+			} 
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				//ToggleDocumentView();
+			} 
+			
+			
+			protected function id_PatientEncounterPanel_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( event.viewState == QSViewStateEvent.EXPANDED_VIEW )
+				{
+					//id_PatientEncounterPanel.id_HeaderLabel.text = id_PatientEncounterPanel.id_HeaderLabel.text.toUpperCase();
+				}
+				else
+				{
+					//id_PatientEncounterPanel.id_HeaderLabel.text = AppUtils.TitleCase( id_PatientEncounterPanel.id_HeaderLabel.text );
+				}
+			}
+			
+			/* private function ToggleDocumentView():void
+			{
+			if(id_DocumentGridView.visible)
+			{
+			id_DocumentGridView.visible 		= false;
+			id_DocumentGridView.includeInLayout = false;
+			
+			}
+			else
+			{
+			
+			id_DocumentGridView.visible 		= true;
+			id_DocumentGridView.includeInLayout = true;					
+			}
+			}
+			
+			*/
+			
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				//id_backgroundTabView.id_VBViews.selectedIndex = 0;
+			}
+			
+			public function InitComponent():void
+			{
+				//id_backgroundTabView.InitComponent();				
+			}
+			
+			private function onRefreshVBClick(event:MouseEvent):void
+			{
+				dispatchEvent(new Event('updateVBPatientEncounerList', true, true));	
+			}
+			
+		]]>
+	</fx:Script>
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="center" gap="-2" paddingBottom="-2"  />
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+			
+	<s:SkinnableContainer id="sc_Vb" width="100%" height="100%" skinClass="com.adobe.gazuntite.skins.viewBackground.skinnableContainers.VBBodySkin"
+						  visible="{model.securityProxyObject.PatientExam.ViewBackground.IsViewAllowed}" includeInLayout="{sc_Vb.visible}">
+		<s:layout>
+			<s:VerticalLayout verticalAlign="top" horizontalAlign="center" gap="-4" paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5" />
+		</s:layout>
+		
+		<s:Group width="100%">
+			
+			<s:TabBar id="id_TabBar" dataProvider="{id_VBViews}" minWidth="375" maxWidth="420" width="100%" buttonMode="true" 				  
+					  skinClass="com.adobe.gazuntite.skins.viewBackground.tabBarSkins.VBMainTabs" left="10"/>
+			<s:Button click="onRefreshVBClick(event)" toolTip="Refresh View Background" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.refreshBtn" right="10"/>
+		</s:Group>
+		
+				
+				<mx:ViewStack id="id_VBViews" height="100%" width="100%" minWidth="500" resizeToContent="true"  backgroundAlpha="0" contentBackgroundAlpha="0">
+									
+					<s:NavigatorContent height="100%" width="100%" label="Summary" minWidth="500">
+						<s:layout>
+							<s:HorizontalLayout paddingTop="-24"  />
+						</s:layout>
+						
+							<vbTabSection:BackgroundTabView id="id_backgroundTabView" width="100%" minWidth="500" height="100%"  
+															visible="{model.securityProxyObject.PatientExam.ViewBackground.SummaryView.IsViewAllowed}" includeInLayout="{id_backgroundTabView.visible}"/>
+						
+					</s:NavigatorContent>
+					
+					<s:NavigatorContent height="100%" width="100%" label="{'Patient Encounter'+' ' + '('+ model.totalRecords_PE.toString()+')'}" 
+										skinClass="com.adobe.gazuntite.skins.viewBackground.skinnableContainers.VBBGSkin"  >
+						
+						<s:layout>
+							<s:HorizontalLayout paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="3"/>
+						</s:layout>
+						
+						<patientEncounter:PatientEncounterPanel id="id_PatientEncounterPanel" width="100%"  height="100%" maxHeight="330" 
+																visible="{model.securityProxyObject.PatientExam.ViewBackground.Encounterlist.IsViewAllowed}" includeInLayout="{id_PatientEncounterPanel.visible}"
+																/>	<!--QSViewStateChange="id_PatientEncounterPanel_QSViewStateChangeHandler(event)"-->
+					</s:NavigatorContent>
+					<s:NavigatorContent height="100%" width="100%" label="{'Patient Document'+' '+ '('+ model.totalRecords_DM.toString()+')'}" 
+										skinClass="com.adobe.gazuntite.skins.viewBackground.skinnableContainers.VBBGSkin" >
+						
+						<s:layout>
+							<s:HorizontalLayout paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="3"/>
+						</s:layout>
+						<vbViews:documentSlideOutPanel id="id_DocumentGridView" width="100%"  height="100%" 
+															  visible="{model.securityProxyObject.PatientExam.ViewBackground.Documents.IsViewAllowed}" includeInLayout="{id_DocumentGridView.visible}"/>
+							
+					</s:NavigatorContent>
+				</mx:ViewStack>
+	</s:SkinnableContainer>
+</s:Group>

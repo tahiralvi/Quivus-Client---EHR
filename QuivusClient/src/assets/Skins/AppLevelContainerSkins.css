@@ -1,0 +1,64 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+
+/*********************************************************************************************/
+/*Containers 
+Black background containers*/
+
+.blackTitleBGContainerSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.containerSkins.blackTitleBGContainer");
+}
+
+/*Blue background containers*/
+.blueBGContainerSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.containerSkins.blueBGContainer");
+}
+
+/*Beige background containers*/
+.beigeMultiShadeBGContainerSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.containerSkins.beigeMultiShadeBGContainer");
+}
+
+/*Grey background containers*/
+.greyMultiShadeBGContainerSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.containerSkins.greyMultiShadeBGContainer");
+}
+
+.greyMultiShadeExtendedBGContainerSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.containerSkins.greyMutiShadeExtendedBGContainer");
+}
+/*Grey background containers*/
+.greyBGContainerSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.containerSkins.greyBGContainer");
+}
+
+/*Greyish black background containers*/
+.greyishBlackBGContainerSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.containerSkins.greyishBlackBGContainer");
+}
+
+/*Light grey background containers*/
+.lightGreyBGContainerSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.containerSkins.lightGreyBGContainer");
+}
+
+/*Black title blue background containers*/
+.blackTitleBlueBGContainerSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.containerSkins.blackTitleBlueBGContainer");
+}
+
+/*Black title grey background containers*/
+.blackTitleGreyBGContainerSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.containerSkins.blackTitleGreyBGContainer");
+}

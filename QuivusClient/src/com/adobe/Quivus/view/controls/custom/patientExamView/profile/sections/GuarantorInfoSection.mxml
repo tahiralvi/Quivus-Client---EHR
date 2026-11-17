@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:CollapsiblePanel xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:d="http://ns.adobe.com/fxg/2008/dt" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"  title="Gurantors Information"
+		 hasChange="{model.patientProfileDTO.PatientGurantor.length >0 ? true:false}" xmlns:components1="com.gazuntite.controls.extended.components.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			
+			import mx.controls.Label;
+			
+			import valueObjects.AddressDTO;
+			import valueObjects.PhoneDTO;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			//Return data fromat properly in Grid
+			private function getDate(item:Object,column:DataGridColumn):String
+			{
+				if(!item.DOB)
+					return '';
+				var dob:String = item.DOB;
+				//dob            = dob.substr(0,10);
+				dob            = df.format(dob).toString();
+				//2012-04-05T00:00:00
+				return dob;
+			}
+			private function getAddress(item:Object,column:DataGridColumn):String
+			{
+				var add:String = "";
+				if(!item.AddressBook)
+					return '';
+				if(!item.AddressBook.AddressDTOlist)
+					return '';
+				
+				if(item.AddressBook.AddressDTOlist.length > 0)
+				{
+					for(var i:uint=0; i<item.AddressBook.AddressDTOlist.length; i++)
+					{
+						var adDTO:AddressDTO = item.AddressBook.AddressDTOlist[i] as AddressDTO;
+						add                  = adDTO.StreetName;
+						break;
+					}
+				}
+				
+				return add;
+			}
+			private function getState(item:Object,column:DataGridColumn):String
+			{
+				var add:String = "";
+				if(!item.AddressBook)
+					return '';
+				if(!item.AddressBook.AddressDTOlist)
+					return '';
+				
+				if(item.AddressBook.AddressDTOlist.length > 0)
+				{
+					for(var i:uint=0; i<item.AddressBook.AddressDTOlist.length; i++)
+					{
+						var adDTO:AddressDTO = item.AddressBook.AddressDTOlist[i] as AddressDTO;
+						add                  = adDTO.StateName;
+						break;
+					}
+				}
+				
+				return add;
+			}
+			private function getCity(item:Object,column:DataGridColumn):String
+			{
+				var add:String = "";
+				if(!item.AddressBook)
+					return '';
+				if(!item.AddressBook.AddressDTOlist)
+					return '';
+				
+				if(item.AddressBook.AddressDTOlist.length > 0)
+				{
+					for(var i:uint=0; i<item.AddressBook.AddressDTOlist.length; i++)
+					{
+						var adDTO:AddressDTO = item.AddressBook.AddressDTOlist[i] as AddressDTO;
+						add                  = adDTO.CityName;
+						break;
+					}
+				}
+				
+				return add;
+			}
+			private function getZip(item:Object,column:DataGridColumn):String
+			{
+				var add:String = "";
+				if(!item.AddressBook)
+					return '';
+				if(!item.AddressBook.AddressDTOlist)
+					return '';
+				
+				if(item.AddressBook.AddressDTOlist.length > 0)
+				{
+					for(var i:uint=0; i<item.AddressBook.AddressDTOlist.length; i++)
+					{
+						var adDTO:AddressDTO = item.AddressBook.AddressDTOlist[i] as AddressDTO;
+						add                  = adDTO.ZipCodeID.toString();
+						break;
+					}
+				}
+				
+				return add;
+			}
+			private function getPhoneNo(item:Object,column:DataGridColumn):String
+			{
+				var add:String = "";
+				if(!item.AddressBook)
+					return '';
+				if(!item.AddressBook.PhoneDTOlist)
+					return '';
+				
+				if(item.AddressBook.PhoneDTOlist.length > 0)
+				{
+					for(var i:uint=0; i<item.AddressBook.PhoneDTOlist.length; i++)
+					{
+						var adDTO:PhoneDTO = item.AddressBook.PhoneDTOlist[i] as PhoneDTO;
+						add                  = ValidationUtils.setPhoneNumberMasking(adDTO.PhoneNumber);
+						break;
+					}
+				}
+				
+				return add;
+			}
+			private function getPhoneType(item:Object,column:DataGridColumn):String
+			{
+				var add:String = "";
+				if(!item.AddressBook)
+					return '';
+				if(!item.AddressBook.PhoneDTOlist)
+					return '';
+				
+				if(item.AddressBook.PhoneDTOlist.length > 0)
+				{
+					for(var i:uint=0; i<item.AddressBook.PhoneDTOlist.length; i++)
+					{
+						var adDTO:PhoneDTO = item.AddressBook.PhoneDTOlist[i] as PhoneDTO;
+						add                  = adDTO.NumberTypeName;
+						break;
+					}
+				}
+				
+				return add;
+			}
+			private function getPhoneExt(item:Object,column:DataGridColumn):String
+			{
+				var add:String = "";
+				if(!item.AddressBook)
+					return '';
+				if(!item.AddressBook.PhoneDTOlist)
+					return '';
+				
+				if(item.AddressBook.PhoneDTOlist.length > 0)
+				{
+					for(var i:uint=0; i<item.AddressBook.PhoneDTOlist.length; i++)
+					{
+						var adDTO:PhoneDTO = item.AddressBook.PhoneDTOlist[i] as PhoneDTO;
+						add                  = adDTO.Extension;
+						break;
+					}
+				}
+				
+				return add;
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:DateFormatter id="df" formatString="MM/DD/YY" />
+	</fx:Declarations>
+	
+	<components1:layout>
+		<s:VerticalLayout verticalAlign="middle" paddingBottom="5" paddingLeft="5" paddingRight="5"  paddingTop="5" />
+	</components1:layout>
+	
+	<s:Label text="There are no entries/data" fontFamily="Calibri" fontSize="13"  fontWeight="bold" verticalAlign="top" visible="{!id_GuarantorList.visible}" includeInLayout="{!id_GuarantorList.includeInLayout}"/>
+	
+	<components1:LabelDataGrid id="id_GuarantorList" width="100%"
+							  dataProvider="{model.patientProfileDTO.PatientGurantor}"
+							  visible="{model.patientProfileDTO.PatientGurantor.length >0?true:false}" includeInLayout="{id_GuarantorList.visible}"
+							  rowCount="{id_GuarantorList.dataProvider.length + 1}"
+							  rowHeight="23" sortableColumns="false" horizontalScrollPolicy="off" verticalScrollPolicy="off"
+							  columnWidths="{['10%','10%','8%','7%','8%','12%','7%','6%','10%','7%','7%','9%']}" >
+		<components1:columns>
+			<mx:DataGridColumn headerText="First Name" dataField="GurantorFirstName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Last Name" dataField="GuarantorLastName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Relation" dataField="RelationshipType.RelationshipName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="DOB" dataField="DOB" labelFunction="getDate" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Gender" dataField="GenderType.GenderName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Address" dataField="AddressBook.AddressDTO.StreetName" labelFunction="getAddress" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="State" dataField="AddressBookDTO.AddressDTO.StateName" labelFunction="getState" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="City" dataField="AddressBookDTO.AddressDTO.CityName" labelFunction="getCity" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Zip" dataField="AddressBookDTO.AddressDTO.ZipCodeID" labelFunction="getZip" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="PhoneNumber" dataField="AddressBookDTO.PhoneDTO.PhoneNumber" labelFunction="getPhoneNo" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Ext" dataField="AddressBookDTO.PhoneDTO.Extension" labelFunction="getPhoneExt" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Phone Type" dataField="AddressBookDTO.PhoneDTO.NumberTypeName" labelFunction="getPhoneType" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+		</components1:columns>
+	</components1:LabelDataGrid>
+	
+</components1:CollapsiblePanel>

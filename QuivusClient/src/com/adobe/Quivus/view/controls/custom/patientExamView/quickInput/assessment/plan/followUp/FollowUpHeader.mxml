@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<quickInput:PMHSectionHeader xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:quickInput="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.*"
+		 
+		 >
+	<fx:Script>
+		<![CDATA[
+			import mx.events.ItemClickEvent;
+
+			protected function rbGroup_itemClickHandler(event:ItemClickEvent):void
+			{
+				// TODO Auto-generated method stub
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<s:RadioButtonGroup id="rbGroup" itemClick="rbGroup_itemClickHandler(event)" />
+	</fx:Declarations>
+	
+			<s:RadioButton id="id_Date" groupName="rbGroup" label="By Date" value="Date" visible="true" />
+			<s:RadioButton id="id_OnCompletion" groupName="rbGroup" label="Upon completion of" value="OnCompletion" visible="true"   />
+			<s:Group id="id_spacerGroup" width="20" />
+	
+		<!--<quickInput:commons>
+			<s:AddItems>-->
+			<!--</s:AddItems>
+		</quickInput:commons>-->
+	
+</quickInput:PMHSectionHeader>

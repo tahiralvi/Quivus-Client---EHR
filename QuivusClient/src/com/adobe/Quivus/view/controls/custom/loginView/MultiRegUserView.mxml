@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   backgroundColor="#444444"
+			   
+			   skinClass="com.gazuntite.controls.extended.skins.PopupPanelSkin" 
+			   xmlns:components="com.zigron.controls.extended.components.*"
+			   close="Cancel_clickHandler(event)" xmlns:components1="com.gazuntite.controls.extended.components.*"
+			   >
+	
+	<s:layout >
+		<s:VerticalLayout paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10" />
+	</s:layout>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.LoadUserMostRecentPatientEvent;
+			import com.adobe.Quivus.events.authenticate.LoginSuccessFullEvent;
+			import com.adobe.Quivus.events.quickLink.LoadUserQuickLinksEvent;
+			import com.adobe.Quivus.events.search.LoadContactSearchSuggestionListEvent;
+			import com.adobe.Quivus.events.search.searchEngine.LoadUserSearchEngineEvent;
+			import com.adobe.Quivus.events.security.LoadUserAccessRightEvent;
+			import com.adobe.Quivus.events.staticData.LoadImageTypesStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.LoadProfileBarStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.visit.LoadSoapTemplatesEvent;
+			import com.adobe.Quivus.events.staticData.visit.LoadVisitEncounterTypesEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.QuivusCombineEventDispatcher;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.provider.live.services.administration.event.generalSetting.LoadClinicGeneralSettingAdminEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.managers.PopUpManager;
+			
+			import spark.events.IndexChangeEvent;
+			
+			import valueObjects.StationDTO;
+			
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			private var m_Practice:ArrayCollection;
+			
+			
+			
+			[Bindable]
+			public var LocationLableFunction:Function;
+			
+			
+			
+			
+			
+			
+			[Bindable]
+			public function get Practice():ArrayCollection
+			{
+				return m_Practice;
+			}
+			
+			public function set Practice(value:ArrayCollection):void
+			{
+				m_Practice = value;
+			}
+			
+			protected function Submit_clickHandler(event:MouseEvent):void
+			{
+				model.userSelectedClinicBranchDTO 	= id_cmbLocation.selectedItem ;
+				model.userSelectedRoleDTO 		    = model.userSelectedClinicBranchDTO.ClinicBranchUserRole;
+				
+				if(model.userSelectedClinicBranchDTO.StationList.length==1)
+				{
+					model.userSelectedStationDTO    =   model.userSelectedClinicBranchDTO.StationList.getItemAt(0) as StationDTO;										
+				}
+				else
+				{
+					var index:int;
+					for(index=0;index<model.userSelectedClinicBranchDTO.StationList.length;index++)
+					{
+						var dto:StationDTO = model.userSelectedClinicBranchDTO.StationList.getItemAt(index) as StationDTO;
+						if(dto.IsDefault)
+						{
+							model.userSelectedStationDTO    = dto;
+							break;
+						}
+					}
+					
+				}
+				
+				model.UserLoggedIn=true;
+				model.quicklinkEnabled =true;				
+				
+				//---------------------Tahir Alvi ---------------------------
+				var luiEvent : LoadUserAccessRightEvent = new LoadUserAccessRightEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( luiEvent );
+				
+				var lgsEvent : LoadClinicGeneralSettingAdminEvent = new LoadClinicGeneralSettingAdminEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lgsEvent );
+				
+				Close();
+				
+				QuivusCombineEventDispatcher.dispatchEventForSessionKey();
+			}
+			
+			protected function Cancel_clickHandler(event:Event):void
+			{
+				Close();
+			}
+			
+			private function Close():void
+			{
+				PopUpManager.removePopUp( this );
+			}
+			
+			public function Show():void
+			{
+				PopUpManager.addPopUp( this, FlexGlobals.topLevelApplication.mainContainer as DisplayObject );
+				PopUpManager.centerPopUp( this );
+				this.y = this.y +100;
+				
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	
+	
+	
+	
+	<mx:HBox width="50%" verticalAlign="middle">
+		<mx:HBox width="50%" horizontalAlign="right">
+			<s:Label color="#FFFFFF" text="Choose Practice" />
+		</mx:HBox>
+		<mx:HBox width="50%" horizontalAlign="left">
+			<components1:LabelComboBox color="#000000" id="id_cmbLocation" selectedIndex="0" dataProvider="{Practice}" labelFunction="{LocationLableFunction}"
+									  />
+			
+		</mx:HBox>
+	</mx:HBox>
+	
+	
+	
+	<mx:HBox width="100%" verticalAlign="middle" horizontalAlign="center">
+		<!--<mx:Button label="" 
+		upSkin="@Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='btn_signin')" 
+		overSkin="@Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='btn_signin')"
+		downSkin="@Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='btn_signin')"
+		
+		click="Submit_clickHandler(event)" />-->
+		
+		<s:Button skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.Btn_signin"   click="Submit_clickHandler(event)" />
+		
+		
+		<!--<mx:Button label="" 
+		upSkin="@Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='btn_cancel')" 
+		overSkin="@Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='btn_cancel')"
+		downSkin="@Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='btn_cancel')"
+		
+		click="Cancel_clickHandler(event)" />-->
+	</mx:HBox>
+	
+</s:TitleWindow>

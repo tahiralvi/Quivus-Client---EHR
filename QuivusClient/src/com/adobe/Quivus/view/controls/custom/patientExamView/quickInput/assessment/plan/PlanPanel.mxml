@@ -1,0 +1,666 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:PinableSlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							 xmlns:s="library://ns.adobe.com/flex/spark" 
+							 xmlns:mx="library://ns.adobe.com/flex/mx" 
+							 xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+							 xmlns:quickInput="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.*" 
+							 xmlns:followUp="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.plan.followUp.*" 
+							 xmlns:treatment="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.treatment.*"
+							 xmlns:recommendation="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.plan.recommendation.*"
+							 
+							 move="pinableslideoutpanel1_moveHandler(event)"
+							 creationComplete="pinableslideoutpanel1_creationCompleteHandler(event)"
+							 QSViewStateChange="pinableslideoutpanel1_QSViewStateChangeHandler(event)" 
+							 xmlns:lab="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.plan.lab.*" xmlns:notes="com.adobe.Quivus.view.controls.custom.patientExamView.notes.*" 
+							 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.quickInput.ManageQuickInputEvent;
+			import com.adobe.Quivus.events.visit.UpdateVisitEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.DTOInitializationUtility;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.DictationPopup;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPanel;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPopup;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.AddRecord;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.signCoSign.PreviewVisitPopUp;
+			import com.adobe.Quivus.view.controls.skins.QIinternalBarFocusSkin;
+			import com.adobe.Quivus.view.controls.skins.QIinternalBarSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.createVisitBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridDictationButtonSelectedSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridDictationButtonSkin;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.ImmunizationNotesFilledBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.ImmunizationWriteNotesBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBIconsButton;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.writeNotesButton;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.writeNotesButtonSelected;
+			import com.adobe.Quivus.view.events.SelectSection;
+			import com.adobe.Quivus.view.interfaces.IScrollableView;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.quivus.skins.chrome.buttonSkins.VBdictationBtnSelected;
+			import com.adobe.quivus.skins.chrome.buttonSkins.VBnotesBtnSelected;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.VBIconsBlackButton;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.VBIconsButtonFilled;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.binding.utils.ChangeWatcher;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.events.MoveEvent;
+			import mx.events.PropertyChangeEvent;
+			import mx.managers.PopUpManager;
+			import mx.modules.Module;
+			
+			import spark.events.IndexChangeEvent;
+			
+			import valueObjects.EncounterTypeDTO;
+			import valueObjects.ModuleDictationDTO;
+			import valueObjects.ModuleNoteDTO;
+			
+			private var isSectionLevel:Boolean; // this boolean is true is notePanel is representing section level notes
+			private var notesPanel:NotesPanel;
+			
+			private var dictationPanel:DictationPopup;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var m_bHasChange:Boolean;
+			
+			[Bindable]
+			public function get hasChange():Boolean
+			{
+				return m_bHasChange;
+			}
+			
+			public function set hasChange(value:Boolean):void
+			{
+				m_bHasChange = value;
+				
+				if( value )
+				{
+					id_Header.id_ChangeIndicator.visible		 = true;
+					id_Header.id_ChangeIndicator.includeInLayout = true;
+				}
+				else
+				{
+					id_Header.id_ChangeIndicator.visible		 = false;
+					id_Header.id_ChangeIndicator.includeInLayout = false;
+				}
+			}
+			
+			private function UpdateChange():void
+			{
+				try
+				{
+					if( model.quickInputDTO.Physical && model.quickInputDTO.Physical.Labs )
+					{
+						var hasData:Boolean = model.quickInputDTO.Physical.Labs.length > 0;
+						hasChange =  hasData;
+					}
+					
+					if( model.quickInputDTO.Assessment && model.quickInputDTO.Assessment.Recommendation )
+					{
+						var hasData:Boolean = model.quickInputDTO.Assessment.Recommendation.length > 0;
+						hasChange =  hasData;
+					}
+					
+					if( model.quickInputDTO.Assessment && model.quickInputDTO.Assessment.PatientFollowUp && model.quickInputDTO.Assessment.PatientFollowUp.FollowUpDate )
+					{
+						var hasData:Boolean = model.quickInputDTO.Assessment.PatientFollowUp.FollowUpDate.length > 0;
+						hasChange =  hasData;
+					}
+				}
+				catch( e:Error )
+				{
+					trace( "UpdateChange -> QIAssessment::Plan", e.message );
+				}
+			}
+			
+			public override function set AllowOtherPopup(value:Boolean):void
+			{
+				super.AllowOtherPopup = value;
+				/*if( ! value && notesPanel)
+				notesPanel.removePopup();
+				
+				if( ! value && id_ImmunizationBodyView.recordNotesPanel )
+				id_ImmunizationBodyView.recordNotesPanel.removePopup(); */
+				
+				if( ! value && dictationPanel)
+					dictationPanel.removePopup();
+			}
+			
+			
+			private var m_bIsModelUpdated:Boolean;
+			
+			var moduleConstantName:String = Constants.PLAN_MODULE_NAME;
+			public function get IsModelUpdated():Boolean
+			{
+				return m_bIsModelUpdated;
+			}
+			
+			public function set IsModelUpdated(value:Boolean):void
+			{
+				m_bIsModelUpdated = value;
+				
+				if( value )
+				{
+					
+					var module:ModuleDictationDTO = QSUtilityFunctions.getModuleDictationDTO(moduleConstantName);					
+					var noteDto:ModuleNoteDTO = QSUtilityFunctions.getModuleNoteDTO( moduleConstantName);
+					
+					if(module.DictationID && module.DictationID != Constants.GUID_FORMAT)
+					{
+						id_Header.id_Voice.setStyle("skinClass", VBdictationBtnSelected);
+						id_Header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+						//id_dictationIndicator.visible = true;
+					}
+					
+					if(noteDto.Note && noteDto.Note != "")
+					{
+						id_Header.id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected);
+						id_Header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+						//id_noteIndicator.visible = true;
+					}								
+					
+				}
+			}
+			
+			protected function pinableslideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if( model.quickInputDataLoadedFlag )
+					UpdateChange();
+				
+				id_LabOutView.id_nextBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {
+					id_LabOutView.AllowMoveToNextPanel( function():void
+					{
+						id_PlanViews.selectedIndex = 1;									
+					});
+				});
+				id_RecommendationView.id_nextBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {
+					id_LabOutView.AllowMoveToNextPanel( function():void
+					{
+						id_PlanViews.selectedIndex = 2;									
+					});
+				});
+				
+				
+				id_Header.id_OptionPopUp.displayPopUp = true;
+				id_Header.id_iconButtons.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if(id_notesDictation.id_Area.visible)
+					{
+						
+						if(id_Header.id_OptionPopUp.displayPopUp)
+						{
+							id_Header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						}
+						else
+						{
+							id_Header.id_iconButtons.setStyle("skinClass", VBIconsButton);	
+						}
+					}
+					this.ExpandedView = true;
+					
+					event.stopImmediatePropagation();
+					
+					
+				});	
+				
+				id_Header.id_Voice.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_PLAN ) )//Tahir Alvi - implement security check 
+					{
+						id_notesDictation.notesDTO = QSUtilityFunctions.getModuleNoteDTO( Constants.PLAN_MODULE_NAME );
+						id_notesDictation.DictationDTO = QSUtilityFunctions.getModuleDictationDTO(Constants.PLAN_MODULE_NAME);
+						
+						id_notesDictation.id_Area.visible 		= true;
+						id_notesDictation.id_Area.includeInLayout = true;		
+						id_notesDictation.id_VBViews.selectedIndex = 1;						
+						//id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						id_Header.id_iconButtons.selected = false;
+						id_Header.id_OptionPopUp.displayPopUp = false;
+						
+						id_notesDictation.dictationPanel.rec_btn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{													
+							id_Header.setIcons(true, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							hasChange = true;
+						});	
+						id_notesDictation.id_notesPanel.id_body.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{						
+							id_Header.setIcons(id_notesDictation.DictationDTO.DictationID && id_notesDictation.DictationDTO.DictationID != Constants.GUID_FORMAT, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							id_notesDictation.id_Area.visible 		= false;
+							id_notesDictation.id_Area.includeInLayout = false;
+						});
+						ExpandedView = true;
+						if(this.ExpandedView)
+						{
+							event.stopImmediatePropagation();
+						}
+					}
+					
+				});			
+				
+				id_Header.id_NotesBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_PLAN ) )//Tahir Alvi - implement security check 
+					{
+						id_notesDictation.notesDTO = QSUtilityFunctions.getModuleNoteDTO( Constants.PLAN_MODULE_NAME );
+						id_notesDictation.DictationDTO = QSUtilityFunctions.getModuleDictationDTO(Constants.PLAN_MODULE_NAME);
+						
+						id_notesDictation.id_Area.visible 		= true;
+						id_notesDictation.id_Area.includeInLayout = true;						
+						id_notesDictation.id_VBViews.selectedIndex = 0;
+						//id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						id_Header.id_iconButtons.selected = false;
+						id_Header.id_OptionPopUp.displayPopUp = false;
+						
+						
+						id_notesDictation.dictationPanel.rec_btn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{													
+							id_Header.setIcons(true, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							hasChange = true;
+						});	
+						id_notesDictation.id_notesPanel.id_body.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{						
+							id_Header.setIcons(id_notesDictation.DictationDTO.DictationID && id_notesDictation.DictationDTO.DictationID != Constants.GUID_FORMAT, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							id_notesDictation.id_Area.visible 		= false;
+							id_notesDictation.id_Area.includeInLayout = false;
+						});
+						ExpandedView = true;
+						if(this.ExpandedView)
+						{
+							event.stopImmediatePropagation();
+						}
+					}
+				});
+				
+				
+				id_Header.id_slideoutBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					ToggleSlideOut();
+					event.stopImmediatePropagation();
+				});
+				id_Header.id_Pin.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_PLAN ) )//Tahir Alvi - implement security check 
+					{
+						PinView = event.currentTarget.selected;
+						//event.stopImmediatePropagation();
+					}
+				});
+				
+				id_Header.id_OptionPopUp.displayPopUp = false;
+			}
+			
+			
+			
+			
+			private function showSectionNotesIndicator():void
+			{
+				/* var noteDto:ModuleNoteDTO = QSUtilityFunctions.getModuleNoteDTO( Constants.PLAN_MODULE_NAME );
+				if( noteDto.Note )
+				id_noteIndicator.visible  = noteDto.Note.length > 0;
+				else
+				id_noteIndicator.visible  = false;
+				
+				if(notesPanel.id_body.id_message.text.length > 0)
+				{
+				id_Header.id_NotesBtn.setStyle("skinClass", writeNotesButtonSelected);
+				}
+				else
+				{
+				id_Header.id_NotesBtn.setStyle("skinClass", writeNotesButton);
+				} */
+			}
+			
+			
+			
+			
+			protected function slideoutpanel1_moveHandler(event:MoveEvent):void
+			{
+				/* if( notesPanel )
+				{
+				var loc:Point = getNotesPopupPosition();
+				notesPanel.move( loc.x, loc.y );	
+				} */
+			}
+			
+			
+			protected function pinableslideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( event.viewState == QSViewStateEvent.EXPANDED_VIEW )
+				{
+					if( id_LabOutView )
+					{
+						id_LabOutView.loadtaticData();
+					}
+					
+					if( id_RecommendationView )
+					{
+						id_RecommendationView.LoadStaticData();
+					}
+					
+					if( id_FollowUp )
+					{
+						
+					}
+					
+					if( id_Header )
+					{
+						id_Header.HeadingLable = id_Header.HeadingLable.toUpperCase();
+						id_Header.id_pmhHeader.setStyle("skinClass", QIinternalBarFocusSkin);
+						id_Header.id_headingLbl.setStyle("color", 0xffffff);
+						id_Header.id_expandBtn.selected = true;
+						
+					}
+				}
+				else
+				{
+					if( id_Header )
+					{
+						id_Header.HeadingLable = AppUtils.TitleCase(id_Header.HeadingLable);
+						id_Header.id_pmhHeader.setStyle("skinClass", QIinternalBarSkin);
+						id_Header.id_headingLbl.setStyle("color", 0x000000);
+						id_Header.id_expandBtn.selected = false;
+					}
+					
+					QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.LAB_OUT);
+					QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.RECOMMENDATION);
+				}
+			}
+			
+			protected function pinableslideoutpanel1_moveHandler(event:MoveEvent):void
+			{
+				/*var loc:Point = getNotesPopupPosition();
+				
+				if (id_LabOutView && id_LabOutView.recordNotesPanel)
+				{
+				id_LabOutView.recordNotesPanel.move(loc.x, loc.y);
+				}
+				
+				if (id_RecommendationView && id_RecommendationView.recordNotesPanel)
+				{
+				id_RecommendationView.recordNotesPanel.move(loc.x, loc.y);
+				}*/
+			}
+			
+			
+			private function labOutAddRecordClickHandler(event:Event):void
+			{
+				if (!isSectionLevel)
+				{
+					var target:AddRecord = AddRecord(event.target);
+					target.id_WriteNotes.selected = false;
+					//removeNotesPanel();
+				}
+			}
+			
+			private function labOutWriteRecordNotesClickHandler(event:Event):void
+			{
+				//var loc:Point = getNotesPopupPosition();
+				//id_LabOutView.showNotes(loc);
+				var target:AddRecord = AddRecord(event.target);
+				if (target.id_WriteNotes.selected)
+				{
+					isSectionLevel = false;
+					if( id_LabOutView.id_TestName.selectedItem )
+						var testName:String = id_LabOutView.id_TestName.selectedItem.SHORTNAME;
+					//showNotes(target.notesDTO, testName);
+				}
+				//else
+				//removeNotesPanel();
+			}
+			
+			private function recommendationAddRecordClickHandler(event:Event):void
+			{
+				if (!isSectionLevel)
+				{
+					var target:AddRecord = AddRecord(event.target);
+					target.id_WriteNotes.selected = false;
+					//removeNotesPanel();
+				}
+			}
+			
+			private function recommendationWriteRecordNotesClickHandler(event:Event):void
+			{
+				//var loc:Point = getNotesPopupPosition();
+				//id_RecommendationView.showNotes(loc);
+				/* var target:AddRecord = AddRecord(event.target);
+				if (target.id_WriteNotes.selected)
+				{
+				isSectionLevel = false;
+				var recommendationName:String = id_RecommendationView.id_Plan.selectedItem.PlanName
+				showNotes(target.notesDTO, recommendationName);
+				}
+				else
+				removeNotesPanel(); */
+			}
+			
+			private function labOutCreationHandler():void
+			{
+				id_LabOutView.addEventListener("addRecordClick", labOutAddRecordClickHandler, false, 0, true);
+				id_LabOutView.addEventListener("writeNotesClick", labOutWriteRecordNotesClickHandler, false, 0, true);
+				//ChangeWatcher.watch(id_LabOutView, "hasViewChanged", changeWatcherHandler);
+				
+				id_LabOutView.id_TestType.selectedIndex = 0;
+			}
+			
+			private function recommendationCreationHandler():void
+			{
+				id_RecommendationView.addEventListener("addRecordClick", recommendationAddRecordClickHandler, false, 0, true);
+				id_RecommendationView.addEventListener("writeNotesClick", recommendationWriteRecordNotesClickHandler, false, 0, true);
+				ChangeWatcher.watch(id_RecommendationView, "hasViewChanged", changeWatcherHandler);
+			}
+			
+			private function changeWatcherHandler(event:PropertyChangeEvent):void
+			{
+				if (id_LabOutView)
+					hasChange = id_LabOutView.hasViewChanged;
+				
+				if (id_RecommendationView)
+					hasChange = hasChange || id_RecommendationView.hasViewChanged;
+			}
+			
+			/**
+			 * Ayesha: May 05 2011
+			 * hiding all popUps under plan panel if its view changes
+			 * */
+			private function planViewsChangeHandler(event:IndexChangedEvent):void
+			{
+				QIPopUpManager.hideAllPopUps();
+				
+				if (!isSectionLevel)
+				{
+					if (id_LabOutView)
+					{
+						id_LabOutView.id_Add.id_WriteNotes.selected = false;
+					}
+					
+					if (id_RecommendationView)
+					{
+						id_RecommendationView.id_Add.id_WriteNotes.selected = false;
+						
+					}
+					
+					//removeNotesPanel();
+				}
+				
+				if( event.oldIndex == 0 )
+				{
+					id_LabOutView.AllowMoveToNextPanel( function():void
+					{
+						id_PlanViews.selectedIndex = event.newIndex;									
+					});
+				}
+				else if( event.oldIndex == 1 )
+				{
+					id_LabOutView.AllowMoveToNextPanel( function():void
+					{
+						id_PlanViews.selectedIndex = event.newIndex;									
+					});
+				}
+				else if( event.oldIndex == 2 )
+				{
+					id_FollowUp.AllowMoveToNextPanel( function():void
+					{
+						id_PlanViews.selectedIndex = event.newIndex;									
+					});
+				}
+				
+				event.preventDefault();
+				event.stopImmediatePropagation();
+			}
+			
+			protected function id_noteIndicator_clickHandler(event:MouseEvent):void
+			{
+				/* var popup:NotesPopup = new NotesPopup();
+				popup.height = 30;
+				popup.ShowPopup( this );
+				popup.HeaderLabel = "Notes";
+				
+				var noteDto:ModuleNoteDTO = QSUtilityFunctions.getModuleNoteDTO( Constants.PLAN_MODULE_NAME );
+				if( noteDto.Note )
+				popup.id_message.text  = noteDto.Note;
+				
+				var pLoc:Point = id_IndicatorGrp.localToGlobal( new Point( id_noteIndicator.x - 15 +  (id_noteIndicator.width /2) , id_noteIndicator.y + 10) ); 
+				popup.move(pLoc.x,pLoc.y ); */
+				
+			}
+			
+			protected function id_dictationIndicator_clickHandler(event:MouseEvent):void
+			{
+				/* var module:ModuleDictationDTO = QSUtilityFunctions.getModuleDictationDTO(Constants.PLAN_MODULE_NAME);
+				
+				if( dictationPanel )
+				{
+				dictationPanel.removePopup();					
+				}
+				
+				dictationPanel 					= new DictationPopup();
+				dictationPanel.width			= 200;
+				dictationPanel.height			= 75;
+				dictationPanel.HeadingLable 	= "Dictation";
+				dictationPanel.DictationID	 	= module.DictationID;
+				
+				dictationPanel.ModuleID	 		= module.ModuleTypeID.toString();
+				dictationPanel.ShowPopup( this );
+				
+				var pLoc:Point = id_IndicatorGrp.localToGlobal( new Point( id_dictationIndicator.x - 125 +  (id_dictationIndicator.width /2) , id_dictationIndicator.y + 14) );
+				dictationPanel.move( pLoc.x, pLoc.y ); */
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Binding source="model.quickInputDataLoadedFlag" destination="IsModelUpdated" /> 
+	
+	<fx:Binding source="id_LabOutView.hasViewChanged" destination="hasChange"  />
+	<fx:Binding source="id_RecommendationView.hasViewChanged" destination="hasChange"  />
+	<fx:Binding source="id_FollowUp.hasViewChanged" destination="hasChange"  />
+	
+	<custom:HeaderContents>
+		
+		<quickInput:PMHSectionHeader id="id_Header" width="100%" height="22" minWidth="{ChromeUtil.topLevelMainContainer.width - 70}" HeadingLable="Plan" SectionNameID="{QSSecurityUtil.QI_PLAN}"/>
+		
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		
+		<s:SkinnableContainer width="100%" minHeight="36" height="100%"  skinClass="com.adobe.Quivus.view.controls.skins.QISlideHeaderOuterSkin">						
+			<s:layout>
+				<s:HorizontalLayout horizontalAlign="center" verticalAlign="middle" paddingRight="5" />
+			</s:layout>
+			<custom:slideOutQIHeader Label="Plan" width="100%" height="22" />								   
+		</s:SkinnableContainer>				   
+		
+	</custom:SlideHeaderContents>
+	<custom:Contents>
+		<s:SkinnableContainer skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.QISectionBGSkin" width="{id_Header.width}" >
+			<s:layout>
+				<s:VerticalLayout  verticalAlign="top" gap="0"   horizontalAlign="{isSlideOut? 'right':'center'}" paddingRight="3"
+								   paddingTop="{isSlideOut? -2:0}" paddingLeft="{isSlideOut? 1:1}"/>
+			</s:layout>
+			<!--<s:VGroup width="{id_Header.width}" verticalAlign="top" gap="0" 
+			horizontalAlign="{isSlideOut? 'right':'center'}" paddingTop="{isSlideOut? -2:0}" paddingLeft="{isSlideOut? 30:1}">-->
+			<notes:QISectionLevelNotesDictation id="id_notesDictation" width="100%" 
+												/>
+			
+			
+			<!--<s:BorderContainer width="{id_Header.width}" backgroundColor="#F8F8F8" borderWeight="2" borderAlpha="{isSlideOut?1:0}" borderColor="#368CC3">-->
+			<s:SkinnableContainer id="sc_plan" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.QISectionBGSkin" width="{id_Header.width}"
+								  visible="{model.securityProxyObject.PatientExam.QuickInput.Assessment.Plans.IsViewAllowed}" includeInLayout="{sc_plan.visible}">
+				
+				<s:layout>
+					<s:VerticalLayout gap="-7" horizontalAlign="left"  paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5"/>
+				</s:layout>
+				
+				
+				<s:HGroup horizontalAlign="left">
+					
+					<s:TabBar dataProvider="{id_PlanViews}" skinClass="com.adobe.quivus.skins.chrome.tabBarSkins.QIrecordingsTabBar"
+							  buttonMode="true"/>
+					
+				</s:HGroup>
+				
+				<s:SkinnableContainer width="100%" height="100%" skinClass="com.adobe.quivus.skins.chrome.containerSkins.planPanel">
+					
+					<s:layout>
+						<s:VerticalLayout horizontalAlign="center" paddingTop="3" paddingLeft="3" paddingRight="3" paddingBottom="3" />
+					</s:layout>
+					<mx:ViewStack id="id_PlanViews" width="100%" height="100%" resizeToContent="true" change="planViewsChangeHandler(event)" creationPolicy="all">
+						<s:NavigatorContent width="100%" label="Lab Out" height="100%" >
+							
+							<lab:LabContents id="id_LabOutView" width="100%" height="100%" maxHeight="{this.maxHeight - 50}" creationComplete="labOutCreationHandler()"
+											 visible="{model.securityProxyObject.PatientExam.QuickInput.Assessment.Plans.LabOut.IsViewAllowed}" includeInLayout="{id_LabOutView.visible}"/>
+							
+						</s:NavigatorContent>
+						
+						<s:NavigatorContent width="100%" label="Recommendations">
+							
+							<recommendation:RecommendationView id="id_RecommendationView" width="100%" creationComplete="recommendationCreationHandler()"
+															   visible="{model.securityProxyObject.PatientExam.QuickInput.Assessment.Plans.Recommendation.IsViewAllowed}" includeInLayout="{id_RecommendationView.visible}"/>
+							
+						</s:NavigatorContent>
+						
+						<s:NavigatorContent width="100%" label="Follow Up" >
+							
+							<followUp:FollowUpMerged id="id_FollowUp" width="100%" visible="{model.securityProxyObject.PatientExam.QuickInput.Assessment.Plans.FollowUp.IsViewAllowed}" includeInLayout="{id_FollowUp.visible}"/>
+							
+						</s:NavigatorContent>
+					</mx:ViewStack>
+					
+					
+					<s:HGroup width="100%">					
+						<s:HGroup id="id_IndicatorGrp" width="100%" horizontalAlign="left" >
+							<s:Button id="id_noteIndicator" label="Notes" visible="false" includeInLayout="{id_noteIndicator.visible}"
+									  click="id_noteIndicator_clickHandler(event)" toolTip="View Notes" 
+									  useHandCursor="true" buttonMode="true" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.notesIndicatorBtnSkin" />
+							<s:Button id="id_dictationIndicator" label="Dictation" visible="false" includeInLayout="{id_dictationIndicator.visible}"
+									  click="id_dictationIndicator_clickHandler(event)" toolTip="Play Dictation" 
+									  useHandCursor="true" buttonMode="true" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.dictationIndicatorBtnSkin"/>
+						</s:HGroup>
+						<s:Group id="id_spacer" width="100%" height="2" />
+						<!--<s:Button label="Next" click="dispatchEvent( new SelectSection('SelectSection', 'id_PlanPanel', true, true) )" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QInextBtnSkin" toolTip="Next Section" />-->
+					</s:HGroup>
+				</s:SkinnableContainer>
+				<!--</s:BorderContainer>-->
+			</s:SkinnableContainer>
+			
+		</s:SkinnableContainer>
+	</custom:Contents>
+</custom:PinableSlideOutPanel>

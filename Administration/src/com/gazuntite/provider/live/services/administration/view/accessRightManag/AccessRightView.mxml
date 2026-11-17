@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  width="100%" height="100%"  
+					  skinClass="com.adobe.gazuntite.skins.chrome.containerSkins.blackMiniTitleBGContainer"
+					  xmlns:roleManagement="com.gazuntite.provider.live.services.administration.view.roleManagement.*">
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.provider.live.services.administration.event.AdminActionsEvent;
+			import com.gazuntite.provider.live.services.administration.event.accessRightManagement.LoadSelectedUserAccessRightEvent;
+			import com.gazuntite.provider.live.services.administration.event.accessRightManagement.ManageUserAccessRightEvent;
+			import com.gazuntite.provider.live.services.administration.model.AdminAppModelLocator;
+			
+			import mx.collections.ArrayCollection;
+			import mx.managers.CursorManager;
+			
+			[Bindable]
+			public var model : AdminAppModelLocator = AdminAppModelLocator.getInstance();
+			
+			private var m_acDataProviderLeft:ArrayCollection;
+			
+			[Bindable]
+			public function get DataProviderLeft():ArrayCollection
+			{
+				return m_acDataProviderLeft;
+			}
+			
+			public function set DataProviderLeft(value:ArrayCollection):void
+			{
+				m_acDataProviderLeft = value;
+			}
+			//Save button click handler
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				var eve:ManageUserAccessRightEvent = new ManageUserAccessRightEvent(model.loggedInUserId,model.loggedInUserSelectedBranchId, callback);
+				CairngormEventDispatcher.getInstance().dispatchEvent( eve );
+				CursorManager.setBusyCursor();
+			}
+			//On success of manage call result
+			private function callback(val:*=null):void
+			{
+				dispatchEvent( new Event(AdminActionsEvent.UPDATE_ACCESS_RIGHTS, true, true ));
+			}
+			//Left tree main/item click handler
+			protected function id_leftTree_clickHandler(event:MouseEvent):void
+			{
+				var userId:int = 0;
+				var userTypeId:int = 0;
+				
+				
+				var obj:Object =  id_leftTree.selectedItem;
+				if(obj)
+				{
+					if(obj["UserId"] && obj["ActiveUserType"])
+					{
+						userId 			= obj["UserId"];
+						userTypeId 		= obj["ActiveUserType"].UserTypeId ;
+						
+						var eve:LoadSelectedUserAccessRightEvent= new LoadSelectedUserAccessRightEvent(userTypeId,userId);
+						CairngormEventDispatcher.getInstance().dispatchEvent( eve );	
+						CursorManager.setBusyCursor();
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+		<s:HorizontalLayout paddingBottom="10" paddingLeft="5" paddingRight="5" paddingTop="15" gap="10"/>
+	</s:layout>
+	<s:VGroup width="30%" height="100%">
+		
+	<mx:Tree id="id_leftTree" width="100%" height="100%"  dataProvider="{DataProviderLeft}" click="id_leftTree_clickHandler(event)" alternatingItemColors="[#E0E8EF,#FFFFFF]"  
+			 verticalScrollBarStyleName="VScrollBar"  fontFamily="GridCalibri" fontSize="12" />
+	</s:VGroup>
+	<s:VGroup width="70%" height="100%">
+		
+		<mx:Tree id="id_rightTree"  dataProvider="{model.UserAccessRightDTOList}" alternatingItemColors="[#E0E8EF,#FFFFFF]"
+				 fontFamily="GridCalibri" fontSize="12" height="100%" width="100%"
+				 itemRenderer="com.gazuntite.provider.live.services.administration.view.itemRenderer.AccessRightTreeItemRenderer" verticalScrollBarStyleName="VScrollBar"/>
+		
+		<s:HGroup width="100%" horizontalAlign="right">
+			<s:Button label="Save" click="button1_clickHandler(event)" styleName="blackButtonSkin" width="60" />
+		</s:HGroup>
+		
+	</s:VGroup>
+	
+</s:SkinnableContainer>
+

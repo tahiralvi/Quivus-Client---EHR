@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:flm="http://ns.adobe.com/flame/2008" xmlns:ATE="http://ns.adobe.com/ate/2009" xmlns:lib="assets.graphics.*" xmlns:fc="http://ns.adobe.com/flashcatalyst/2009">
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect alpha.up="0.01" height="18" id="rect2" includeIn="disabled,disabledAndSelected,over,up,upAndSelected" radiusX="2.99979" radiusY="2.99979" visible.disabled="false" visible.disabledAndSelected="false" visible.over="false" visible.upAndSelected="false" width="20" x="2" x.disabled="1" x.up="-0.3" y="1" y.up="1.5">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#E3E3E3" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#ADADAD" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.7000000000000001" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.2" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="16" id="rect0" includeIn="disabledAndSelected,down,downAndSelected,over,overAndSelected,up,upAndSelected" radiusX="2.99979" radiusY="2.99979" width="16" x="2.75" y="1.5" visible.upAndSelected="false" visible.disabledAndSelected="false" visible.up="false">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#AFD1FF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#6593D5" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.7000000000000001" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.2" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="21" id="rect3" includeIn="disabledAndSelected,over,overAndSelected,up,upAndSelected" radiusX="2.99979" radiusY="2.99979" visible="false" width="20" x="2" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#333333" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#161616" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.7000000000000001" angle="90" blurX="0" blurY="0" color="#C3C3C3" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.2" angle="270" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Path data="M 0 0 L 4.127 3.843 L 8.254 0 L 0 0 Z" height="5" width="8.347" x="7" y="8">
+		<s:fill>
+			<s:SolidColor color="#2B2B2B" color.downAndSelected="#000000" color.overAndSelected="#000000" color.upAndSelected="#FFFFFF"/>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.2" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Path>
+	<s:Line visible.down="false" visible.downAndSelected="false" visible.over="false" visible.overAndSelected="false" x="0.5" y="4.5" yTo="11">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#4C4D51" color.downAndSelected="#FFFFFF" color.overAndSelected="#FFFFFF" color.upAndSelected="#FFFFFF" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+	</s:Line>
+</s:Skin>

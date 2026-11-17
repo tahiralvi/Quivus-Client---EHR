@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt">
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect height="23" radiusX="2" visible.disabled="false" visible.disabledAndSelected="false" visible.up="false" visible.upAndSelected="false" width="23" x="0.5" y="0.5">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#565656" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#292929" ratio="0.47058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#4A4A4A" ratio="0.5058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#737373" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:stroke>
+			<s:LinearGradientStroke caps="none" joints="miter" miterLimit="4" rotation="90" weight="1">
+				<s:GradientEntry alpha="1" color="#727272" ratio="0"/>
+				<s:GradientEntry alpha="1" color="#000000" ratio="0.5058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#727272" ratio="1"/>
+			</s:LinearGradientStroke>
+		</s:stroke>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="4.0" blurX.down="2" blurY="4.0" blurY.down="2" color="0x000000" distance="0" distance.down="2" hideObject="false" inner="true" knockout="false" quality="2" strength="1" distance.downAndSelected="2" blurX.downAndSelected="2" blurY.downAndSelected="2"/>
+		</s:filters>
+	</s:Rect>
+	<s:Path data="M 0 0 L 4.127 3.843 L 8.254 0 L 0 0 Z" height="5" rotation.over="0" rotation="180" visible.disabled="false" visible.disabledAndSelected="false" visible.downAndSelected="false" visible.overAndSelected="false" visible.up="false" visible.upAndSelected="false" width="8.254" x="16.254" y="15" x.over="8" y.over="10">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1" color="#FFFFFF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Path>
+	<s:Path data="M 0 0 L 4.127 3.843 L 8.254 0 L 0 0 Z" rotation="0" visible.down="false" visible.over="false" visible.upAndSelected="false" x="16.254" y="13.843" visible.overAndSelected="false" visible.downAndSelected="false" visible.disabledAndSelected="false" x.up="9.254" y.up="9.843" x.disabled="9.254" y.disabled="9.843">
+		<s:fill>
+			<s:SolidColor color="#000000"/>
+		</s:fill>
+	</s:Path>
+	<s:Path data="M 0 0 L 4.127 3.843 L 8.254 0 L 0 0 Z" rotation="180" height="5" includeIn="downAndSelected,overAndSelected,upAndSelected" width="8.254" x="8" y="10" visible.upAndSelected="false" x.overAndSelected="16" y.overAndSelected="14" x.downAndSelected="16" y.downAndSelected="14">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1" color="#FFFFFF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Path>
+	<s:Path data="M 0 0 L 4.127 3.843 L 8.254 0 L 0 0 Z" rotation="180" includeIn="disabledAndSelected,upAndSelected" x="8" y="10" x.upAndSelected="18" y.upAndSelected="13" x.disabledAndSelected="18" y.disabledAndSelected="13">
+		<s:fill>
+			<s:SolidColor color="#000000"/>
+		</s:fill>
+	</s:Path>
+</s:Skin>

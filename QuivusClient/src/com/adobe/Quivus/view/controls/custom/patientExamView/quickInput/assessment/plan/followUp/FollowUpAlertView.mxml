@@ -1,0 +1,504 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:components="com.zigron.controls.extended.components.*" xmlns:itemEditors="com.adobe.Quivus.view.controls.custom.itemEditors.*"
+		 creationComplete="cc()" xmlns:components1="com.gazuntite.controls.extended.components.*" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:RadioButtonGroup id="frequencyGrp" itemClick="frequencyItemClickHandler(event)"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import import com.gazuntite.patient.visit.view.itemrenderers.DeleteRecordRenderer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.events.DataGridEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ItemClickEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import valueObjects.AssessmentDTO;
+			import valueObjects.InstructionAgeTypeDTO;
+			import valueObjects.InstructionAgeValueTypeDTO;
+			import valueObjects.InstructionDurationTypeDTO;
+			import valueObjects.PatientFollowupInstructionDTO;
+			import valueObjects.ServiceTypeDTO;
+			import mx.controls.Label;
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var _includeInLayout:Boolean;
+			private var _includeInLayoutChanged:Boolean = true;
+			
+			private var _hasGridChanged:Boolean;
+			private var _hasViewChanged:Boolean;
+			private var _setIndex:Number;
+			[Bindable]
+			public function get setIndex():Number
+			{
+				return _setIndex;
+			}
+			public function set setIndex(value:Number):void
+			{
+				_setIndex=value;
+			}
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			
+			private function cc():void
+			{
+				id_FollowUpAlertsGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				/*id_Service.tabIndex=setIndex+1;
+				id_Service.toolTip=	id_Service.tabIndex.toString();
+				id_FreqAge.tabIndex=setIndex+2;
+				id_FreqAge.toolTip=	id_Service.tabIndex.toString();
+				id_AgeType.tabIndex=setIndex+3;
+				id_AgeType.toolTip=	id_Service.tabIndex.toString();
+				id_AgeValue.tabIndex=setIndex+4;
+				id_AgeValue.toolTip=	id_Service.tabIndex.toString();
+				id_Add.tabIndex=setIndex+5;*/
+			
+			}
+			
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				var curTar:DataGrid = DataGrid(event.currentTarget);
+				
+				if (curTar.selectedItem)
+				{
+					var followUpInstructionID:int = PatientFollowupInstructionDTO(curTar.selectedItem).FollowupInstructionID;
+					
+					if (followUpInstructionID == 0)
+					{
+						model.quickInputDTO.Assessment.PatientFollowupInstruction.removeItemAt(curTar.selectedIndex);
+						
+						if (model.quickInputDTO.Assessment.PatientFollowupInstruction.length <= 0)
+						{
+							_hasGridChanged = false;
+							hasViewChanged = isGetEdited();
+						}
+					}
+					else
+					{
+						UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+						{
+						id_FollowUpAlertsGrid.selectedItem.IsDeleted = true;
+						model.quickInputDTO.Assessment.PatientFollowupInstruction.filterFunction = filterDeletedItems;
+						model.quickInputDTO.Assessment.PatientFollowupInstruction.refresh();
+						
+						hasViewChanged = _hasGridChanged = true;
+						});
+					}
+				}
+			}
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			private function frequencyItemClickHandler(event:ItemClickEvent):void
+			{
+				if (event.item == "age")
+					id_FrequencyViews.selectedIndex = 0;
+				else
+					id_FrequencyViews.selectedIndex = 1;
+			}
+			
+			private function followUpAlertChangeHandler():void
+			{
+				id_Add.enabled = !isInvalid();
+			}
+			
+			private function addRecordClickHandler():void
+			{
+				if (!_includeInLayout)
+				{
+					_includeInLayout = true;
+					_includeInLayoutChanged = true;
+					
+					invalidateProperties();
+				}
+				
+				var patientFollowUpInstructionDTO:PatientFollowupInstructionDTO = new PatientFollowupInstructionDTO();
+				if( id_Service.selectedIndex >= 0 )
+				{
+					patientFollowUpInstructionDTO.objServiceTypeDTO = id_Service.selectedItem as ServiceTypeDTO;
+				}
+				else
+				{
+					var serviceDto:ServiceTypeDTO = new ServiceTypeDTO();
+					serviceDto.FollowupService 	  = id_Service.textInput.text;
+					patientFollowUpInstructionDTO.objServiceTypeDTO = serviceDto;
+					
+					//model.serviceTypeDTOList.addItem( serviceDto );
+				}
+				
+				if (id_FreqAge.selected)
+				{
+					patientFollowUpInstructionDTO.IsAgeSelected = true;
+					patientFollowUpInstructionDTO.IsDurationSelected = false;
+					
+					patientFollowUpInstructionDTO.AgeTypeDTO = id_AgeType.selectedItem as InstructionAgeTypeDTO;
+					patientFollowUpInstructionDTO.AgeValueTypeDTO = id_AgeValue.selectedItem as InstructionAgeValueTypeDTO;
+				}
+				else if (id_FreqDuration.selected)
+				{
+					patientFollowUpInstructionDTO.IsAgeSelected = false;
+					patientFollowUpInstructionDTO.IsDurationSelected = true;
+					
+					patientFollowUpInstructionDTO.AfterDurationValue = parseInt(id_AfterDurationValue.text);
+					patientFollowUpInstructionDTO.AfterInstructionDurationTypeDTO = id_AfterDurationType.selectedItem as InstructionDurationTypeDTO;
+					
+					patientFollowUpInstructionDTO.ForDurationValue = parseInt(id_ForDurationValue.text);
+					patientFollowUpInstructionDTO.ForInstructionDurationTypeDTO = id_ForDurationType.selectedItem as InstructionDurationTypeDTO;
+				}
+				
+				patientFollowUpInstructionDTO.VisitDate = model.visitDTO.VisitDate;
+				patientFollowUpInstructionDTO.VisitID = model.visitDTO.VisitId;;
+				patientFollowUpInstructionDTO.PatientID = model.visitDTO.PatientId;
+				
+				patientFollowUpInstructionDTO.CreatedBy = model.loggedInUserDTO.UserId;;
+				patientFollowUpInstructionDTO.CreatedAt = new Date();
+				
+				patientFollowUpInstructionDTO.ModifiedAt = Constants.NULL_DATE;
+				
+				//H
+				patientFollowUpInstructionDTO.DictationID = Constants.GUID_FORMAT;
+				
+				if (!model.quickInputDTO.Assessment)
+					model.quickInputDTO.Assessment = new AssessmentDTO();
+				
+				if (!model.quickInputDTO.Assessment.PatientFollowupInstruction)
+					model.quickInputDTO.Assessment.PatientFollowupInstruction = new ArrayCollection();
+				
+				model.quickInputDTO.Assessment.PatientFollowupInstruction.addItem(patientFollowUpInstructionDTO);
+				
+				
+				resetFields();
+			}
+			
+			private function resetFields():void
+			{
+				id_Service.selectedItem = null;
+				id_Service.textInput.text = "";
+				
+				id_FreqAge.selected = true;
+				id_FrequencyViews.selectedIndex = 0;
+				
+				if (id_AgeType)
+				{
+					id_AgeType.selectedItem = null;
+					id_AgeType.textInput.text = "";
+				}
+				
+				if (id_AgeValue)
+				{
+					id_AgeValue.selectedItem = null;
+					id_AgeValue.textInput.text = "";
+				}
+				
+				if (id_AfterDurationType)
+				{
+					id_AfterDurationType.selectedItem = null;
+					id_AfterDurationType.textInput.text = "";
+				}
+				
+				if (id_AfterDurationValue)
+					id_AfterDurationValue.text = "";
+				
+				if (id_ForDurationType)
+				{
+					id_ForDurationType.selectedItem = null;
+					id_ForDurationType.textInput.text = "";
+				}
+				
+				if (id_ForDurationValue)
+					id_ForDurationValue.text = "";
+				
+				id_Add.enabled = false;
+			}
+			
+			public function isInvalid():Boolean
+			{
+				var notValid:Boolean = false;
+				
+				//if (!ValidationUtils.isValidValueSelected(id_Service))
+				if( id_Service.textInput.text.length == 0 )
+					notValid = true;
+					
+				else if (id_FreqAge.selected)
+				{
+					if (!ValidationUtils.isValidValueSelected(id_AgeType))
+						notValid = true;
+					
+					else if (!ValidationUtils.isValidValueSelected(id_AgeValue))
+						notValid = true;
+				}
+					
+				else if (id_FreqDuration.selected)
+				{
+					ValidationUtils.Trim(id_AfterDurationValue);
+					ValidationUtils.Trim(id_ForDurationValue);
+					
+					var afterVal:Number = Number(id_AfterDurationValue.text);
+					var forVal:Number = Number(id_ForDurationValue.text);
+					
+					if (isNaN(afterVal))
+						notValid = true;
+					
+					else if (!ValidationUtils.isValidValueSelected(id_AfterDurationType))
+						notValid = true;
+					
+					else if (isNaN(forVal))
+						notValid = true;
+					
+					else if (!ValidationUtils.isValidValueSelected(id_ForDurationType))
+						notValid = true;
+				}
+				
+				return notValid;
+			}
+			
+			public function isGetEdited():Boolean
+			{
+				var edited:Boolean = false;
+				
+				if (id_Service.textInput.text.length || id_Service.selectedItem != null)
+					edited = true;
+				
+				if (id_FreqAge.selected)
+				{
+					if (id_AgeType.textInput.text.length || id_AgeType.selectedItem ||
+						id_AgeValue.textInput.text.length || id_AgeValue.selectedItem)
+						edited = true;	
+				}
+				
+				else if (id_FreqDuration.selected)
+				{
+					if (id_AfterDurationType.textInput.text.length || id_AfterDurationType.selectedItem ||
+						id_AfterDurationValue.text.length ||
+						id_ForDurationType.textInput.text.length || id_ForDurationType.selectedItem ||
+						id_ForDurationValue.text.length)
+						
+						edited = true;
+				}
+				
+				hasViewChanged = (_hasGridChanged)? _hasGridChanged : edited;
+				
+				return edited;
+			}
+			
+			public function frequencyTypeLabelFunction(item:Object, iCol:int):String
+			{
+				var label:String = "";
+				
+				if (item.hasOwnProperty("IsAgeSelected") && item.IsAgeSelected)
+				{
+					label = "Age";
+				}
+				
+				else if (item.hasOwnProperty("IsDurationSelected") && item.IsDurationSelected)
+				{
+					label = "Duration";
+				}
+				
+				return label;
+			}
+			
+			public function frequencyLabelFunction(item:Object, iCol:int):String
+			{
+				var label:String = "";
+				var freq:PatientFollowupInstructionDTO = PatientFollowupInstructionDTO(item);
+				
+				if (freq.IsAgeSelected)
+				{
+					if (freq.AgeTypeDTO && freq.AgeTypeDTO.AgeTypeName)
+						label += freq.AgeTypeDTO.AgeTypeName + " " ;
+					
+					if (freq.AgeValueTypeDTO && freq.AgeValueTypeDTO.AgeValueTypeName)
+						label += freq.AgeValueTypeDTO.AgeValueTypeName;
+				}
+				else if (freq.IsDurationSelected)
+				{
+					if (!isNaN(freq.AfterDurationValue))
+						label += "After " + freq.AfterDurationValue + " ";
+					
+					if (freq.AfterInstructionDurationTypeDTO && freq.AfterInstructionDurationTypeDTO.DurationTypeName)
+						label += freq.AfterInstructionDurationTypeDTO.DurationTypeName + " ";
+					
+					if (!isNaN(freq.ForDurationValue))
+						label += "for " + freq.ForDurationValue + " ";
+					
+					if (freq.ForInstructionDurationTypeDTO && freq.ForInstructionDurationTypeDTO.DurationTypeName)
+						label += freq.ForInstructionDurationTypeDTO.DurationTypeName;
+				} 
+					
+				return label;
+			}
+			
+			public function displayRowNum(oItem:Object,iCol:int):String
+			{
+				/* var rowNumber:int = id_FollowUpAlertsGrid.dataProvider.getItemIndex(oItem) + 1;
+				return String(rowNumber); */
+				
+				var ret:String;
+				try
+				{
+					var rowNumber:int = id_FollowUpAlertsGrid.dataProvider.getItemIndex(oItem) + 1; //Sort able column fails some how, don't know why?
+					ret = String(rowNumber);
+				}
+				catch(e:Error )
+				{
+					ret = "##";
+				}
+				return ret;
+			}
+			
+			private function followUpAlertsGridItemEditHandler(event:DataGridEvent):void
+			{
+				
+			}
+			
+			override protected function commitProperties():void
+			{
+				super.commitProperties();
+				
+				if (_includeInLayoutChanged)
+				{
+					_includeInLayoutChanged = false;
+					
+					id_FollowUpAlertsGrid.columns[0].width = 30;
+					id_FollowUpAlertsGrid.columns[1].width = 50;
+					id_FollowUpAlertsGrid.columns[2].width = 50;
+					id_FollowUpAlertsGrid.columns[3].width = 50;
+					id_FollowUpAlertsGrid.columns[4].width = 100;
+					id_FollowUpAlertsGrid.columns[5].width = 100;
+				}
+			}
+			
+			private function editRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				id_FollowUpAlertsGrid.editable = true;
+				var rowIndex:int = id_FollowUpAlertsGrid.selectedIndex;
+				var itemToSetInEditableMode:IListItemRenderer = id_FollowUpAlertsGrid.indexToItemRenderer(rowIndex);
+				
+				var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+				ev.columnIndex = 2;
+				ev.rowIndex = rowIndex;
+				ev.itemRenderer = itemToSetInEditableMode;
+				ev.dataField = "DateAdmin";
+				id_FollowUpAlertsGrid.dispatchEvent(ev);
+			}
+			
+
+			
+
+		]]>
+	</fx:Script>
+	<s:layout>
+		<s:VerticalLayout gap="1" paddingBottom="0" paddingLeft="5" paddingRight="5" paddingTop="3"/>
+	</s:layout>
+	
+	<s:Label text="Post Visit Preventive and Wellness Instructions" fontFamily="Calibri" color="#ffffff"/>
+	<s:HGroup width="100%">
+		<components1:LabelComboBox id="id_Service" prompt="Select Required Preventive and Wellness Service" required="true" width="100%" dataProvider="{model.serviceTypeDTOList}"
+								  labelField="FollowupService" change="followUpAlertChangeHandler()" keyUp="followUpAlertChangeHandler()" tabIndex="4"/>
+		<!--<s:Button id="id_Add" enabled="false" buttonMode="true" useHandCursor="true" toolTip="Add Record" click="addRecordClickHandler()"
+				   skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.ImmunizationAddBtn" tabIndex="4"/>-->
+	</s:HGroup>
+	<s:HGroup width="100%">
+		<s:Label text="Frequency" height="23" verticalAlign="middle" fontFamily="Calibri" color="#ffffff"/>
+		<!--<s:Label text="Age" fontFamily="Calibri" fontSize="11" color="#000000" />-->
+		<s:RadioButton label="Age" id="id_FreqAge" value="age" groupName="frequencyGrp" fontFamily="Calibri" selected="true" height="23"
+					   
+					   buttonMode="true" useHandCursor="true" tabIndex="5" color="#ffffff" />
+		<!--<s:Label text="Duration" fontFamily="Calibri" fontSize="11" color="#000000" />-->
+		<s:RadioButton label="Duration" id="id_FreqDuration" value="duration" groupName="frequencyGrp" fontFamily="Calibri" height="23"
+					   
+					   buttonMode="true" useHandCursor="true" color="#ffffff"
+					   />
+		
+		<mx:ViewStack id="id_FrequencyViews" width="100%" paddingLeft="5">
+			<s:NavigatorContent width="100%">
+				<s:layout>
+					<s:HorizontalLayout/>
+				</s:layout>
+				<components1:LabelComboBox id="id_AgeType" prompt="Age Type" width="120"  dataProvider="{model.instructionAgeTypeDTOList}" labelField="AgeTypeName"
+										  change="followUpAlertChangeHandler()" keyUp="followUpAlertChangeHandler()" tabIndex="6" required="true"/>
+				<components1:LabelComboBox id="id_AgeValue" prompt="Age Value" width="100%"  change="followUpAlertChangeHandler()" keyUp="followUpAlertChangeHandler()" 
+										  dataProvider="{model.instructionAgeValueTypeDTOList}" labelField="AgeValueTypeName" tabIndex="7"  requireSelection="true"/>
+			</s:NavigatorContent>
+			<s:NavigatorContent width="100%">
+				<s:layout>
+					<s:HorizontalLayout/>
+				</s:layout>
+				<s:Label text="After Every:" height="23" verticalAlign="middle" fontFamily="calibri" color="#ffffff"/>
+				<components1:LabelTextInput id="id_AfterDurationValue" prompt="Value" width="55" height="23" change="followUpAlertChangeHandler()" required="true"
+										   keyUp="followUpAlertChangeHandler()"/>
+				<components1:LabelComboBox id="id_AfterDurationType" prompt="Type" width="100%" dataProvider="{model.instructionDurationTypeDTOList}" labelField="DurationTypeName"
+										  change="followUpAlertChangeHandler()" keyUp="followUpAlertChangeHandler()" required="true"/>
+				
+				<s:Label text="For:" height="23" verticalAlign="middle" fontFamily="calibri" color="#ffffff"/>
+				<components1:LabelTextInput id="id_ForDurationValue" prompt="Value" width="55" required="true"
+										   height="23" change="followUpAlertChangeHandler()" keyUp="followUpAlertChangeHandler()"/>
+				<components1:LabelComboBox id="id_ForDurationType" prompt="Type" required="true" width="100%" dataProvider="{model.instructionDurationTypeDTOList}" labelField="DurationTypeName"
+										  change="followUpAlertChangeHandler()" keyUp="followUpAlertChangeHandler()" />
+			</s:NavigatorContent>
+		</mx:ViewStack>
+	</s:HGroup>
+	
+	<s:HGroup width="100%">
+		<s:Button id="id_Add" click="addRecordClickHandler()" enabled="false" buttonMode="true" useHandCursor="true" 
+				  toolTip="Add Record"  label="Add Follow Up"
+				  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.AddMoreTooltipBtn" tabIndex="8"/>
+		<s:SkinnableContainer skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.tooltipBG" visible="{!id_Add.enabled}" width="100%" />
+	</s:HGroup>
+	
+	<s:HGroup width="100%">
+		<mx:DataGrid id="id_FollowUpAlertsGrid" width="100%" includeInLayout="{(id_FollowUpAlertsGrid.dataProvider.length)}" 
+					 visible="{(id_FollowUpAlertsGrid.dataProvider.length)}" 
+					 dataProvider="{model.quickInputDTO.Assessment.PatientFollowupInstruction}" 
+					 rowCount="{id_FollowUpAlertsGrid.dataProvider.length + 1}"
+					 itemEditEnd="followUpAlertsGridItemEditHandler(event)"
+					 editable="false"
+					 maxHeight="150" verticalScrollPolicy="on">
+			<mx:columns>
+				<mx:DataGridColumn headerText="Sr.#" width="40" editable="false" labelFunction="displayRowNum" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn headerText="Visit Date" width="60" dataField="VisitDate" editable="false"  headerRenderer="mx.controls.Label" wordWrap="true"
+								   itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG"/>
+				<mx:DataGridColumn headerText="Service"  dataField="objServiceTypeDTO.FollowupService" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true">
+					<mx:itemEditor>
+						<fx:Component>
+							<itemEditors:ComboBoxItemEditor dataProvider="{outerDocument.model.serviceTypeDTOList}" labelField="FollowupServiceTypeName"/>
+						</fx:Component>
+					</mx:itemEditor>
+				</mx:DataGridColumn>
+				<mx:DataGridColumn headerText="Frequency Type" width="60" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" labelFunction="frequencyTypeLabelFunction">
+					
+				</mx:DataGridColumn>
+				<mx:DataGridColumn headerText="Frequency" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" width="100" labelFunction="frequencyLabelFunction">
+					
+				</mx:DataGridColumn>
+				<mx:DataGridColumn editable="false" width="85" itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.ActionButtonRenderer"/>
+			</mx:columns>
+		</mx:DataGrid>
+	</s:HGroup>
+	
+</s:Group>

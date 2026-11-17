@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/>
+	</s:states>
+	<s:Rect height="19" id="rect44" radiusX="3" visible.disabled="false" visible.down="false" visible.over="false" minWidth="20" width="100%" maxWidth="150" x="0.5" y="0.5">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#97BECE" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#9ED1E6" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#1F6C8E" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:filters>
+			<s:GlowFilter alpha="1.0" blurX="6" blurY="6" color="#FFFFFF" inner="true" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="1" angle="90" blurX="0" blurY="0" color="#1D3944" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="19" height.disabled="20" id="rect18" radiusX="3" visible.up="false" minWidth="20" width="100%" maxWidth="150" x.disabled="0" x.down="0.5" x.over="0.5" x.up="0.5" y.disabled="0" y.down="0.5" y.over="0.5" y.up="0.5">
+		<s:fill>
+			<s:LinearGradient rotation="90" rotation.down="270">
+				<s:GradientEntry alpha="1.0" color="#FFBF50" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#E8AC46" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:GlowFilter alpha="1.0" blurX="6" blurY="6" color="#FFFFFF" includeIn="down,over,up" inner="true" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="1" angle="90" blurX="0" blurY="0" color="#9B6D1E" distance="1" hideObject="false" includeIn="down,over,up" inner="false" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" includeIn="down" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+		<s:stroke.over>
+			<s:SolidColorStroke caps="none" color="#B77C16" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke.over>
+		<s:stroke.down>
+			<s:SolidColorStroke caps="none" color="#B77C16" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke.down>
+		<s:stroke.up>
+			<s:SolidColorStroke caps="none" color="#B77C16" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke.up>
+		<s:fill.disabled>
+			<s:SolidColor color="#999999"/>
+		</s:fill.disabled>
+	</s:Rect>
+	<s:RichText id="labelDisplay" tabStops="S0 S50" y="4" color="#333333" fontFamily="Calibri" fontSize="13" kerning="off" text="View CMS 1500" x="0" textAlign="center" color.disabled="#CCCCCC" minWidth="20" width="100%" maxWidth="150"/>
+</s:Skin>

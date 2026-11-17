@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="group1_creationCompleteHandler(event)"
+		 xmlns:components="com.zigron.controls.extended.components.*" xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.dto.AddInsuranceDTO;
+			import com.gazuntite.provider.live.services.billing.dto.settings.EDIReceiverDTO;
+			import com.gazuntite.provider.live.services.billing.event.settings.LoadEDIReceiverByCriteriaEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			public var ID:int ;
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			[Bindable] 
+			private var EDIReceivers:ArrayCollection = null;
+			
+			private  var _insurance :AddInsuranceDTO;
+			[Bindable]
+			public function get insurance():AddInsuranceDTO
+			{
+				return _insurance;
+			}
+			
+			public function set insurance(value:AddInsuranceDTO):void
+			{
+				_insurance = value;
+			}
+			
+			//private var _edi:ArrayCollection;
+			
+			[Bindable]
+			public function get typesArray():ArrayCollection
+			{
+				return _typesArray;
+			}
+			
+			public function set typesArray(value:ArrayCollection):void
+			{
+				_typesArray = value;
+			}
+			/* [Bindable]
+			public function get edi():ArrayCollection
+			{
+				return _edi;
+			}
+			
+			public function set edi(value:ArrayCollection):void
+			{
+				_edi = value;
+			} */
+			
+			
+			private var _typesArray:ArrayCollection = new ArrayCollection();
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(model.EDIReceiverList == null || model.EDIReceiverList.length == 0)
+				{
+					var lerEvent:LoadEDIReceiverByCriteriaEvent = new LoadEDIReceiverByCriteriaEvent(0,"0",0);
+					CairngormEventDispatcher.getInstance().dispatchEvent(lerEvent);
+				}
+				
+				if(model.EDIReceiverList != null && model.EDIReceiverList.length > 0)
+				{
+					EDIReceivers = new ArrayCollection();
+					
+					for each (var receiver:EDIReceiverDTO in model.EDIReceiverList) 
+					{
+						EDIReceivers.addItem(receiver);
+					}					
+				}
+				LoadData();
+			}
+			
+			public function LoadData():void
+			{
+				if(insurance && insurance !=null)
+				{
+					if(! UtilityFunctions.IsNullOrEmpty(insurance.PrimaryEDIReceiverTypeID) && insurance.PrimaryEDIReceiverTypeID != "0" )
+					{
+						for each (var rc:EDIReceiverDTO in EDIReceivers) 
+						{
+							if(rc.EDIReceiverID == insurance.PrimaryEDIReceiverTypeID)
+							{
+								id_PrimaryEDI.selectedItem = rc ;
+							}
+						}
+					}
+					if(! UtilityFunctions.IsNullOrEmpty(insurance.SecondaryEDIReceiverTypeID) && insurance.SecondaryEDIReceiverTypeID != "0" )
+					{
+						for each (var rc1:EDIReceiverDTO in EDIReceivers) 
+						{
+							if(rc1.EDIReceiverID == insurance.SecondaryEDIReceiverTypeID)
+							{
+								id_SecondaryEDI.selectedItem = rc1 ;
+							}
+						}
+					}
+					
+					if(! UtilityFunctions.IsNullOrEmpty(insurance.CategoryTypeID))
+					{
+						ID = Number(insurance.CategoryTypeID);	
+						id_Type.selectedIndex = ID - 1 ;
+					}
+					
+					id_maxTrans.textDisplay.text = insurance.MaxTransactions; 
+				}
+			}
+			
+			private var objToSetFocus:Object = null;
+			public function SaveInsurance():Object
+			{
+				
+				if(! isValidData("0")) return objToSetFocus;
+				
+				if(id_PrimaryEDI.selectedIndex > -1)
+					model.insuranceDto.PrimaryEDIReceiverTypeID 		= (id_PrimaryEDI.selectedItem as EDIReceiverDTO).EDIReceiverID;
+				else 
+					model.insuranceDto.PrimaryEDIReceiverTypeID = "0";
+						
+				model.insuranceDto.PrimaryClaimsPayerID 		 	= id_PrimaryPayerID.text;
+				model.insuranceDto.PrimaryEligibilityPayerID  		= id_PrimaryEliPlanID.text;
+				model.insuranceDto.PrimaryNationalPlanID  			= id_PrimaryNatPlanID.text;
+				if(id_SecondaryEDI.selectedIndex > -1)
+					model.insuranceDto.SecondaryEDIReceiverTypeID 		= (id_SecondaryEDI.selectedItem as EDIReceiverDTO).EDIReceiverID;
+				else 
+					model.insuranceDto.SecondaryEDIReceiverTypeID = "0";
+				
+				model.insuranceDto.SecondaryClaimsPayerID 			= id_SecondaryPayerID.text;
+				model.insuranceDto.SecondaryEligibilityPayerID  	= id_SecondaryEliPlanID.text;
+				model.insuranceDto.SecondaryNationalPlanID  		= id_SecondaryNatPlanID.text;
+				model.insuranceDto.AlternateIDNumber 				= id_AlternateCarrier.text;
+				model.insuranceDto.Extra1  							= id_Extras1.text;
+				model.insuranceDto.Extra2 	 						= id_Extras2.text;
+				
+				if(id_Type.selectedIndex > -1)
+					model.insuranceDto.CategoryTypeID = String(id_Type.selectedIndex + 1);
+				
+				if(id_CrossOver.selected)					
+					model.insuranceDto.Crossover 				= true ;
+				else					
+					model.insuranceDto.Crossover 				= false;
+				
+				if(id_DelaySecondaryBilling.selected)					
+					model.insuranceDto.DelaySecondaryBilling    	= true ;
+				else					
+					model.insuranceDto.DelaySecondaryBilling    	= false;
+				
+				if(id_SendOrderingProvider.selected)					
+					model.insuranceDto.SendOrderingProvider 	 	= true ;
+				else					
+					model.insuranceDto.SendOrderingProvider   	= false;
+				
+				if(id_SendPracticeTaxonomy.selected)					
+					model.insuranceDto.SendPracticeTaxonomy   	= true ;
+				else					
+					model.insuranceDto.SendPracticeTaxonomy  	= false;				
+				
+				model.insuranceDto.MaxTransactions = id_maxTrans.textDisplay.text;
+				
+				return null;
+			}
+			
+			private function isValidData(insOrgID:String):Boolean
+			{
+				var success:Boolean = new Boolean();
+				var errorStr:String = new String();
+				success = true;
+				
+				/* if(UtilityFunctions.TrimString(id_PrimaryPayerID.text) == "")
+				{
+				success = false;
+				errorStr += "Please enter Primary Claim Payer ID \n";							
+				if (!objToSetFocus)
+				objToSetFocus = id_PrimaryPayerID;						
+				} */
+				
+				if(success == false)
+				{
+					var alert:Alert = Alert.show(errorStr, "Required Fields", 4, FlexGlobals.topLevelApplication.mainContainer);					
+					PopUpManager.centerPopUp (alert);					
+				}
+				
+				return success;
+			}
+			
+			public function UpdateInsurance():Object
+			{
+				if(! isValidData("0")) return objToSetFocus;
+				
+				if(id_PrimaryEDI.selectedIndex > -1)
+				{					
+					insurance.PrimaryEDIReceiverTypeID 		= (id_PrimaryEDI.selectedItem as EDIReceiverDTO).EDIReceiverID;					
+				}
+				else
+				{
+					insurance.PrimaryEDIReceiverTypeID = "0";
+				}
+				//if(! UtilityFunctions.IsNullOrEmpty(insurance.PrimaryClaimsPayerID))
+				//{
+					if(insurance.PrimaryClaimsPayerID		 != id_PrimaryPayerID.text)
+						insurance.PrimaryClaimsPayerID 		 = id_PrimaryPayerID.text	;
+				//}
+				//if(! UtilityFunctions.IsNullOrEmpty(insurance.PrimaryEligibilityPayerID))
+				//{
+					if(insurance.PrimaryEligibilityPayerID	 != id_PrimaryEliPlanID.text)
+						insurance.PrimaryEligibilityPayerID  = id_PrimaryEliPlanID.text;
+				//}
+				
+				//if(! UtilityFunctions.IsNullOrEmpty(insurance.PrimaryNationalPlanID))
+				//{
+					if(insurance.PrimaryNationalPlanID 		!= id_PrimaryNatPlanID.text)
+						insurance.PrimaryNationalPlanID  	= id_PrimaryNatPlanID.text;
+				//}
+				
+				//Secondary Insurance
+				
+				if(id_SecondaryEDI.selectedIndex > -1)
+				{					
+					insurance.SecondaryEDIReceiverTypeID = (id_SecondaryEDI.selectedItem as EDIReceiverDTO).EDIReceiverID;					
+				}
+				else
+				{
+					insurance.SecondaryEDIReceiverTypeID = "0";
+				}
+				
+				//if(! UtilityFunctions.IsNullOrEmpty(insurance.SecondaryClaimsPayerID))
+				//{
+					if(insurance.SecondaryClaimsPayerID 		!= id_SecondaryPayerID.text)
+						insurance.SecondaryClaimsPayerID 		= id_SecondaryPayerID.text	;
+				//}
+				//if(! UtilityFunctions.IsNullOrEmpty(insurance.SecondaryEligibilityPayerID))
+				//{
+					if(insurance.SecondaryEligibilityPayerID 	!= id_SecondaryEliPlanID.text)
+						insurance.SecondaryEligibilityPayerID  	= id_SecondaryEliPlanID.text;
+				//}
+				
+				//if(! UtilityFunctions.IsNullOrEmpty(insurance.SecondaryNationalPlanID))
+				//{
+					if(insurance.SecondaryNationalPlanID 		!= id_SecondaryNatPlanID.text)
+						insurance.SecondaryNationalPlanID  		= id_SecondaryNatPlanID.text;
+				//}
+				
+				//if(! UtilityFunctions.IsNullOrEmpty(insurance.AlternateIDNumber))
+				//{
+					if(insurance.AlternateIDNumber			!= id_AlternateCarrier.text)
+						insurance.AlternateIDNumber 		= id_AlternateCarrier.text;
+				//}
+				//if(! UtilityFunctions.IsNullOrEmpty(insurance.Extra1))
+				//{
+					if(insurance.Extra1		!= id_Extras1.text)
+						insurance.Extra1  	= id_Extras1.text;
+				//}	
+				//if(! UtilityFunctions.IsNullOrEmpty(insurance.Extra2))
+				//{
+					if(insurance.Extra2		!= id_Extras2.text)
+						insurance.Extra2 	 = id_Extras2.text;
+				//}
+				
+				if(id_Type.selectedIndex > -1 && (id_Type.selectedIndex + 1) != Number(insurance.CategoryTypeID))
+					insurance.CategoryTypeID = String(id_Type.selectedIndex + 1);
+				
+				if(id_CrossOver.selected)
+					
+					insurance.Crossover = true ;
+				else
+					
+					insurance.Crossover = false;
+				
+				if(id_DelaySecondaryBilling.selected)
+					
+					insurance.DelaySecondaryBilling = true ;
+				else
+					
+					insurance.DelaySecondaryBilling = false;
+				
+				if(id_SendOrderingProvider.selected)
+					
+					insurance.SendOrderingProvider = true ;
+				else
+					
+					insurance.SendOrderingProvider = false;
+				
+				if(id_SendPracticeTaxonomy.selected)
+					
+					insurance.SendPracticeTaxonomy= true ;
+				else
+					
+					insurance.SendPracticeTaxonomy = false;
+				
+				if(insurance.MaxTransactions != id_maxTrans.textDisplay.text)
+					insurance.MaxTransactions = id_maxTrans.textDisplay.text;
+				
+				return null;
+			}			
+			
+		]]>
+	</fx:Script>
+	<s:layout>
+		<s:VerticalLayout paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5"/>
+	</s:layout>
+	
+	<s:HGroup width="100%">
+		<s:VGroup width="50%" gap="3">
+			<s:Label  text="Primary Receiver" fontFamily="Calibri" fontSize="11"/>
+			<components1:LabelComboBox width="100%"  prompt="EDI Primary Receiver" id="id_PrimaryEDI" labelField="Name"
+									   dataProvider="{EDIReceivers}" tabIndex="1" toolTip="Primary EDI Receiver" />
+			<components1:LabelTextInput width="100%"  prompt="Claims Payer ID" id="id_PrimaryPayerID" toolTip="Primary Claims Payer ID"
+									  text="{insurance.PrimaryClaimsPayerID}" tabIndex="3" maxChars="80" restrict="[0-9]" />
+			<components1:LabelTextInput width="100%"  prompt="Eligibility Payer ID" id="id_PrimaryEliPlanID" toolTip="Primary Eligibility Payer ID"
+									  text="{insurance.PrimaryEligibilityPayerID}" tabIndex="5" maxChars="80" restrict="[0-9]" />
+			<components1:LabelTextInput width="100%" prompt="National Plan ID" id="id_PrimaryNatPlanID" toolTip="Primary National Plan ID"
+									   text="{insurance.PrimaryNationalPlanID}" tabIndex="7" maxChars="10" />
+		</s:VGroup>
+		<s:VGroup width="50%" gap="3">
+			<s:Label  text="Secondary Receiver" fontFamily="Calibri" fontSize="11" />
+			<components1:LabelComboBox width="100%"  prompt="EDI Secondary Receiver" id="id_SecondaryEDI" toolTip="Secondary EDI Receiver"
+									   dataProvider="{EDIReceivers}" tabIndex="2" labelField="Name" />
+			<components1:LabelTextInput width="100%"   prompt="Claims Payer ID" id="id_SecondaryPayerID" toolTip="Secondary Claims Payer ID"
+									   text="{insurance.SecondaryClaimsPayerID}" tabIndex="4" maxChars="80" restrict="[0-9]" />
+			<components1:LabelTextInput width="100%"  prompt="Eligibility Payer ID"  id="id_SecondaryEliPlanID" toolTip="Secondary Eligibility Payer ID"
+									   text="{insurance.SecondaryEligibilityPayerID}" tabIndex="6" maxChars="80" restrict="[0-9]"
+									  />
+			<components1:LabelTextInput width="100%"  prompt="National Plan ID" id="id_SecondaryNatPlanID" toolTip="Secondary National Plan ID"
+									   text="{insurance.SecondaryNationalPlanID}" tabIndex="9" maxChars="10" />
+		</s:VGroup>
+	</s:HGroup>	
+	<s:HGroup width="100%">
+		<s:VGroup width="50%" gap="3">
+			<components1:LabelComboBox width="100%" prompt="Type" dataProvider="{typesArray}" id="id_Type" tabIndex="10" toolTip="Type" />
+			<components1:LabelTextInput width="100%" prompt="Alternate Carrier ID" tabIndex="12" toolTip="Alternate Carrier ID"
+									   id="id_AlternateCarrier" text="{insurance.AlternateIDNumber}" maxChars="10"  />
+			<!--<components:LabelTextInput width="100%" prompt="NDC Record Code" />-->
+			<s:NumericStepper id="id_maxTrans" width="100%" toolTip="EDI Maximum Transaction" tabIndex="14"  />
+			<components1:LabelTextInput width="100%" prompt="EDI Extra1/ Medigap" id="id_Extras1" text="{insurance.Extra1}" 
+									   tabIndex="16" maxChars="15" toolTip="EDI Extra1/ Medigap" />
+			<components1:LabelTextInput width="100%" prompt="EDI Extra 2" id="id_Extras2" text="{insurance.Extra2}" 
+									   tabIndex="18" maxChars="15" toolTip="EDI Extra 2" />
+		</s:VGroup>
+		<s:VGroup width="50%" gap="3">
+			<s:CheckBox  label="Complementary CrossOver" height="19" selected="{insurance.Crossover}" id="id_CrossOver" tabIndex="11" />
+			<s:CheckBox label="Delay Secondary Billing" height="19" selected="{insurance.DelaySecondaryBilling}"
+						id="id_DelaySecondaryBilling"  tabIndex="13"/>
+			<s:CheckBox label="Send Ordering Provider in Loop 2420E" selected="{insurance.SendOrderingProvider}"
+						id="id_SendOrderingProvider" height="19" tabIndex="15"/>
+			<s:CheckBox label="Send Practice Taxanomy in Loop 2000A" selected="{insurance.SendPracticeTaxonomy}" 
+						id="id_SendPracticeTaxonomy" height="19" tabIndex="17"/>
+		</s:VGroup>
+	</s:HGroup>
+</s:Group>

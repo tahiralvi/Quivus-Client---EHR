@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:components="com.gazuntite.controls.extended.components.*" 
+		 xmlns:registeration="com.adobe.Quivus.view.controls.registeration.*"
+		 xmlns:controls="com.gazuntite.provider.eprescription.services.patient.view.controls.*" 
+		 xmlns:skins="com.zigron.common.view.skins.*"
+		 xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 creationComplete="creComp()" >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.provider.eprescription.services.patient.dto.PendingRefillRequestDTO;
+			import com.gazuntite.provider.eprescription.services.patient.event.GetPendingRefillsEvent;
+			import com.gazuntite.provider.eprescription.services.patient.model.EPrescriptionModelLocator;
+			private var _userId:String;						
+			private var _clinicBranchID:String;
+			private var _securityHeaderXML:XML;
+			
+			[Bindable]
+			private var model : EPrescriptionModelLocator = EPrescriptionModelLocator.getInstance();
+			public var GaxenRefillRequestID:String;
+			public var approveSummary:RXRefillApproveSummary;
+			public var denypopup:RXRefillDenyPopup;
+			public var denyNewPrescriptionPopup:DenyNewPrescriptionPopup;
+			
+			// **************** GETTER & SETTER ************** STRAT *************
+			[Bindable]
+			public function get securityHeaderXML():XML
+			{
+				return _securityHeaderXML;
+			}
+			
+			public function set securityHeaderXML(value:XML):void
+			{
+				_securityHeaderXML = value;
+			}
+			
+			[Bindable]
+			public function get userId():String
+			{
+				return _userId;
+			}
+			
+			public function set userId(value:String):void
+			{
+				_userId = value;
+			}
+			// **************** GETTER & SETTER ************** END *************
+			
+			// Ceation complete handler
+			protected function creComp():void
+			{
+				securityHeaderXML	 			= <Header />;					
+				securityHeaderXML.@EUserName	= "TESTUSER";
+				securityHeaderXML.@EPassword	= "TESTPASS";
+				securityHeaderXML.@ClinicID		= "sad";
+				
+				var rpEvent_ : GetPendingRefillsEvent = new GetPendingRefillsEvent();	
+				rpEvent_.data = securityHeaderXML;
+				CairngormEventDispatcher.getInstance().dispatchEvent( rpEvent_ );  
+			}
+			// Open deny summary popup
+			private function createDenySummaryReport():void
+			{
+				denypopup  							= new RXRefillDenyPopup();
+				var pLoc:Point 						= new Point( this.x , this.y );
+				var loc:Point 						= this.localToGlobal( pLoc );
+				denypopup.x 						= loc.x ; 
+				denypopup.y 						= loc.y ;				
+				denypopup.Status					= "2";
+				denypopup.GaxenRefillRequestID		= model.selectedApproveRefillRequest.GaxenRefillRequestID;
+				denypopup.securityHeaderXML 		= securityHeaderXML;
+				denypopup.ShowPopup(this);
+			}
+			// Open approve summary poopup
+			private function createApproveSummaryReport():void
+			{
+				approveSummary  					= new RXRefillApproveSummary();
+				var pLoc:Point 						= new Point( this.x , this.y );
+				var loc:Point 						= this.localToGlobal( pLoc );
+				approveSummary.x 					= loc.x ; 
+				approveSummary.y 					= loc.y ;				
+				approveSummary.GaxenRefillRequestID	= model.selectedApproveRefillRequest.GaxenRefillRequestID;
+				approveSummary.securityHeaderXML 	= securityHeaderXML;
+				approveSummary.ShowPopup(this);
+			}
+			// Approve change click handler
+			private function createApproveChangesSummaryReport():void
+			{
+				approveSummary  						= new RXRefillApproveSummary();
+				approveSummary.isApproveChangeCase 		= true;
+				var pLoc:Point 							= new Point( this.x , this.y );
+				var loc:Point 							= this.localToGlobal( pLoc );
+				approveSummary.x 						= loc.x ; 
+				approveSummary.y 						= loc.y ;				
+				approveSummary.GaxenRefillRequestID		= model.selectedApproveRefillRequest.GaxenRefillRequestID;
+				approveSummary.securityHeaderXML 		= securityHeaderXML;
+				approveSummary.ShowPopup(this);
+			}
+			// Deny new prescription open popup
+			private function createDeniedNewPrescriptionton():void
+			{
+				denyNewPrescriptionPopup 						= new DenyNewPrescriptionPopup();
+				var pLoc:Point 									= new Point( this.x , this.y );
+				var loc:Point 									= this.localToGlobal( pLoc );
+				denyNewPrescriptionPopup.x 						= loc.x ; 
+				denyNewPrescriptionPopup.y 						= loc.y ;				
+				//denyNewPrescriptionPopup.GaxenRefillRequestID	= model.selectedApproveRefillRequest.GaxenRefillRequestID;
+				denyNewPrescriptionPopup.securityHeaderXML 		= securityHeaderXML;
+				denyNewPrescriptionPopup.ShowPopup(this);
+			}
+			// Deny NewPrescriptionto changes click handler
+			public function deniedNewPrescriptionto_ClickHandler(event:MouseEvent):void
+			{
+				model.selectedApproveRefillRequest = new PendingRefillRequestDTO();
+				model.selectedApproveRefillRequest = model.PendingRequestList.getItemAt(id_pendingRequestsGrid.selectedIndex) as PendingRefillRequestDTO;
+				createDeniedNewPrescriptionton();
+			}
+			// Approve with changes click handler
+			public function approveWithChange_clickHandler(event:MouseEvent):void
+			{
+				model.selectedApproveRefillRequest = new PendingRefillRequestDTO();
+				model.selectedApproveRefillRequest = model.PendingRequestList.getItemAt(id_pendingRequestsGrid.selectedIndex) as PendingRefillRequestDTO;
+				createApproveChangesSummaryReport();
+			}
+			// Approve Click handler
+			public function approve_ClickHandler(event:MouseEvent):void
+			{
+				model.selectedApproveRefillRequest = new PendingRefillRequestDTO();
+				model.selectedApproveRefillRequest = model.PendingRequestList.getItemAt(id_pendingRequestsGrid.selectedIndex) as PendingRefillRequestDTO;
+				if(model.selectedApproveRefillRequest.pharmacyPatientDTO.GaxenPatientID != '')
+				{
+					
+				}
+				createApproveSummaryReport();
+			}
+			// Deny button click Handler
+			public function deny_clickHandler(event:MouseEvent):void
+			{
+				model.selectedApproveRefillRequest = new PendingRefillRequestDTO();
+				model.selectedApproveRefillRequest = model.PendingRequestList.getItemAt(id_pendingRequestsGrid.selectedIndex) as PendingRefillRequestDTO;
+				createDenySummaryReport();
+			}
+			// Label function for refill
+			private function getREfillData(oItem:Object,iCol:int):String
+			{
+				var result:String = '';
+				
+				if(oItem.PreisPRN)
+					result =oItem.PreisPRN;
+				
+				if(result.toUpperCase() == 'TRUE')
+				{
+					result = 'AS NEEDED';
+				}else
+				{
+					if(oItem.PreRefill)
+						result = oItem.PreRefill;
+				}
+				
+				return result;
+			}
+			// Label function record no
+			private function getSrNo(oItem:Object,iCol:int):String
+			{
+				var ret:String;
+				try
+				{
+					var rowNumber:int = id_pendingRequestsGrid.dataProvider.getItemIndex(oItem) + 1; //Sort able column fails some how, don't know why?
+					ret = String(rowNumber);
+				}
+				catch(e:Error )
+				{
+					ret = "##";
+				}
+				return ret;
+			}
+			// Label function patient name
+			private function getPatientName(oItem:Object,iCol:int):String
+			{
+				var result:String = '';
+				if(oItem.pharmacyPatientDTO.FirstName)
+					result = oItem.pharmacyPatientDTO.FirstName;
+				
+				if(oItem.pharmacyPatientDTO.LastName)
+					result =result+' '+ oItem.pharmacyPatientDTO.LastName;
+				
+				return result;
+			}
+			// Label function Prescriber name
+			private function getPrescriberName(oItem:Object,iCol:int):String
+			{
+				var result:String = '';
+				if(oItem.prescriberDTO.FirstName)
+					result = oItem.prescriberDTO.FirstName;
+				
+				if(oItem.prescriberDTO.LastName)
+					result =result+' '+ oItem.prescriberDTO.LastName;
+				
+				return result;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+		<s:VerticalLayout paddingBottom="3" paddingLeft="3" paddingRight="3" paddingTop="36" gap="1"/>
+	</s:layout>
+	
+	<components1:LabelDataGrid
+		id="id_pendingRequestsGrid"   
+		rowHeight="24"	width="100%" verticalGridLines="false"
+		styleName="dataGridStyle" headerStyleName="MyDataGridStyleHeader" 
+		verticalScrollBarStyleName="VScrollBar" horizontalScrollPolicy="off" 
+		columnWidths="{['5%','10%','10%','10%','10%','10%','20%','10%','190']}"
+		dataProvider="{model.PendingRequestList}">
+		<components:columns>
+			<mx:DataGridColumn headerText="Sr. #" labelFunction="getSrNo"/>
+			<mx:DataGridColumn headerText="Patient" labelFunction="getPatientName" itemRenderer="mx.controls.Label" />
+			<mx:DataGridColumn  headerText="Prescriber" itemRenderer="mx.controls.Label" labelFunction="getPrescriberName"/>
+			<mx:DataGridColumn  dataField="PresDirection" headerText="SIG" itemRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn  dataField="pharmacyDTO.StoreName" headerText="Pharmacy" itemRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn  dataField="PreDrugDescription" headerText="Drug" itemRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn  dataField="" headerText="Notes" itemRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn  headerText="Refills" itemRenderer="mx.controls.Label" labelFunction="getREfillData"/>	
+			<mx:DataGridColumn  headerText="" resizable="false" minWidth="190" >
+				<mx:itemRenderer>
+					<fx:Component>	
+						<mx:HBox width="100%" paddingBottom="2" horizontalAlign="center" verticalAlign="middle" minWidth="180">					
+							<s:Button width="16" click="outerDocument.approve_ClickHandler(event)" 
+									  buttonMode="true" useHandCursor="true" toolTip="Approve" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.approveBtn"/>																					
+							<s:Button width="16" click="outerDocument.deny_clickHandler(event)" 
+									  buttonMode="true" useHandCursor="true" toolTip="Deny" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.denyBtn"/>		
+							<s:Button width="75" click="outerDocument.approveWithChange_clickHandler(event)"
+									  buttonMode="true" useHandCursor="true" toolTip="Approve with change" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.approveWithChangesBtn" />
+							<s:Button width="75" click="outerDocument.deniedNewPrescriptionto_ClickHandler(event)"
+									  buttonMode="true" useHandCursor="true" toolTip="Deny new prescription"
+									  skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.denyRXwithChanges" />
+						</mx:HBox>
+					</fx:Component>
+				</mx:itemRenderer>	
+			</mx:DataGridColumn>
+		</components:columns>
+	</components1:LabelDataGrid>
+</s:Group>

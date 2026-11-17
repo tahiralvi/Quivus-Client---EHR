@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SparkSkin xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" 
+    xmlns:fb="http://ns.adobe.com/flashbuilder/2009" blendMode="normal" mouseEnabled="false" 
+    minHeight="127" alpha.disabled="0.5" alpha.disabledWithControlBar="0.5"
+	focusIn="sparkskin1_focusInHandler(event)"
+	focusOut="sparkskin1_focusOutHandler(event)">
+    
+    <fx:Metadata>
+        <![CDATA[ 
+        /** 
+         * @copy spark.skins.spark.ApplicationSkin#hostComponent
+         */
+        [HostComponent("com.gazuntite.controls.extended.components.SelectablePanel")]
+        ]]>
+    </fx:Metadata> 
+
+	<fx:Script>
+		<![CDATA[
+			
+			//import com.adobe.Quivus.utils.AppUtils;
+			
+			private var m_nColor:uint = 0x999999;
+			private var m_sfocus:int = 0;
+			
+			[Bindable]
+			public function get Focus():int
+			{
+				return m_sfocus;
+			}
+
+			public function set Focus(value:int):void
+			{
+				m_sfocus = value;
+			}
+
+			[Bindable]
+			public function get Color():uint
+			{
+				return m_nColor;
+			}
+
+			public function set Color(value:uint):void
+			{
+				m_nColor = value;
+			}
+
+			protected function sparkskin1_focusInHandler(event:FocusEvent):void
+			{
+				trace("component selected");
+				
+				Color = 0xFFFFFF;
+				Focus = 1;
+				
+				id_rect.fill = id_focusInColor;
+				titleDisplay.text = titleDisplay.text.toUpperCase(); 
+				titleDisplay.setStyle("color", Color);
+				
+				id_txtShadow.alpha = 1;
+				
+			}
+
+			protected function sparkskin1_focusOutHandler(event:FocusEvent):void
+			{
+				trace("component Unselected");
+				Color = 0x000000;
+				Focus = 0;
+								
+				//titleDisplay.text = titleDisplay.text.toLowerCase();
+				//titleDisplay.text = AppUtils.TitleCase(titleDisplay.text.toString());
+				id_rect.fill = id_focusOutColor;
+				titleDisplay.setStyle("color", Color);
+				id_txtShadow.alpha = 0;
+				
+			}
+
+
+			protected function topGroup_clickHandler(event:MouseEvent):void
+			{
+				//this.f
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>	
+		
+		<s:LinearGradient id="id_focusOutColor" rotation="270">
+			
+			
+					<s:GradientEntry alpha="1.0" color="#6F85A2" ratio="0"/>
+					<s:GradientEntry alpha="1.0" color="#7D92AF" ratio="0.5294117647058824"/>
+					<s:GradientEntry alpha="1.0" color="#899BB3" ratio="0.5333333333333333"/>
+					<s:GradientEntry alpha="1.0" color="#B4BFCD" ratio="1"/>
+				
+				
+		</s:LinearGradient>
+		
+		
+		<s:LinearGradient id="id_focusInColor" rotation="270">
+			<s:GradientEntry alpha="1.0" color="#5C81E1" ratio="0"/>
+			<s:GradientEntry alpha="1.0" color="#5B7CD2" ratio="0.5490196078431373"/>
+			<s:GradientEntry alpha="1.0" color="#6D91ED" ratio="0.5529411764705883"/>
+			<s:GradientEntry alpha="1.0" color="#76A4F1" ratio="1"/>
+		</s:LinearGradient>
+	</fx:Declarations>
+    <s:states>
+        <s:State name="normal" />
+        <s:State name="disabled" />
+        <s:State name="normalWithControlBar" stateGroups="withControls" />
+        <s:State name="disabledWithControlBar" stateGroups="withControls" />
+    </s:states>
+    
+    <!-- drop shadow can't be hittable so it stays sibling of other graphics -->
+    <!--- @private -->
+   <!-- <s:RectangularDropShadow id="dropShadow" blurX="5" blurY="5" alpha="0.32" distance="8" 
+                             angle="90" color="#000000" left="0" top="0" right="0" bottom="0"/>-->
+    
+    <!-- drop shadow can't be hittable so all other graphics go in this group -->
+    <s:Group left="0" right="0" top="0" bottom="0">
+        
+   
+		<s:Rect height="100%" id="rect16" radiusX="3" width="100%" alpha="0.25" >
+			<!--Focus Color-->
+			<!--<s:stroke>
+				<s:SolidColorStroke caps="none" color="{Color}" joints="miter" miterLimit="4" weight="2" />
+			</s:stroke>-->
+			<s:stroke>
+				<s:SolidColorStroke caps="none" color="#FFFFFF" joints="miter" miterLimit="4" weight="1"/>
+			</s:stroke>
+			<s:filters>
+				<s:DropShadowFilter alpha="0.75" angle="90" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			</s:filters>
+			<s:fill>
+				<s:LinearGradient rotation="90">
+					<s:GradientEntry alpha="1" color="#FFFFFF" ratio="0"/>
+					<s:GradientEntry alpha="1.0" color="#E1E4E8" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+		</s:Rect>
+		
+	
+        <!-- layer 1: border -->
+        <!--- @private -->
+		
+        <!--<s:Rect id="border" width="100%" height="100%" left="0" right="0" top="0" bottom="0" alpha="1" radiusX="5" radiusY="5" >
+            <s:stroke>
+                <s:SolidColorStroke id="borderStroke" weight="1" color="#aaaaaa" />
+            </s:stroke>
+        </s:Rect>-->
+        
+        <!-- layer 2: background fill -->
+        <!--- Defines the appearance of the PanelSkin class's background. -->
+       <!-- <s:Rect id="background" width="100%" height="100%" left="1" top="1" right="1" bottom="1" radiusX="5" radiusY="5">
+            <s:fill>
+                <s:SolidColor id="backgroundFill" color="#ffffff"/>
+            </s:fill>
+        </s:Rect>-->
+	
+		
+		
+        
+        <!-- layer 3: contents -->
+        <!--- Contains the vertical stack of titlebar content and controlbar. -->
+       <!-- <s:Group left="1" right="1" top="1" bottom="1" id="contents">-->
+		<s:BorderContainer  width="100%" height="100%" borderAlpha="0" borderColor="#cccccc" backgroundColor="#ffffff" backgroundAlpha="0" cornerRadius="4">
+			
+            <s:layout>
+                <s:VerticalLayout gap="0" horizontalAlign="justify" paddingTop="0" paddingBottom="3" paddingRight="3" />
+            </s:layout>
+            
+            <!--- @private -->
+            <s:Group id="topGroup" maxHeight="25" click="topGroup_clickHandler(event)">
+                
+                <!-- layer 0: title bar fill -->
+                <!--- @private -->
+				<s:Rect id="id_rect" height="25" radiusX="3" width="100%">
+					<s:fill>
+						<s:LinearGradient rotation="270">
+							<s:GradientEntry alpha="1.0" color="#5C81E1" ratio="0"/>
+							<s:GradientEntry alpha="1.0" color="#5B7CD2" ratio="0.5490196078431373"/>
+							<s:GradientEntry alpha="1.0" color="#6D91ED" ratio="0.5529411764705883"/>
+							<s:GradientEntry alpha="1.0" color="#76A4F1" ratio="1"/>
+						</s:LinearGradient>
+					</s:fill>
+				</s:Rect>
+				<!--<s:Path data="M 278 0 L 4 0 C 1.791 0 0 1.791 0 4 L 0 21 L 282 21 L 282 4 C 282 1.791 280.209 0 278 0 Z" height="20" id="path1" width="100%" winding="nonZero" x="3" y="3" >
+					<s:fill>
+						<s:LinearGradient rotation="90" scaleX="21" x="141" y="0">
+							<s:GradientEntry color="#99AAB4" ratio="0"/>
+							<s:GradientEntry color="#8599A4" ratio="1"/>
+						</s:LinearGradient>
+					</s:fill>
+				</s:Path>-->
+                
+                <!-- layer 1: title bar highlight -->
+                <!--- @private -->
+                
+                <!-- layer 2: title bar divider -->
+                <!--- @private -->
+               <!-- <s:Rect id="tbDiv" left="0" right="0" height="1" bottom="0">
+                    <s:fill>
+                        <s:SolidColor color="0xC0C0C0" />
+                    </s:fill>
+                </s:Rect>-->
+				<s:HGroup width="100%" horizontalAlign="right" paddingRight="0" paddingTop="5">
+					
+				<!--<s:ToggleButton id="id_ChangeIndicator" skinClass="com.adobe.Quivus.view.controls.skins.changeIndicator" 
+								includeInLayout="{hostComponent.hasChange}" visible="{hostComponent.hasChange}"/>
+-->				</s:HGroup>
+                <!-- layer 3: text -->
+                <!--- @copy spark.components.Panel#titleDisplay -->
+                <s:Label id="titleDisplay" maxDisplayedLines="1" color="#000000" 
+                         left="9" right="3" top="0" bottom="1" minHeight="30" paddingBottom="2"
+                         verticalAlign="middle" fontFamily="Calibri Bold" fontSize="13">
+					
+					<s:filters>
+						<s:DropShadowFilter id="id_txtShadow" alpha="0" angle="270" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+					</s:filters>
+                </s:Label>
+            </s:Group>
+            
+            <!--
+                Note: setting the minimum size to 0 here so that changes to the host component's
+                size will not be thwarted by this skin part's minimum size.   This is a compromise,
+                more about it here: http://bugs.adobe.com/jira/browse/SDK-21143
+            -->
+            <!--- @copy spark.components.SkinnableContainer#contentGroup -->
+            <s:Group id="contentGroup" width="100%" height="100%" minWidth="0" minHeight="0">
+            </s:Group>
+            
+            <!--- @private -->
+            <s:Group id="bottomGroup" minWidth="0" minHeight="0"
+                     includeIn="normalWithControlBar, disabledWithControlBar" >
+                
+                
+                <!-- layer 3: control bar -->
+                <!--- @copy spark.components.Panel#controlBarGroup -->
+                <s:Group id="controlBarGroup" left="0" right="0" top="1" bottom="1" minWidth="0" minHeight="0">
+                    <s:layout>
+                        <s:HorizontalLayout paddingLeft="8" paddingRight="2" paddingTop="4" paddingBottom="3" gap="5" />
+                    </s:layout>
+                </s:Group>
+            </s:Group>
+        <!--</s:Group>-->
+		</s:BorderContainer>
+    </s:Group>
+	
+	<!--<s:filters>
+		<s:GlowFilter  blurX="15" blurY="15" alpha="{Focus}"  color="#bb0000" />
+	</s:filters>-->
+	
+</s:SparkSkin>

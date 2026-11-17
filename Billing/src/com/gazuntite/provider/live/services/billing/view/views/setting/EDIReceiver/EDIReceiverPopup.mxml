@@ -1,0 +1,479 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						xmlns:s="library://ns.adobe.com/flex/spark" 
+						xmlns:mx="library://ns.adobe.com/flex/mx" 
+						width="100%"
+						skinClass="com.adobe.gazuntite.skins.chrome.containerSkins.TitleWindowSkin"
+						xmlns:components="com.gazuntite.controls.extended.components.*" 
+						xmlns:EDIReceiver="com.gazuntite.provider.live.services.billing.view.views.setting.EDIReceiver.*"
+						creationComplete="popupwindow1_creationCompleteHandler(event)"
+						close="popupwindow1_closeHandler(event)" xmlns:components1="com.gazuntite.controls.extended.components.*"
+						>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.util.ValidationUtils;
+			import com.gazuntite.common.util.xml.XmlUtils;
+			import com.gazuntite.provider.live.services.billing.dto.settings.EDIReceiverDTO;
+			import com.gazuntite.provider.live.services.billing.event.settings.LoadEDIReceiverByCriteriaEvent;
+			import com.gazuntite.provider.live.services.billing.event.settings.ManageEDIReceiverEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			public var rowIndex:int;
+			
+			protected function id_save_clickHandler(event:MouseEvent):void
+			{				
+				model.CurrentEDIReceiver.Phone1 = UtilityFunctions.TrimString(id_addressTab.id_phoneOne.text.replace(/[^0-9]/g,""));
+				model.CurrentEDIReceiver.Phone2 = UtilityFunctions.TrimString(id_addressTab.id_phoneTwo.text.replace(/[^0-9]/g,""));
+				model.CurrentEDIReceiver.FAX = UtilityFunctions.TrimString(id_addressTab.id_fax1.text.replace(/[^0-9]/g,""));
+				
+				model.CurrentEDIReceiver.State = id_addressTab.id_ZipCityStateCombine.id_State.selectedItem.StateCode;
+				model.CurrentEDIReceiver.City = id_addressTab.id_ZipCityStateCombine.id_City.selectedItem.CityName;
+				model.CurrentEDIReceiver.ZIP = id_addressTab.id_ZipCityStateCombine.id_ZIP.selectedItem.ZipCode;
+					
+				if (! ValidFileds()) return;
+				
+				var updateXML:XML = XmlUtils.getNodeByTagName("EDIReceivers");
+				
+				updateXML.appendChild(model.CurrentEDIReceiver.ToXML());							
+				
+				var rpEvent : ManageEDIReceiverEvent = new ManageEDIReceiverEvent(updateXML, saveResult);				
+				CairngormEventDispatcher.getInstance().dispatchEvent( rpEvent ); 			
+				
+			}
+			
+			private function ValidFileds():Boolean
+			{
+				var success:Boolean = new Boolean();
+				var errorStr:String = new String();
+				success = true;
+				var toSetFocus:Object;
+				var selectedIndex:int = -1;
+				
+				if( UtilityFunctions.IsNullOrEmpty(model.CurrentEDIReceiver.Name) )
+				{
+					success = false;
+					if(selectedIndex == -1)
+					{
+						selectedIndex = 0;
+						id_tabs.selectedIndex = selectedIndex;
+					}
+					errorStr += "Please enter Name \n";							
+					if (!toSetFocus)
+						toSetFocus = id_addressTab.id_Name;	
+				}				
+				
+				if(! (id_addressTab.id_ZipCityStateCombine.id_ZIP.selectedItem && id_addressTab.id_ZipCityStateCombine.id_ZIP.selectedItem.ZipCode != ""))
+				{
+					success = false;
+					if(selectedIndex == -1)
+					{
+						selectedIndex = 0;
+						id_tabs.selectedIndex = selectedIndex;
+					}
+					errorStr += "Please Select Zip \n";
+					id_addressTab.id_ZipCityStateCombine.id_ZIP.setFocus();
+				}
+				
+				if(! (id_addressTab.id_ZipCityStateCombine.id_City.selectedItem && id_addressTab.id_ZipCityStateCombine.id_City.selectedItem.CityName != ""))
+				{
+					success = false;
+					if(selectedIndex == -1)
+					{
+						selectedIndex = 0;
+						id_tabs.selectedIndex = selectedIndex;
+					}
+					errorStr += "Please Select City \n";
+					id_addressTab.id_ZipCityStateCombine.id_City.setFocus();
+				}
+				//if(model.CurrentEDIReceiver.State.length == 0 )
+				if(!(id_addressTab.id_ZipCityStateCombine.id_State.selectedItem && id_addressTab.id_ZipCityStateCombine.id_State.selectedItem.StateCode != ""))
+				{
+					success = false;
+					if(selectedIndex == -1)
+					{
+						selectedIndex = 0;
+						id_tabs.selectedIndex = selectedIndex;
+					}
+					errorStr += "Please Select State \n";		
+					id_addressTab.id_ZipCityStateCombine.id_State .setFocus();
+				}
+				
+				
+				if( UtilityFunctions.IsNullOrEmpty(model.CurrentEDIReceiver.Phone1) == true)
+				{
+					success = false;
+					if(selectedIndex == -1)
+					{
+						selectedIndex = 0;
+						id_tabs.selectedIndex = selectedIndex;
+					}
+					errorStr += "Please enter Phone1 \n";							
+					if (!toSetFocus)
+						toSetFocus = id_addressTab.id_phoneOne;	
+					
+				}
+				
+				if( UtilityFunctions.IsNullOrEmpty(model.CurrentEDIReceiver.Phone1) == false && model.CurrentEDIReceiver.Phone1.length != 10)
+				{
+					success = false;
+					if(selectedIndex == -1)
+					{
+						selectedIndex = 0;
+						id_tabs.selectedIndex = selectedIndex;
+					}
+					errorStr += "Please enter valid Phone1 \n";							
+					if (!toSetFocus)
+						toSetFocus = id_addressTab.id_phoneOne;	
+					
+				}
+				
+				if( UtilityFunctions.IsNullOrEmpty(model.CurrentEDIReceiver.Phone2) == false && model.CurrentEDIReceiver.Phone2.length != 10)
+				{
+					success = false;
+					if(selectedIndex == -1)
+					{
+						selectedIndex = 0;
+						id_tabs.selectedIndex = selectedIndex;
+					}
+					errorStr += "Please enter valid Phone2 \n";							
+					if (!toSetFocus)
+						toSetFocus = id_addressTab.id_phoneTwo;	
+					
+				}
+				
+				if( UtilityFunctions.IsNullOrEmpty(model.CurrentEDIReceiver.FAX) == false && model.CurrentEDIReceiver.FAX.length != 10)
+				{
+					success = false;
+					if(selectedIndex == -1)
+					{
+						selectedIndex = 0;
+						id_tabs.selectedIndex = selectedIndex;
+					}
+					errorStr += "Please enter valid Fax Phone \n";							
+					if (!toSetFocus)
+						toSetFocus = id_addressTab.id_fax1;	
+					
+				}
+				
+				if( UtilityFunctions.IsNullOrEmpty(model.CurrentEDIReceiver.Email) == false && ! ValidationUtils.isValidEmailString(model.CurrentEDIReceiver.Email) )
+				{
+					success = false;
+					if(selectedIndex == -1)
+					{
+						selectedIndex = 0;
+						id_tabs.selectedIndex = selectedIndex;
+					}
+					errorStr += "Please enter valid Email \n";							
+					if (!toSetFocus)
+						toSetFocus = id_addressTab.id_email;						
+				}
+				
+				if( UtilityFunctions.IsNullOrEmpty(model.CurrentEDIReceiver.WebAddress) == false && ! ValidationUtils.isValidURL(model.CurrentEDIReceiver.WebAddress) )
+				{
+					success = false;
+					if(selectedIndex == -1)
+					{
+						selectedIndex = 0;
+						id_tabs.selectedIndex = selectedIndex;
+					}
+					errorStr += "Please enter valid Web Address \n";							
+					if (!toSetFocus)
+						toSetFocus = id_addressTab.id_webAddress;	
+					
+				}
+				
+				if( UtilityFunctions.IsNullOrEmpty(model.CurrentEDIReceiver.DataPhone) == false && model.CurrentEDIReceiver.DataPhone.length != 10)
+				{
+					success = false;
+					if(selectedIndex == -1)
+					{
+						selectedIndex = 1;
+						id_tabs.selectedIndex = selectedIndex;
+					}
+					errorStr += "Please enter valid Data Phone \n";							
+					if (!toSetFocus)
+						toSetFocus = id_modemTab.id_dataPhone;	
+					
+				}
+				
+				if( UtilityFunctions.IsNullOrEmpty(model.CurrentEDIReceiver.TransmissionMode) == true )
+				{
+					success = false;
+					if(selectedIndex == -1)
+					{
+						selectedIndex = 1;
+						id_tabs.selectedIndex = selectedIndex;
+					}
+					errorStr += "Please select Transmission Mode \n";							
+					if (!toSetFocus)
+						toSetFocus = id_modemTab.id_transMode;						
+				}
+				
+				if( UtilityFunctions.IsNullOrEmpty(model.CurrentEDIReceiver.SubmitterID1) == true )
+				{
+					success = false;
+					if(selectedIndex == -1)
+					{
+						selectedIndex = 2;
+						id_tabs.selectedIndex = selectedIndex;
+					}
+					errorStr += "Please enter Submitter ID 1 \n";							
+					if (!toSetFocus)
+						toSetFocus = id_idTab.id_submitterId1;						
+				}
+				
+				if( UtilityFunctions.IsNullOrEmpty(model.CurrentEDIReceiver.SubmitterID1) == true && UtilityFunctions.IsNullOrEmpty(model.CurrentEDIReceiver.SubmitterPassword1) == false)
+				{
+					success = false;
+					if(selectedIndex == -1)
+					{
+						selectedIndex = 2;
+						id_tabs.selectedIndex = selectedIndex;
+					}
+					errorStr += "Submitter Password 1 exists but Submitter ID 1 is missing \n";							
+					if (!toSetFocus)
+						toSetFocus = id_idTab.id_submitterId1;						
+				}
+				
+				if( UtilityFunctions.IsNullOrEmpty(model.CurrentEDIReceiver.SubmitterID2) == true && UtilityFunctions.IsNullOrEmpty(model.CurrentEDIReceiver.SubmitterPassword2) == false)
+				{
+					success = false;
+					if(selectedIndex == -1)
+					{
+						selectedIndex = 2;
+						id_tabs.selectedIndex = selectedIndex;
+					}
+					errorStr += "Submitter Password 2 exists but Submitter ID 2 is missing \n";							
+					if (!toSetFocus)
+						toSetFocus = id_idTab.id_submitterId2;						
+				}
+				
+				
+				if( UtilityFunctions.IsNullOrEmpty(model.CurrentEDIReceiver.InterchangeReceiverID) == true )
+				{
+					success = false;
+					if(selectedIndex == -1)
+					{
+						selectedIndex = 2;
+						id_tabs.selectedIndex = selectedIndex;
+					}
+					errorStr += "Please enter Interchange Receiver ID \n";							
+					if (!toSetFocus)
+						toSetFocus = id_idTab.id_intReceiverId;						
+				}
+				
+				if( UtilityFunctions.IsNullOrEmpty(model.CurrentEDIReceiver.InterchangeSenderID) == true )
+				{
+					success = false;
+					if(selectedIndex == -1)
+					{
+						selectedIndex = 2;
+						id_tabs.selectedIndex = selectedIndex;
+					}
+					errorStr += "Please enter Interchange Sender ID \n";							
+					if (!toSetFocus)
+						toSetFocus = id_idTab.id_intSenderId;						
+				}				
+				
+				
+				if( UtilityFunctions.IsNullOrEmpty(model.CurrentEDIReceiver.ApplicationReceiverCode) == true )
+				{
+					success = false;
+					if(selectedIndex == -1)
+					{
+						selectedIndex = 3;
+						id_tabs.selectedIndex = selectedIndex;
+					}
+					errorStr += "Please Application Receiver Code \n";							
+					if (!toSetFocus)
+						toSetFocus = id_idTab.id_intSenderId;						
+				}	
+				if( UtilityFunctions.IsNullOrEmpty(model.CurrentEDIReceiver.ApplicationSenderCode) == true )
+				{
+					success = false;
+					if(selectedIndex == -1)
+					{
+						selectedIndex = 3;
+						id_tabs.selectedIndex = selectedIndex;
+					}
+					errorStr += "Please Application Sender Code \n";							
+					if (!toSetFocus)
+						toSetFocus = id_idTab.id_intSenderId;						
+				}	
+				
+				
+				
+				if(success == false)
+				{
+					var alert:Alert = Alert.show(errorStr, "Required Fields", 4, FlexGlobals.topLevelApplication.mainContainer, function(event:Event):void{
+						if (toSetFocus)
+							toSetFocus.setFocus();						
+					});					
+					PopUpManager.centerPopUp (alert);					
+				}
+				
+				return success;
+			}
+			
+			private function saveResult(result:String):void
+			{
+				if(result == "true")
+				{
+					var alert:Alert = Alert.show("EDI Receiver saved successfully.", "Confirmation", 4, FlexGlobals.topLevelApplication.mainContainer, function(event:Event):void{
+						removePopup();
+					});
+						
+					model.isEDIReceiverGeneralList = false;
+					var lerEvent:LoadEDIReceiverByCriteriaEvent = new LoadEDIReceiverByCriteriaEvent(model.ERSearchType,model.ERSearchString,model.EDIReceiverSearchPageNo,loadGeneralList);
+					CairngormEventDispatcher.getInstance().dispatchEvent(lerEvent);	
+				}
+				else
+					Alert.show("EDI Receiver not saved.","Confirmation", 4, FlexGlobals.topLevelApplication.mainContainer);			
+			}
+			
+			private function loadGeneralList():void
+			{
+				model.isEDIReceiverGeneralList = true;
+				var lerEvent:LoadEDIReceiverByCriteriaEvent = new LoadEDIReceiverByCriteriaEvent(0,"0",0);
+				CairngormEventDispatcher.getInstance().dispatchEvent(lerEvent);	
+			}
+			
+			protected function id_cancel_clickHandler(event:MouseEvent):void
+			{
+				if( this.title.indexOf("Edit") > -1 )
+					model.EDIReceiverListForSetup[rowIndex] = EDIReceiver;
+				else
+					model.CurrentEDIReceiver = null;
+				removePopup();
+				
+			}
+			private var EDIReceiver:EDIReceiverDTO = null;
+			protected function popupwindow1_creationCompleteHandler(event:FlexEvent):void
+			{
+				EDIReceiver = new EDIReceiverDTO();  
+				
+				EDIReceiver.SNo							= model.CurrentEDIReceiver.SNo;
+				EDIReceiver.Address 					= model.CurrentEDIReceiver.Address;
+				EDIReceiver.ApplicationReceiverCode 	= model.CurrentEDIReceiver.ApplicationReceiverCode;
+				EDIReceiver.ApplicationSenderCode 		= model.CurrentEDIReceiver.ApplicationSenderCode;
+				EDIReceiver.BaudRateTypeID 				= model.CurrentEDIReceiver.BaudRateTypeID;
+				EDIReceiver.City 						= model.CurrentEDIReceiver.City;
+				EDIReceiver.CodeMatch 					= model.CurrentEDIReceiver.CodeMatch;
+				EDIReceiver.Comment 					= model.CurrentEDIReceiver.Comment;
+				EDIReceiver.ContactPerson 				= model.CurrentEDIReceiver.ContactPerson;
+				EDIReceiver.CreatedBy 					= model.CurrentEDIReceiver.CreatedBy;
+				EDIReceiver.DataBits 					= model.CurrentEDIReceiver.DataBits;
+				EDIReceiver.DataPhone 					= model.CurrentEDIReceiver.DataPhone;
+				EDIReceiver.DialingAttempt 				= model.CurrentEDIReceiver.DialingAttempt;
+				EDIReceiver.DialingPrefix 				= model.CurrentEDIReceiver.DialingPrefix;
+				EDIReceiver.DialingSuffix 				= model.CurrentEDIReceiver.DialingSuffix;
+				EDIReceiver.EDIReceiverID 				= model.CurrentEDIReceiver.EDIReceiverID;
+				EDIReceiver.Email 						= model.CurrentEDIReceiver.Email;
+				EDIReceiver.Extension 					= model.CurrentEDIReceiver.Extension;
+				EDIReceiver.Extra1 						= model.CurrentEDIReceiver.Extra1;
+				EDIReceiver.Extra2 						= model.CurrentEDIReceiver.Extra2;
+				EDIReceiver.Extra3 						= model.CurrentEDIReceiver.Extra3;
+				EDIReceiver.FAX 						= model.CurrentEDIReceiver.FAX;
+				EDIReceiver.FileName 					= model.CurrentEDIReceiver.FileName;
+				EDIReceiver.FileNameID 					= model.CurrentEDIReceiver.FileNameID;
+				EDIReceiver.FilePath 					= model.CurrentEDIReceiver.FilePath;
+				EDIReceiver.FTPAddress 					= model.CurrentEDIReceiver.FTPAddress;
+				EDIReceiver.FTPPortNumber 				= model.CurrentEDIReceiver.FTPPortNumber;
+				EDIReceiver.GroupCodeTypeID 			= model.CurrentEDIReceiver.GroupCodeTypeID;
+				EDIReceiver.Inactive 					= model.CurrentEDIReceiver.Inactive;
+				EDIReceiver.InterchangeReceiverID 		= model.CurrentEDIReceiver.InterchangeReceiverID;
+				EDIReceiver.InterchangeSenderID 		= model.CurrentEDIReceiver.InterchangeSenderID;
+				EDIReceiver.IsDeleted 					= model.CurrentEDIReceiver.IsDeleted;
+				EDIReceiver.JulianDate 					= model.CurrentEDIReceiver.JulianDate;
+				EDIReceiver.ModifiedBy 					= model.CurrentEDIReceiver.ModifiedBy;
+				EDIReceiver.Name 						= model.CurrentEDIReceiver.Name;
+				EDIReceiver.ParityTypeID 				= model.CurrentEDIReceiver.ParityTypeID;
+				EDIReceiver.Participating 				= model.CurrentEDIReceiver.Participating;
+				EDIReceiver.Phone1 						= model.CurrentEDIReceiver.Phone1;
+				EDIReceiver.Phone2 						= model.CurrentEDIReceiver.Phone2;
+				EDIReceiver.ProgramFile 				= model.CurrentEDIReceiver.ProgramFile;
+				EDIReceiver.ReasonCodes 				= model.CurrentEDIReceiver.ReasonCodes;
+				EDIReceiver.ReceiverType 				= model.CurrentEDIReceiver.ReceiverType;
+				EDIReceiver.Region 						= model.CurrentEDIReceiver.Region;
+				EDIReceiver.ReportFileType 				= model.CurrentEDIReceiver.ReportFileType;
+				EDIReceiver.SerialPortTypeID			= model.CurrentEDIReceiver.SerialPortTypeID;
+				EDIReceiver.State 						= model.CurrentEDIReceiver.State;
+				EDIReceiver.StopBits 					= model.CurrentEDIReceiver.StopBits;
+				EDIReceiver.SubmitterID1 				= model.CurrentEDIReceiver.SubmitterID1;
+				EDIReceiver.SubmitterID2 				= model.CurrentEDIReceiver.SubmitterID2;
+				EDIReceiver.SubmitterPassword1 			= model.CurrentEDIReceiver.SubmitterPassword1;
+				EDIReceiver.SubmitterPassword2 			= model.CurrentEDIReceiver.SubmitterPassword2;
+				EDIReceiver.TransmissionMode 			= model.CurrentEDIReceiver.TransmissionMode;
+				EDIReceiver.TransmitProtocolTypeID 		= model.CurrentEDIReceiver.TransmitProtocolTypeID;
+				EDIReceiver.UniqueSubmissionCount 		= model.CurrentEDIReceiver.UniqueSubmissionCount;
+				EDIReceiver.VendorID 					= model.CurrentEDIReceiver.VendorID;
+				EDIReceiver.WebAddress 					= model.CurrentEDIReceiver.WebAddress;
+				EDIReceiver.ZIP 						= model.CurrentEDIReceiver.ZIP;
+				EDIReceiver.ModemInitialization 		= model.CurrentEDIReceiver.ModemInitialization;
+				EDIReceiver.ModemTermination 			= model.CurrentEDIReceiver.ModemTermination;
+				EDIReceiver.OfficeContact 				= model.CurrentEDIReceiver.OfficeContact;
+			}
+			
+			protected function popupwindow1_closeHandler(event:CloseEvent):void
+			{
+				if( this.title.indexOf("Edit") > -1 )
+					model.EDIReceiverListForSetup[rowIndex] = EDIReceiver;
+				else
+					model.CurrentEDIReceiver = null;
+			}
+			
+			//Tahir Alvi - In Edit case load Zip City and State according to value
+			public function loadZipCityState(zip:String):void
+			{
+				id_addressTab.loadCityStateZip(zip);
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<components:layout>
+		<s:VerticalLayout paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5"/>
+	</components:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:VGroup width="100%">
+		<s:TabBar id="id_tabs" dataProvider="{id_vsViews}" skinClass="com.adobe.gazuntite.skins.chrome.tabBarSkins.lightGreyTabBar" buttonMode="true" useHandCursor="true"
+				  width="645" />
+		<mx:ViewStack id="id_vsViews" width = "100%" height = "100%"  
+					  resizeToContent="true" >
+			<s:NavigatorContent label="Address" width = "100%" height = "100%">
+				<EDIReceiver:EDIReceiverAddress id="id_addressTab" width="100%" />
+			</s:NavigatorContent>
+			<s:NavigatorContent label="Modem" width = "100%" height = "100%">
+				<EDIReceiver:EDIReceiverModem id="id_modemTab"  width = "100%" />
+			</s:NavigatorContent>
+			<s:NavigatorContent label="ID" width = "100%" height = "100%">
+				<EDIReceiver:EDIReceiverID id="id_idTab"  width = "100%" />
+			</s:NavigatorContent>
+			<s:NavigatorContent label="Extras" width = "100%" height = "100%">
+				<EDIReceiver:EDIReceiverExtras id="id_extraTab"  width = "100%" />
+			</s:NavigatorContent>
+			<s:NavigatorContent label="ERA" width = "100%" height = "100%">
+				<EDIReceiver:EDIReceiverERA id="id_ERATab"  width = "100%" />
+			</s:NavigatorContent>
+		</mx:ViewStack>	
+		<s:HGroup width="100%" horizontalAlign="right" paddingRight="5">
+			<s:Spacer width="100%"/>	
+			<s:Button id="id_save" width="100" label="Save" click="id_save_clickHandler(event)" toolTip="Save"  styleName="blackButtonSkin" useHandCursor="true" buttonMode="true"  />
+			<s:Button id="id_cancel" width="100" label="Cancel" click="id_cancel_clickHandler(event)" toolTip="Cancel" styleName="blackButtonSkin" useHandCursor="true" buttonMode="true"   />
+		</s:HGroup>
+	</s:VGroup>	
+	
+</components1:PopupWindow>

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPanel;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.QIDictationBtnSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.QIWriteNotesBtnSkin;
+			
+			import spark.skins.spark.windowChrome.CloseButtonSkin;
+			
+			import valueObjects.ModuleDictationDTO;
+			
+			private var _horizontalAlign:String;
+			private var m_scolor:uint = 0xF9D234;
+			[Bindable]
+			public function get color():uint
+			{
+				return m_scolor;
+			}
+
+			public function set color(value:uint):void
+			{
+				m_scolor = value;
+			}
+
+			[Bindable]
+			public function get horizontalAlign():String
+			{
+				return _horizontalAlign;
+			}
+
+			public function set horizontalAlign(value:String):void
+			{
+				_horizontalAlign = value;
+			}
+
+			
+			private function onEmailClick(event:MouseEvent):void
+			{
+				dispatchEvent(new Event("emailRecordClick", true));
+				dispatchEvent(new DataGridActionsEvent(DataGridActionsEvent.EMAIL_RECORD_CLICK, true));
+				event.stopImmediatePropagation();
+			}
+			
+			private function onWriteNotesClick(event:MouseEvent):void
+			{
+				dispatchEvent(new DataGridActionsEvent(DataGridActionsEvent.WRITE_NOTES_CLICK, true));
+				event.stopImmediatePropagation();
+			}
+			
+			private function onWriteDictationClick(event:MouseEvent):void
+			{
+				dispatchEvent(new DataGridActionsEvent(DataGridActionsEvent.WRITE_DICTATION_CLICK, true));
+				event.stopImmediatePropagation();
+			}
+			
+			private function onEditClick(event:MouseEvent):void
+			{
+				id_SaveBtn.visible 	= true;
+				id_Edit.visible 	= false;
+				dispatchEvent(new DataGridActionsEvent(DataGridActionsEvent.EDIT_RECORD_CLICK, true));
+				event.stopImmediatePropagation();
+			}
+			
+			private function onDeleteClick(event:MouseEvent):void	
+			{
+				dispatchEvent(new DataGridActionsEvent(DataGridActionsEvent.DELETE_RECORD_CLICK, true));
+				event.stopImmediatePropagation();
+			}
+			protected function id_SaveBtn_clickHandler(event:MouseEvent):void
+			{
+				//var g:LabelDataGrid = this.parent.parent as LabelDataGrid;
+				//if( g.editable )
+				//{
+					id_SaveBtn.visible 	= false;
+					id_Edit.visible 	= true;
+					//g.editable 			= false;
+				//}
+				
+				
+			}
+		]]>
+	</fx:Script>
+	<fx:Metadata>
+		
+	</fx:Metadata>
+	
+	<!--<s:Rect width="100%" height="100%">
+		<s:fill>
+			<s:SolidColor color="{color}"/>
+		</s:fill>
+	</s:Rect>-->
+	<s:HGroup width="100%" horizontalAlign="{horizontalAlign}" paddingRight="5">
+		<s:Button id="id_Email" width="12" height="12" click="onEmailClick(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.gridButtons.emailBtn"
+				  buttonMode="true" toolTip="Email" enabled="false"/>
+		<s:Button id="id_WriteDictation" width="12" height="12" click="onWriteDictationClick(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.gridButtons.dictationBtn" 
+				  buttonMode="true" toolTip="Record Dictation"/>
+		<s:Button id="id_WriteNotes" width="12" height="12" click="onWriteNotesClick(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.gridButtons.notesBtn" 
+				  buttonMode="true" toolTip="Write Notes"/>
+		<s:Button id="id_Edit" width="12" height="12" click="onEditClick(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.gridButtons.editButton"
+				  buttonMode="true" toolTip="Edit" includeInLayout="{id_Edit.visible}"/>
+		<s:Button id="id_SaveBtn" width="12" height="12" click="id_SaveBtn_clickHandler(event)" 
+				  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.notesSaveBtn" 
+				  buttonMode="true" useHandCursor="true" toolTip="Save" visible="false" includeInLayout="{id_SaveBtn.visible}"/>
+		<s:Button id="id_Delete" width="12" height="12" click="onDeleteClick(event)"
+				  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.gridButtons.removeBtn"
+				  buttonMode="true" toolTip="Delete"/>
+	</s:HGroup>
+</s:Group>

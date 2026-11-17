@@ -1,0 +1,40 @@
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009">
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect height="36" height.disabledAndSelected="35" height.down="35" height.downAndSelected="35" height.over="35" height.overAndSelected="35" height.upAndSelected="35" radiusX="3" visible.disabled="false" visible.up="false" width="167" x="0.5" y="0.5" id="rect1">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#666666" color.upAndSelected="#246D9B" joints="miter" miterLimit="4" weight="1" color.overAndSelected="#246D9B" color.downAndSelected="#246D9B"/>
+		</s:stroke>
+		<s:fill>
+			<s:LinearGradient rotation="90" rotation.overAndSelected="270" rotation.downAndSelected="90">
+				<s:GradientEntry alpha="1.0" color="#666666" ratio="0"/>
+				<s:GradientEntry alpha="1" color="#000000" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="6" blurY="6" color="0x000000" distance="6" hideObject="false" includeIn="down" inner="true" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter includeIn="downAndSelected" blurX="6" blurY="6" distance="6" hideObject="false" color="0x000000" inner="true" strength="1" alpha="0.5" quality="2" knockout="false" angle="90"/>
+		</s:filters>
+	</s:Rect>
+	<s:BitmapImage smooth="true" source="@Embed('../assets/icons/quivus_icon.png')" x="4" y="4"/>
+	<s:RichText color="#FFFFFF" fontFamily="Calibri" fontSize="15" tabStops="S0 S50 S100" text="Gazuntite Online Clinic" x="40" y="11"/>
+	<s:transitions>
+		<s:Transition fromState="up" toState="over" autoReverse="true">
+			<s:Parallel>
+				<s:Parallel target="{rect1}">
+					<s:Fade duration="0"/>
+					<s:Resize duration="0"/>
+				</s:Parallel>
+			</s:Parallel>
+		</s:Transition>
+	</s:transitions>
+</s:Skin>

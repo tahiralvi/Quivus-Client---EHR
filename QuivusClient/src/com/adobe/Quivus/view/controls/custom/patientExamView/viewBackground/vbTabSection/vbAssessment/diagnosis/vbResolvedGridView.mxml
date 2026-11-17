@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:itemEditors="com.adobe.Quivus.view.controls.custom.itemEditors.*"
+		 xmlns:diagnosis="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.*"
+		 xmlns:commons="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.*" 
+		 creationComplete="group1_creationCompleteHandler(event)" 
+		 preinitialize="group1_preinitializeHandler(event)" 
+		 xmlns:validators="com.adobe.Quivus.utils.validators.*" 
+		 xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.staticData.lab.LoadICDCodeEvent;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.view.controls.custom.itemEditors.SparkComboBoxItemEditor;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.YesNoItemEditor;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.controls.extended.components.LabelComboBox;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.controls.Label;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.events.DataGridEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ValidationResultEvent;
+			
+			import valueObjects.ICDCodeDTO;
+			import valueObjects.PatientDiagnosisDTO;
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_DiagnosisResolvedGrid.addEventListener(DataGridActionsEvent.ITEM_EDIT_KEY_UP, itemEditKeyUpHandler, false, 0, true);
+				id_DiagnosisResolvedGrid.addEventListener(DataGridActionsEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+				id_DiagnosisResolvedGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				id_DiagnosisResolvedGrid.addEventListener(DataGridActionsEvent.WRITE_NOTES_CLICK, writeNotesClickHandler, false,0, true);
+			}
+			
+			private function itemEditKeyUpHandler(event:DataGridActionsEvent):void
+			{
+				if (event.searchString.length > 2)
+				{
+					var icdEvent : LoadICDCodeEvent = new LoadICDCodeEvent(event.searchString);
+					CairngormEventDispatcher.getInstance().dispatchEvent( icdEvent );
+				}
+			}
+			
+			private function writeNotesClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_DIAGNOSIS ) )//Tahir Alvi - implement security check 
+				{
+					
+				}
+			}
+			
+			private function editRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				id_DiagnosisResolvedGrid.editable = true;
+				
+				var rowIndex:int = LabelDataGrid(event.currentTarget).selectedIndex;
+				
+				var itemToSetInEditableMode:IListItemRenderer = id_DiagnosisResolvedGrid.indexToItemRenderer(rowIndex);
+				
+				var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+				ev.columnIndex = 2;
+				ev.rowIndex = rowIndex;
+				ev.itemRenderer = itemToSetInEditableMode;
+				ev.dataField = "OnSet";
+				
+				id_DiagnosisResolvedGrid.dispatchEvent(ev);
+			}
+			private var _hasGridChanged:Boolean;
+			private var _hasViewChanged:Boolean;
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_DIAGNOSIS ) )//Tahir Alvi - implement security check 
+				{
+					var selectedIdx:int = id_DiagnosisResolvedGrid.selectedIndex;
+					
+					var diagnosisID:int = PatientDiagnosisDTO(event.currentTarget.selectedItem).PatientDiagnosisID;
+					
+					if (diagnosisID == 0)
+					{
+						model.patientDiagnosisDTOResolvedListByPatientId.removeItemAt(selectedIdx);
+						if (model.patientDiagnosisDTOResolvedListByPatientId.length <= 0)
+						{
+							_hasGridChanged = false;
+							//hasViewChanged = isGetEdited();
+						}
+					}
+					else
+					{
+						UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+						{
+							id_DiagnosisResolvedGrid.selectedItem.IsDeleted = true;
+							model.patientDiagnosisDTOResolvedListByPatientId.filterFunction = filterDeletedItems; 
+							model.patientDiagnosisDTOResolvedListByPatientId.refresh();
+							
+							hasViewChanged = _hasGridChanged = true;
+						});
+					}
+					
+				}
+			}
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			public function displayRowNumResolved(oItem:Object,iCol:int):String
+			{
+				var rowNumber:int = id_DiagnosisResolvedGrid.dataProvider.getItemIndex(oItem) + 1;
+				return String(rowNumber);
+			}
+			
+			public function chronicLabelFunction(oItem:Object,iCol:int):String
+			{
+				var label:String = ""; 
+				if (oItem.hasOwnProperty("IsChronic"))
+				{
+					if (oItem.IsChronic)
+						label = "Yes";
+					else
+						label = "No";
+				}
+				
+				return label;
+			}
+			
+			
+			[Bindable]
+			public var deleteColumnData:Object;
+			protected function group1_preinitializeHandler(event:FlexEvent):void
+			{
+				if (!deleteColumnData)
+					deleteColumnData = {};
+				
+				deleteColumnData["noteDataFields"] = {subject: "NoteSubject", note: "Note", header: "ICDCode.IcdCodeDescription"};
+				deleteColumnData["dictationDataField"] = "DictationID";
+				deleteColumnData["recordIDField"] = "PatientDiagnosisID";
+				deleteColumnData["section"] = QIPopUpManager.DIAGNOSIS;
+			}
+			
+			private function GridItemEditBeginHandler(event:DataGridEvent):void
+			{
+				id_DiagnosisResolvedGrid.createItemEditor(event.columnIndex, event.rowIndex);
+				
+				if (event.columnIndex == 5)
+				{
+					try
+					{
+						(id_DiagnosisResolvedGrid.itemEditorInstance as YesNoItemEditor).isYes = id_DiagnosisResolvedGrid.selectedItem.IsChronic.toString();
+					}
+					catch(error:*)
+					{
+						
+					}
+				}
+				
+				
+				
+				
+				if ( event.columnIndex == 3 || event.columnIndex == 4 )
+				{
+					if (model.icdCodeDTOList ) 
+					{
+						var i:int;
+						for( i = 0; i < model.icdCodeDTOList.length; i ++ )
+						{
+							var dto:ICDCodeDTO = model.icdCodeDTOList.getItemAt( i ) as ICDCodeDTO;
+							if( event.itemRenderer.data.ICDCode.IcdCodeName == dto.IcdCodeName )
+								SparkComboBoxItemEditor(id_DiagnosisResolvedGrid.itemEditorInstance).id_ComboEditor.selectedItem = dto; 
+						}
+					}
+				}
+			}
+			
+			private function GridItemEditEndHandler(event:DataGridEvent):void
+			{
+				var validationRes:ValidationResultEvent;
+				var PDID:int = PatientDiagnosisDTO(event.currentTarget.selectedItem).PatientDiagnosisID;
+				
+				if (event.dataField == "ICDCode.IcdCodeName" || event.dataField == "ICDCode.IcdCodeDescription")
+				{
+					var editor:LabelComboBox = SparkComboBoxItemEditor(id_DiagnosisResolvedGrid.itemEditorInstance).id_ComboEditor;
+					
+					comboValidator.source = editor;
+					
+					if (event.dataField == "ICDCode.IcdCodeName")
+					{
+						comboValidator.error = "Select code from list";
+					}
+					else if (event.dataField == "ICDCode.IcdCodeDescription")
+					{
+						comboValidator.error = "Select description name from list";
+					}
+					
+					validationRes = comboValidator.validate(editor.selectedItem);
+					
+					if (validationRes && !validationRes.results)
+					{
+						if (event.dataField == "ICDCode.IcdCodeName" || event.dataField == "ICDCode.IcdCodeDescription")
+						{
+							event.itemRenderer.data.ICDCode 	= editor.selectedItem;
+						}
+						
+						if (PDID != 0)
+							event.itemRenderer.data.IsDirty = true;
+						
+						hasViewChanged = _hasGridChanged = true;
+					}
+					/*else
+					{
+					id_DiagnosisGrid.destroyItemEditor();
+					
+					event.stopImmediatePropagation();
+					event.preventDefault();
+					}*/
+					
+					id_DiagnosisResolvedGrid.destroyItemEditor();
+					id_DiagnosisResolvedGrid.invalidateProperties();
+					model.patientDiagnosisDTOResolvedListByPatientId.refresh();
+					event.stopImmediatePropagation();
+					event.preventDefault();
+				}
+				
+			}
+			//Tahir Alvi
+			private function setVisitDate(oItem:Object,iCol:int):String
+			{
+				var strVisitDate:String = '';
+				
+				if (oItem && oItem.VisitDate)
+				{
+					var dateRecieved:Date = new Date(Date.parse(oItem.VisitDate));
+					strVisitDate = formatDateTime.format(dateRecieved);
+					var nullDate:Date = Constants.NULL_DATE;
+					
+					if (dateRecieved.getFullYear() <= nullDate.getFullYear() && dateRecieved.getMonth() <= nullDate.getMonth())
+						strVisitDate = "";
+					
+					if(oItem.IsNA)
+						strVisitDate = 'N/A';
+				}
+				return strVisitDate;
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YY" />
+		<validators:ComboValidator id="comboValidator" property="selectedItem"/>
+	</fx:Declarations>
+	
+	<components1:LabelDataGrid id="id_DiagnosisResolvedGrid" width="100%" useRollOver="false"
+				 dataProvider="{model.patientDiagnosisDTOResolvedListByPatientId}" 
+				 rowCount="{id_DiagnosisResolvedGrid.dataProvider.length + 1}" verticalScrollPolicy="on"
+				 itemEditBegin="GridItemEditBeginHandler(event)"
+				 itemEditEnd="GridItemEditEndHandler(event)"
+				 maxHeight="150" >
+		<components1:columns>
+			<mx:DataGridColumn headerText="Sr. #" width="70" editable="false" labelFunction="displayRowNumResolved" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			
+			<mx:DataGridColumn headerText="Visit Date" width="120" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="VisitDate" editable="false" labelFunction="setVisitDate"/>
+			<mx:DataGridColumn headerText="On Set" width="100" dataField="OnSet" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/><!--editorDataField="selectedDate" itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG">-->
+			<!--<mx:itemEditor>
+			<fx:Component>
+			<mx:DateField  editable="true"/>
+			</fx:Component>
+			</mx:itemEditor>
+			</mx:DataGridColumn>-->
+			<mx:DataGridColumn headerText="ICD Code" width="150" dataField="ICDCode.IcdCodeName" editorDataField="editorText" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor labelField="IcdCodeName" width="100%" dataProvider="{outerDocument.model.icdCodeDTOList}"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Diagnosis" width="150" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="ICDCode.IcdCodeDescription" editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor labelField="IcdCodeDescription" width="100%" dataProvider="{outerDocument.model.icdCodeDTOList}"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Chronic" width="100" dataField="IsChronic" editorDataField="isYes" labelFunction="chronicLabelFunction" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true">
+				<mx:itemEditor>
+					<fx:Component>
+						<diagnosis:YesNoItemEditor width="100%" height="100%"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<commons:DataGridColumnEx width="85" data="{deleteColumnData}" headerText="" itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.VBRenderer" editable="false"/>
+		</components1:columns>
+	</components1:LabelDataGrid>
+</s:Group>

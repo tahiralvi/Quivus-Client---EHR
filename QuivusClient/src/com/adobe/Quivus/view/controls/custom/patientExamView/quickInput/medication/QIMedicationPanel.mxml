@@ -1,0 +1,516 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:PinableSlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							 xmlns:s="library://ns.adobe.com/flex/spark" 
+							 xmlns:mx="library://ns.adobe.com/flex/mx" 
+							 xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+							 xmlns:quickInput="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.*"
+							 xmlns:medication="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.medication.*" 
+							 xmlns:styles="com.adobe.fiber.styles.*"
+							 creationComplete="creationCompleteHandler(event)" 
+							 QSViewStateChange="pinableslideoutpanel1_QSViewStateChangeHandler(event)" 
+							 QSSlideStateChange="pinableslideoutpanel1_QSSlideStateChangeHandler(event)"
+							 xmlns:notes="com.adobe.Quivus.view.controls.custom.patientExamView.notes.*" xmlns:components="com.zigron.controls.extended.components.*" xmlns:components1="com.gazuntite.controls.extended.components.*"	 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.utils.QuivusCombineEventDispatcher;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.DictationPopup;
+			import com.adobe.Quivus.view.controls.custom.ePrescriptionView.EPrescriptionEditMedicationsView;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPanel;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPopup;
+			import com.adobe.Quivus.view.controls.skins.QIinternalBarFocusSkin;
+			import com.adobe.Quivus.view.controls.skins.QIinternalBarSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridDictationButtonSelectedSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridDictationButtonSkin;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBIconsButton;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.addMoreButton;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.writeNotesButton;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.writeNotesButtonSelected;
+			import com.adobe.Quivus.view.events.SelectSection;
+			import com.adobe.quivus.skins.chrome.buttonSkins.VBdictationBtnSelected;
+			import com.adobe.quivus.skins.chrome.buttonSkins.VBnotesBtnSelected;
+			import com.adobe.quivus.skins.chrome.buttonSkins.closeCrossButton;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.VBIconsBlackButton;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.VBIconsButtonFilled;
+			import com.gazuntite.common.dto.PatientDTO;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.provider.eprescription.services.patient.view.ePrescription;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Label;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.MoveEvent;
+			import mx.managers.CursorManager;
+			
+			import valueObjects.MedicationDTO;
+			import valueObjects.ModuleDictationDTO;
+			import valueObjects.ModuleNoteDTO;
+			import valueObjects.UserTypeDTO;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			private var notesPanel:NotesPanel;
+			private var m_bIsModelUpdated:Boolean;
+			private var m_bHasChange:Boolean;
+			private var moduleConstantName:String = Constants.MEDICAL_HISTORY_MODULE_NAME;
+			private var _ePrescription:ePrescription;
+			
+			public function get IsModelUpdated():Boolean
+			{
+				return m_bIsModelUpdated;
+			}
+			
+			[Bindable]
+			public function get hasChange():Boolean
+			{
+				return m_bHasChange;
+			}
+			
+			public function set hasChange(value:Boolean):void
+			{
+				m_bHasChange = value;
+				
+				if( value )
+				{
+					id_Header.id_ChangeIndicator.visible		 = true;
+					id_Header.id_ChangeIndicator.includeInLayout = true;
+				}
+				else
+				{
+					id_Header.id_ChangeIndicator.visible		 = false;
+					id_Header.id_ChangeIndicator.includeInLayout = false;
+				}
+			}
+			
+			public function set IsModelUpdated(value:Boolean):void
+			{
+				m_bIsModelUpdated = value;
+				
+				hasChange = model.medicationDTOList.length > 0; //check if there is data for medication, then show check mark
+				if( value )
+				{
+					var module:ModuleDictationDTO = QSUtilityFunctions.getModuleDictationDTO(moduleConstantName);					
+					var noteDto:ModuleNoteDTO = QSUtilityFunctions.getModuleNoteDTO( moduleConstantName);
+					
+					if(module.DictationID && module.DictationID != Constants.GUID_FORMAT)
+					{
+						id_Header.id_Voice.setStyle("skinClass", VBdictationBtnSelected);
+						id_Header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+						//id_dictationIndicator.visible = true;
+					}
+					
+					if(noteDto.Note && noteDto.Note != "")
+					{
+						id_Header.id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected);
+						id_Header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+						//id_noteIndicator.visible = true;
+					}								
+				}
+			}
+			
+			//private var dictationPanel:DictationPopup;
+			
+			public override function set AllowOtherPopup(value:Boolean):void
+			{
+				super.AllowOtherPopup = value;
+				
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				id_Header.id_OptionPopUp.displayPopUp = true;
+				
+				
+				id_Header.id_iconButtons.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if(id_notesDictation.id_Area.visible)
+					{
+						
+						if(id_Header.id_OptionPopUp.displayPopUp)
+						{
+							id_Header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						}
+						else
+						{
+							id_Header.id_iconButtons.setStyle("skinClass", VBIconsButton);	
+						}
+					}
+					this.ExpandedView = true;
+					
+					event.stopImmediatePropagation();
+					
+				});		
+				
+				id_Header.id_Voice.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_CHRONIC_MEDICATION ) )
+					{
+						id_notesDictation.notesDTO = QSUtilityFunctions.getModuleNoteDTO( moduleConstantName );
+						id_notesDictation.DictationDTO = QSUtilityFunctions.getModuleDictationDTO(moduleConstantName);
+						
+						id_notesDictation.id_Area.visible 		= true;
+						id_notesDictation.id_Area.includeInLayout = true;	
+						id_notesDictation.id_VBViews.selectedIndex = 1;						
+						//id_Header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						id_Header.id_iconButtons.selected = false;
+						id_Header.id_OptionPopUp.displayPopUp = false;
+						
+						id_notesDictation.id_notesPanel.id_body.id_subject.setFocus();
+						
+						
+						id_notesDictation.dictationPanel.rec_btn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{													
+							id_Header.setIcons(true, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							hasChange = true;
+						});	
+						id_notesDictation.id_notesPanel.id_body.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{						
+							id_Header.setIcons(id_notesDictation.DictationDTO.DictationID && id_notesDictation.DictationDTO.DictationID != Constants.GUID_FORMAT, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							id_notesDictation.id_Area.visible 		= false;
+							id_notesDictation.id_Area.includeInLayout = false;
+						});
+						
+						ExpandedView = true;
+						
+						if(this.ExpandedView)
+						{
+							event.stopImmediatePropagation();
+						}
+					}
+				});			
+				
+				id_Header.id_NotesBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_CHRONIC_MEDICATION ) )
+					{
+						id_notesDictation.notesDTO = QSUtilityFunctions.getModuleNoteDTO( moduleConstantName );
+						id_notesDictation.DictationDTO = QSUtilityFunctions.getModuleDictationDTO(moduleConstantName);
+						
+						id_notesDictation.id_Area.visible 		= true;
+						id_notesDictation.id_Area.includeInLayout = true;					
+						id_notesDictation.id_VBViews.selectedIndex = 0;
+						//id_Header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						id_Header.id_iconButtons.selected = false;
+						id_Header.id_OptionPopUp.displayPopUp = false;
+						
+						id_notesDictation.dictationPanel.rec_btn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{													
+							id_Header.setIcons(true, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							hasChange = true;
+						});	
+						id_notesDictation.id_notesPanel.id_body.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{						
+							id_Header.setIcons(id_notesDictation.DictationDTO.DictationID && id_notesDictation.DictationDTO.DictationID != Constants.GUID_FORMAT, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							id_notesDictation.id_Area.visible 		= false;
+							id_notesDictation.id_Area.includeInLayout = false;
+						});
+						
+						ExpandedView = true;
+						if(this.ExpandedView)
+						{
+							event.stopImmediatePropagation();
+						}
+					}
+				});
+				
+				id_Header.id_Pin.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_CHRONIC_MEDICATION ) )
+					{
+						PinView = event.currentTarget.selected;
+						//event.stopImmediatePropagation();
+					}
+				});
+				
+				id_Header.id_slideoutBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					ToggleSlideOut();
+					event.stopImmediatePropagation();
+				});
+				
+				QuivusCombineEventDispatcher.dispatchEventToGetMedicationEditURL();
+				
+				id_Header.id_OptionPopUp.displayPopUp = false;
+				//at creation complete
+				if(model.chMedicationDTOList && model.chMedicationDTOList.length)
+					hasChange = true;
+			}
+			
+			public function GridRowNumber(oItem:Object, iCol:int):String
+			{
+				var ret:String;
+				try
+				{
+					var rowNumber:int = id_DataGrid.dataProvider.getItemIndex(oItem) + 1; //Sort able column fails some how, don't know why?
+					ret = String(rowNumber);
+				}
+				catch(e:Error )
+				{
+					ret = "##";
+				}
+				return ret;
+			}
+			
+			public function medicineStrengthLabel(item:Object, iCol:int):String
+			{
+				var label:String = "";
+				
+				if (item.hasOwnProperty("GenericName"))
+				{
+					label += item.BrandName ; 
+					label += " ("+item.GenericName +")" + ", ";
+					
+					if (item.hasOwnProperty("Strength"))
+					{
+						label += item.Strength;
+					}
+				}
+				
+				return label;
+			}
+			
+			protected function pinableslideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( event.viewState == QSViewStateEvent.EXPANDED_VIEW )
+				{
+					if( id_Header )
+					{
+						id_Header.HeadingLable = id_Header.HeadingLable.toUpperCase();
+						id_Header.id_pmhHeader.setStyle("skinClass", QIinternalBarFocusSkin);
+						id_Header.id_headingLbl.setStyle("color", 0xffffff);
+						id_Header.id_expandBtn.selected = true;
+					}
+				}
+				else
+				{
+					if( id_Header )
+					{
+						
+						id_Header.id_iconButtons.selected = false;
+						id_Header.id_OptionPopUp.displayPopUp = false;
+						
+						id_Header.HeadingLable = AppUtils.TitleCase(id_Header.HeadingLable);
+						id_Header.id_pmhHeader.setStyle("skinClass", QIinternalBarSkin);
+						id_Header.id_headingLbl.setStyle("color", 0x000000);
+						id_Header.id_expandBtn.selected = false;
+					}
+				}
+			}
+			
+			protected function id_noteIndicator_clickHandler(event:MouseEvent):void
+			{
+				var popup:NotesPopup = new NotesPopup();
+				popup.height = 30;
+				popup.ShowPopup( this );
+				popup.HeaderLabel = "Notes";
+				
+				var noteDto:ModuleNoteDTO = QSUtilityFunctions.getModuleNoteDTO( Constants.CHRONIC_MEDICATION_MODULE_NAME );
+				if( noteDto.Note )
+					popup.id_message.text  = noteDto.Note;
+				
+				var pLoc:Point = id_IndicatorGrp.localToGlobal( new Point( id_noteIndicator.x - 15 +  (id_noteIndicator.width /2) , id_noteIndicator.y + 10) ); 
+				popup.move(pLoc.x,pLoc.y );
+			}
+			
+			protected function id_dictationIndicator_clickHandler(event:MouseEvent):void
+			{
+				
+			}
+			
+			private function statusLabelFunction(oItem:Object, iCol:int):String
+			{
+				var vd:String = (oItem as MedicationDTO).IsActive;
+				if(vd == "true" || vd == "True")
+				{
+					return "Active";
+				}
+				else if(vd == "false" || vd == "False")
+				{
+					return "InActive";
+				}
+				return ""; 
+			}
+			
+			protected function dictationpopup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				
+			}
+			
+			protected function pinableslideoutpanel1_QSSlideStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if(this.isSlideOut)
+				{				
+					id_DataGrid.rowHeight = 23;
+					id_DataGrid.headerHeight = 25;
+				}
+			}
+			
+			//Tahir Alvi  - sep19 
+			private function getRefillData(item:Object, iCol:int):String
+			{
+				var result:String;
+				if(item.Refill)
+					result = item.Refill;
+				
+				if(item.isPRN)
+					result = item.isPRN;
+				
+				if(result.toLowerCase() == 'true')
+					result = 'AS NEEDED';
+				else if(item.Refill)
+					result = item.Refill;
+				return result;
+			}
+
+			private var _recordList:ArrayCollection;
+			[Bindable]
+			public function get recordList():ArrayCollection
+			{
+				return _recordList;
+			}
+
+			public function set recordList(value:ArrayCollection):void
+			{
+				_recordList = value;
+				if(model.chMedicationDTOList && model.chMedicationDTOList.length)
+					hasChange = true;
+			}
+			//-- Tahir Alvi - Add more button click handler
+			//-- New RX Integration in Quick Input
+			protected function id_AddMoreBtn_clickHandler(event:MouseEvent):void
+			{
+				if(id_AddMoreBtn.label == 'Add More') // when show New Rx Form
+				{
+					id_content.visible			=	true;
+					id_content.includeInLayout 	= 	true;
+					id_AddMoreBtn.label 		= 	''; 
+					id_AddMoreBtn.label 		= 'Close';  
+					//--- add new RX
+					var usertype_dto:UserTypeDTO 						= new UserTypeDTO();
+					var userTypeDTO:XML 								= <OwnerUserType />
+					userTypeDTO.IsClinicUser 							= usertype_dto.IsClinicUser?"true":"false";
+					userTypeDTO.IsProvider 								= usertype_dto.IsProvider?"true":"false";
+					userTypeDTO.UserTypeId 								= usertype_dto.UserTypeId;
+					userTypeDTO.UserTypeName 							= usertype_dto.UserTypeName;
+					
+					_ePrescription = new ePrescription();
+					
+					(_ePrescription as ePrescription).userID 			= model.loggedInUserDTO.UserId;
+					(_ePrescription as ePrescription).clinicBranchID 	= model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchIdSeq;
+					(_ePrescription as ePrescription).templateId 		= "1";
+					(_ePrescription as ePrescription).encounterTypeId 	= "1";
+					(_ePrescription as ePrescription).userTypeDTO 		= userTypeDTO;
+					
+					_ePrescription.percentWidth 						= 100;
+					//_ePrescription.percentHeight 						= 100;
+					id_content.addElement( _ePrescription );
+					_ePrescription.setNewRXView 						= true;
+					_ePrescription.isMedicationMode 					= true;
+					_ePrescription.id_newRX.loadSelectedPatientData(model.selectedPatientDTO as PatientDTO, model.visitDTO.VisitId);
+					
+				}
+				else if(id_AddMoreBtn.label == 'Close') // when hide New Rx Form
+				{
+					id_content.visible			=	false;
+					id_content.includeInLayout 	= false;
+					id_AddMoreBtn.label 		= ''; 
+					id_AddMoreBtn.label 		= 'Add More';  
+					//-- remove new RX
+					id_content.removeElement( _ePrescription );
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Binding source="model.quickInputDataLoadedFlag" destination="IsModelUpdated" /> 
+	<fx:Binding source="model.chMedicationDTOList" destination="recordList" /> 
+	
+	<custom:HeaderContents>
+		<s:Group width="100%" height="24" minWidth="{ChromeUtil.topLevelMainContainer.width - 70}">
+			<s:layout>
+				<s:VerticalLayout verticalAlign="bottom" />
+			</s:layout>
+			<quickInput:PMHSectionHeader id="id_Header" width="100%" height="22" HeadingLable="Chronic Medication" />
+		</s:Group>
+	</custom:HeaderContents>
+	
+	<custom:SlideHeaderContents>
+		<quickInput:QISectionSlideoutHeader width="100%" label="{id_Header.HeadingLable}" />			   
+	</custom:SlideHeaderContents>
+	
+	<custom:Contents>	
+		<s:SkinnableContainer id="sc_Medication" 
+							  skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.QISectionBGSkin" width="{id_Header.width}"
+							  visible="{model.securityProxyObject.PatientExam.QuickInput.PMH.ChronicMedication.IsViewAllowed}" includeInLayout="{sc_Medication.visible}">
+			<s:layout>
+				<s:VerticalLayout  verticalAlign="top" gap="0"   horizontalAlign="{isSlideOut? 'right':'center'}" paddingRight="3"   paddingTop="{isSlideOut? -2:6}" paddingLeft="{isSlideOut? 1:1}"/>
+			</s:layout>
+			
+			<notes:QISectionLevelNotesDictation id="id_notesDictation" width="100%" />
+			
+			<s:VGroup gap="3" verticalAlign="top" horizontalAlign="left"   width="100%">
+				
+				<s:Group id="id_content" width="100%" height="100%"  visible="false" includeInLayout="false"/>
+				
+				<s:HGroup width="100%" horizontalAlign="right">
+					<s:Button id="id_AddMoreBtn" 
+							  click="id_AddMoreBtn_clickHandler(event)" label="Add More"
+							  skinClass="{id_AddMoreBtn.label=='Close' ? closeCrossButton : addMoreButton}"
+							  toolTip="{id_AddMoreBtn.label=='Close' ? 'Close Chronic Medication Form' :'Add Chronic Medication'}" 
+							  useHandCursor="true" buttonMode="true" tabIndex="0"/>
+					<s:Button label="Next" click="dispatchEvent( new SelectSection('SelectSection','id_QIMedicationPanel', true, true) )" tabIndex="1"
+							  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QInextBtnSkin" toolTip="Next Section" buttonMode="true"/>
+				</s:HGroup>
+				
+				<components1:LabelDataGrid id="id_DataGrid" width="100%" useRollOver="false" 
+							dataProvider="{recordList}"
+							 rowHeight="23" verticalScrollPolicy="on"
+							 horizontalScrollPolicy="on" verticalScrollBarStyleName="VScrollBar"
+							 rowCount="{id_DataGrid.dataProvider.length? id_DataGrid.dataProvider.length : 1}" 
+							 visible="{id_DataGrid.dataProvider.length > 0 ? true: false}" includeInLayout="{id_DataGrid.visible}"
+							 columnWidths="{[30, '30%', '25%','25%', '20%']}">
+					
+					<components:columns>
+						<mx:DataGridColumn headerText="Sr.#" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" labelFunction="GridRowNumber"/>
+						<!--<mx:DataGridColumn headerText="Visit Date" width="100" headerRenderer="mx.controls.Label" wordWrap="true"  dataField="VisitDate" itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG"/>-->
+						<!--<mx:DataGridColumn headerText="OnSet" width="100" headerRenderer="mx.controls.Label" wordWrap="true"  dataField="CreatedAt" itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG"/>-->
+						<mx:DataGridColumn headerText="Medicine Name Strength (Generic Name)" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="drugName"/>
+						<mx:DataGridColumn headerText="Dose" dataField="Dose" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" />
+						<mx:DataGridColumn headerText="Quantity" dataField="Quantity" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" />
+						<mx:DataGridColumn headerText="NDC" dataField="NDCCODE" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" />
+						<mx:DataGridColumn headerText="No. of Refills"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" labelFunction="getRefillData"/>
+					</components:columns>
+				</components1:LabelDataGrid>
+				
+				<!--<mx:DataGridColumn itemRenderer="com.gazuntite.patient.visit.view.itemrenderers.DeleteRecordRenderer" width="85"/>-->
+				
+				<s:Label id="id_lbl" color="#FFFFFF" text="No Chronic Medications" visible="{(!id_DataGrid.dataProvider.length)}" includeInLayout="{id_lbl.visible}" fontFamily="Calibri" fontSize="14" width="100%" textAlign="center"/>
+				
+				<s:HGroup width="100%" paddingRight="5" paddingBottom="5">					
+					<s:HGroup id="id_IndicatorGrp" width="100%" horizontalAlign="left" >
+						<s:Button id="id_noteIndicator" label="Notes" visible="false" includeInLayout="{id_noteIndicator.visible}"
+								  click="id_noteIndicator_clickHandler(event)" toolTip="View Notes" 
+								  useHandCursor="true" buttonMode="true" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.notesIndicatorBtnSkin" />
+						<s:Button id="id_dictationIndicator" label="Dictation" visible="false" includeInLayout="{id_dictationIndicator.visible}"
+								  click="id_dictationIndicator_clickHandler(event)" toolTip="Play Dictation" 
+								  useHandCursor="true" buttonMode="true" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.dictationIndicatorBtnSkin"/>
+					</s:HGroup>
+				</s:HGroup>
+			</s:VGroup>
+		</s:SkinnableContainer>	
+	</custom:Contents>
+</custom:PinableSlideOutPanel>

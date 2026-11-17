@@ -1,0 +1,151 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+
+@font-face
+{
+	src 		:	url("../fonts/CALIBRI.TTF") ;
+	fontFamily 	: 	GridCalibri;
+	embedAsCFF	: 	false ;
+	
+}
+
+@font-face
+{
+	src 		:	url("..\fonts\CALIBRIB.TTF") ;
+	fontFamily 	: 	GridCalibriBold ;
+	embedAsCFF	: 	false ;
+	
+}
+
+@font-face
+{
+	fontFamily: "CalibriGrid";
+	src: url("../fonts/CALIBRI.TTF");
+	embedAsCFF: false;
+}
+
+/*********************************************************************************************/
+/*Data Grids 
+Grey background grid headers*/
+
+mx|DataGrid
+{
+	alternating-item-colors		: #f7f7f7, #cbd0d5; 
+	horizontal-grid-lines		: true;
+	horizontal-grid-line-color	: #a5a5a5; 
+	vertical-grid-lines 		: true;
+	vertical-grid-line-color	: #a5a5a5;
+	border-color                : #666666;
+	border-style                : solid;
+	border-thickness            : 5;
+	fontFamily                  : CalibriGrid;
+	fontSize					: 12;
+	color						: #333333;	
+	roll-over-color				: #FFEEB3;
+	sortableColumns				: false; 
+	headerStyleName				:"gridHeaderStyle";
+	headerSeparatorSkin			: ClassReference("com.adobe.gazuntite.skins.chrome.dataGridSkins.greyGridHeaderSeperatorSkin") ;		
+	headerBackgroundSkin		: ClassReference("com.adobe.gazuntite.skins.chrome.dataGridSkins.greyGridHeaderSkin") ;
+	verticalScrollBarStyleName  : "dataGridVScroller" ;
+	
+}
+
+.dataGridVScroller
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.scrollerSkins.ScrollblueNewSkin") ;
+}
+
+.gridHeaderStyle 
+{
+	fontSize 					: 12;
+	textAlign 					: left;
+	color 						: #222222 ;
+	fontFamily                  : GridCalibriBold ;
+	
+}
+
+mx|DataGrid.transparentGridStyle 
+{
+	horizontal-grid-lines		: false;
+	vertical-grid-lines 		: false;
+	borderAlpha					: 0;
+	borderVisible				: false;
+	fontFamily                  : GridCalibri;
+	fontSize					: 12;
+	color						: #333333;			
+	sortableColumns				: false; 
+	content-background-alpha    : 0;    
+	background-alpha			: 0;
+	alternatingItemColors       : ClassReference(null);
+	use-roll-over               : false;
+	
+	
+	
+}
+/*********************************************************************************************/
+/*Advance Data Grids 
+Grey background grid headers*/
+
+.advanceGridStyle 
+{
+	borderAlpha					: 0;
+	borderVisible				: false;
+	fontFamily                  : CalibriCFF;
+	fontSize					: 12;
+	fontWeight					: normal;
+	color						: #333333;			
+	verticalGridLines			: false;
+	headerStyleName				:"advanceGridHeaderStyle";
+	headerSeparatorSkin			: ClassReference("com.adobe.gazuntite.skins.chrome.dataGridSkins.greyGridHeaderSeperatorSkin") ;		
+	headerBackgroundSkin		: ClassReference("com.adobe.gazuntite.skins.chrome.dataGridSkins.greyGridHeaderSkin") ;
+}
+
+.advanceGridHeaderStyle 
+{
+	fontSize 					: 12;
+	textAlign 					: left;
+	fontFamily                  : CalibriCFF;
+	fontWeight					: normal;
+	
+}
+
+.dictationGridButtonSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.gridButtonSkins.dictationButton");
+}
+
+.editGridButtonSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.gridButtonSkins.editButton");
+}
+
+.orangeEditGridButtonSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.gridButtonSkins.orangeEditButton");
+}
+
+.emailGridButtonSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.gridButtonSkins.emailButton");
+}
+
+.notesGridButtonSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.gridButtonSkins.notesButton");
+}
+
+.removeGridButtonSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.gridButtonSkins.removeButton");
+}
+
+.gridWriteNotesSelectedButtonSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.gridButtonSkins.gridWriteNotesSelectedButton");
+}
+
+.gridDictationSelectedButtonSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.gridButtonSkins.gridDictationSelectedButton");
+}

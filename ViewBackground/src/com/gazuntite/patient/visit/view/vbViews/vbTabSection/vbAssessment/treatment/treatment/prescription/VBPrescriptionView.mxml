@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 creationComplete="group1_creationCompleteHandler(event)" xmlns:paging="com.gazuntite.patient.visit.view.vbViews.paging.*" 
+		 xmlns:components="com.gazuntite.controls.extended.components.*"
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.util.QSConstants;
+			import com.gazuntite.patient.visit.dto.PageDTO;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Label;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var model:VBModelLocator = VBModelLocator.getInstance();
+			
+			public function GridRowNumber(item:Object, iCol:int):String
+			{
+				var strRowNum:String = "";
+				
+				if (id_DataGrid_inactive.dataProvider)
+				{
+					var rowNum:int = id_DataGrid_inactive.dataProvider.getItemIndex(item) + 1;
+					strRowNum = String(rowNum);
+				}
+				
+				return strRowNum;
+			}
+			
+			public function medicineStrengthLabel(item:Object, iCol:int):String
+			{
+				var genName:String = "";
+				var brnName:String = "";
+				var strName:String = "";
+				
+				if (item.hasOwnProperty("GenericName"))
+				{
+					genName = item.GenericName ;
+				}
+				if (item.hasOwnProperty("Strength"))
+				{
+					strName = item.Strength;
+				}
+				if (item.hasOwnProperty("BrandName"))
+				{
+					brnName = item.BrandName;
+				}
+				
+				return brnName +' ' + strName +' ('+genName+')';
+			}
+			
+			public function prescriptionGridRowNumber(item:Object, iCol:int):String
+			{
+				var strRowNum:String = "";
+				
+				if (id_DataGrid.dataProvider)
+				{
+					var rowNum:int = id_DataGrid.dataProvider.getItemIndex(item) + 1;
+					strRowNum = String(rowNum);
+				}
+				
+				return strRowNum;
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				/* var mpiEvent : ManagePatientImmunizationEvent = new ManagePatientImmunizationEvent(  );
+				CairngormEventDispatcher.getInstance().dispatchEvent( mpiEvent ); */
+				if(model.prescriptionMedicationDTOList!=null){
+					model.prescriptionMedicationDTOList.filterFunction=myFilter;
+					model.prescriptionMedicationDTOList.refresh();
+				}
+			}
+			
+			private function myFilter(obj:*):Boolean
+			{
+				
+				if(model.vbFilter == QSConstants.BY_VISIT)
+				{
+					if(model.vbVisitId == obj.VisitID)
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+				
+				return true;
+			}
+			
+			private function switchPageForGridView(event:*):void
+			{
+				
+				if( UtilityFunctions.IsNullOrEmpty( model.prescriptionCurrentPageByPatient ) )
+					model.prescriptionCurrentPageByPatient = new PageDTO();
+				
+				var pvital:PageDTO = model.prescriptionCurrentPageByPatient;
+				pvital.fromDate = model.defaultFilterAndPaging.fromDate;
+				pvital.toDate = model.defaultFilterAndPaging.toDate;
+				pvital.pageSize = model.defaultFilterAndPaging.pageSize;
+				pvital.lastVisitNumber = model.defaultFilterAndPaging.lastVisitNumber;
+				
+				/* var lpviEvent: LoadPatientPrescriptionByPatientIdEvent = new LoadPatientPrescriptionByPatientIdEvent(); 
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpviEvent ); */
+			}
+			
+			private function id_PaginationFilterView_RefreshViewHandler(event:Event):void
+			{
+				/* var lpviEvent: LoadPatientPrescriptionByPatientIdEvent = new LoadPatientPrescriptionByPatientIdEvent(); 
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpviEvent ); */
+			}
+			
+			public var item:Object;
+			/* public function linkbutton1_clickHandler(event:MouseEvent):void
+			{
+				trace (id_DataGrid.selectedItem );
+				
+				var dto:Object = id_DataGrid.selectedItem;
+				//_phoneNumbers.removeItemAt(id_AddPhoneNumberGrid.selectedIndex);
+				
+				trace("drugname "+dto.drugName);
+				trace("reference number "+dto.ReferenceNumber);
+				
+				
+				trace (id_DataGrid.selectedItem );
+				
+				Alert.show("Do you want to remove ?",	"Are you sure?", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, function( event:CloseEvent):void
+				{
+					if( event.detail == Alert.YES )
+					{
+						if(!item)
+						{
+							item = new Object();
+						}
+						
+						item = (id_DataGrid.dataProvider as ArrayCollection).getItemAt(id_DataGrid.selectedIndex);							
+						
+						//
+						var referenceNumber:String = (item.ReferenceNumber as String);				
+						var remOutboxEvent: RemovePatientMedEvent = new RemovePatientMedEvent(referenceNumber, function():void
+						{
+							trace("Patient PRES/CM record removed ");			
+						});
+						remOutboxEvent.data = securityHeaderXML;
+						CairngormEventDispatcher.getInstance().dispatchEvent(remOutboxEvent); 
+						
+						
+						//REMOVE from grid
+						(id_DataGrid.dataProvider as ArrayCollection).removeItemAt(id_DataGrid.selectedIndex);
+						
+					}
+					else if( event.detail == Alert.NO )
+					{
+						
+					}
+				});
+			} */ 
+			public var securityHeaderXML:XML;
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				securityHeaderXML	 			= <Header />;					
+				securityHeaderXML.@EUserName	= "TESTUSER";
+				securityHeaderXML.@EPassword	= "TESTPASS";
+				securityHeaderXML.@ClinicID		= "sad";
+			}
+			
+			//Tahir Alvi  - oct 25 
+			private function getVisitDate(item:Object, iCol:int):String
+			{
+				var result:String = '';
+				if(item.VisitDate)
+					result = item.VisitDate;
+				
+				if(result == '01/01/1901' || result == '02/01/1901')
+					result = 'N/A';
+				
+				return result;
+			}
+			
+			//Tahir Alvi  - sep19 
+			private function getRefillData(item:Object, iCol:int):String
+			{
+				var result:String;
+				if(item.Refill)
+					result = item.Refill;
+				
+				if(item.isPRN)
+					result = item.isPRN;
+				
+				if(result.toLowerCase() == 'true')
+					result = 'AS NEEDED';
+				else if(item.Refill)
+					result = item.Refill;
+				return result;
+			}	
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout gap="-1" />
+	</s:layout>
+	
+	
+	<s:Button label="Filter" click="button1_clickHandler(event)" visible="false" includeInLayout="false" id="id_applyFiler"/>
+	<paging:PaginationFilterView id="id_PaginationFilterView" width="100%" page="{model.prescriptionCurrentPageByPatient}"
+								 GoToFirstPage="switchPageForGridView(event)" GoToNextPage="switchPageForGridView(event)" 
+								 GoToPreviousPage="switchPageForGridView(event)" GoToLastPage="switchPageForGridView(event)"
+								 RefreshView="id_PaginationFilterView_RefreshViewHandler(event)"
+								 visible="false" includeInLayout="false"/>
+	<s:Spacer height="6" />
+	<s:VGroup width="100%" gap="-4">
+		<s:ButtonBar id="id_b1" dataProvider="{viewStack}" styleName="blackButtonBarSkin" buttonMode="true" useHandCursor="true">
+			<s:layout>
+				<s:ButtonBarHorizontalLayout gap="2" />
+			</s:layout>
+		</s:ButtonBar>
+		<mx:ViewStack id="viewStack"  width="100%"  height="100%" top="10" creationPolicy="all"  resizeToContent="true" >
+			<mx:VBox label="Active Medication" width="100%" >
+				<components:LabelDataGrid id="id_DataGrid" 
+							 dataProvider="{model.patientMedACList}"
+							 width="100%" useRollOver="false" verticalScrollBarStyleName="VScrollBar" verticalScrollPolicy="on"
+							 rowCount="{id_DataGrid.dataProvider.length + 1}" 
+							 maxHeight="150" 
+							 columnWidths="{[30,'10%','10%','10%','15%','10%','10%', '10%', '10%']}">
+					<components:columns>
+						<mx:DataGridColumn headerText="Sr.#" width="30" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" labelFunction="prescriptionGridRowNumber"/>
+						<mx:DataGridColumn headerText="Visit Date"  labelFunction="getVisitDate" width="90" dataField="VisitDate" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" />
+						<mx:DataGridColumn headerText="Prescriber" dataField="Prescriber" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+						<mx:DataGridColumn headerText="Type" dataField="Type" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+						<mx:DataGridColumn headerText="Med"  width="90" dataField="drugName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" />
+						<mx:DataGridColumn headerText="Dose" dataField="Dose" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+						<mx:DataGridColumn headerText="Sig" dataField="Sig" width="100"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+						<mx:DataGridColumn headerText="Qty, Qty Form" width="80" dataField="Quantity" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" />
+						<mx:DataGridColumn headerText="No. of Refills" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" width="100" labelFunction="getRefillData" />
+					</components:columns>
+				</components:LabelDataGrid>
+			</mx:VBox>
+			<mx:VBox label="History" width="100%"  >
+				<components:LabelDataGrid id="id_DataGrid_inactive" 
+										  dataProvider="{model.patientMedACInactiveList}"
+										  width="100%" useRollOver="false" verticalScrollBarStyleName="VScrollBar" verticalScrollPolicy="on"
+										  rowCount="{id_DataGrid.dataProvider.length + 1}" 
+										  maxHeight="150" 
+										  columnWidths="{[30,'10%','10%','10%','15%','10%','10%', '10%', '10%']}">
+					<components:columns>
+						<mx:DataGridColumn headerText="Sr.#"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" labelFunction="GridRowNumber"/>
+						<mx:DataGridColumn headerText="Visit Date" labelFunction="getVisitDate"  dataField="VisitDate" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+						<mx:DataGridColumn headerText="Prescriber" dataField="Prescriber" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+						<mx:DataGridColumn headerText="Type" dataField="Type" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+						<mx:DataGridColumn headerText="Med"   dataField="drugName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" />
+						<mx:DataGridColumn headerText="Dose" dataField="Dose" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+						<mx:DataGridColumn headerText="Sig" dataField="Sig"   itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+						<mx:DataGridColumn headerText="Qty, Qty Form"  dataField="Quantity" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" />
+						<mx:DataGridColumn headerText="No. of Refills" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"   labelFunction="getRefillData"/>
+					</components:columns>
+				</components:LabelDataGrid>
+			</mx:VBox>
+		</mx:ViewStack>
+	</s:VGroup>
+</s:Group>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009">
+	<fx:Metadata>[HostComponent("spark.components.RadioButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect height="11" id="rect136" radiusX="0" width="11" x="0.5" y="0.5" includeIn="up">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#FFFFFF" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#9DD2E9" ratio="0.47843137254901963"/>
+				<s:GradientEntry alpha="1.0" color="#8BC0D7" ratio="0.47843137254901963"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Rect height="11" radiusX="0" width="11" x="0.5" y="0.5" includeIn="over, down, upAndSelected, downAndSelected, overAndSelected">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#FFFFFF" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#FF7200" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#FF7800" ratio="0.00784313725490196"/>
+				<s:GradientEntry alpha="1.0" color="#FF7800" ratio="0.19215686274509805"/>
+				<s:GradientEntry alpha="1.0" color="#FF4B13" ratio="0.47058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#FFBB5A" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	
+	<s:RichText color="#333333" fontFamily="Calibri" fontSize="9" id="richtext39" tabStops="S0" text="N" x="2.5" y="2"/>
+</s:Skin>

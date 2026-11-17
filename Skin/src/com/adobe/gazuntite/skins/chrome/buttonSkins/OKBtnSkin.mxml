@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:flm="http://ns.adobe.com/flame/2008">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+	</s:states>
+	<s:Rect height="24" radiusX="5.00053" radiusY="5.00053" width="75" x="0.5" y="0.5" visible.over="false" id="rect1">
+		<s:fill>
+			<s:LinearGradient rotation="270" scaleX="26.166" x="37.917" y="26.166">
+				<s:GradientEntry color="#3C3E40" ratio="0.4"/>
+				<s:GradientEntry color="#8F9193" ratio="0.7"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter includeIn="down" blurX="4.0" blurY="4.0" distance="4.0" hideObject="false" color="0x000000" inner="true" strength="1" alpha="0.5" quality="2" knockout="false" angle="90"/>
+		</s:filters>
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#6F7173" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Rect height="24" radiusX="5.00053" radiusY="5.00053" width="75" x="1" y="1" visible.down="false" visible.disabled="false" visible.up="false" id="rect2">
+		<s:fill>
+			<s:LinearGradient rotation="270" scaleX="26.166" x="37.917" y="26.166">
+				<s:GradientEntry alpha="1.0" color="#FFA200" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#FCCF0B" ratio="0.1568627450980392"/>
+				<s:GradientEntry alpha="1.0" color="#FFA200" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:GlowFilter alpha="1.0" blurX="6.0" blurY="6.0" color="#8D6F0F" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<!-- layer 8: text -->
+	<!--- @copy spark.components.supportClasses.ButtonBase#labelDisplay -->
+	<s:Label id="labelDisplay"
+			 textAlign="center"
+			 verticalAlign="middle" color="#ffffff"
+			 maxDisplayedLines="1" fontFamily="Calibri Bold"
+			 horizontalCenter="0" verticalCenter="1"
+			 left="10" right="10" top="2" bottom="2">
+	</s:Label>
+</s:Skin>

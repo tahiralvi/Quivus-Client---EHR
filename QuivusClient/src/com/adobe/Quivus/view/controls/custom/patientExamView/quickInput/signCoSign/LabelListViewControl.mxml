@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			private var _label:String;
+			private var _labelChanged:Boolean;
+			
+			private var _dataProvider:ArrayCollection;
+			private var _dataProviderChanged:Boolean;
+			
+			private var _includeInLayout:Boolean;
+			
+			public function get label():String
+			{
+				return _label;
+			}
+
+			public function set label(value:String):void
+			{
+				if (_label != value)
+				{
+					_label = value.toUpperCase();
+					_labelChanged = true;
+					
+					invalidateProperties();
+				}
+			}
+
+			public function get dataProvider():ArrayCollection
+			{
+				return _dataProvider;
+			}
+
+			public function set dataProvider(value:ArrayCollection):void
+			{
+				_dataProvider = value;
+				_dataProviderChanged = true;
+				
+				invalidateProperties();
+			}
+			
+			[Bindable]
+			override public function get includeInLayout():Boolean
+			{
+				return _includeInLayout;
+			}
+			
+			override public function set includeInLayout(value:Boolean):void
+			{
+				_includeInLayout = value;
+			}
+
+			override protected function commitProperties():void
+			{
+				super.commitProperties();
+				
+				if (_labelChanged)
+				{
+					_labelChanged = false;
+					id_Label.text = _label;
+				}
+				
+				if (_dataProviderChanged)
+				{
+					_dataProviderChanged = false;
+					id_List.dataProvider = _dataProvider;
+					
+					if (_dataProvider && _dataProvider.length)
+						includeInLayout = true;
+				}
+			}
+
+			
+		]]>
+	</fx:Script>
+	<s:layout>
+		<s:VerticalLayout gap="0" paddingLeft="8" paddingRight="8" paddingTop="8" paddingBottom="8"/>
+	</s:layout>
+	<s:Label id="id_Label" width="100%" fontFamily="calibri" fontSize="11" fontWeight="bold" visible="{includeInLayout}"/>
+	<s:List id="id_List" width="100%"
+			itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.signCoSign.CCPreviewWindowItemRenderer"
+			contentBackgroundColor="#ECF0DC" rollOverColor="#ECF0DC" selectionColor="#ECF0DC" >
+		<s:layout>
+			<s:VerticalLayout useVirtualLayout="false" requestedRowCount="{id_List.dataProvider.length}" requestedMinRowCount="0" 
+							  paddingLeft="0" paddingRight="0" paddingTop="0" paddingBottom="0" verticalAlign="top" horizontalAlign="center"/>
+		</s:layout>
+	</s:List>
+</s:Group>

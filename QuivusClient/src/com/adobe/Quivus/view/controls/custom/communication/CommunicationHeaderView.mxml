@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"  
+		 xmlns:buttonSeparators="com.adobe.Quivus.view.controls.skins.buttonSeparators.*"
+		 >
+	<fx:Script>
+		<![CDATA[
+
+			import mx.events.CloseEvent;
+			
+			[Bindable]
+			public var headerLabel:String;
+			
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	
+		<s:layout>
+			<s:VerticalLayout paddingLeft="{id_slideoutBtn.selected? 5:0}"  horizontalAlign="center" />
+		</s:layout>
+		<s:SkinnableContainer width="100%" minWidth="550" skinClass="com.adobe.Quivus.view.controls.skins.PatientRegHeaderSkin">
+			
+			<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="{id_slideoutBtn.selected? 'left':'center'}" >
+				<s:Label  paddingLeft="12" color="#000000" paddingTop="6" fontFamily="Calibri Bold" typographicCase="uppercase" text="{headerLabel}" />
+				<mx:Spacer width="100%" />
+				
+			</s:HGroup>
+			<s:HGroup horizontalAlign="right" width="100%" paddingRight="1" paddingTop="0" gap="0">
+				<buttonSeparators:buttonSeparatorGrey />
+				<s:HGroup paddingTop="0">
+					
+					<s:Button id="id_btnClose" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QICrossButtonSkin" 
+							  buttonMode="true" useHandCursor="true" toolTip="Close This Panel" />
+				</s:HGroup>
+				<buttonSeparators:buttonSeparatorGrey />
+				<s:HGroup paddingTop="0">
+					
+					<s:ToggleButton id="id_expandBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.expandButton_grey" 
+									buttonMode="true" useHandCursor="true" toolTip="{id_expandBtn.selected?'Collapse':'Expand'}"/>
+				</s:HGroup>
+				<buttonSeparators:buttonSeparatorGrey />
+				<s:HGroup paddingTop="0" paddingRight="0">
+					<s:ToggleButton id="id_slideoutBtn" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.slideOutBtn"
+									buttonMode="true" useHandCursor="true" toolTip="{id_slideoutBtn.selected?'Slide-In':'Slide-Out'}" 
+									width="18" height="18"  />
+				</s:HGroup>
+			</s:HGroup>
+		</s:SkinnableContainer>
+	
+</s:Group>

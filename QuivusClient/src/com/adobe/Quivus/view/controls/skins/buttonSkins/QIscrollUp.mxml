@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+	</s:states>
+	<s:Path data="M 2.442 0.5 C 1.37 0.5 0.5 1.396 0.5 2.5 L 0.5 8.5 C 0.5 9.604 1.37 10.5 2.442 10.5 L 45.5 10.5 L 45.5 0.5 L 2.442 0.5 Z" id="path2" winding="nonZero" x="0" y="0" visible.down="false" visible.disabled="false">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#009CFF" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#96CBE5" ratio="0.72"/>
+				<s:GradientEntry alpha="1.0" color="#96F2FF" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Path>
+	<s:Path data="M 2.442 0.5 C 1.37 0.5 0.5 1.396 0.5 2.5 L 0.5 8.5 C 0.5 9.604 1.37 10.5 2.442 10.5 L 45.5 10.5 L 45.5 0.5 L 2.442 0.5 Z" id="path0" winding="nonZero" x="0" y="0" visible.up="false">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#009CFF" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:LinearGradient rotation="270" rotation.down="90">
+				<s:GradientEntry alpha="1.0" color="#2A3F49" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#1B688E" ratio="0.67"/>
+				<s:GradientEntry alpha="1.0" color="#284244" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Path>
+	<s:Path data="M 11.10 9.60 L 0.00 9.60 5.55 -0.00 Z " height="3.6" id="path4" width="7" x="20" y="4" visible.over="false" visible.down="false" visible.disabled="false">
+		<s:fill>
+			<s:SolidColor color="#1A6762"/>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="1" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Path>
+	<s:Path data="M 11.10 9.60 L 0.00 9.60 5.55 -0.00 Z " height="3.6" id="path7" width="7" x="20" y="4" visible.up="false">
+		<s:fill>
+			<s:SolidColor color="#FFFFFF"/>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="270" blurX="0" blurY="0" color="#333333" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Path>
+</s:Skin>

@@ -1,0 +1,826 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				xmlns:notes="com.adobe.Quivus.view.controls.custom.patientExamView.notes.*"
+				rollOverColor="#81858A"
+				showsCaret="false"
+				creationComplete="itemrenderer1_creationCompleteHandler(event)"
+				click="onComponentClick(event)"
+				>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.view.controls.custom.DictationPopup;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesBox;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.dictation.QIDictationManager;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.QIInnerSpeakerBtn;
+			import com.adobe.Quivus.view.controls.skins.radioButtonSkins.ANotesRadioButton;
+			import com.adobe.Quivus.view.controls.skins.radioButtonSkins.NNotesRadioButton;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.QIAbnormalBtnSkin;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.QINormalBtn;
+			import com.gazuntite.controls.extended.components.PopupGroup;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ItemClickEvent;
+			import mx.graphics.SolidColor;
+			import mx.states.OverrideBase;
+			
+			import spark.components.IItemRenderer;
+			import spark.events.TextOperationEvent;
+			import spark.skins.spark.ToggleButtonSkin;
+			
+			import valueObjects.ModuleDictationDTO;
+			import valueObjects.PhysicalsDTO;
+			
+			private const SHOW_NOTE:int			= 0;
+			private const HIDE_NOTE:int			= 1;
+			private const HAS_NOTE:int			= 2;
+			private const DESELECT:int			= 3;
+			
+			private var popGrp:PopupGroup = new PopupGroup();
+			private var notesBox:NotesBox;
+			private static var m_ballowPopups:Boolean = true;
+			private var m_bIsOpen:Boolean;
+			private var m_NoteButtonState:int = 0; // 0:Show Note, 1:Hide Note 2:Has Note, 3:Deselect Button
+			
+			
+			private var m_physicalsDTO:PhysicalsDTO;
+			
+			private static var m_bChangeSkin:Boolean = false;
+			private var bCompClicked:Boolean=false;
+			
+			private function onComponentClick(event:MouseEvent):void
+			{
+				bCompClicked = true;
+			}
+			
+			private function onStageClick(event:MouseEvent):void
+			{
+				if(!bCompClicked) //we didn't click the component, so we clicked outside it..
+				{   
+					clickedOutSide();
+				}
+				else
+				{
+					bCompClicked=false; //we did click the component, set to false for the next time.
+				}
+			}
+			
+			private function clickedOutSide():void
+			{
+				RemovePopups();
+			}
+			
+			public function get ChangeSkin():Boolean
+			{
+				return m_bChangeSkin;
+			}
+			
+			public function set ChangeSkin(value:Boolean):void
+			{
+				m_bChangeSkin = value;
+				
+				if( ( physicalsDto.Notes && physicalsDto.Notes.length > 0 ) || physicalsDto.DictationID != Constants.GUID_FORMAT)
+				{
+					if(physicalsDto.IsAbNormal == Constants.STRING_TRUE)
+						id_Abnormal.setStyle("skinClass", ANotesRadioButton);
+					
+					if(physicalsDto.IsNormal == Constants.STRING_TRUE)
+						id_Normal.setStyle("skinClass", NNotesRadioButton);
+				}
+				else
+				{
+					id_Abnormal.setStyle("skinClass", QIAbnormalBtnSkin);
+					id_Normal.setStyle("skinClass", QINormalBtn);
+				}
+			}
+			
+			[Bindable]
+			public function get physicalsDto():PhysicalsDTO
+			{
+				return m_physicalsDTO;
+			}
+			
+			public function set physicalsDto(value:PhysicalsDTO):void
+			{
+				m_physicalsDTO = value;
+				
+				m_physicalsDTO.addEventListener("propertyChange", function(event:Event):void
+				{
+					ChangeSkin = false;
+				});
+			}
+			
+			
+			public static function get AllowPopups():Boolean
+			{
+				return m_ballowPopups;
+			}
+			
+			public static function set AllowPopups(value:Boolean):void
+			{
+				m_ballowPopups = value;
+				
+				/* if( ! value )
+				popGrp.removePopup(); */
+			}
+			
+			public override function set data(value:Object):void
+			{
+				super.data = value;
+				physicalsDto = data as PhysicalsDTO;
+			}
+			
+			[Bindable]
+			public override function set selected(value:Boolean):void
+			{
+				super.selected = value;
+				if( !value )
+					removeNotesPopup();
+			}
+			
+			public function RemovePopups():void
+			{
+				if( popGrp && popGrp.isPopUp )
+				{
+					removeNotesPopup();
+				}
+				if( popGrpN && popGrpN.isPopUp )
+				{
+					removeNormalNotesPopup();
+				}
+				
+				removeDictation();
+			}
+			
+			private function removeDictation():void
+			{
+				if( dictationPanel && dictationPanel.isPopUp )
+				{
+					dictationPanel.id_closeBtn.dispatchEvent( new MouseEvent(MouseEvent.CLICK, true, true) );
+				}
+				
+				if( dictationPanelN && dictationPanelN.isPopUp )
+				{
+					dictationPanelN.id_closeBtn.dispatchEvent( new MouseEvent(MouseEvent.CLICK, true, true) );
+				}
+			}
+			
+			private function getNotesPopupPosition():Point
+			{
+				if( this.y < 70 )
+					var pLoc:Point = new Point( id_Contents.width , id_Contents.y );
+				else
+					pLoc = new Point( id_Contents.width , -this.y );
+				
+				var loc:Point = id_Contents.localToGlobal( pLoc );
+				
+				return loc;
+			}
+			
+			private function showNotes():void
+			{
+				id_MainButton.setStyle("color", 0xffffff);
+				m_NoteButtonState				= HIDE_NOTE;
+				id_Normal.selected 				= false;
+				physicalsDto.IsNormal   		= Constants.STRING_FALSE;
+				id_NotesSpacer.includeInLayout 	= true;
+				id_NotesSpacer.visible			= true;
+				var color:SolidColor 			= new SolidColor(0x666666);
+				//	id_Contents.backgroundFill 		= color;
+				
+				RemovePopups();
+				
+				notesBox = new NotesBox();
+				notesBox.width			= 150
+				notesBox.height			= 150
+				
+				popGrp.addElement( notesBox );
+				popGrp.ShowPopup( this ); 
+				m_bIsOpen		= true;
+				var loc:Point = getNotesPopupPosition();
+				popGrp.move( loc.x, loc.y );
+				
+				id_NotesSpacer.width = notesBox.width;
+				notesBox.id_BoxHeader.id_CloseBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					removeNotesPopup();					
+					event.stopImmediatePropagation();
+				}); 
+				//notesBox.id_TextArea.addEventListener(FocusEvent.FOCUS_OUT, itemrenderer1_focusOutHandler );
+				notesBox.id_TextArea.addEventListener( "textChanged", function(event:Event):void
+				{
+					NotesChanged( event );
+				});
+				notesBox.id_TextArea.addEventListener(TextOperationEvent.CHANGE, NotesChanged);
+				
+				if( physicalsDto.Notes ) 
+					notesBox.id_TextArea.text = physicalsDto.Notes;
+				
+				notesBox.id_TextArea.setFocus();
+				
+				notesBox.id_BoxHeader.id_VoiceBtn.addEventListener(MouseEvent.CLICK, voiceBtnClickHandler, false, 0, true);
+				
+				/* if (physicalsDto && physicalsDto.DictationID)							
+				{
+				notesBox.id_BoxHeader.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+				} */
+				
+				
+			}
+			
+			private var dictationPanel:DictationPopup;
+			private function voiceBtnClickHandler(event:MouseEvent):void
+			{
+				var dictationDTO:ModuleDictationDTO = new ModuleDictationDTO();
+				
+				if (physicalsDto)
+					dictationDTO.DictationID = physicalsDto.DictationID;
+				
+				dictationPanel = QIDictationManager.show(notesBox.id_BoxHeader.id_VoiceBtn.parent, dictationPanel, dictationDTO, notesBox.id_BoxHeader.id_VoiceBtn);
+				QIPopUpManager.addPopUp(dictationPanel, QIPopUpManager.PHYSICAL);				
+				dictationPanel.move( dictationPanel.x - 81, dictationPanel.y);
+				
+				dictationPanel.id_closeBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if (dictationDTO && physicalsDto && dictationDTO.DictationID)
+					{
+						physicalsDto.DictationID = dictationDTO.DictationID;
+						
+						if (dictationDTO && physicalsDto && dictationDTO.DictationID && dictationDTO.DictationID != Constants.GUID_FORMAT)
+						{
+							notesBox.id_BoxHeader.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+							id_Abnormal.setStyle("skinClass", ANotesRadioButton);
+							dispatchEvent( new Event("PhysicalIsDirty", true, true) );
+						}
+					}
+					QIPopUpManager.removePopUp(dictationPanel, QIPopUpManager.PHYSICAL);
+				});
+				
+				event.stopImmediatePropagation();
+			}
+			
+			private function NotesChanged(event:Event):void
+			{
+				physicalsDto.Notes 		= event.currentTarget.text;
+				physicalsDto.IsDirty 	= true;
+				id_Normal.selected		= false;
+				physicalsDto.IsNormal   = Constants.STRING_FALSE;
+				physicalsDto.IsAbNormal = Constants.STRING_TRUE;
+				
+				if(notesBox.id_TextArea.text.length > 0)
+				{
+					id_Abnormal.setStyle("skinClass", ANotesRadioButton);
+				}
+				else
+				{
+					id_Abnormal.setStyle("skinClass", QIAbnormalBtnSkin);
+				}
+				
+				dispatchEvent( new Event("PhysicalIsDirty", true, true) );
+			}
+			
+			private function removeNotesPopup():void
+			{
+				id_MainButton.setStyle("color", 0x222222);
+				popGrp.removePopup();
+				m_bIsOpen						= false;
+				id_NotesSpacer.includeInLayout 	= false;
+				id_NotesSpacer.visible			= false;
+				/* if( physicalsDto.Notes ) 
+				id_Abnormal.selected		= physicalsDto.Notes.length > 0;
+				else */
+				//id_Abnormal.selected		= true;
+				//var color:SolidColor = new SolidColor(0xDADBA2);
+				//id_Contents.backgroundFill = color; 
+				//id_Abnormal.setStyle("skinClass", QIAbnormalBtnSkin);
+			}
+			
+			
+			protected function itemrenderer1_focusOutHandler(event:FocusEvent):void
+			{
+				if( m_bIsOpen )
+					removeNotesPopup();
+			}
+			
+			private function onPhysicalIsDirty(event:Event):void
+			{
+				//Tahir Alvi
+				//if(physicalsDto.Notes && physicalsDto.Notes.length > 0)
+				if(physicalsDto.Notes && physicalsDto.Notes.length > 0 && physicalsDto.IsAbNormal == Constants.STRING_TRUE)
+				{
+					ChangeSkin = true; //id_NotesBtn.setStyle("skinClass", ImmunizationNotesFilledBtn);
+				}
+				else
+				{
+					ChangeSkin = false; //id_NotesBtn.setStyle("skinClass", WriteNotesBtn);
+				}				
+			}
+			
+			protected function itemrenderer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				addEventListener("PhysicalIsDirty" , onPhysicalIsDirty );
+				callLater( function():void
+				{
+					FlexGlobals.topLevelApplication.addEventListener(MouseEvent.CLICK,onStageClick);
+					/* if( physicalsDto.IsNormal == Constants.STRING_FALSE )
+					id_Abnormal.selected = true;
+					else  */
+					if( physicalsDto.Notes )
+					{
+						//id_Abnormal.selected = physicalsDto.Notes.length > 0 ;
+						//physicalsDto.IsAbNormal = physicalsDto.Notes.length > 0 ? Constants.STRING_TRUE: Constants.STRING_FALSE;
+						
+						if( physicalsDto.Notes.length > 0 && physicalsDto.IsAbNormal == Constants.STRING_TRUE)
+						{
+							id_Abnormal.setStyle("skinClass", ANotesRadioButton);
+						}
+						else if(physicalsDto.Notes.length < 0 && physicalsDto.IsAbNormal == Constants.STRING_FALSE)
+						{
+							id_Abnormal.setStyle("skinClass", QIAbnormalBtnSkin);
+						}
+						else if(physicalsDto.Notes.length > 0 && physicalsDto.IsNormal == Constants.STRING_TRUE)
+						{
+							id_Normal.setStyle("skinClass", NNotesRadioButton);
+						}else 
+						{
+							id_Normal.setStyle("skinClass", QINormalBtn);
+						}
+						
+					}
+					ChangeSkin = true;
+				});
+			}
+			
+			public function set selectedNew(value:Boolean):void
+			{
+				trace(value);
+			}
+			
+			/**
+			 * 	Tahir Alvi --- Normal Notes implementation 
+			 *  28 March 2012
+			 * */
+			private var popGrpN:PopupGroup = new PopupGroup();
+			private var notesBoxN:NotesBox;
+			/**
+			protected function id_Normal_clickHandler(event:MouseEvent):void
+			{
+				if(  popGrpN.isPopUp )
+				{
+					removeNormalNotesPopup();											
+				}
+				
+				if( physicalsDto.IsNormal && physicalsDto.IsNormal == Constants.STRING_FALSE  )
+				{
+					//When A is selected & notes in Notes Window.
+					if( physicalsDto.Notes && physicalsDto.Notes.length > 0)
+					{
+						Alert.show("This action will clear abnormal notes, Are you sure you want to clear notes?","Clear Notes", Alert.YES|Alert.NO, 
+							FlexGlobals.topLevelApplication.mainContainer, function(event:CloseEvent):void
+							{
+								if( event.detail == Alert.YES)
+								{
+									physicalsDto.IsNormal 		= Constants.STRING_TRUE;
+									physicalsDto.IsAbNormal 	= Constants.STRING_FALSE;
+									physicalsDto.Notes 			= null;
+									id_Abnormal.selected 	= false;
+									id_Abnormal.setStyle("skinClass", QIAbnormalBtnSkin);
+									dispatchEvent( new Event("PhysicalIsDirty", true, true) );
+								}
+								else if( event.detail == Alert.NO)
+								{
+									// NO button was clicked
+									id_Normal.selected = false;
+									
+								}
+								ChangeSkin = true;
+							});
+					}
+					else if(id_Abnormal.selected)//When A is selected but no notes in Notes Window.
+					{
+						physicalsDto.IsNormal 		= Constants.STRING_TRUE;
+						physicalsDto.IsAbNormal 	= Constants.STRING_FALSE;
+						id_Abnormal.selected 		= false;
+						id_Abnormal.setStyle("skinClass", QIAbnormalBtnSkin);
+					}else //When select all normal from header and then deselect and click on N button
+					{
+						physicalsDto.IsNormal 		= Constants.STRING_TRUE;
+						physicalsDto.IsAbNormal 	= Constants.STRING_FALSE;
+						id_Abnormal.selected 		= false;
+						showNormalNotes(); 
+					}
+				}
+				else
+				{
+					physicalsDto.IsNormal 		= Constants.STRING_TRUE;
+					physicalsDto.IsAbNormal 	= Constants.STRING_FALSE;
+					showNormalNotes(); 
+					id_Abnormal.selected    = false;
+				}
+				ChangeSkin = true;
+				
+				physicalsDto.IsDirty 	= true;
+				
+				dispatchEvent( new Event("PhysicalIsDirty", true, true) );
+				
+				event.stopImmediatePropagation();
+				
+				/**
+				 * Ayesha: 16th May 2011
+				 * hiding Popups if any
+				 * */
+		//		QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.PHYSICAL);
+		//	}
+			protected function id_Normal_clickHandler(event:MouseEvent):void
+			{
+				if(  popGrpN.isPopUp )
+				{
+					removeNormalNotesPopup();											
+				}
+				
+				if( physicalsDto.IsNormal && physicalsDto.IsNormal == Constants.STRING_FALSE  )
+				{
+					//When A is selected & notes in Notes Window.
+					if( physicalsDto.Notes && physicalsDto.Notes.length > 0)
+						//{
+						Alert.show("This action will clear abnormal notes, Are you sure you want to clear notes?","Clear Notes", Alert.YES|Alert.NO, 
+							FlexGlobals.topLevelApplication.mainContainer, function(event:CloseEvent):void
+							{
+								if( event.detail == Alert.YES)
+								{
+									physicalsDto.IsNormal 		= Constants.STRING_TRUE;
+									physicalsDto.IsAbNormal 	= Constants.STRING_FALSE;
+									physicalsDto.Notes 			= null;
+									//id_Abnormal.selected 	= false;
+									id_Abnormal.setStyle("skinClass", QIAbnormalBtnSkin);
+									dispatchEvent( new Event("PhysicalIsDirty", true, true) );
+								}
+								else if( event.detail == Alert.NO)
+								{
+									// NO button was clicked
+									id_Normal.selected = false;
+									
+								}
+								RemovePopups();
+								ChangeSkin = true;
+							});
+					else if(id_Abnormal.selected)
+					{
+						//When A is selected but no notes in Notes Window.
+						physicalsDto.IsNormal 			= Constants.STRING_TRUE;
+						physicalsDto.IsAbNormal 		= Constants.STRING_FALSE;
+						id_Abnormal.selected = false;
+						id_Abnormal.setStyle("skinClass", QIAbnormalBtnSkin);
+						showNormalNotes();
+					}
+					else if(id_Normal.selected && (physicalsDto.Notes == null || physicalsDto.Notes.length == 0))
+					{
+						showNormalNotes();
+						physicalsDto.IsNormal = Constants.STRING_TRUE;
+					}
+				}
+				else if( physicalsDto.Notes && physicalsDto.Notes.length > 0 )
+				{
+					showNormalNotes();
+					//id_Abnormal.selected		= physicalsDto.Notes.length > 0;
+					physicalsDto.IsNormal = physicalsDto.Notes.length > 0 ? Constants.STRING_TRUE: Constants.STRING_FALSE;
+					
+					if( physicalsDto.Notes.length > 0)
+					{
+						id_Normal.setStyle("skinClass", NNotesRadioButton);
+					}
+					else
+					{
+						id_Normal.setStyle("skinClass", QINormalBtn);
+					}
+				}
+				else if( id_Normal.selected && ( physicalsDto.Notes == null || physicalsDto.Notes.length == 0 ) )
+				{
+					showNormalNotes();
+					physicalsDto.IsNormal = Constants.STRING_TRUE;
+				}
+				else if( physicalsDto.Notes == null || physicalsDto.Notes.length == 0 )
+				{
+					id_Abnormal.selected = false;
+					ChangeSkin = true;
+					physicalsDto.IsAbNormal = Constants.STRING_NULL;
+				}
+				else
+				{
+					if( !id_Normal.selected && physicalsDto.Notes ) 
+						//id_Abnormal.selected		= physicalsDto.Notes.length > 0;
+						physicalsDto.IsNormal = physicalsDto.Notes.length > 0 ? Constants.STRING_TRUE: Constants.STRING_FALSE;
+					
+					if( physicalsDto.Notes.length > 0)
+					{
+						id_Normal.setStyle("skinClass", NNotesRadioButton);
+					}
+					else
+					{
+						id_Normal.setStyle("skinClass", QINormalBtn);
+					}
+				}
+				
+				ChangeSkin = true;
+				
+				physicalsDto.IsDirty 	= true;
+				
+				dispatchEvent( new Event("PhysicalIsDirty", true, true) );
+				
+				QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.PHYSICAL);
+				//event.stopImmediatePropagation();
+			}
+			
+			protected function id_NotesBtn_clickHandler(event:MouseEvent):void
+			{
+				if(  popGrp.isPopUp )
+				{
+					removeNotesPopup();										
+				}
+				if( physicalsDto.IsAbNormal && physicalsDto.IsAbNormal == Constants.STRING_FALSE  )
+				{
+					//When N is selected & notes in Notes Window.
+					if( physicalsDto.Notes && physicalsDto.Notes.length > 0)
+						Alert.show("This action will clear normal notes, Are you sure you want to clear notes?","Clear Notes", Alert.YES|Alert.NO, 
+							FlexGlobals.topLevelApplication.mainContainer, function(event:CloseEvent):void
+							{
+								if( event.detail == Alert.YES)
+								{
+									physicalsDto.IsNormal 		= Constants.STRING_FALSE;
+									physicalsDto.IsAbNormal 	= Constants.STRING_TRUE;
+									physicalsDto.Notes 			= null;
+									//id_Abnormal.selected 	= false;
+									id_Normal.setStyle("skinClass", QINormalBtn);
+									dispatchEvent( new Event("PhysicalIsDirty", true, true) );
+								}
+								else if( event.detail == Alert.NO)
+								{
+									// NO button was clicked
+									id_Abnormal.selected = false;
+									
+								}
+								RemovePopups();
+								ChangeSkin = true;
+							});
+					else
+					{
+						//When N is selected but no notes in Notes Window.
+						physicalsDto.IsNormal 			= Constants.STRING_FALSE;
+						physicalsDto.IsAbNormal 		= Constants.STRING_TRUE;
+						id_Normal.selected = false;
+						id_Normal.setStyle("skinClass", QINormalBtn);
+						showNotes();
+					}
+				}else if( physicalsDto.Notes && physicalsDto.Notes.length > 0 )
+				{
+					showNotes();
+					//id_Abnormal.selected		= physicalsDto.Notes.length > 0;
+					physicalsDto.IsAbNormal = physicalsDto.Notes.length > 0 ? Constants.STRING_TRUE: Constants.STRING_FALSE;
+					
+					if( physicalsDto.Notes.length > 0)
+					{
+						id_Abnormal.setStyle("skinClass", ANotesRadioButton);
+					}
+					else
+					{
+						id_Abnormal.setStyle("skinClass", QIAbnormalBtnSkin);
+					}
+					
+					
+					
+				}
+				else if( id_Abnormal.selected && ( physicalsDto.Notes == null || physicalsDto.Notes.length == 0 ) )
+				{
+					showNotes();
+				}
+				else if( physicalsDto.Notes == null || physicalsDto.Notes.length == 0 )
+				{
+					//id_Abnormal.selected = false;
+					ChangeSkin = true;
+					physicalsDto.IsNormal = Constants.STRING_NULL;
+				}
+				else
+				{
+					if( !id_Abnormal.selected && physicalsDto.Notes ) 
+						//id_Abnormal.selected		= physicalsDto.Notes.length > 0;
+						physicalsDto.IsAbNormal = physicalsDto.Notes.length > 0 ? Constants.STRING_TRUE: Constants.STRING_FALSE;
+					
+					if( physicalsDto.Notes.length > 0)
+					{
+						id_Abnormal.setStyle("skinClass", ANotesRadioButton);
+					}
+					else
+					{
+						id_Abnormal.setStyle("skinClass", QIAbnormalBtnSkin);
+					}
+				}
+				
+				
+				dispatchEvent( new Event("PhysicalIsDirty", true, true) );
+			}
+			
+			private function removeNormalNotesPopup():void
+			{
+				id_MainButton.setStyle("color", 0x222222);
+				popGrpN.removePopup();
+				m_bIsOpen						= false;
+				id_NotesSpacer.includeInLayout 	= false;
+				id_NotesSpacer.visible			= false;
+				
+				var color:SolidColor = new SolidColor(0xDADBA2);
+			}
+			private function showNormalNotes():void
+			{
+				id_MainButton.setStyle("color", 0xffffff);
+				m_NoteButtonState				= HIDE_NOTE;
+				id_NotesSpacer.includeInLayout 	= true;
+				id_NotesSpacer.visible			= true;
+				id_Normal.selected 				= true;
+				physicalsDto.IsNormal   		= Constants.STRING_TRUE;
+				id_NotesSpacer.includeInLayout 	= true;
+				id_NotesSpacer.visible			= true;
+				var color:SolidColor 			= new SolidColor(0x666666);
+				//	id_Contents.backgroundFill 		= color;
+				
+				RemovePopups();
+				
+				notesBoxN 				= new NotesBox();
+				notesBoxN.width			= 150
+				notesBoxN.height		= 150
+				
+				popGrpN.addElement( notesBoxN );
+				popGrpN.ShowPopup( this ); 
+				m_bIsOpen		= true;
+				var loc:Point = getNotesPopupPosition();
+				popGrpN.move( loc.x, loc.y );
+				
+				id_NotesSpacer.width = notesBoxN.width;
+				notesBoxN.id_BoxHeader.id_CloseBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					removeNormalNotesPopup();					
+					event.stopImmediatePropagation();
+				}); 
+				//notesBoxN.id_TextArea.addEventListener(FocusEvent.FOCUS_OUT, itemrenderer2_focusOutHandler );
+				notesBoxN.id_TextArea.addEventListener( "textChanged", function(event:Event):void
+				{
+					NormalNotesChanged( event );
+				});
+				notesBoxN.id_TextArea.addEventListener(TextOperationEvent.CHANGE, NormalNotesChanged);
+				
+				if( physicalsDto.Notes ) 
+					notesBoxN.id_TextArea.text = physicalsDto.Notes;
+				
+				notesBoxN.id_TextArea.setFocus();
+				
+				notesBoxN.id_BoxHeader.id_VoiceBtn.addEventListener(MouseEvent.CLICK, voiceBtnClickHandlerN, false, 0, true);
+				
+				/* if (physicalsDto && physicalsDto.DictationID)							
+				{
+				notesBox.id_BoxHeader.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+				} */
+			}
+			private var dictationPanelN:DictationPopup;
+			private function voiceBtnClickHandlerN(event:MouseEvent):void
+			{
+				var dictationDTO:ModuleDictationDTO = new ModuleDictationDTO();
+				
+				if (physicalsDto)
+					dictationDTO.DictationID = physicalsDto.DictationID;
+				
+				dictationPanelN = QIDictationManager.show(notesBoxN.id_BoxHeader.id_VoiceBtn.parent, dictationPanelN, dictationDTO, notesBoxN.id_BoxHeader.id_VoiceBtn);
+				QIPopUpManager.addPopUp(dictationPanelN, QIPopUpManager.PHYSICAL);				
+				dictationPanelN.move( dictationPanelN.x - 81, dictationPanelN.y);
+				
+				dictationPanelN.id_closeBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if (dictationDTO && physicalsDto && dictationDTO.DictationID)
+					{
+						physicalsDto.DictationID = dictationDTO.DictationID;
+						
+						if (dictationDTO && physicalsDto && dictationDTO.DictationID && dictationDTO.DictationID != Constants.GUID_FORMAT)
+						{
+							notesBoxN.id_BoxHeader.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+							id_Normal.setStyle("skinClass", NNotesRadioButton);
+							dispatchEvent( new Event("PhysicalIsDirty", true, true) );
+						}
+					}
+					QIPopUpManager.removePopUp(dictationPanel, QIPopUpManager.PHYSICAL);
+				});
+				
+				event.stopImmediatePropagation();
+			}
+			protected function itemrenderer2_focusOutHandler(event:FocusEvent):void
+			{
+				if( m_bIsOpen )
+					removeNormalNotesPopup();
+			}
+			private function NormalNotesChanged(event:Event):void
+			{
+				physicalsDto.Notes 		= event.currentTarget.text;
+				physicalsDto.IsDirty 	= true;
+				id_Normal.selected		= true;
+				physicalsDto.IsNormal   = Constants.STRING_TRUE;
+				physicalsDto.IsAbNormal = Constants.STRING_FALSE;
+				
+				
+				if(notesBoxN.id_TextArea.text.length > 0)
+				{
+					id_Normal.setStyle("skinClass", NNotesRadioButton);
+				}
+				else
+				{
+					id_Normal.setStyle("skinClass", QINormalBtn);
+				} 
+				
+				dispatchEvent( new Event("PhysicalIsDirty", true, true) );
+			}
+
+			[Bindable]
+			public function get GotAbnormal():String
+			{
+				return m_sGotAbnormal;
+			}
+
+			public function set GotAbnormal(value:String):void
+			{
+				m_sGotAbnormal = value;
+				
+				if( value == Constants.STRING_TRUE )
+				{
+					id_Normal.selected = false;
+					ChangeSkin		   = true;
+				}
+			}
+
+			[Bindable]
+			public function get GotNormal():String
+			{
+				return m_sGotNormal;
+			}
+
+			public function set GotNormal(value:String):void
+			{
+				m_sGotNormal = value;
+				if( value == Constants.STRING_TRUE )
+				{
+					id_Abnormal.selected = false;
+					ChangeSkin		   = true;
+				}
+			}
+
+			
+			private var m_sGotAbnormal:String;
+			private var m_sGotNormal:String;
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		
+	</fx:Declarations>
+	
+	<!--<fx:Binding destination="selected" source="id_Abnormal.selected" twoWay="true" />-->
+	
+	<fx:Binding source="physicalsDto.IsDirty" destination="ChangeSkin" />
+	<fx:Binding source="physicalsDto.IsNormal"  destination="GotNormal" />
+	<fx:Binding source="physicalsDto.IsAbNormal" destination="GotAbnormal" />
+	
+	<s:layout>
+		<s:HorizontalLayout paddingLeft="0" paddingRight="5" paddingBottom="0" paddingTop="0" gap="0" />
+	</s:layout>
+
+	
+	<!--<s:BorderContainer id="id_Contents" width="100%" height="26" borderAlpha="1" borderColor="#FFFFFF" backgroundAlpha="1" backgroundColor="#DADBA2">-->
+	<s:SkinnableContainer id="id_Contents" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.ROSSubcategorySkin" width="100%" height="21">
+		<!--DBDC9B-->
+		<s:layout>
+			<s:HorizontalLayout verticalAlign="middle" horizontalAlign="center" paddingLeft="3" paddingRight="3" paddingTop="1" paddingBottom="3" />
+		</s:layout>
+		
+		<!--<s:Button id="id_MainButton" width="150" label="{label}" toolTip="{label}" 
+		skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.subToggleBtn"  textAlignLast="left" />-->
+		<s:Label id="id_MainButton" width="150" text="{label}" toolTip="{label}" maxDisplayedLines="1" fontFamily="Calibri" color="#222222" textAlignLast="left" />
+		
+		<s:HGroup gap="2">
+			
+			<s:ToggleButton id="id_Normal" click="id_Normal_clickHandler(event)"
+							toolTip="Normal" selected="{physicalsDto.IsNormal == Constants.STRING_TRUE}"
+							skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.QINormalBtn" buttonMode="true" useHandCursor="true" />
+			
+			<s:ToggleButton id="id_Abnormal" click="id_NotesBtn_clickHandler(event)" 
+							toolTip="Abnormal" selected="{physicalsDto.IsAbNormal == Constants.STRING_TRUE}"
+							skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.QIAbnormalBtnSkin" 
+							buttonMode="true" useHandCursor="true"/>		
+		</s:HGroup>
+		
+		
+		<!--</s:BorderContainer>-->
+	</s:SkinnableContainer>
+	<s:Group id="id_NotesSpacer" width="100%" height="20" includeInLayout="false" visible="false"/>
+	
+</s:ItemRenderer>

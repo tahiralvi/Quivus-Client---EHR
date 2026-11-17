@@ -1,0 +1,28 @@
+package com.adobe.Quivus.delegate.staticData.immunization
+{
+	import com.adobe.Quivus.delegate.BaseDelegate;
+	import com.adobe.Quivus.serviceLocator.QuivusServiceLocator;
+	
+	import mx.rpc.AsyncToken;
+	import mx.rpc.IResponder;
+	
+	import valueObjects.UserSessionDTO;
+	
+	public class LoadImmunizationRefusalReasonStaticDataDelegate extends BaseDelegate
+	{
+		private var command : IResponder;
+		private var service : Object;
+	
+		public function LoadImmunizationRefusalReasonStaticDataDelegate(  command : IResponder )
+		{		
+			this.service =  QuivusServiceLocator.getInstance().getQuivusManagerServiceInstance();
+			this.command = command;				
+		}
+		
+		public function LoadImmunizationRefusalReasonStaticData(searchCreatria:String, clinicBranchId:int, sessionDTO:UserSessionDTO ) : void {
+			var token:AsyncToken = service.LoadImmunizationRefusalReasonByClinicId(searchCreatria,clinicBranchId,sessionDTO);			
+			token.addResponder( command );
+		}		
+
+	}
+}

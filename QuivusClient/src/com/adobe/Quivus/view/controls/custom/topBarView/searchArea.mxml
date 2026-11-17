@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx"
+					  xmlns:extended="com.adobe.Quivus.view.controls.extended.*" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*" xmlns:topBarView="com.adobe.Quivus.view.controls.custom.topBarView.*"
+					  creationComplete="skinnablecontainer1_creationCompleteHandler(event)"
+					  >
+	<s:layout>
+		<s:VerticalLayout gap="1" horizontalAlign="center" verticalAlign="top" paddingRight="10" paddingTop="-2" />
+	</s:layout>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.search.LoadContactSearchSuggestionListEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.view.controls.panel.WebSearchPanel;
+			import com.adobe.Quivus.view.events.mailClickEvent;
+			import com.adobe.Quivus.view.events.smsClickEvent;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import spark.events.TextOperationEvent;
+			
+			import valueObjects.ContactSearchDTO;
+			
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			public var ContactListView:ContactList;// 	= new ContactList;
+			private var m_sSearchString:String
+			
+			
+			public var mailListener:Function;
+			public var smsListener:Function;
+			
+			public function get SearchString():String
+			{
+				return m_sSearchString;
+			}
+			
+			public function set SearchString(value:String):void
+			{
+				m_sSearchString = value;
+			}
+			
+			protected function id_contacts_clickHandler(event:MouseEvent):void
+			{
+				model.CurrentSearchMode = Constants.CONTACTS_SEARCH_MODE;
+				id_WebSearchOptions.id_web.selected = !id_contacts.selected;
+				
+				id_WebSearchOptions.id_searchEnginesList.selected = !id_contacts.selected;
+				
+				if(id_WebSearchOptions.id_web.selected)
+				{
+					id_WebSearchOptions.id_searchEnginesList.y = 2;
+					id_WebSearchOptions.id_IconImage.y 		   = 5;
+					id_WebSearchOptions.id_searchEnginesList.selected = true;
+					//id_WebSearchOptions.id_BGRect.visible = true;
+					id_WebSearchOptions.id_web.selected = false;
+				}
+				else
+				{
+					id_WebSearchOptions.id_searchEnginesList.y = 5;
+					id_WebSearchOptions.id_IconImage.y 		   = 8;
+					id_WebSearchOptions.id_searchEnginesList.selected = false;
+					
+					
+				}
+				
+				
+				
+			}
+			
+			protected function id_SearchTextInput_mouseDownHandler(event:MouseEvent):void
+			{
+				event.stopImmediatePropagation();
+			}
+			
+			private function OnGlassClick():void
+			{
+				//trace("glass clicked");
+				
+				
+				
+			}
+			
+			
+			
+			
+			
+			private function showAutoCompleteList():void
+			{
+				if( model.CurrentSearchMode != Constants.CONTACTS_SEARCH_MODE )
+					return
+				if( ContactListView )
+				{
+					ContactListView.removePopup();
+				}
+				else
+				{
+					ContactListView 				= new ContactList();
+					ContactListView.addEventListener("mailClick", function (e:mailClickEvent):void
+					{
+						mailListener( e );
+						
+						if( ContactListView )
+						{
+							ContactListView.removePopup();
+						}
+					});
+					////////
+						ContactListView.addEventListener("smsClick", function (e:smsClickEvent):void
+						{
+							smsListener(e);	
+							if(ContactListView)
+							{
+								ContactListView.removePopup();
+							}
+						}
+						);
+				   ////////
+					
+					if( model.contactSearchSuggestionList )
+					{
+						ContactListView.Dataprovider 	= new ArrayCollection ( model.contactSearchSuggestionList.source );
+						ContactListView.Dataprovider.filterFunction = filterForData;
+					}
+					/* if( model.contactSearchSuggestionList )
+					model.contactSearchSuggestionList.filterFunction = filterForData; */
+					var pLoc:Point 					= new Point( id_SearchTextInput.x, id_SearchTextInput.y  );
+					var loc:Point 					= this.localToGlobal( pLoc );
+					ContactListView.minWidth		= id_SearchTextInput.width;
+					ContactListView.x				= loc.x - 30;
+					ContactListView.y				= loc.y + 5;
+				}
+				ContactListView.ShowPopup( this );
+			}
+			
+			
+			protected function id_SearchTextInput_changeHandler(event:TextOperationEvent):void
+			{
+				if( id_SearchTextInput.text.length == 0 && ContactListView )
+				{
+					ContactListView.removePopup();
+					//ContactListView	= null;
+					//model.contactSearchSuggestionList = null;
+					//return;
+				}
+				if(  id_SearchTextInput.text.length == 1 )
+					showAutoCompleteList();
+				
+				if( id_SearchTextInput.text.length > 0 )
+				{
+					SearchString = id_SearchTextInput.text;
+					if( ContactListView && ContactListView.Dataprovider )
+					{
+						ContactListView.Dataprovider.refresh();
+						trace(ContactListView.Dataprovider.length);
+						if( ContactListView.Dataprovider.length == 0 )
+						{
+							ContactListView.id_notFoundLbl.visible 			= true;
+							ContactListView.id_notFoundLbl.includeInLayout  = true;
+							ContactListView.contacts.visible = false;
+						}
+						else
+						{
+							ContactListView.id_notFoundLbl.visible = false;
+						}
+					}
+				}
+				
+				/* if()
+				{
+				var csEvent : LoadContactSearchSuggestionListEvent = new LoadContactSearchSuggestionListEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( csEvent );
+				
+				} */
+			}
+			
+			private function filterForData(item:Object):Boolean
+			{
+				var dto:ContactSearchDTO = item as ContactSearchDTO;
+				if( dto.FirstName.toLowerCase().search( SearchString.toLowerCase() ) != -1 )
+					return true;
+				if( dto.LastName.toLowerCase().search( SearchString.toLowerCase() ) != -1 )
+					return true;
+				if( dto.MiddleName.toLowerCase().search( SearchString.toLowerCase() ) != -1 )
+					return true;
+				
+				var name:String = dto.FirstName + " " + dto.LastName;
+				if( name.toLowerCase().search( SearchString.toLowerCase() ) != -1 )
+					return true;
+				
+				name = dto.FirstName + " " + dto.MiddleName + " " + dto.LastName;
+				if( name.toLowerCase().search( SearchString.toLowerCase() ) != -1 )
+					return true;
+				return false;      
+			}
+			
+
+			protected function skinnablecontainer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_WebSearchOptions.id_web.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					id_WebSearchOptions.id_web.selected = true;
+					id_contacts.selected 				= false;
+				});
+			}
+
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	
+	
+	<s:VGroup id="id_SearchAreaContainer" paddingTop="-2" verticalAlign="top" horizontalAlign="center" gap="-5">
+		<s:Group id="id_Group" >
+			
+			<!--<s:layout>
+			<s:HorizontalLayout paddingLeft="5" />
+			</s:layout>
+			-->
+			
+			
+			<s:TextInput id="id_SearchTextInput" focusColor = "#246D9B" skinClass="com.adobe.Quivus.view.controls.skins.textInputSkins.searchInputSkin" 
+						 width="98%" height="24" change="id_SearchTextInput_changeHandler(event)"  mouseDown="id_SearchTextInput_mouseDownHandler(event)" 
+						 focusAlpha="0" focusRect="false" focusThickness="0" paddingLeft="6"/>
+			
+			
+			<s:Button id="id_btnSearch" useHandCursor="true" buttonMode="true"  x="{id_SearchTextInput.width - 28}" y="1.5" toolTip="Search" 
+					  click="OnGlassClick()" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.magnifyBtn" />
+			
+			
+			
+		</s:Group>
+		<s:HGroup horizontalAlign="center" width="100%" gap="2" paddingTop="-1" paddingLeft="2">
+			
+			<s:VGroup verticalAlign="top" gap="-3" paddingLeft="1">
+				
+				<s:ToggleButton id="id_contacts" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.TopBarContactBtn"  label="CONTACT"
+								selected="{!id_WebSearchOptions.id_web.selected}"					  
+								click="id_contacts_clickHandler(event)"
+								buttonMode="true" useHandCursor="true" toolTip="Search Contact to Communicate"
+								/>
+				
+				
+				<s:Rect id="id_BGRectContact" visible="false" height="23" width="72">
+					<!--<s:fill>
+					<s:LinearGradient rotation="90">
+					<s:GradientEntry ratio="0" color="#A1A3C3" alpha="1.0"/>
+					<s:GradientEntry color="#FFFFFF" alpha="1.0" ratio="0.7215686274509804" />
+					</s:LinearGradient>
+					</s:fill>-->
+					<s:fill>
+						<s:LinearGradient rotation="90">
+							<s:GradientEntry color="#C1C1C1" alpha="1.0" ratio="0"/>
+							<s:GradientEntry color="#999999" ratio="0.3411764705882353" alpha="1.0"/>
+							<s:GradientEntry color="#FFFFFF" ratio="0.9607843137254902" alpha="1.0"/>
+						</s:LinearGradient>
+					</s:fill>
+				</s:Rect>
+			</s:VGroup>
+			
+			<!--<s:ToggleButton id="id_contacts" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.TopBarContactBtn"
+			selected="{!id_WebSearchOptions.id_web.selected}" useHandCursor="true" 					  
+			click="id_contacts_clickHandler(event)" />-->
+			
+			<topBarView:WebSearchOptions id="id_WebSearchOptions" />	
+			<!--<extended:IconButton id="id_contacts"
+			
+			icon="@Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='btn_contact')"  
+			skinClass="com.adobe.Quivus.view.controls.skins.IconButtonSkin"
+			/>-->
+			
+		</s:HGroup>
+	</s:VGroup>
+</s:SkinnableContainer>

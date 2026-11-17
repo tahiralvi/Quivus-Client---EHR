@@ -1,0 +1,1798 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			    width="100%" height="100%"
+			   
+			   close="closePopUpHandler(event)" xmlns:signCoSign="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.signCoSign.*"
+			    skinClass="com.adobe.Quivus.view.controls.skins.titleWindowSkins.reviewAllWindowSkin"
+			    
+			   >
+	
+	<!--width="{FlexGlobals.topLevelApplication.mainContainer.width -150}"
+	height="{FlexGlobals.topLevelApplication.mainContainer.height - 100}"-->
+	<fx:Script>
+		<![CDATA[
+			import mx.core.FlexGlobals;
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import mx.printing.FlexPrintJobScaleType;
+			import mx.printing.FlexPrintJob;
+			
+			
+			import mx.printing.*;
+
+			import mx.formatters.NumberBaseRoundType;
+			import mx.formatters.NumberFormatter;
+			import valueObjects.FollowupLabsDTO;
+			import spark.components.Label;
+			import valueObjects.LabDTO;
+			import valueObjects.PatientFollowupInstructionDTO;
+			import valueObjects.PatientDiagnosisDTO;
+			import valueObjects.MedicationDTO;
+			import mx.charts.chartClasses.DateRangeUtilities;
+			import mx.rpc.mxml.Concurrency;
+			import mx.controls.DataGrid;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import com.adobe.Quivus.events.visit.UpdateVisitEvent;
+			import valueObjects.PatientRecommendationDTO;
+			import valueObjects.ProcedureDTO;
+			import valueObjects.InHouseLabDTO;
+			import valueObjects.MedicationPrescribedDTO;
+			import valueObjects.AllergyDTO;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.Quivus.events.quickInput.ManageQuickInputEvent;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.signCoSign.popUps.AuthenticationPopUp;
+			import valueObjects.HPIDetailsDTO;
+			import valueObjects.HPI_CCDTO;
+			import valueObjects.PhysicalsDTO;
+			import valueObjects.PhysicalDTO;
+			import valueObjects.ImmunizationTypeDTO;
+			import valueObjects.ImmunizationDTO;
+			import com.adobe.Quivus.utils.Constants;
+			import valueObjects.SocialHistoryDTO;
+			import valueObjects.FamilyHistoryDTO;
+			import valueObjects.SocialHistoryAddictionTypeDTO;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import valueObjects.SocialHistoryAddictionDTO;
+			import valueObjects.MedicalHistoryDTO;
+			import valueObjects.ROSDTO;
+			import valueObjects.ROSSubCategoryTypeDTO;
+			import valueObjects.ROSMainCategoryTypeResponse;
+			import valueObjects.ROSMainCategoryTypeDTO;
+			import mx.core.INavigatorContent;
+			import valueObjects.ComprehensiveHistoryDTO;
+			import valueObjects.PatientFollowUpDTO;
+			import valueObjects.VitalDTO;
+			import mx.collections.ArrayCollection;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import mx.managers.PopUpManager;
+			import mx.events.CloseEvent;
+			
+			public static const REVIEW_ALL:String = "reviewAll";
+			public static const SIGN_COSIGN:String = "signCoSign";
+			public static const SAVE_AND_REVIEW:String = "saveAndReview";
+			
+			private var previewWindowType:String;
+			private var authenticationPopUp:AuthenticationPopUp;
+			private var callback:Function;
+			private var statusCallback:Function;
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			public function show(value:String = "", arg_callback:Function = null, status_callback:Function = null):void
+			{
+				this.previewWindowType = value;
+				
+				PopUpManager.addPopUp(this, FlexGlobals.topLevelApplication.mainContainer, true);
+				
+				populateAllergiesData();
+				populateChronicMedicationData();
+				populateComprehensiveHistoryData();
+				populateImmunizationData();
+				populateVitalsData();
+				populateChiefComplaintAndHPIData();
+				populateROSData();
+				populatePhysicalData();
+				populateInHouseLabData();
+				populateDiagnosisData();
+				populateProcedureData();
+				populateLabsData();
+				populateRecommendationData();
+				populatePatientFollowUp();
+				
+				switch(value)
+				{
+					case REVIEW_ALL:
+						this.title = "Patient History for Review";
+						this.okBtn.label = "OK";
+						this.okBtn.visible = false;
+						this.cancelBtn.label = "Close";
+						break;
+					
+					case SIGN_COSIGN:
+						this.title = "Final Review";
+						this.okBtn.label = model.signCoSignBtnLabel;
+						break;
+					
+					case SAVE_AND_REVIEW:
+						this.title = "Final Review";
+						this.okBtn.label = "Save";
+						break;
+				}
+				
+				callback = arg_callback;
+				statusCallback = status_callback
+			}
+			
+			public function hide(doClose:Boolean = false, actionName:String = "", visitID:int = 0):void
+			{
+				PopUpManager.removePopUp(this);
+				
+				if (null != callback && doClose)
+					callback(actionName, visitID);
+			}
+			
+			private function closePopUpHandler(event:CloseEvent):void
+			{
+				hide();
+			}
+			
+			private function populateAllergiesData():void
+			{	
+				var tempData:ArrayCollection = model.quicInputAllergyDTOList;
+				
+				if (tempData)
+				{
+					var dataPvdr:ArrayCollection = new ArrayCollection();
+					
+					for (var i:int = 0; i < tempData.length; i++)
+					{
+						var data:Object = {onSet: "", allergy: "", reaction: "", notes: ""};
+						var allergiesDTO:AllergyDTO = AllergyDTO(tempData[i]);
+						
+						if (allergiesDTO)
+						{
+							data["onSet"] = allergiesDTO.OnSet;
+							data["allergy"] = allergiesDTO.AllergyName
+							data["reaction"] = allergiesDTO.Reaction
+							data["notes"] = allergiesDTO.Note;
+						}
+						
+						dataPvdr.addItem(data);
+					}
+					
+					var onSet:DataGridColumn = new DataGridColumn();
+					onSet.headerText = "OnSet";
+					onSet.dataField = "onSet";
+//					onSet.itemRenderer = new ClassFactory(DateRenderer4DG); //commented due to date to string converion
+					
+					var allergy:DataGridColumn = new DataGridColumn();
+					allergy.headerText = "Allergy";
+					allergy.dataField = "allergy";
+					
+					var reaction:DataGridColumn = new DataGridColumn();
+					reaction.headerText = "Reaction";
+					reaction.dataField = "reaction";
+					
+					var notes:DataGridColumn = new DataGridColumn();
+					notes.headerText = "Notes";
+					notes.dataField = "notes";
+					notes.wordWrap = true;
+					
+					allergiesView.columns = new ArrayCollection([{subColumns:
+							[{onSet: onSet}, {allergy: allergy}, {notes: notes}]}]);
+					
+					allergiesView.dataProvider = new ArrayCollection([{subDataProvider: dataPvdr}]);
+				}
+			}
+			
+			private function populateChronicMedicationData():void	
+			{
+				var tempData:ArrayCollection = model.medicationDTOList;
+				
+				if (tempData)
+				{
+					var dataPvdr:ArrayCollection = new ArrayCollection();
+					
+					for (var i:int = 0; i < tempData.length; i++)
+					{
+						var data:Object = {onSet: "", medicine: "", icdCode: "", active:"", notes: ""};
+						var medicationDTO:MedicationDTO = MedicationDTO(tempData[i]);
+						
+						if (medicationDTO)
+						{
+							data["onSet"] = medicationDTO.CreatedAt;
+							data["medication"] = medicationDTO.GenericName;
+							data["strength"] = medicationDTO.Strength;
+							data["qty"] = medicationDTO.Quantity;
+							data["noOfRefill"] = medicationDTO.Refills;
+						}
+						
+						dataPvdr.addItem(data);
+					}
+					
+					var onSet:DataGridColumn = new DataGridColumn();
+					onSet.headerText = "Onset";
+					onSet.dataField = "onSet";
+//					onSet.itemRenderer = new ClassFactory(DateRenderer4DG);//commented due to date to string converion
+					
+					var medication:DataGridColumn = new DataGridColumn();
+					medication.headerText = "Medication";
+					medication.dataField = "medication";
+					medication.wordWrap="true";
+					
+					var strength:DataGridColumn = new DataGridColumn();
+					strength.headerText = "Strength";
+					strength.dataField = "strength";
+					strength.wordWrap="true";
+					
+					var qty:DataGridColumn = new DataGridColumn();
+					qty.headerText = "Qty.";
+					qty.dataField = "qty";
+					qty.wordWrap="true";
+					
+					var noOfRefills:DataGridColumn = new DataGridColumn();
+					noOfRefills.headerText = "No. of Refills";
+					noOfRefills.dataField = "noOfRefill";
+					
+					medicationView.columns = new ArrayCollection([{subColumns: [{onSet: onSet}, {medication: medication}, {strength: strength}, 
+							{qty: qty}, {noOfRefill: noOfRefills}]
+							}]);
+					medicationView.dataProvider = new ArrayCollection([{subDataProvider: dataPvdr}]);
+				}
+			}
+			
+			private function populateGeneralHistory(dataPvdr:ArrayCollection, cols:ArrayCollection):void
+			{
+				var data:Object;
+				var subDataPvdr:ArrayCollection = new ArrayCollection();
+				
+				var medicalHistory:MedicalHistoryDTO;
+				
+				medicalHistory = QSUtilityFunctions.getGeneralHistoryDTO(Constants.MEDICAL_MODULE_NAME);
+				
+				if (medicalHistory && ( medicalHistory.MedicalHistoryNote || medicalHistory.IsNone ) )
+				{
+					data = {GeneralHistory:"", IsNone:"", Notes: ""};
+					
+					data["GeneralHistory"] = Constants.MEDICAL_MODULE_NAME;
+					data["IsNone"] = ( medicalHistory.IsNone == Constants.STRING_TRUE )? Constants.STRING_NONE_UI : Constants.STRING_YES_UI;
+					data["Notes"] = medicalHistory.MedicalHistoryNote;
+					
+					subDataPvdr.addItem(data);
+				}
+				
+				medicalHistory = QSUtilityFunctions.getGeneralHistoryDTO(Constants.CHILDHOOD_MODULE_NAME);
+				
+				if (medicalHistory && ( medicalHistory.MedicalHistoryNote || medicalHistory.IsNone ) )
+				{
+					data = {GeneralHistory:"", IsNone:"", Notes: ""};
+					
+					data["GeneralHistory"] = Constants.CHILDHOOD_MODULE_NAME;
+					data["IsNone"] = ( medicalHistory.IsNone == Constants.STRING_TRUE )? Constants.STRING_NONE_UI :  Constants.STRING_YES_UI;
+					data["Notes"] = medicalHistory.MedicalHistoryNote;
+					
+					subDataPvdr.addItem(data);
+				}
+				
+				medicalHistory = QSUtilityFunctions.getGeneralHistoryDTO(Constants.SURGICAL_MODULE_NAME);
+				
+				if (medicalHistory && ( medicalHistory.MedicalHistoryNote || medicalHistory.IsNone ) )
+				{
+					data = {GeneralHistory:"", IsNone:"", Notes: ""};
+					
+					data["GeneralHistory"] = Constants.SURGICAL_MODULE_NAME;
+					data["IsNone"] = ( medicalHistory.IsNone == Constants.STRING_TRUE )? Constants.STRING_NONE_UI :  Constants.STRING_YES_UI;
+					data["Notes"] = medicalHistory.MedicalHistoryNote;
+					
+					subDataPvdr.addItem(data);
+				}
+				
+				medicalHistory = QSUtilityFunctions.getGeneralHistoryDTO(Constants.OTHER_MODULE_NAME);
+				
+				if (medicalHistory && ( medicalHistory.MedicalHistoryNote || medicalHistory.IsNone ) )
+				{
+					data = {GeneralHistory:"", IsNone:"", Notes: ""};
+					
+					data["GeneralHistory"] = Constants.OTHER_MODULE_NAME;
+					data["IsNone"] = ( medicalHistory.IsNone == Constants.STRING_TRUE )? Constants.STRING_NONE_UI :  Constants.STRING_YES_UI;
+					data["Notes"] = medicalHistory.MedicalHistoryNote;
+					
+					subDataPvdr.addItem(data);
+				}
+				
+				var generalHistory:DataGridColumn = new DataGridColumn();
+				generalHistory.headerText = "General History";
+				generalHistory.dataField = "GeneralHistory";
+				generalHistory.width = 80;
+				generalHistory.wordWrap=true;
+
+				var isNone:DataGridColumn = new DataGridColumn();
+				isNone.headerText = "Status";
+				isNone.dataField = "IsNone";
+				isNone.width = 40;
+				
+				var notes:DataGridColumn = new DataGridColumn();
+				notes.headerText = "Notes";
+				notes.dataField = "Notes";
+				notes.width = 200;
+				notes.wordWrap = true;
+				
+
+				cols.addItem({"subColumns": [{GeneralHistory: generalHistory}, {IsNone:isNone}, {Notes: notes}]});
+				
+				dataPvdr.addItem({"subDataProvider": subDataPvdr});
+			}
+			
+			private function populateFamilyHistory(dataPvdr:ArrayCollection, cols:ArrayCollection):void
+			{
+				var data:Object;
+				var subDataPvdr:ArrayCollection = new ArrayCollection();
+				
+				var familyHistory:FamilyHistoryDTO;
+				
+				familyHistory = QSUtilityFunctions.getFamilyHistoryDTO(Constants.FAMILY_HEART_DISEASE_MODULE_NAME);
+				
+				if (familyHistory && (familyHistory.IsYesSelected || familyHistory.FamilyHistoryNote))
+				{
+					data = {familyHistory: "",  current: "",  notes: "", disease: "", relation: ""};
+					
+					data["familyHistory"] = Constants.FAMILY_HEARTDISEASE_MODULE_NAME;
+					data["current"] 	  = ( familyHistory.IsYesSelected == Constants.STRING_TRUE )? Constants.STRING_YES_UI : Constants.STRING_NO_UI;
+					data["disease"] 	  = familyHistory.DiseaseName;
+					data["relation"] 	  = familyHistory.ReletionshipTypeName;
+					data["notes"] = familyHistory.FamilyHistoryNote;
+					
+					subDataPvdr.addItem(data);
+				}
+				
+				familyHistory = QSUtilityFunctions.getFamilyHistoryDTO(Constants.FAMILY_HYPERTENSION_MODULE_NAME);
+				
+				if (familyHistory && (familyHistory.IsYesSelected || familyHistory.FamilyHistoryNote))
+				{
+					data = {familyHistory: "", current: "", notes: "", disease: "", relation: ""};
+					
+					data["familyHistory"] = Constants.FAMILY_HYPERTENSION_MODULE_NAME;
+					data["current"] 	  = ( familyHistory.IsYesSelected == Constants.STRING_TRUE )? Constants.STRING_YES_UI : Constants.STRING_NO_UI;
+					data["disease"] 	  = familyHistory.DiseaseName;
+					data["relation"] 	  = familyHistory.ReletionshipTypeName;
+					data["notes"] = familyHistory.FamilyHistoryNote;
+					
+					subDataPvdr.addItem(data);
+				}
+				
+				familyHistory = QSUtilityFunctions.getFamilyHistoryDTO( Constants.FAMILY_DIABETES_MODULE_NAME);
+				
+				if (familyHistory && (familyHistory.IsYesSelected || familyHistory.FamilyHistoryNote))
+				{
+					data = {familyHistory: "", current: "", notes: "", disease: "", relation: ""};
+					
+					data["familyHistory"] =  Constants.FAMILY_DIABETES_MODULE_NAME;
+					data["current"] 	  = ( familyHistory.IsYesSelected == Constants.STRING_TRUE )? Constants.STRING_YES_UI : Constants.STRING_NO_UI;
+					data["disease"] 	  = familyHistory.DiseaseName;
+					data["relation"] 	  = familyHistory.ReletionshipTypeName;
+					data["notes"] = familyHistory.FamilyHistoryNote;
+					
+					subDataPvdr.addItem(data);
+				}
+				
+				familyHistory = QSUtilityFunctions.getFamilyHistoryDTO(Constants.FAMILY_CANCER_MODULE_NAME);
+				
+				if (familyHistory  && (familyHistory.IsYesSelected || familyHistory.FamilyHistoryNote))
+				{
+					data = {familyHistory: "", current: "", notes: "", disease: "", relation: ""};
+					
+					data["familyHistory"] = Constants.FAMILY_CANCER_MODULE_NAME;
+					data["current"] 	  = ( familyHistory.IsYesSelected == Constants.STRING_TRUE )? Constants.STRING_YES_UI : Constants.STRING_NO_UI;
+					data["disease"] 	  = familyHistory.DiseaseName;
+					data["relation"] 	  = familyHistory.ReletionshipTypeName;
+					data["notes"] = familyHistory.FamilyHistoryNote;
+					
+					subDataPvdr.addItem(data);
+				}
+				
+				familyHistory = QSUtilityFunctions.getFamilyHistoryDTO(Constants.FAMILY_OTHER_MODULE_NAME);
+				
+				if (familyHistory && (familyHistory.IsYesSelected || familyHistory.FamilyHistoryNote))
+				{
+					data = {familyHistory: "", current: "", notes: "", disease: "", relation: ""};
+					
+					data["familyHistory"] = Constants.FAMILY_OTHER_MODULE_NAME;
+					data["current"] 	  = ( familyHistory.IsYesSelected == Constants.STRING_TRUE )? Constants.STRING_YES_UI : Constants.STRING_NO_UI;
+					data["disease"] 	  = familyHistory.DiseaseName;
+					data["relation"] 	  = familyHistory.ReletionshipTypeName;
+					data["notes"] = familyHistory.FamilyHistoryNote;
+					
+					subDataPvdr.addItem(data);
+				}
+				
+				var familyHistoryCol:DataGridColumn = new DataGridColumn();
+				familyHistoryCol.headerText = "Family History";
+				familyHistoryCol.dataField = "familyHistory";
+				familyHistoryCol.width = 80;
+				familyHistoryCol.wordWrap="true";
+				
+				var disease:DataGridColumn = new DataGridColumn();
+				disease.headerText = "Disease";
+				disease.dataField = "disease";
+				disease.width = 80;
+				
+				var relation:DataGridColumn = new DataGridColumn();
+				relation.headerText = "Relation";
+				relation.dataField = "relation";
+				relation.width = 80;
+				
+				var current:DataGridColumn = new DataGridColumn();
+				current.headerText = "Status";
+				current.dataField = "current";
+				current.width = 80;
+				
+				var notes:DataGridColumn = new DataGridColumn();
+				notes.headerText = "Notes";
+				notes.dataField = "notes";
+				notes.wordWrap = true;
+				notes.width = 200;
+				
+				cols.addItem({"subColumns": [{familyHistory: familyHistoryCol}, {current: current}, {disease: disease}, {relation: relation}, {notes: notes}]});	
+				dataPvdr.addItem({"subDataProvider": subDataPvdr});
+			}
+			
+			private function populateSocialHistory(dataPvdr:ArrayCollection, cols:ArrayCollection):void
+			{
+				var data:Object;
+				var subDataPvdr:ArrayCollection = new ArrayCollection();
+				
+				var socialHistoryAddiction:SocialHistoryAddictionDTO;
+				
+				socialHistoryAddiction = QSUtilityFunctions.getSocialHistoryAddictionDTOByName(Constants.SOCIAL_TOBACCO_MODULE_NAME);
+				
+				if (socialHistoryAddiction && (socialHistoryAddiction.IsYesSelected || socialHistoryAddiction.IsNoSelected || socialHistoryAddiction.IsUnknown))
+				{
+					data = {socialHistory: "", current: "", notes: ""};
+					
+					data["socialHistory"] = Constants.SOCIAL_TOBACCO_MODULE_NAME;
+					
+					if (socialHistoryAddiction.IsYesSelected && socialHistoryAddiction.IsYesSelected == Constants.STRING_TRUE)
+						data["current"] = "Yes";
+					
+					else if (socialHistoryAddiction.IsNoSelected && socialHistoryAddiction.IsNoSelected == Constants.STRING_TRUE)
+						data["current"] = "No";
+					
+					else if (socialHistoryAddiction.IsUnknown)
+						data["current"] = "Unknown";
+					
+					/* data["notes"] = socialHistoryAddiction.;
+					data["notes"] = socialHistoryAddiction.AddictionNotes; */
+					data["notes"] = socialHistoryAddiction.AddictionNotes;
+					
+					subDataPvdr.addItem(data);
+				}
+				
+				socialHistoryAddiction = QSUtilityFunctions.getSocialHistoryAddictionDTOByName(Constants.SOCIAL_ALCOHOL_MODULE_NAME);
+				
+				if (socialHistoryAddiction && (socialHistoryAddiction.IsYesSelected || socialHistoryAddiction.IsNoSelected))
+				{
+					data = {socialHistory: "", current: "", notes: ""};
+					
+					data["socialHistory"] = Constants.SOCIAL_ALCOHOL_MODULE_NAME;
+					
+					if (socialHistoryAddiction.IsYesSelected && socialHistoryAddiction.IsYesSelected.toLowerCase() == Constants.STRING_TRUE)
+						data["current"] = "Yes";
+						
+					else if (socialHistoryAddiction.IsNoSelected && socialHistoryAddiction.IsNoSelected.toLowerCase() == Constants.STRING_TRUE)
+						data["current"] = "No";
+					
+					data["notes"] = socialHistoryAddiction.AddictionNotes;
+					
+					subDataPvdr.addItem(data);
+				}
+				
+				socialHistoryAddiction = QSUtilityFunctions.getSocialHistoryAddictionDTOByName(Constants.SOCIAL_DRUGS_MODULE_NAME);
+				
+				if (socialHistoryAddiction && (socialHistoryAddiction.IsYesSelected || socialHistoryAddiction.IsNoSelected))
+				{
+					data = {socialHistory: "", current: "", notes: ""};
+					
+					data["socialHistory"] = Constants.SOCIAL_DRUGS_MODULE_NAME;
+					
+					if (socialHistoryAddiction.IsYesSelected && socialHistoryAddiction.IsYesSelected.toLowerCase() == Constants.STRING_TRUE)
+						data["current"] = "Yes";
+						
+					else if (socialHistoryAddiction.IsNoSelected && socialHistoryAddiction.IsNoSelected.toLowerCase() == Constants.STRING_TRUE)
+						data["current"] = "No";
+					
+					data["notes"] = socialHistoryAddiction.AddictionNotes;
+					
+					subDataPvdr.addItem(data);
+				}
+				
+				if (model.socialHistoryDTO)
+				{
+					var otherSocialHistory:SocialHistoryDTO = SocialHistoryDTO(model.socialHistoryDTO);
+					
+					if (otherSocialHistory.IsWorkStatusYesSelected)
+					{
+						data = {socialHistory: "", current: "", notes: ""};
+						data["socialHistory"] = Constants.SOCIAL_WORK_STATUS_MODULE_NAME;
+						
+						if (otherSocialHistory.IsWorkStatusYesSelected == Constants.STRING_TRUE)
+							data["current"] = "Yes";
+						else 
+							data["current"] = "No";
+						
+						data["notes"] = otherSocialHistory.WorkStatusNotes;
+						
+						subDataPvdr.addItem(data);
+					}
+					
+					var maritalStatus:String = QSUtilityFunctions.getMaritalStatusNameById(otherSocialHistory.MaritalStatusID);
+					
+					if (maritalStatus && maritalStatus.length)
+					{
+						data = {socialHistory: "", current: "", notes: ""};
+						data["socialHistory"] = Constants.SOCIAL_MERITAL_STATUS_MODULE_NAME;
+						
+						data["current"] = maritalStatus;
+						
+						subDataPvdr.addItem(data);
+					}
+					
+					if (otherSocialHistory.IsOtherYesSelected)
+					{
+						data = {socialHistory: "", current: "", notes: ""};
+						data["socialHistory"] = Constants.OTHER_MODULE_NAME;
+						
+						if (otherSocialHistory.IsOtherYesSelected == Constants.STRING_TRUE)
+							data["current"] = "Yes";
+						else
+							data["current"] = "No";
+						
+						data["notes"] = otherSocialHistory.OtherNotes;
+						
+						subDataPvdr.addItem(data);
+					}
+					
+				}
+				var socialHistory:DataGridColumn = new DataGridColumn();
+				socialHistory.headerText = "Social History";
+				socialHistory.dataField = "socialHistory";
+				socialHistory.width = 100;
+				socialHistory.wordWrap="true";
+				
+				var current:DataGridColumn = new DataGridColumn();
+				current.headerText = "Current";
+				current.dataField = "current";
+				current.width = 100;
+				current.wordWrap=true;
+				
+				var notes:DataGridColumn = new DataGridColumn();
+				notes.headerText = "Notes";
+				notes.dataField = "notes";
+				notes.wordWrap = true;
+				notes.width = 200;
+				
+				cols.addItem({"subColumns": [{socialHistory: socialHistory}, {current: current}, {notes: notes}]});
+				dataPvdr.addItem({"subDataProvider": subDataPvdr});
+			}
+			
+			private function populateComprehensiveHistoryData():void
+			{
+				var dataPvdr:ArrayCollection = new ArrayCollection();
+				var comprehensiveHistoryCols:ArrayCollection = new ArrayCollection();
+				
+				populateGeneralHistory(dataPvdr, comprehensiveHistoryCols);
+				populateFamilyHistory(dataPvdr, comprehensiveHistoryCols);
+				populateSocialHistory(dataPvdr, comprehensiveHistoryCols);
+				
+				comprehensiveHistory.columns =  comprehensiveHistoryCols;
+				comprehensiveHistory.dataProvider = dataPvdr;
+			}
+			
+			private function populateImmunizationData():void
+			{
+				if(model.quickInputDTO!=null && model.quickInputDTO.PMH!=null &&  model.quickInputDTO.PMH.Immunization!=null)
+				{
+					var tempData:ArrayCollection = model.quickInputDTO.PMH.Immunization;
+					
+					if (tempData)
+					{
+						var dataPvdr:ArrayCollection = new ArrayCollection();
+						
+						for (var i:int = 0; i < tempData.length; i++)
+						{
+							var data:Object = {immunization: "", dose: "", lotNo: "", dateAdmin: "", nextDue: "", notes: ""};
+							var immunizationDTO:ImmunizationDTO = ImmunizationDTO(tempData[i]);
+							
+							if (immunizationDTO)
+							{
+								if (immunizationDTO.ImmunizationType)
+									data["immunization"] = ImmunizationTypeDTO(immunizationDTO.ImmunizationType).ImmunizationTypeName;
+								
+								data["dose"] = immunizationDTO.Dose;
+								data["lotNo"] = immunizationDTO.LotNumber;
+								data["dateAdmin"] = immunizationDTO.DateAdmin;
+								data["nextDue"] = immunizationDTO.NextDoseDue;
+								data["notes"] = immunizationDTO.Note;
+							}
+							
+							dataPvdr.addItem(data);
+						}
+					}
+					
+					var immunization:DataGridColumn = new DataGridColumn();
+					immunization.headerText = "Immunization";
+					immunization.dataField = "immunization";
+					immunization.width=60;
+					immunization.wordWrap="true";
+					//immunization.itemRenderer = new ClassFactory(Label);
+					
+					var dose:DataGridColumn = new DataGridColumn();
+					dose.headerText = "Dose";
+					dose.dataField = "dose";
+					dose.width=40;
+					
+					var lotNo:DataGridColumn = new DataGridColumn();
+					lotNo.headerText = "Lot #";
+					lotNo.dataField = "lotNo";
+					lotNo.width=40;
+					
+					var dateAdmin:DataGridColumn = new DataGridColumn();
+					dateAdmin.headerText = "Date Admin";
+					dateAdmin.headerWordWrap="true"
+					dateAdmin.dataField = "dateAdmin";
+					dateAdmin.width=70;
+					//dateAdmin.itemRenderer = new ClassFactory(DateRenderer4DG);//commented due to date to string converion
+					
+					var nextDue:DataGridColumn = new DataGridColumn();
+					nextDue.headerText = "Next Due";
+					nextDue.dataField = "nextDue";
+					nextDue.wordWrap="true";
+					nextDue.width=70;
+//					nextDue.itemRenderer = new ClassFactory(DateRenderer4DG);//commented due to date to string converion
+					
+					var notes:DataGridColumn = new DataGridColumn();
+					notes.headerText = "Notes";
+					notes.dataField = "notes";
+					notes.wordWrap = true;
+					notes.width=80;
+					
+					immunizationView.columns = new ArrayCollection([{subColumns: 
+						[{immunization: immunization}, {dose: dose}, {lotNo: lotNo}, {dateAdmin: dateAdmin}, {nextDue: nextDue}, {notes: notes}]
+					}]);
+					
+					immunizationView.dataProvider = new ArrayCollection([{subDataProvider: dataPvdr}]);
+				}
+			}
+			
+			private function populateVitalsData():void
+			{
+				if (model.quickInputDTO!=null && model.quickInputDTO.Physical!=null && model.quickInputDTO.Physical.Vitals!=null)
+				{
+					var vitalDTO:VitalDTO = VitalDTO(model.quickInputDTO.Physical.Vitals);
+					var dataPvdr:ArrayCollection = new ArrayCollection();
+					
+					/**
+					 * If all values in vitals are zero then do not show the grid*/
+					var allValuesAreZero:Boolean= true;
+					
+					var numberFormator:NumberFormatter = new NumberFormatter();
+					numberFormator.precision = 2;
+					numberFormator.rounding = NumberBaseRoundType.NEAREST;
+	//Tahir Alvi [27-08-2011]- Oxygen Column is added								
+					if (vitalDTO)
+					{
+						var data:Object = {BPSys:"", BPDys:"", oxygen:"", pulse:"", respiration:"", temperature:"", height: "", weight:"", notes: ""};
+						
+						data["oxygen"] = numberFormator.format(vitalDTO.Oxygen);
+						if(vitalDTO.Oxygen && vitalDTO.Oxygen != "0")
+							allValuesAreZero = false;
+						
+						data["height"] = numberFormator.format(vitalDTO.Height);
+							
+						if (vitalDTO.Height && vitalDTO.Height != "0")
+							allValuesAreZero = false;
+						
+						data["weight"] = numberFormator.format(vitalDTO.Weight);
+							
+						if (allValuesAreZero && (!vitalDTO.Weight || vitalDTO.Weight == "0"))
+							allValuesAreZero = true;
+						
+						else
+							allValuesAreZero = false;
+						
+						data["temperature"] = numberFormator.format(vitalDTO.Temperature);
+							
+						if (allValuesAreZero && (!vitalDTO.Temperature || vitalDTO.Temperature == "0"))
+							allValuesAreZero = true;
+						
+						else
+							allValuesAreZero = false;
+						
+						data["pulse"] = vitalDTO.Pulse;
+							
+						if (allValuesAreZero && (!vitalDTO.Pulse || vitalDTO.Pulse == "0"))
+							allValuesAreZero = true;
+						
+						else
+							allValuesAreZero = false;
+						
+						data["respiration"] = vitalDTO.Respiration;
+							
+						if (allValuesAreZero && (!vitalDTO.Respiration || vitalDTO.Respiration == "0"))
+							allValuesAreZero = true;
+						
+						else
+							allValuesAreZero = false;
+						
+						var bp:String = "";
+						
+						if (vitalDTO.BPSys)
+							bp += vitalDTO.BPSys;
+						else
+							bp += "0"
+							
+						if (allValuesAreZero && (!vitalDTO.BPSys || vitalDTO.BPSys == "0"))
+							allValuesAreZero = true;
+						
+						else
+							allValuesAreZero = false;
+						
+						bp += "/";
+						
+						if (vitalDTO.BPDys)
+							bp += vitalDTO.BPDys;
+						else 
+							bp += "0";
+							
+						if (allValuesAreZero && (!vitalDTO.BPDys || vitalDTO.BPDys == "0"))
+							allValuesAreZero = true;
+						
+						else
+							allValuesAreZero = false;
+						
+						data["BP"] = bp;
+						
+						data["notes"] = vitalDTO.VitalNote;
+						
+						if (!allValuesAreZero)
+						{
+							dataPvdr.addItem(data);
+						
+							
+							
+							var height:DataGridColumn = new DataGridColumn();
+							height.headerText = "Height(Cm)";
+							height.headerWordWrap="true";
+							//height.width=40;
+							height.wordWrap="true";
+							height.dataField = "height";
+							
+							var weight:DataGridColumn = new DataGridColumn();
+							weight.headerText = "Weight(Kg)";
+							weight.dataField = "weight";
+							weight.headerWordWrap="true";
+							//weight.width=40;
+							weight.wordWrap="true";
+							
+							var temperature:DataGridColumn = new DataGridColumn();
+							temperature.headerText = "Temp(F)";
+							temperature.dataField = "temperature";
+							temperature.headerWordWrap="true";
+							//temperature.width=80;
+							temperature.wordWrap="true";
+						
+							
+							var pulse:DataGridColumn = new DataGridColumn();
+							pulse.headerText = "Pulse(Min)";
+							pulse.dataField = "pulse";
+							pulse.headerWordWrap="true";
+							//pulse.width=50;
+							
+							
+							var respiration:DataGridColumn = new DataGridColumn();
+							respiration.headerText = "RR(Min)";
+							respiration.dataField = "respiration";
+							respiration.headerWordWrap="true";
+							//respiration.width=40;
+							
+					
+							var oxygen:DataGridColumn = new DataGridColumn();
+							oxygen.headerText = "Oxygen(%)";
+							oxygen.dataField = 'oxygen';
+							oxygen.headerWordWrap="true";
+							//oxygen.width=40;
+							
+							var bloodPressure:DataGridColumn = new DataGridColumn();
+							bloodPressure.headerText = "BP(Sys/Dys)";
+							bloodPressure.dataField = "BP";
+							bloodPressure.headerWordWrap="true";
+							//bloodPressure.width=40;
+							
+							
+							var notes:DataGridColumn = new DataGridColumn();
+							notes.headerText = "Notes";
+							notes.dataField = "notes";
+							notes.wordWrap = true;
+							
+							vitalsView.columns = new ArrayCollection([{subColumns: 
+								[{height: height}, {weight: weight}, {temperature: temperature}, {pulse: pulse}, {respiration: respiration},{oxygen: oxygen}, {BP: bloodPressure}, {notes: notes}]
+							}]);
+							
+							vitalsView.dataProvider = new ArrayCollection([{subDataProvider: dataPvdr}]);
+						}
+					}
+				}
+			}
+			
+			private function populateChiefComplaintAndHPIData():void
+			{
+				if(model.quickInputDTO!=null && model.quickInputDTO.Physical!=null && model.quickInputDTO.Physical.HPI_CC!=null)
+				{
+					var tempData:ArrayCollection = model.quickInputDTO.Physical.HPI_CC;
+					if (tempData)
+					{
+						var dataPvdr:ArrayCollection = new ArrayCollection();
+						
+						for (var i:int = 0; i < tempData.length; i++)
+						{
+							var data:Object = {ChiefComplaint: "", hpiFields: "", disableEditableMode: ""};
+							
+							var hpi_ccDTO:HPI_CCDTO = HPI_CCDTO(tempData[i]);
+							
+							data["ChiefComplaint"] = hpi_ccDTO.ChiefComplaint;
+							data["disableEditableMode"] = true;
+							
+							var hpiDetailsDTO:HPIDetailsDTO = hpi_ccDTO.HPIFields;
+							
+							data["hpiFields"] = {symptom: {label: "Symptom", value: hpiDetailsDTO.Symptom},
+												 context: {label: "Context", value: hpiDetailsDTO.Context},
+												 duration: {label: "Duration", value: hpiDetailsDTO.Duration},
+												 exacerbating: {label: "Exacerbating", value: hpiDetailsDTO.Exacerbating},
+												 location: {label: "Location", value: hpiDetailsDTO.Location},
+												 modifyingFactors: {label: "Modifying Factors", value: hpiDetailsDTO.ModifyingFactors},
+												 onSet: {label: "On Set" , value: hpiDetailsDTO.Onset},
+												 progression: {label: "Progression", value: hpiDetailsDTO.Progression},
+												 quality: {label: "Quality", value: hpiDetailsDTO.Quality},
+												 radiation: {label: "Radiation", value: hpiDetailsDTO.Radiation},
+												 severity: {label: "Severity", value: hpiDetailsDTO.Severity}
+												};
+							
+							dataPvdr.addItem(data);
+						}
+						
+						ccHPIView.dataProvider = dataPvdr;
+					}
+				}
+			}
+			
+			private function populatePhysicalData():void
+			{
+				var dataPvdr:ArrayCollection = new ArrayCollection();
+					
+				if (model.physicalsDTOList)
+				{
+					for (var i:int = 0; i < model.physicalsDTOList.length; i++)
+					{
+						var dto:PhysicalsDTO = model.physicalsDTOList.getItemAt(i) as PhysicalsDTO ; 
+						var children:ArrayCollection = dto.children;
+						if (children)
+						{
+							var j:int;
+							var firstChildStr:String ="";
+							var firstchildNotes:String ="";
+							var data:Object = {type: "", normal: "", notes: ""};
+						
+							for(j=0;j<dto.children.length;j++)
+							{
+								var child:PhysicalsDTO = dto.children.getItemAt(j) as PhysicalsDTO ; 
+								if(child.children!=null && child.children.length>0)
+								{
+									var k:int;
+									var innerChildStr:String ="";
+									var innerchildNotes:String ="";
+									var subdata:Object = {type: "", normal: "", notes: ""};
+						
+									for(k=0;k<child.children.length;k++)
+						{
+										var subChild:PhysicalsDTO = child.children.getItemAt(k) as PhysicalsDTO ;
+										if ( subChild.IsNormal && subChild.IsNormal.length && subChild.IsNormal != Constants.STRING_NULL)
+							{
+											var normal:String = (subChild.IsNormal == Constants.STRING_TRUE)? "NORMAL":"ABNORMAL";
+											innerChildStr += subChild.label + ": " + normal + ", ";
+											if( subChild.Notes && subChild.Notes.length )
+												innerchildNotes +=  subChild.label + ": " + subChild.Notes + ", ";
+								
+										}
+									}
+									if( innerChildStr && innerChildStr.length )
+								{
+										subdata["type"] 			= subChild.SubCategoryName;
+										subdata["typeValue"] 		= innerChildStr.substr(0,innerChildStr.length-2); 
+										subdata["notes"] 			= innerchildNotes.substr(0,innerchildNotes.length-2); 
+										dataPvdr.addItem(subdata); 
+									}
+								}
+								else if (child.IsNormal && child.IsNormal.length && child.IsNormal != Constants.STRING_NULL)
+								{
+									var normal:String = (child.IsNormal == Constants.STRING_TRUE)? "NORMAL":"ABNORMAL";
+									firstChildStr += child.SubCategoryName + ": " + normal + ", ";
+									if( child.Notes && child.Notes.length )
+										firstchildNotes +=  child.SubCategoryName + ": " + child.Notes + ", ";
+								}
+							}
+									
+							if( firstChildStr && firstChildStr.length )
+							{
+								data["type"] 			= child.MainCategoryName;
+								data["typeValue"] 		= firstChildStr.substr(0, firstChildStr.length-2);
+								data["notes"] 			= firstchildNotes.substr(0,firstchildNotes.length-2);
+									dataPvdr.addItem(data);
+								}
+							}
+						}
+					
+					if(dataPvdr.length){
+						
+					var type:DataGridColumn = new DataGridColumn();
+					type.headerText = "Type";
+					type.dataField = "type";
+						type.width=15;
+					
+					var typeValue:DataGridColumn = new DataGridColumn();
+					typeValue.headerText = "Type Value";
+					typeValue.dataField = "typeValue";
+						typeValue.width=40;
+						typeValue.headerWordWrap="true";
+						typeValue.wordWrap = true;
+					
+					
+					var notes:DataGridColumn = new DataGridColumn();
+					notes.headerText = "Notes";
+					notes.dataField = "notes";
+					notes.wordWrap = true;
+						notes.width=80;
+					
+					physicalView.columns = new ArrayCollection([{subColumns: 
+							[{type: type}, {typeValue: typeValue}, {notes: notes}]
+					}]);
+					
+					physicalView.dataProvider = new ArrayCollection([{subDataProvider: dataPvdr}]);
+				}
+			}
+			}
+			
+			private function populateInHouseLabData():void
+			{
+				if(model.quickInputDTO!=null && model.quickInputDTO.Physical!=null && model.quickInputDTO.Physical.InHouseLabs!=null)
+				{
+					var tempData:ArrayCollection = model.quickInputDTO.Physical.InHouseLabs;
+					
+					if (tempData)
+					{
+						var dataPvdr:ArrayCollection = new ArrayCollection();
+						
+						for (var i:int = 0; i < tempData.length; i++)
+						{
+							var data:Object = {testCode: "", testName: "", result: ""/*, normalRange: ""*/, notes: ""};
+							var inHouseLabDTO:InHouseLabDTO = InHouseLabDTO(tempData[i]);
+							
+							if (inHouseLabDTO)
+							{
+								data["testCode"] = inHouseLabDTO.InHouseLabTestType.TestCode;
+								data["testName"] = inHouseLabDTO.InHouseLabTestType.TestName;
+								data["result"] = inHouseLabDTO.TestResult;
+								//data["normalRange"] = inHouseLabDTO.InHouseLabTestType.TestRange;
+								data["notes"] = inHouseLabDTO.Notes;
+							}
+							
+							dataPvdr.addItem(data);
+						}
+						
+						var testCode:DataGridColumn = new DataGridColumn();
+						testCode.headerText = "Test Code";
+						testCode.width=40;
+						testCode.dataField = "testCode";
+						
+						var testName:DataGridColumn = new DataGridColumn();
+						testName.headerText = "Test Name";
+						testName.dataField = "testName";
+						testName.width=40;
+						testName.headerWordWrap="true";
+						
+						var result:DataGridColumn = new DataGridColumn();
+						result.headerText = "Result";
+						result.dataField = "result";
+						result.width=80;
+						result.wordWrap="true";
+						
+						/*var normalRange:DataGridColumn = new DataGridColumn();
+						normalRange.headerText = "Normal Range";
+						normalRange.dataField = "normalRange";*/
+						
+						var notes:DataGridColumn = new DataGridColumn();
+						notes.headerText = "Notes";
+						notes.dataField = "notes"
+						notes.width=80;
+						notes.wordWrap = true;
+						
+						inHouseLabView.columns = new ArrayCollection([{subColumns: 
+							[{testCode: testCode}, {testName: testName}, {result: result}/*, {normalRange: normalRange}*/, {notes: notes}]
+						}]);
+						
+						inHouseLabView.dataProvider = new ArrayCollection([{subDataProvider: dataPvdr}]);
+					}
+				}
+			}
+			
+			private function populateDiagnosisData():void
+			{
+				if(model.quickInputDTO!=null && model.quickInputDTO.Assessment!=null &&  model.quickInputDTO.Assessment.Diagnosis!=null)
+				{
+					var tempData:ArrayCollection = model.quickInputDTO.Assessment.Diagnosis;
+					var dataPvdr:ArrayCollection = new ArrayCollection();
+					if (tempData)
+					{
+						for (var i:int = 0; i < tempData.length; i++)
+						{
+							var data:Object = {Diagnosis: "", ICDCode: "", Active: "", Notes: ""};
+							var diagnosisDTO:PatientDiagnosisDTO = PatientDiagnosisDTO(tempData[i]);
+							
+							data["onset"] = diagnosisDTO.OnSet;
+							
+							data["ICDCode"] = diagnosisDTO.ICDCode.IcdCodeName;
+							
+							data["Diagnosis"] = diagnosisDTO.ICDCode.IcdCodeDescription;
+							
+							if (diagnosisDTO.IsChronic)
+								data["status"] = "Yes";
+							else
+								data["status"] = "No";
+							
+							data["Notes"] = diagnosisDTO.Note;
+							
+							dataPvdr.addItem(data);
+						}
+						
+						var onset:DataGridColumn = new DataGridColumn();
+						onset.headerText = "Onset";
+						onset.dataField = "onset";
+						onset.width=60;
+//						onset.itemRenderer = new ClassFactory(DateRenderer4DG);//commented due to date to string converion
+						
+						var icdCode:DataGridColumn = new DataGridColumn();
+						icdCode.headerText = "ICD-Code";
+						icdCode.dataField = "ICDCode";
+						icdCode.width=60;
+						
+						var diagnosis:DataGridColumn = new DataGridColumn();
+						diagnosis.headerText = "Diagnosis";
+						diagnosis.dataField = "Diagnosis";
+						diagnosis.wordWrap="true";
+						diagnosis.width=70;
+						
+						var status:DataGridColumn = new DataGridColumn();
+						status.headerText = "Chronic";
+						status.dataField = "status";
+						status.width=60;
+						
+						var notes:DataGridColumn = new DataGridColumn();
+						notes.headerText = "Notes";
+						notes.dataField = "Notes";
+						notes.wordWrap = true;
+						
+						diagnosisView.columns = new ArrayCollection([{subColumns: 
+							[{onset: onset}, {ICDCode: icdCode}, {Diagnosis: diagnosis}, {status: status}, {Notes: notes}]
+						}]);
+						
+						diagnosisView.dataProvider = new ArrayCollection([{subDataProvider: dataPvdr}]);
+					}
+				}
+			}
+			
+			private function populateProcedureData():void
+			{
+				if(model.quickInputDTO!=null && model.quickInputDTO.Assessment!=null && model.quickInputDTO.Assessment.Procedure!=null)
+				{
+					var tempData:ArrayCollection = model.quickInputDTO.Assessment.Procedure;
+					
+					if (tempData)
+					{
+						var dataPvdr:ArrayCollection = new ArrayCollection();
+						
+						for (var i:int = 0; i < tempData.length; i++)
+						{
+							var data:Object = {cptCode: "", procedure: "", notes: ""};
+							var procedureDTO:ProcedureDTO = ProcedureDTO(tempData[i]);
+							
+							if (procedureDTO)
+							{
+								data["cptCode"] = procedureDTO.CPTMedicalType.ProcedureCode
+								data["procedure"] = procedureDTO.CPTMedicalType.ProcedureDescription;
+								data["notes"] = procedureDTO.Notes;
+							}
+							
+							dataPvdr.addItem(data);
+						}
+						
+						var cptCode:DataGridColumn = new DataGridColumn();
+						cptCode.headerText = "CPT Code";
+						cptCode.dataField = "cptCode";
+						cptCode.width = 0.2;
+						
+						var procedure:DataGridColumn = new DataGridColumn();
+						procedure.headerText = "Procedure";
+						procedure.dataField = "procedure";
+						procedure.width = 0.4;
+						
+						var notes:DataGridColumn = new DataGridColumn();
+						notes.headerText = "Notes";
+						notes.dataField = "notes";
+						notes.width = 0.5;
+						notes.wordWrap = true;
+						
+						procedureView.columns = new ArrayCollection([{subColumns: 
+							[{cptCode: cptCode}, {procedure: procedure}, {notes: notes}]
+						}]);
+						
+						procedureView.dataProvider = new ArrayCollection([{subDataProvider: dataPvdr}]);
+					}
+				}
+			}
+			
+			private function populateLabsData():void
+			{
+				if(model.quickInputDTO!=null && model.quickInputDTO.Physical!=null && model.quickInputDTO.Physical.Labs!=null)
+				{
+					var tempData:ArrayCollection = model.quickInputDTO.Physical.Labs;
+					var dataPvdr:ArrayCollection = new ArrayCollection();
+					if (tempData)
+					{
+						for (var i:int = 0; i < tempData.length; i++)
+						{
+							var data:Object = {CollectionDate: "", TestType: "", TestCode:"", TestName:"", Lab: "", Notes:""};
+							var labDTO:LabDTO = LabDTO(tempData[i]);
+							
+							if (labDTO)
+							{
+								data["CollectionDate"] = labDTO.CollectionDate;
+								
+								data["TestType"] = labDTO.LabTestType.TestTypeName;
+								
+								data["TestCode"] = labDTO.LIONICLabTestType.LOINC_NUM;
+								
+								data["TestName"] = labDTO.LIONICLabTestType.SHORTNAME;
+								
+								data["Lab"] = labDTO.LabType.LabName;
+								
+								data["Notes"] = labDTO.LabNote;
+								
+								dataPvdr.addItem(data);
+							}
+						}
+						
+						var testType:DataGridColumn = new DataGridColumn();
+						testType.headerText = "Test Type";
+						testType.dataField = "TestType";
+						
+						var testCode:DataGridColumn = new DataGridColumn();
+						testCode.headerText = "Test Code";
+						testCode.dataField = "TestCode"
+						
+						var testName:DataGridColumn = new DataGridColumn();
+						testName.headerText = "Test Name";
+						testName.dataField = "TestName";
+						testName.wordWrap="true";
+						
+						var lab:DataGridColumn = new DataGridColumn();
+						lab.headerText = "Laboratory";
+						lab.width=80;
+						lab.wordWrap="true";
+						lab.dataField = "Lab";
+						
+						var collectionDate:DataGridColumn = new DataGridColumn();
+						collectionDate.headerText = "Collection Date";
+//						collectionDate.itemRenderer = new ClassFactory(DateRenderer4DG);//commented due to date to string converion
+						collectionDate.dataField = "CollectionDate";
+						
+						var notes:DataGridColumn = new DataGridColumn();
+						notes.headerText = "Notes";
+						notes.dataField = "Notes";
+						notes.wordWrap = true;
+						
+						labsView.columns = new ArrayCollection([{subColumns: 
+							[{TestType: testType}, {TestCode: testCode}, {TestName:testName}, {Lab: lab}, {CollectionDate: collectionDate}, {Notes:notes}]
+						}]);
+						
+						labsView.dataProvider = new ArrayCollection([{subDataProvider: dataPvdr}]);
+					}
+				}
+			}
+			
+			private function populateRecommendationData():void
+			{
+				if(model.quickInputDTO!=null && model.quickInputDTO.Assessment!=null && model.quickInputDTO.Assessment.Recommendation!=null)
+				{
+					var tempData:ArrayCollection = model.quickInputDTO.Assessment.Recommendation;
+				
+					if (tempData)
+					{
+						var dataPvdr:ArrayCollection = new ArrayCollection();
+						
+						for (var i:int = 0; i < tempData.length; i++)
+						{
+							var data:Object = {plan: "", method: "", Diagnosis: "", duration: "", description:"", notes: ""};
+							var recommendationDTO:PatientRecommendationDTO = PatientRecommendationDTO(tempData[i]);
+							
+							if (recommendationDTO)
+							{
+								if( recommendationDTO.Plan )
+								data["plan"] = recommendationDTO.Plan.PlanName;
+								
+								if( recommendationDTO.Method )
+								data["method"] = recommendationDTO.Method.MethodName;
+								
+								if( recommendationDTO.Duration )
+								data["duration"] = recommendationDTO.Duration.DurationName;
+								
+								data["Diagnosis"] 		= recommendationDTO.DiagnosisInfo;
+								data["description"] 	= recommendationDTO.Description;
+								data["notes"] = recommendationDTO.Note;
+							}
+							
+							dataPvdr.addItem(data);
+						}
+						
+						var plan:DataGridColumn = new DataGridColumn();
+						plan.headerText = "Plan";
+						plan.dataField = "plan";
+						
+						var method:DataGridColumn = new DataGridColumn();
+						method.headerText = "Method";
+						method.dataField = "method";
+						
+						var Diagnosis:DataGridColumn = new DataGridColumn();
+						Diagnosis.headerText = "Diagnosis";
+						Diagnosis.dataField = "Diagnosis";
+						Diagnosis.wordWrap="true";
+						
+						var duration:DataGridColumn = new DataGridColumn();
+						duration.headerText = "Duration";
+						duration.dataField = "duration";
+						duration.wordWrap="true";
+
+						var description:DataGridColumn = new DataGridColumn();
+						description.headerText = "Description";
+						description.dataField = "description";
+						description.wordWrap="true";
+						
+						var notes:DataGridColumn = new DataGridColumn();
+						notes.headerText = "Notes";
+						notes.dataField = "notes";
+						notes.wordWrap = true;
+						
+						recommendationView.columns = new ArrayCollection([{subColumns:
+								[{plan:plan}, {method:method}, {Diagnosis:Diagnosis}, {duration:duration}, {description:description}, {notes: notes}]
+								}]);
+						
+						recommendationView.dataProvider = new ArrayCollection([{subDataProvider: dataPvdr}]);
+					}
+				}
+			}
+			
+			private function populatePatientFollowUp():void
+			{
+				if (model.quickInputDTO!=null && model.quickInputDTO.Assessment!=null )
+				{
+					var dataPvdr:ArrayCollection = new ArrayCollection();
+					var cols:ArrayCollection = new ArrayCollection();
+					
+					if(model.quickInputDTO.Assessment.PatientFollowUp!=null)
+					{
+						var tempData:PatientFollowUpDTO = model.quickInputDTO.Assessment.PatientFollowUp;
+						
+						if (tempData)
+						{
+							var subDataPvdr:ArrayCollection = new ArrayCollection();
+							var data:Object = {followUpType: "", followUp: "", followUpMethod: ""};
+							
+							if (tempData.IsByDate)
+							{
+								data["followUpType"] = "By Date";
+								data["followUp"] = "Date( " + tempData.FollowUpDate + " )";
+							}
+							else if (tempData.IsOnCompletion)
+							{
+								data["followUpType"] = "Upon Completion Of";
+								
+								if (tempData.IsLabTestSelected)
+								{
+									for (var i:int = 0; i < model.followupLabsDTOList.length; i++)
+									{
+										var labsDTO:FollowupLabsDTO = FollowupLabsDTO(model.followupLabsDTOList[i]);
+										
+										
+											if (tempData.LabTestID == labsDTO.PatientFollowUpLabID)
+											{
+												data["followUp"] = "Lab Test( " + labsDTO.LabTestDescription + " )";
+												break;
+											}
+									}	
+								}
+								
+								else if (tempData.IsDrugselected)
+								{
+									for (var j:int = 0; j < model.medicationDTOList.length; j++)
+									{
+										var drugsDTO:MedicationDTO = MedicationDTO(model.medicationDTOList[j]);
+										
+										if (tempData.DrugID == drugsDTO.PatientMedicationID)
+										{
+											data["followUp"] = "Drug( " + drugsDTO.BrandName  + " )";
+											break;
+										}
+									}
+								}
+							}
+							
+							if (tempData.FollowUpMethodType)
+								data["followUpMethod"] = tempData.FollowUpMethodType.MethodName;
+							
+							subDataPvdr.addItem(data);
+							
+							var followUpTypeCol:DataGridColumn = new DataGridColumn("followUpType");
+							followUpTypeCol.width = 80;
+							followUpTypeCol.headerText = "Follow Up Type";
+							
+							var followUpCol:DataGridColumn = new DataGridColumn("followUp");
+							followUpCol.width = 80;
+							followUpCol.headerText = "Follow Up";
+							
+							/* if (tempData.IsByDate)//commented due to date to string converion
+								followUpCol.itemRenderer = new ClassFactory(com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG); */
+							
+							var followUpMethodCol:DataGridColumn = new DataGridColumn("followUpMethod");
+							followUpMethodCol.width = 100;
+							followUpMethodCol.headerText = "Follow Up Method";
+							
+							cols.addItem({"subColumns": [{followUpType: followUpTypeCol}, {followUp: followUpCol}, {followUpMethod: followUpMethodCol}]});
+								
+							dataPvdr.addItem({"subDataProvider": subDataPvdr});
+						}
+					}
+					
+					populatePatientFollowUpInstruction(dataPvdr, cols);
+					
+					followUpView.columns = cols;
+					followUpView.dataProvider = dataPvdr;
+				}
+			}
+			
+			private function populatePatientFollowUpInstruction(dataPvdr:ArrayCollection, cols:ArrayCollection):void
+			{
+				if (model.quickInputDTO.Assessment.PatientFollowupInstruction)
+				{
+					var tempData:ArrayCollection = model.quickInputDTO.Assessment.PatientFollowupInstruction;
+					var subDataPvdr:ArrayCollection = new ArrayCollection();
+					
+					if (tempData)
+					{
+						for (var i:int = 0; i < tempData.length; i++)
+						{
+							var patientFollowUpInstruction:PatientFollowupInstructionDTO = PatientFollowupInstructionDTO(tempData[i]);
+							
+							if (patientFollowUpInstruction)
+							{
+								var data:Object = {instruction: "", freqType: "", freq: ""};
+								
+								data["instruction"] = patientFollowUpInstruction.objServiceTypeDTO.FollowupService;
+								
+								if (patientFollowUpInstruction.IsAgeSelected)
+								{
+									data["freqType"] = "Age";
+									
+									if (patientFollowUpInstruction.AgeTypeDTO && patientFollowUpInstruction.AgeTypeDTO.AgeTypeName)
+										data["freq"] = patientFollowUpInstruction.AgeTypeDTO.AgeTypeName + " ";
+									
+									if (patientFollowUpInstruction.AgeValueTypeDTO && patientFollowUpInstruction.AgeValueTypeDTO.AgeValueTypeName)
+										data["freq"] += patientFollowUpInstruction.AgeValueTypeDTO.AgeValueTypeName;
+								}
+								else
+								{
+									data["freqType"] = "Duration";
+									data["freq"] = "After " + patientFollowUpInstruction.AfterDurationValue + " ";
+									
+									if (patientFollowUpInstruction.AfterInstructionDurationTypeDTO && patientFollowUpInstruction.AfterInstructionDurationTypeDTO.DurationTypeName)
+										data["freq"] += patientFollowUpInstruction.AfterInstructionDurationTypeDTO.DurationTypeName +
+												   " for " + patientFollowUpInstruction.ForDurationValue + " ";
+									
+									if (patientFollowUpInstruction.ForInstructionDurationTypeDTO && patientFollowUpInstruction.ForInstructionDurationTypeDTO.DurationTypeName)
+										data["freq"] += patientFollowUpInstruction.ForInstructionDurationTypeDTO.DurationTypeName;
+								}
+								
+								subDataPvdr.addItem(data);
+							}
+						}
+						
+						var inst:DataGridColumn = new DataGridColumn();
+						inst.headerText = "Instruction";
+						inst.dataField = "instruction";
+						inst.width=80;
+						inst.wordWrap="true";
+						
+						var freqType:DataGridColumn = new DataGridColumn();
+						freqType.headerText = "Frequency Type";
+						freqType.dataField = "freqType";
+						freqType.width=80;
+						freqType.wordWrap="true";
+						
+						var freq:DataGridColumn = new DataGridColumn();
+						freq.headerText = "Frequency";
+						freq.dataField = "freq";
+						freq.width=80;
+						freq.wordWrap="true";
+						
+						cols.addItem({"subColumns": [{instruction: inst}, {freqType: freqType}, {freq: freq}]});
+						dataPvdr.addItem({"subDataProvider": subDataPvdr});
+					}
+				}
+			}
+			
+			private function populateROSData():void
+			{
+				var dataPvdr:ArrayCollection = new ArrayCollection();
+				
+				for (var j:int = 0; j < model.rosDTOList.length; j++)
+				{
+					var rosDTO:ROSDTO = model.rosDTOList[j];
+					
+					if (rosDTO)
+					{
+						var children:ArrayCollection = rosDTO.children;
+						
+						if (children)
+						{
+							var firstChildStr:String ="";
+							var firstchildNotes:String ="";
+							var data:Object = {type: "", normal: "", notes: ""};
+							
+							for (var i:int = 0; i < children.length; i++)
+							{
+								var childROS:ROSDTO = children[i] ;
+								
+								if (childROS.children!=null && childROS.children.length>0)
+								{
+									var innerChildStr:String ="";
+									var innerchildNotes:String ="";
+									var subdata:Object = {type: "", normal: "", notes: ""};
+									for(var k:uint=0;k<childROS.children.length;k++)
+									{
+										var subChild:ROSDTO = childROS.children.getItemAt(k) as ROSDTO ;
+										if ( subChild.IsNormal && subChild.IsNormal.length && subChild.IsNormal != Constants.STRING_NULL)
+										{
+											var normal:String = (subChild.IsNormal == Constants.STRING_TRUE)? "NORMAL":"ABNORMAL";
+											innerChildStr += subChild.label + ": " + normal + ", ";
+											if( subChild.Notes && subChild.Notes.length )
+												innerchildNotes +=  subChild.label + ": " + subChild.Notes + ", ";
+											
+										}
+									}
+									if( innerChildStr && innerChildStr.length )
+									{
+										subdata["type"] 			= subChild.SubCategoryName;
+										subdata["typeValue"] 		= innerChildStr.substr(0,innerChildStr.length-2); 
+										subdata["notes"] 			= innerchildNotes.substr(0,innerchildNotes.length-2); 
+										dataPvdr.addItem(subdata); 
+									}
+								}
+								else if (childROS.IsNormal && childROS.IsNormal.length && childROS.IsNormal != Constants.STRING_NULL)
+								{
+									var normal:String = (childROS.IsNormal == Constants.STRING_TRUE)? "NORMAL":"ABNORMAL";
+									firstChildStr += childROS.SubCategoryName + ": " + normal + ", ";
+									if( childROS.Notes && childROS.Notes.length )
+										firstchildNotes +=  childROS.SubCategoryName + ": " + childROS.Notes + ", ";
+								}
+							}  
+							
+							if( firstChildStr && firstChildStr.length )
+							{
+								var data:Object = {type: "", typeValue:"", notes:""};
+								data["type"] = rosDTO.MainCategoryName;
+								data["typeValue"] = firstChildStr.substr(0, firstChildStr.length-2);
+								if( firstchildNotes && firstchildNotes.length )
+									data["notes"] = firstchildNotes.substr(0, firstchildNotes.length-2);
+									data["IsNormal"] = childROS.IsNormal;
+									dataPvdr.addItem(data);
+								}
+							}
+						}
+					}
+				
+				if (dataPvdr.length)
+				{
+					var type:DataGridColumn = new DataGridColumn();
+					type.headerText = "Type";
+					type.dataField = "type";
+					
+					var typeValue:DataGridColumn = new DataGridColumn();
+					typeValue.headerText = "Type value";
+					typeValue.dataField = "typeValue";
+					typeValue.wordWrap = true;
+					
+					var notes:DataGridColumn = new DataGridColumn();
+					notes.headerText = "Notes";
+					notes.dataField = "notes";
+					notes.wordWrap = true;
+					
+					rosView.columns = new ArrayCollection([{subColumns: 
+						[{type: type}, {typeValue: typeValue}, {notes: notes}]
+					}]);
+					
+					rosView.dataProvider = new ArrayCollection([{subDataProvider: dataPvdr}]);
+				}
+			}
+			
+			private function refreshModel():void
+			{
+				if (model.quickInputDTO)
+				{
+					if (model.quickInputDTO.PMH)
+					{
+						if (model.quickInputDTO.PMH.Immunization)
+						{
+							model.quickInputDTO.PMH.Immunization.filterFunction = null;
+							model.quickInputDTO.PMH.Immunization.refresh();
+						}
+					}
+					
+					if (model.quickInputDTO.Physical)
+					{
+						if (model.quickInputDTO.Physical.HPI_CC)
+						{
+							model.quickInputDTO.Physical.HPI_CC.filterFunction = null;
+							model.quickInputDTO.Physical.HPI_CC.refresh();
+						}
+						
+						if (model.quickInputDTO.Physical.InHouseLabs)
+						{
+							model.quickInputDTO.Physical.InHouseLabs.filterFunction = null;
+							model.quickInputDTO.Physical.InHouseLabs.refresh();
+						}
+						
+						if (model.quickInputDTO.Physical.Labs)
+						{
+							model.quickInputDTO.Physical.Labs.filterFunction = null;
+							model.quickInputDTO.Physical.Labs.refresh();
+						}
+					}
+					
+					if (model.quickInputDTO.Assessment)
+					{
+						if (model.quickInputDTO.Assessment.Diagnosis)
+						{
+							model.quickInputDTO.Assessment.Diagnosis.filterFunction = null;
+							model.quickInputDTO.Assessment.Diagnosis.refresh();
+						}
+						
+						if (model.quickInputDTO.Assessment.Procedure)
+						{
+							model.quickInputDTO.Assessment.Procedure.filterFunction = null;
+							model.quickInputDTO.Assessment.Procedure.refresh();
+						}
+						
+						if (model.quickInputDTO.Assessment.Recommendation)
+						{
+							model.quickInputDTO.Assessment.Recommendation.filterFunction = null;
+							model.quickInputDTO.Assessment.Recommendation.refresh();
+						}
+						
+						if (model.quickInputDTO.Assessment.PatientFollowupInstruction)
+						{
+							model.quickInputDTO.Assessment.PatientFollowupInstruction.filterFunction = null;
+							model.quickInputDTO.Assessment.PatientFollowupInstruction.refresh();
+						}
+					}
+				}
+			}
+			
+			private function okBtnClickHandler():void
+			{
+				refreshModel();
+				var statusMessage:String = "Please wait while ";
+				switch(previewWindowType)
+				{
+					case SIGN_COSIGN:
+						if (!authenticationPopUp)
+							authenticationPopUp = new AuthenticationPopUp();
+						
+						if (model.visitDTO)
+							authenticationPopUp.visitID = model.visitDTO.VisitId;
+						
+						authenticationPopUp.signBtnLabel = model.signCoSignBtnLabel;
+						authenticationPopUp.originName = Constants.QUICK_INPUT_MODULE_NAME;
+						authenticationPopUp.onVisitSignCosignCallback = onSucessfullVisitSave;
+						authenticationPopUp.ShowPopup(this);
+						
+						statusMessage = statusMessage + "sign / co-sign visit."
+						
+						break;
+					
+					case REVIEW_ALL:
+						
+						statusMessage = statusMessage + "saving visit data."
+						break;
+					
+					case SAVE_AND_REVIEW:
+						var MVDEvent:ManageQuickInputEvent = new ManageQuickInputEvent( true);
+						MVDEvent.functionName = onSucessfullVisitSave;
+						CairngormEventDispatcher.getInstance().dispatchEvent( MVDEvent );
+						
+						var uvEvent:UpdateVisitEvent = new UpdateVisitEvent(  );
+						CairngormEventDispatcher.getInstance().dispatchEvent( uvEvent );
+						
+						statusMessage = statusMessage + "saving visit data."
+						
+						break;
+				}
+				
+				statusCallback( statusMessage );
+			}
+			
+			private function cancelBtnClickHandler():void
+			{
+				hide();
+			}
+			
+			private function onSucessfullVisitSave(actionName:String = "", visitID:int = 0):void
+			{
+				hide(true, actionName, visitID);
+			}
+			
+			// for printing
+			public function printBtnClickHandler():void {
+				// Create a FlexPrintJob instance.
+				var printJob:FlexPrintJob = new FlexPrintJob();
+				
+				// Start the print job.
+				if(printJob.start()) 
+				{
+					// Create a MyPrintView control as a child 
+					// of the current view.
+					
+					/*
+					var formPrintView:MyPrintView = new MyPrintView();
+					addElement(formPrintView);
+					*/
+					
+					// Populate the print control's contact label 
+					// with the text from the form's name, 
+					// phone, and e-mail controls.
+					/* formPrintView.contact.text = 
+						"Contact: " + custName.text + "  " +
+						custPhone.text + "  " + custEmail.text;
+					 */
+					// Set the print control's data grid data provider to be 
+					// the displayed data grid's data provider.
+					/* formPrintView.myDataGrid.dataProvider = 
+						myDataGrid.dataProvider; */
+					
+					// Add the SimplePrintview control to the print job.
+					// For comparison, try setting the 
+					// second parameter to "none".
+					
+					if(this.allergiesView && this.allergiesView.dataProvider && this.allergiesView.dataProvider.length > 0)					
+					{
+						printJob.addObject(this.allergiesView, FlexPrintJobScaleType.NONE);	
+					}
+					
+					if(this.comprehensiveHistory && this.comprehensiveHistory.dataProvider && this.comprehensiveHistory.dataProvider.length > 0)					
+					{
+						printJob.addObject(this.comprehensiveHistory, FlexPrintJobScaleType.NONE);
+					}
+					
+					if(this.medicationView && this.medicationView.dataProvider && this.medicationView.dataProvider.length > 0)					
+					{
+						printJob.addObject(this.medicationView, FlexPrintJobScaleType.NONE);					
+					}
+					
+					if(this.immunizationView && this.immunizationView.dataProvider && this.immunizationView.dataProvider.length > 0)					
+					{
+						printJob.addObject(this.immunizationView, FlexPrintJobScaleType.NONE);
+					}
+					
+					if(this.vitalsView && this.vitalsView.dataProvider && this.vitalsView.dataProvider.length > 0 )					
+					{
+						printJob.addObject(this.vitalsView, FlexPrintJobScaleType.NONE);
+					}
+					
+					if(this.ccHPIView && this.ccHPIView.dataProvider && this.ccHPIView.dataProvider.length > 0)					
+					{
+						printJob.addObject(this.ccHPIView, FlexPrintJobScaleType.NONE);
+					}
+					
+					if(this.rosView && this.rosView.dataProvider && this.rosView.dataProvider.length > 0)					
+					{
+						printJob.addObject(this.rosView, FlexPrintJobScaleType.NONE);
+					}
+					
+					if(this.physicalView && this.physicalView.dataProvider && this.physicalView.dataProvider.length > 0)					
+					{
+						printJob.addObject(this.physicalView, FlexPrintJobScaleType.NONE);
+					}
+					
+					if(this.inHouseLabView && this.inHouseLabView.dataProvider && this.inHouseLabView.dataProvider.length > 0)					
+					{
+						printJob.addObject(this.inHouseLabView, FlexPrintJobScaleType.NONE);
+					}
+					
+					if(this.diagnosisView && this.diagnosisView.dataProvider && this.diagnosisView.dataProvider.length > 0)					
+					{
+						printJob.addObject(this.diagnosisView, FlexPrintJobScaleType.NONE);
+					}
+					
+					if(this.procedureView && this.procedureView.dataProvider && this.procedureView.dataProvider.length > 0)					
+					{
+						printJob.addObject(this.procedureView, FlexPrintJobScaleType.NONE);
+					}
+					
+					if(this.labsView && this.labsView.dataProvider && this.labsView.dataProvider.length > 0)					
+					{
+						printJob.addObject(this.labsView, FlexPrintJobScaleType.NONE);					
+					}
+					
+					if(this.recommendationView && this.recommendationView.dataProvider && this.recommendationView.dataProvider.length > 0)					
+					{
+						printJob.addObject(this.recommendationView, FlexPrintJobScaleType.NONE);
+					}
+					
+					if(this.followUpView && this.followUpView.dataProvider && this.followUpView.dataProvider.length > 0)					
+					{
+						printJob.addObject(this.followUpView, FlexPrintJobScaleType.NONE);
+					}
+					// Send the job to the printer.
+					printJob.send();
+					
+					// Remove the print-specific control to free memory.
+					//removeElement(formPrintView);
+				}
+			}
+					
+		]]>
+	</fx:Script>
+	<s:VGroup height="495" paddingTop="20" width="563">
+		<s:Scroller horizontalScrollPolicy="on" width="100%" height="100%" maxWidth="563"
+					skinClass="com.adobe.Quivus.view.controls.skins.ScrollBarSkins.ScrollblueFreeSkin">
+	<s:VGroup gap="3" width="100%" height="100%" paddingLeft="2" paddingRight="2" paddingBottom="2" paddingTop="2">
+		<signCoSign:LabelDataGridViewControl id="allergiesView" label="Allergies" width="100%"/>
+		<signCoSign:LabelDataGridViewControl id="comprehensiveHistory" label="Comprehensive History" width="100%"/>
+		<signCoSign:LabelDataGridViewControl id="medicationView" label="Chronic Medication" width="100%"/>
+		<signCoSign:LabelDataGridViewControl id="immunizationView" label="Immunization" width="100%"/>
+		<signCoSign:LabelDataGridViewControl id="vitalsView" label="Vitals" width="100%"/>
+		<signCoSign:LabelListViewControl id="ccHPIView" label="Chief Complaint/HPI" width="100%"/>
+		<signCoSign:LabelDataGridViewControl id="rosView" label="Review Of System" width="100%"/>
+		<signCoSign:LabelDataGridViewControl id="physicalView" label="Physical" width="100%"/>
+		<signCoSign:LabelDataGridViewControl id="inHouseLabView" label="In-House Lab" width="100%"/>
+		<signCoSign:LabelDataGridViewControl id="diagnosisView" label="Diagnosis" width="100%"/>
+		<signCoSign:LabelDataGridViewControl id="procedureView" label="Procedure" width="100%"/>
+		<signCoSign:LabelDataGridViewControl id="labsView" label="Lab-Out" width="100%"/>
+		<signCoSign:LabelDataGridViewControl id="recommendationView" label="Recommendation" width="100%" />
+		<signCoSign:LabelDataGridViewControl id="followUpView" label="Follow Up" width="100%"/>
+	</s:VGroup>
+			</s:Scroller>
+	<s:VGroup verticalAlign="bottom" horizontalAlign="center" paddingBottom="5" width="100%">	
+		<s:HGroup horizontalAlign="center" width="100%">
+			<s:Button id="okBtn" click="okBtnClickHandler()" label="OK" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.OKBtnSkin" useHandCursor="true" buttonMode="true"/>
+			<s:Button id="cancelBtn" click="cancelBtnClickHandler()" label="Cancel" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.OKBtnSkin" useHandCursor="true" buttonMode="true"/>
+			
+			<s:Button id="printBtn" click="printBtnClickHandler()" label="Print" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.OKBtnSkin" useHandCursor="true" buttonMode="true"/>
+		</s:HGroup>
+	</s:VGroup>
+	</s:VGroup>
+</s:TitleWindow>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Panel xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="400" height="200" title="Confidentiality Note" controlBarVisible="false"
+		 chromeColor="#303640" color="#FFFFFF" fontFamily="Calibri" fontSize="14">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			
+		]]>
+	</fx:Script>
+	
+	<!--<s:BorderContainer width="100%" height="100%" backgroundColor="0X2C2C2C">
+		<s:borderStroke>
+			<s:LinearGradientStroke weight="10" rotation="270">
+				<s:GradientEntry color="0xFFFFFF"/>
+				<s:GradientEntry color="0xFFFFFF"/>
+			</s:LinearGradientStroke>
+		</s:borderStroke>
+	</s:BorderContainer>-->
+		<s:TextArea y="0" left="3" right="3" height="100%" color="#000000" editable="false" textAlign="left"
+					fontFamily="Calibri" fontSize="15" text="{model.confidentialitText}" borderVisible="false"/>
+	
+</s:Panel>

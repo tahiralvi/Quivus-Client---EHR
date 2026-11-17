@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:components="com.gazuntite.controls.extended.components.*" 
+		 xmlns:registeration="com.adobe.Quivus.view.controls.registeration.*"
+		 xmlns:controls="com.gazuntite.provider.eprescription.services.patient.view.controls.*"
+		 xmlns:views="com.gazuntite.provider.eprescription.services.patient.view.views.*"
+		 minHeight="375"  
+		 creationComplete="creationCompleteHandler()"	 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.gazuntite.skins.chrome.containerSkins.blackMiniTitleBGContainer;
+			import com.gazuntite.provider.eprescription.services.patient.event.LoadClinicUsersBasicInfoEvent;
+			import com.gazuntite.provider.eprescription.services.patient.event.LoadPrescriberbyGaxenIDEvent;
+			import com.gazuntite.provider.eprescription.services.patient.event.loadServicelevelsEvent;
+			import com.gazuntite.provider.eprescription.services.patient.model.EPrescriptionModelLocator;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.IndexChangedEvent;
+			
+			[Bindable] private var model : EPrescriptionModelLocator = EPrescriptionModelLocator.getInstance();
+			[Bindable] public var securityHeaderXML:XML;
+			private var _userTypeDTO:XML;
+			private var _userID:int;
+			private var _clinicBranchID:int;
+			private var _encounterTypeId:String;
+			private var _templateId:String;
+			private var _associatedVisits:ArrayCollection;
+			private var _setNewRXView:Boolean = false; //for hide and show default and New Rx mode - we set this true for QI n
+			private var _isMedicationMode:Boolean = false;
+			private var _isPrescriptionMode:Boolean = false;
+			
+			public var eusername:String;
+			public var epassword:String;
+			public var SPI:String;
+			public var gaxenId:String;
+			
+			//-------- Creation Complete Handler ---------------------
+			protected function creationCompleteHandler():void
+			{
+				var loadClinicUsersBasicInfoEvent: LoadClinicUsersBasicInfoEvent = new LoadClinicUsersBasicInfoEvent(userID, clinicBranchID, getProviderDetails);
+				CairngormEventDispatcher.getInstance().dispatchEvent(loadClinicUsersBasicInfoEvent);	
+				id_newRX.id_patientSearchView.id_textInput.setFocus();//Tahir Alvi - First Field Focus
+				
+				if(!setNewRXView)
+					id_skin.setStyle("styleName", "blackTitleBGContainerSkin");
+				else
+					id_skin.setStyle("skinClass", blackMiniTitleBGContainer);
+			}
+			//------ Call back function of loadClinicUsersBasicInfoEvent -----------
+			private function getProviderDetails(val:* = null):void
+			{
+				gaxenId 	= model.SearchProviderDetailsResults.GAXENID;
+				eusername 	= model.SearchProviderDetailsResults.EUserName;
+				epassword 	= model.SearchProviderDetailsResults.EPassword;
+				
+				securityHeaderXML	 			= <Header />;					
+				securityHeaderXML.@EUserName	= eusername;
+				securityHeaderXML.@EPassword	= epassword;
+				securityHeaderXML.@ClinicID		= "sad";
+				
+				var rpEvent_ : LoadPrescriberbyGaxenIDEvent = new LoadPrescriberbyGaxenIDEvent(gaxenId, PrescriberLoaded);	
+				rpEvent_.data = securityHeaderXML;
+				CairngormEventDispatcher.getInstance().dispatchEvent( rpEvent_ );  
+			}
+			//------ Call back function of LoadPrescriberbyGaxenIDEvent --------------
+			public function PrescriberLoaded(response:XML):void
+			{
+				SPI 			= response.Prescriber.@SPI;
+				id_newRX.SPI 	= SPI;
+				id_outbox.SPI 	= SPI;
+				if(!model.isSetNewRXView)//only call when New RX is opend from LPS
+				{
+					var getServiceLevels: loadServicelevelsEvent = new loadServicelevelsEvent(ServiceLevelsLoaded);				
+					getServiceLevels.data = securityHeaderXML; 				
+					CairngormEventDispatcher.getInstance().dispatchEvent(getServiceLevels);
+				}
+			}
+			// -- Call back method for loadServicelevelsEvent ------------------------
+			private function ServiceLevelsLoaded():void
+			{
+				
+			}
+			//------------ View Stack Change handler ------------------------------
+			protected function viewStack_changeHandler(event:IndexChangedEvent):void
+			{
+				//id_outbox.SPI = SPI;
+				if(viewStack.selectedIndex == 1)
+				{
+					id_outbox.setSPI(SPI);
+				}
+			}
+			//--------- GETTER & SETTERS ----------------------
+			[Bindable]
+			public function get userTypeDTO():XML
+			{
+				return _userTypeDTO;
+			}
+			
+			public function set userTypeDTO(value:XML):void
+			{
+				_userTypeDTO = value;
+			}
+			
+			[Bindable]
+			public function get templateId():String
+			{
+				return _templateId;
+			}
+			
+			public function set templateId(value:String):void
+			{
+				_templateId = value;
+			}
+			[Bindable]
+			public function get encounterTypeId():String
+			{
+				return _encounterTypeId;
+			}
+			
+			public function set encounterTypeId(value:String):void
+			{
+				_encounterTypeId = value;
+			}
+			
+			[Bindable]
+			public function get clinicBranchID():int
+			{
+				return _clinicBranchID;
+			}
+			
+			public function set clinicBranchID(value:int):void
+			{
+				_clinicBranchID = value;
+			}
+			
+			[Bindable]
+			public function get userID():int
+			{
+				return _userID;
+			}
+			
+			public function set userID(value:int):void
+			{
+				_userID = value;
+			}
+			[Bindable]
+			public function get associatedVisits():ArrayCollection
+			{
+				return _associatedVisits;
+			}
+			
+			public function set associatedVisits(value:ArrayCollection):void
+			{
+				_associatedVisits = value;
+			}
+			
+			[Bindable]
+			public function get setNewRXView():Boolean
+			{
+				return _setNewRXView;
+			}
+			
+			public function set setNewRXView(value:Boolean):void
+			{
+				_setNewRXView = value;
+				model.isSetNewRXView = value;
+			}
+
+			[Bindable]
+			public function get isMedicationMode():Boolean
+			{
+				return _isMedicationMode;
+			}
+
+			public function set isMedicationMode(value:Boolean):void
+			{
+				_isMedicationMode = value;
+			}
+
+			[Bindable]
+			public function get isPrescriptionMode():Boolean
+			{
+				return _isPrescriptionMode;
+			}
+
+			public function set isPrescriptionMode(value:Boolean):void
+			{
+				_isPrescriptionMode = value;
+			}
+
+			
+		]]>
+	</fx:Script>
+	
+	<s:BorderContainer width="100%" height="100%"  styleName="greyBGContainerSkin">
+		<s:layout>
+			<s:VerticalLayout paddingTop="4" paddingBottom="4" paddingLeft="2" paddingRight="2" gap="-4" />
+		</s:layout>
+		
+		<s:ButtonBar id="id_b1" 
+					 dataProvider="{viewStack}" styleName="blackButtonBarSkin" buttonMode="true" visible="{!setNewRXView}" includeInLayout="{!setNewRXView}">
+			<s:layout>
+				<s:ButtonBarHorizontalLayout gap="2" />
+			</s:layout>
+		</s:ButtonBar>
+		<s:SkinnableContainer id="id_skin" minHeight="100" height="100%" width="100%"  >
+			<s:layout>
+				<s:VerticalLayout paddingTop="5" paddingBottom="5" paddingRight="2" horizontalAlign="right" />
+			</s:layout>
+			
+			<!--		<s:Button label="R"  right="2" top="0" click="refresh_handler(event)" buttonMode="true" 
+			styleName="refreshButtonSkin" toolTip="Refresh"/>-->
+			
+			<mx:ViewStack id="viewStack"  width="100%"  height="100%" top="10" creationPolicy="all" change="viewStack_changeHandler(event)" >
+				<mx:VBox label="New RX" width="100%" >
+					<views:NewRX id="id_newRX" width="100%" height="100%" userId="{userID}" clinicBranchID="{clinicBranchID}"
+								 encounterTypeId="{encounterTypeId}" templateId="{templateId}" userTypeDTO="{userTypeDTO}"  
+								 setNewRXView="{setNewRXView}" isMedicationMode="{isMedicationMode}" isPrescriptionMode="{isPrescriptionMode}"/>
+				</mx:VBox>
+				<mx:VBox label="Out Box" width="100%" visible="{!setNewRXView}" includeInLayout="{!setNewRXView}">
+					<views:Outbox id="id_outbox" width="100%" height="100%" />
+				</mx:VBox>
+				<mx:VBox label="Pharmacy" width="100%" visible="{!setNewRXView}" includeInLayout="{!setNewRXView}">
+					<views:Pharmacy width="100%"  height="100%" PaddingFromTop="40"/>
+				</mx:VBox>
+				<mx:VBox label="Message" width="100%" >
+					
+				</mx:VBox>
+				<mx:VBox label="Pending Requests"  width="100%" visible="{!setNewRXView}" includeInLayout="{!setNewRXView}">
+					<views:PendingRequests width="100%" height="100%" userId="{userID}" securityHeaderXML="{securityHeaderXML}" />
+				</mx:VBox>
+				
+			</mx:ViewStack>
+		</s:SkinnableContainer>
+		
+	</s:BorderContainer>
+</s:Group>

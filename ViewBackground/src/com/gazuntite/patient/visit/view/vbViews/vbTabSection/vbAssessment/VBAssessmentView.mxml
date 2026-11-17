@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="group1_creationCompleteHandler(event)" 
+		 xmlns:diagnosis="com.gazuntite.patient.visit.view.vbViews.vbTabSection.vbAssessment.diagnosis.*" 
+		 xmlns:treatment="com.gazuntite.patient.visit.view.vbViews.vbTabSection.vbAssessment.treatment.treatment.*" 
+		 xmlns:lan="com.gazuntite.patient.visit.view.vbViews.vbTabSection.vbAssessment.lan.*" 
+		 xmlns:Plan="com.gazuntite.patient.visit.view.vbViews.vbTabSection.vbAssessment.Plan.*" 
+		 >
+	
+	<s:layout>
+		<s:VerticalLayout gap="0"/>
+	</s:layout>
+	
+	<fx:Script>
+		<![CDATA[
+			
+			import mx.events.FlexEvent;
+			private var currentIndex:int = 0;
+			//private var slideoutManager:SlideoutUtils = new SlideoutUtils();;
+			
+			public function ScrollUp():void
+			{
+				id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition + 15;
+			}
+			
+			public function ScrollDown():void
+			{
+				id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition - 15;
+			}
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				//slideoutManager.currentExpandedPanel = id_VBDiagnosisGridPanel;
+				currentIndex++;
+				SelectNextByIndex();
+				launchFilterEvent();
+			}
+			private function launchFilterEvent():void
+			{
+				var eve:MouseEvent = new MouseEvent(MouseEvent.CLICK);
+				
+				//################# ASSESMENT ###############################################
+				 this.id_VBDiagnosisGridPanel.id_applyFiler.dispatchEvent(eve);
+				 
+				 //this.id_plan.id_followup.id_applyFiler.dispatchEvent(eve);
+				 //this.id_plan.id_recomm.id_applyFiler.dispatchEvent(eve);
+				 
+				 //this.id_treatment.id_procedure.id_applyFiler.dispatchEvent(eve);
+				 //this.id_treatment.id_prescription.id_applyFiler.dispatchEvent(eve);
+				//##########################################################################
+				
+				
+			}
+			private function ShowPanel(event:MouseEvent):void
+			{
+				event.currentTarget.selected = true;
+				
+				setSelectedById( event.currentTarget.id )
+				
+			}
+			private function setSelectedById(tabId:String):void
+			{
+				DeSelectAllNavButton();
+				
+				switch( tabId )
+				{
+					case "id_VBDiagnosisBtn":
+					case "id_VBDiagnosisGridPanel":
+						
+						id_VBDiagnosisBtn.selected				= true;
+						//id_VBDiagnosisGridPanel.ExpandedView 	= true;						
+						id_VBDiagnosisGridPanel.visible			= true;
+						
+						currentIndex							= 1;
+						
+						//id_VBAllergiesBtn.setStyle("skinClass", QIAllergiesBtn);
+						
+						break;
+					
+					case "id_VBTreatmentBtn":
+					case "id_treatment":
+						
+						id_VBTreatmentBtn.selected		= true;
+						//id_treatment.ExpandedView 		= true;						
+						id_treatment.visible		 	= true;
+						
+						
+						//id_VBHistoryBtn.setStyle("skinClass", QIComprehensiveHistoryBtn);
+						currentIndex							= 2;
+						break;
+					
+					case "id_VBPlanBtn":
+					case "id_plan":
+						
+						id_VBPlanBtn.selected		= true;
+						//id_plan.ExpandedView 		= true;						
+						id_plan.visible		 		= true;						
+						
+						
+						//id_VBMedicationBtn.setStyle("skinClass", QIChronicMedicationBtn);
+						currentIndex							= 3;
+						break;
+					
+					
+				}
+				trace( "selected index", currentIndex );
+			}
+			
+			private function SelectNextByIndex():void
+			{
+				if( currentIndex == 0 )
+					currentIndex = 4;
+				
+				switch( currentIndex )
+				{
+					case 1:
+						setSelectedById( "id_VBAllergiesBtn" );
+						break;
+					case 2:
+						setSelectedById( "id_VBTreatmentBtn" );
+						break;
+					case 3:
+						setSelectedById( "id_VBPlanBtn" );
+						break;
+					
+					default:
+						setSelectedById( "id_VBAllergiesBtn" );
+						break;
+				}
+			}
+			
+			
+			private function DeSelectAllNavButton():void
+			{
+				id_VBDiagnosisBtn.selected			=	false;
+				id_VBTreatmentBtn.selected			=	false;
+				id_VBPlanBtn.selected				=	false;
+			}
+				
+			private function id_prevBtn_clickHandler(event:MouseEvent):void
+			{
+				currentIndex -= 1 ;
+				SelectNextByIndex();
+			}
+			
+			
+			private function id_nextBtn_clickHandler(event:MouseEvent):void
+			{
+				currentIndex += 1 ;
+				SelectNextByIndex();
+			}
+			
+			public function checkPanels():void
+			{
+				DeSelectAllNavButton();
+				/* if(id_VBDiagnosisGridPanel.ExpandedView)
+				{
+					id_VBDiagnosisBtn.selected = true;
+				}
+				if(id_treatment.ExpandedView)
+				{
+					id_VBTreatmentBtn.selected = true;	
+				}
+				if(id_plan.ExpandedView)
+				{
+					id_VBPlanBtn.selected = true;	
+				} */
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+	</fx:Declarations>
+
+	<s:HGroup width="100%" horizontalAlign="center" height="40" verticalAlign="middle">
+		<s:Button id="id_prevBtn" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.VBPMHPrevBtn" buttonMode="true" toolTip="Previous Section" click="id_prevBtn_clickHandler(event)" />		
+		<s:ToggleButton id="id_VBDiagnosisBtn" selected="true" width="120" skinClass="com.adobe.gazuntite.skins.viewBackground.toggleButtonSkins.VBPMHButtonSkin" label="DIAGNOSIS" buttonMode="true" click="ShowPanel(event)"/>
+		<s:ToggleButton id="id_VBTreatmentBtn" width="140" skinClass="com.adobe.gazuntite.skins.viewBackground.toggleButtonSkins.VBPMHButtonSkin" label="TREATMENT" buttonMode="true" click="ShowPanel(event)" />
+		<s:ToggleButton id="id_VBPlanBtn" width="120" skinClass="com.adobe.gazuntite.skins.viewBackground.toggleButtonSkins.VBPMHButtonSkin" label="PLAN" buttonMode="true" click="ShowPanel(event)"/>
+		<s:Button id="id_nextBtn" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.VBPMHNextBtn" buttonMode="true" toolTip="Next Section" click="id_nextBtn_clickHandler(event)"/>
+	</s:HGroup>
+	
+	<s:BorderContainer width="100%" maxHeight="450" cornerRadius="3" backgroundColor="#999AAA" 
+					   borderAlpha="0" borderColor="#999AAA" backgroundAlpha="0">
+		<s:layout>
+			<s:VerticalLayout paddingTop="0" horizontalAlign="left" />
+		</s:layout>
+		<s:Scroller id="id_Scroller" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off" >
+			<s:Group width="100%" height="100%" >
+				<s:layout>
+					<s:VerticalLayout paddingTop="2" horizontalAlign="center" gap="1" clipAndEnableScrolling="true"/>
+				</s:layout>
+		
+		
+		<diagnosis:VBDiagnosisGridPanel id="id_VBDiagnosisGridPanel" width="100%"/>
+										<!--QSSlideStateChange="slideoutManager.QSAutoSlideChangeHandler(event)"
+										QSViewStateChange="slideoutManager.QSAutoCollapseHandler(event); checkPanels()"
+										/>-->
+		<treatment:VBTreatmentPanel width="100%" id="id_treatment"/>
+								  <!--ExpandedView="false" allowSlideOut="true" SlideOutXOffset="35" SlideOutYOffset="0" QSSlideStateChange="slideoutManager.QSAutoSlideChangeHandler(event)"
+								   QSViewStateChange="slideoutManager.QSAutoCollapseHandler(event); checkPanels()"
+								   />-->
+		<Plan:VBPlanView width="100%" id="id_plan"/>
+						<!-- ExpandedView="false" allowSlideOut="true" SlideOutXOffset="35" SlideOutYOffset="0" QSSlideStateChange="slideoutManager.QSAutoSlideChangeHandler(event)"
+						 QSViewStateChange="slideoutManager.QSAutoCollapseHandler(event); checkPanels()"
+						 />-->
+				</s:Group></s:Scroller>
+	</s:BorderContainer>
+</s:Group>

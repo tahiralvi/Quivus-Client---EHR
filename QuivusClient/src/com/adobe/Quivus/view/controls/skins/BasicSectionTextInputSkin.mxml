@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SparkSkin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" preinitialize="preInitializeSkinHandler()">
+	
+	<fx:Metadata>
+		[HostComponent("spark.components.TextInput")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			
+			/**
+			 * Ayesha: 8th March 2011
+			 * if control specifies color explicitly then show text in that color otherwise black
+			 * for Instance:
+			 * 	 in case of RejectedClaims, ClaimsOverdue, Allergies fields in patient profile expanded view
+			 * 	 text should be in red color, all other fields in black
+			 * */
+			[Bindable]
+			private var textColor:uint;
+			private function preInitializeSkinHandler():void
+			{
+				if (hostComponent.getStyle("color"))
+				{
+					textColor = hostComponent.getStyle("color");
+				}
+				else
+					textColor = 0x000000;
+					
+			}
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="normal"/><s:State name="normalWithPrompt"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+	</s:states>
+	<s:Rect height="13" width="100%" x="0" y="0" alpha.disabled="0">
+		<!--<s:stroke>
+			<s:SolidColorStroke caps="none" color="#999999" joints="miter" miterLimit="4" weight="1" />
+		</s:stroke>-->
+		<s:fill>
+			<s:SolidColor color="#FFFFFF"/>
+		</s:fill>
+	</s:Rect>
+	<s:RichEditableText color="{textColor}" editable="false" fontFamily="Calibri" fontSize="11" 
+						tabStops="S0 S50" x="4" y="0" width="90" heightInLines="1" id="textDisplay"/>
+</s:SparkSkin>

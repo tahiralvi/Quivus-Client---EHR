@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:MXAdvancedDataGridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+								  xmlns:s="library://ns.adobe.com/flex/spark" 
+								  xmlns:mx="library://ns.adobe.com/flex/mx" 
+								  >
+	
+	<s:layout>
+		<s:HorizontalLayout  horizontalAlign="center" verticalAlign="middle"/>
+	</s:layout>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.util.xml.XmlConstants;
+			import com.gazuntite.provider.live.services.administration.event.userManagement.UpdateUserStatusEvent;
+			import com.gazuntite.provider.live.services.administration.util.AdminConstant;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			[Bindable]
+			private var actionValue:String;
+			
+			// Check box click handler
+			protected function checkbox1_changeHandler(event:Event):void
+			{
+				//data.IsLockedOut = event.currentTarget.selected? "1":"0";
+				if(id_lockedCheckBox.selected)
+					actionValue = '1';
+				else
+					actionValue = '0';
+				
+				Alert.show('are you really want to un-locked', 'Confirmation', Alert.YES | Alert.NO, this, confirmAction)
+			}
+			//Corfirmation message before any action 
+			protected function confirmAction(event:CloseEvent):void
+			{
+				if(event.detail == Alert.YES)
+				{
+					var LE:UpdateUserStatusEvent = new UpdateUserStatusEvent(data.UserId, AdminConstant.LOCKED_STATUS, actionValue);
+					CairngormEventDispatcher.getInstance().dispatchEvent( LE );	
+					cursorManager.setBusyCursor();
+				}
+				else
+				{
+					id_lockedCheckBox.selected = true;
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<!--<s:Label id="lblData" top="0" left="0" right="0" bottom="0" text="{listData.label}" />-->
+	
+	
+	<s:CheckBox id="id_lockedCheckBox"
+				label="Locked"  selected="{data.IsLockedOut}" verticalCenter="0" horizontalCenter="0" change="checkbox1_changeHandler(event)"
+				useHandCursor="true" buttonMode="true" toolTip="check for lock" enabled="{data.IsLockedOut}"/>
+	
+	
+</s:MXAdvancedDataGridItemRenderer>

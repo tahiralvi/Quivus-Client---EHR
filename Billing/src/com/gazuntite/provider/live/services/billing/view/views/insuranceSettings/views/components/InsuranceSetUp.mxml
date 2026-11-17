@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%"
+		  xmlns:components="com.gazuntite.controls.extended.components.*" 
+		  creationComplete="creComp()"
+		  paddingBottom="5" paddingLeft="5" paddingRight="5"  gap="-1" 
+		  paddingTop="5" xmlns:common="com.gazuntite.provider.live.services.billing.view.common.*" 
+		  xmlns:itemEditors="com.gazuntite.provider.live.services.billing.view.common.itemEditors.*" xmlns:components1="com.gazuntite.controls.extended.components.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.dto.AddInsuranceDTO;
+			import com.gazuntite.common.util.ValidationUtils;
+			import com.gazuntite.provider.live.services.billing.event.BillingEventString;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.util.BillingConstants;
+			import com.gazuntite.provider.live.services.billing.view.event.DataGridActionEvent;
+			import com.gazuntite.provider.live.services.billing.view.views.insuranceSettings.events.LoadAllInsuranceByIDEvent;
+			import com.gazuntite.provider.live.services.billing.view.views.insuranceSettings.events.LoadInsurancesEvent;
+			import com.gazuntite.provider.live.services.billing.view.views.insuranceSettings.events.ManageAllInsuranceEvent;
+			import com.gazuntite.provider.live.services.billing.view.views.insuranceSettings.views.AddInsurancePopUp;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			
+			public 	var index:int = 0;
+			private var searchStr:String ;
+			private var searchIndex:int = 0;
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			[Bindable]
+			private var SearchTypes:ArrayCollection =   new ArrayCollection(["Name","Type","Street1","City","Phone"]);
+			
+			protected function creComp():void
+			{
+				model.InsuranceSetupSearchPageNo = 1 ;
+				InitializeInsuranceSetUp();
+				addEventListeners();
+				
+				id_InsGrid.addEventListener(DataGridActionEvent.EDIT_RECORD_CLICK, editInsOrg, false, 0, true);
+				id_InsGrid.addEventListener(DataGridActionEvent.DELETE_RECORD_CLICK, deleteInsOrg, false, 0, true);
+				
+				id_FilterBar.id_ListOnly.visible = false;
+				id_FilterBar.id_FieldsCmbo.setFocus();
+			}
+			
+			private function addEventListeners():void
+			{
+				id_FilterBar.id_btnSearch.addEventListener(MouseEvent.CLICK,onSearchClick);
+				id_FilterBar.addEventListener(BillingEventString.REFRESH_VIEW,onRefreshClick);
+				id_FilterBar.addEventListener(BillingEventString.GOTO_FIRST_PAGE,PageSwitching);
+				id_FilterBar.addEventListener(BillingEventString.GOTO_PREVIOUS_PAGE,PageSwitching);
+				id_FilterBar.addEventListener(BillingEventString.GOTO_NEXT_PAGE,PageSwitching);
+				id_FilterBar.addEventListener(BillingEventString.GOTO_LAST_PAGE,PageSwitching);
+				//id_InsGrid.addEventListener("editClick",onEditClick);
+				//id_InsGrid.addEventListener("deleteClick",onDeleteClick);
+			}
+			//private function onEditClick(event:Event):void
+			private function editInsOrg(event:DataGridActionEvent):void
+			{
+				var addInsurancePopUp:AddInsurancePopUp = new AddInsurancePopUp();				
+				//addInsurancePopUp.insurance = event.target.data as AddInsuranceDTO ;
+				addInsurancePopUp.insurance = id_InsGrid.selectedItem as AddInsuranceDTO ;
+				addInsurancePopUp.title = "Insurance: " + addInsurancePopUp.insurance.InsuranceName.toUpperCase();
+				addInsurancePopUp.ShowPopup(FlexGlobals.topLevelApplication.mainContainer);
+				// old imp // addInsurancePopUp.id_Insurance.setStateCityZIP();
+				addInsurancePopUp.id_Insurance.loadZipCityState(id_InsGrid.selectedItem.ZIP);
+				addInsurancePopUp.addEventListener("saveClick", UpdateInsurance);
+			}
+			
+			//private function onDeleteClick(event:Event):void
+			private function deleteInsOrg(event:DataGridActionEvent):void
+			{
+				Alert.show("Are you sure, you want to delete Insurance ["+ (id_InsGrid.selectedItem as AddInsuranceDTO).InsuranceName.toUpperCase() +"] ?","Confirmation", Alert.YES|Alert.NO, this, function( event:CloseEvent):void
+				{
+					if( event.detail == Alert.YES )
+					{
+						var dto:AddInsuranceDTO = id_InsGrid.selectedItem as AddInsuranceDTO;
+						
+						dto.IsDeleted = "true";
+						dto.ModifiedBy = model.LoggedInUserId.toString();
+						
+						var xmlData:XML				= dto.ToXML();
+						var manageInsurance:ManageAllInsuranceEvent= new ManageAllInsuranceEvent(xmlData,deleteResult) ;
+						CairngormEventDispatcher.getInstance().dispatchEvent(manageInsurance)  ;	
+					} 
+				});
+			}
+			
+			private function deleteResult(event:String):void
+			{
+				if(event == "true")
+				{
+					var alert:Alert = Alert.show("Insurance deleted successfully.", "Confirmation", 4, FlexGlobals.topLevelApplication.mainContainer, function(event:Event):void{
+						
+					});
+					
+					if(searchIndex > 0)
+					{
+						var loadInsuranceByIDEvent:LoadAllInsuranceByIDEvent = new LoadAllInsuranceByIDEvent(index,searchStr,model.InsuranceSetupSearchPageNo,SetButtonStatus) ;
+						CairngormEventDispatcher.getInstance().dispatchEvent(loadInsuranceByIDEvent)  ;
+					}
+					else
+					{
+						var loadAllInsurance:LoadInsurancesEvent= new LoadInsurancesEvent(model.InsuranceSetupSearchPageNo,SetButtonStatus) ;
+						CairngormEventDispatcher.getInstance().dispatchEvent(loadAllInsurance) ;						
+					}					
+				}
+				else
+					Alert.show("Insurance not deleted.","Confirmation", 4, FlexGlobals.topLevelApplication.mainContainer);			
+			}
+			
+			private var addInsurancePopUp:AddInsurancePopUp =null;
+			private function UpdateInsurance(event:Event):void
+			{
+				addInsurancePopUp= event.currentTarget as AddInsurancePopUp;
+				/* addInsurancePopUp.id_Insurance.UpdateInsurance();				
+				
+				addInsurancePopUp.id_InsCode.UpdateInsurance();
+				addInsurancePopUp.id_EDI.UpdateInsurance(); */
+				var xmlData:XML				= addInsurancePopUp.insurance.ToXML();
+				var manageInsurance:ManageAllInsuranceEvent= new ManageAllInsuranceEvent(xmlData,callBack) ;
+				CairngormEventDispatcher.getInstance().dispatchEvent(manageInsurance)  ;
+								
+			}
+			public function callBack(result:String):void
+			{
+				if(result == "true")
+				{
+					if(searchIndex > 0)
+					{
+						var loadInsuranceByIDEvent:LoadAllInsuranceByIDEvent = new LoadAllInsuranceByIDEvent(index,searchStr,model.InsuranceSetupSearchPageNo,SetButtonStatus) ;
+						CairngormEventDispatcher.getInstance().dispatchEvent(loadInsuranceByIDEvent)  ;
+					}
+					else
+					{
+						var loadAllInsurance:LoadInsurancesEvent= new LoadInsurancesEvent(model.InsuranceSetupSearchPageNo,SetButtonStatus) ;
+						CairngormEventDispatcher.getInstance().dispatchEvent(loadAllInsurance) ;						
+					}	
+					
+					Alert.show("Insurance Saved Successfully","Save Info",4,FlexGlobals.topLevelApplication.mainContainer);					
+					addInsurancePopUp.removePopup();
+				}
+				else
+					Alert.show("Insurance not Saved Successfully","Save Info",4,FlexGlobals.topLevelApplication.mainContainer);
+				
+			}
+			
+			
+			private function PageSwitching(event:Event):void
+			{
+				switch(event.type)
+				{
+					case BillingEventString.GOTO_FIRST_PAGE :
+						model.InsuranceSetupSearchPageNo = 1 ;
+						break;
+					case BillingEventString.GOTO_NEXT_PAGE:
+						model.InsuranceSetupSearchPageNo += 1; 						
+						break;
+					case BillingEventString.GOTO_PREVIOUS_PAGE:
+						model.InsuranceSetupSearchPageNo -= 1;						
+						break;
+					case BillingEventString.GOTO_LAST_PAGE:
+						model.InsuranceSetupSearchPageNo = model.InsuranceSetupTotalPageNo;						
+						break; 
+				}
+				if(searchIndex > 0)
+				{
+					var loadInsuranceByIDEvent:LoadAllInsuranceByIDEvent = new LoadAllInsuranceByIDEvent(index,searchStr,model.InsuranceSetupSearchPageNo,SetButtonStatus) ;
+					CairngormEventDispatcher.getInstance().dispatchEvent(loadInsuranceByIDEvent)  ;
+				}
+				else
+				{
+					var loadAllInsurance:LoadInsurancesEvent= new LoadInsurancesEvent(model.InsuranceSetupSearchPageNo,SetButtonStatus) ;
+					CairngormEventDispatcher.getInstance().dispatchEvent(loadAllInsurance) ;
+					return;
+				}
+			}
+			protected function InitializeInsuranceSetUp():void
+			{
+				model.InsuranceSetupSearchPageNo = 1 ;
+				var loadAllInsurance:LoadInsurancesEvent= new LoadInsurancesEvent(BillingConstants.FIRST_PAGE_NUMBER,SetButtonStatus) ;
+				CairngormEventDispatcher.getInstance().dispatchEvent(loadAllInsurance) ;
+				return;
+			}
+			
+			public function onRefreshClick(event:Event):void
+			{
+				if(searchIndex  > 0 )
+				{
+					var loadInsuranceByIDEvent:LoadAllInsuranceByIDEvent = new LoadAllInsuranceByIDEvent(index,searchStr,model.InsuranceSetupSearchPageNo,SetButtonStatus) ;
+					CairngormEventDispatcher.getInstance().dispatchEvent(loadInsuranceByIDEvent)  ;
+				}
+				else
+				{
+					var loadAllInsurance:LoadInsurancesEvent= new LoadInsurancesEvent(model.InsuranceSetupSearchPageNo,SetButtonStatus) ;
+					CairngormEventDispatcher.getInstance().dispatchEvent(loadAllInsurance) ;
+					return;
+				}
+				
+			}
+			public function onSearchClick(MouseEvent:Event):void
+			{
+				searchIndex  = 0;
+				searchStr 	 = id_FilterBar.id_SearchTextInput.text ;
+				index 		 = id_FilterBar.id_FieldsCmbo.selectedIndex + 1;
+				
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex < 0 )
+				{
+					Alert.show("Please Select Type", "Empty Search Type",4,FlexGlobals.topLevelApplication.mainContainer );
+					return;
+				}
+				
+				/* if(index == 0 && searchStr.length <=0)
+				{
+					Alert.show("Please Select Type and Write Somehing for Search", "Empty Search Type & Text",4,FlexGlobals.topLevelApplication.mainContainer );
+					return;
+				} */
+				if(index > 0 && searchStr=="" )
+				{
+					Alert.show("Please Write something for Search", "Empty Search Text",4,FlexGlobals.topLevelApplication.mainContainer );
+					return;
+				}
+				if(	index > 0 && searchStr.length )
+				{
+				//removeOldSearch();
+				var loadInsuranceByIDEvent:LoadAllInsuranceByIDEvent = new LoadAllInsuranceByIDEvent(index,searchStr,BillingConstants.FIRST_PAGE_NUMBER,SetButtonStatus) ;
+				CairngormEventDispatcher.getInstance().dispatchEvent(loadInsuranceByIDEvent)  ;
+				searchIndex = index ;
+				return;
+				}
+				
+			}
+			
+			public function removeOldSearch():void
+			{
+				if(model.InsList == null)
+					return;
+				if(model.InsList.length>0)
+					model.InsList.removeAll();
+			}
+			protected function SearchInsurance():void
+			{	
+				
+				
+			}
+			
+			public function SetButtonStatus():void
+			{
+				
+				if(model.totalrecords_IS < BillingConstants.PAGE_SIZE)
+				{
+					id_FilterBar.id_GoToFirstPage.enabled = false;
+					id_FilterBar.id_GoToLastPage.enabled = false;
+					id_FilterBar.id_GoToNextPage.enabled = false;
+					id_FilterBar.id_GoToPreviousPage.enabled = false;
+				}
+				else
+				{
+					if(model.InsuranceSetupSearchPageNo == 1)
+					{
+						id_FilterBar.id_GoToFirstPage.enabled = false;
+						id_FilterBar.id_GoToPreviousPage.enabled = false;
+					}
+					else
+					{
+						id_FilterBar.id_GoToFirstPage.enabled = true;
+						id_FilterBar.id_GoToPreviousPage.enabled = true;
+					}
+					if(model.InsuranceSetupSearchPageNo == model.InsuranceSetupTotalPageNo)
+					{
+						id_FilterBar.id_GoToNextPage.enabled = false;
+						id_FilterBar.id_GoToLastPage.enabled = false;
+					}
+					else
+					{
+						id_FilterBar.id_GoToNextPage.enabled = true;
+						id_FilterBar.id_GoToLastPage.enabled = true;
+					}				
+				}
+			}
+			
+			private function getPhoneNo(item:Object, column:DataGridColumn):String
+			{
+				var result:String = '';
+				if(item.Phone)
+					result = ValidationUtils.setPhoneNumberMasking(item.Phone);
+				
+				return result;
+			}
+		]]>
+	</fx:Script>
+	<!--<s:HGroup width="100%" >
+		<components:LabelComboBox id="id_SerachTypeTextField" width="100" prompt="Search Field" dataProvider="{SearchTypes}"/>
+		<s:SkinnableContainer width="225" styleName="patientSearchBGContainerSkin" height="23">
+			<s:layout >
+				<s:HorizontalLayout gap="0" verticalAlign="middle"/>
+			</s:layout>
+			
+			<components:LabelTextInput id="id_SearchFieldTextInput"  prompt="Search"   width="100%" 
+									   skinClass="com.adobe.gazuntite.skins.chrome.textInputSkins.transparentTextInput"/>
+			<s:Button  id="id_SearchBtn" styleName="orangeSearchButtonSkin" click="SearchInsurance()"
+					   buttonMode="true" toolTip="Search Insurance" height="19" width="23" />
+		</s:SkinnableContainer>
+	</s:HGroup>-->
+	<common:BillingGridFilterView width="100%" id="id_FilterBar" DataProvider="{SearchTypes}" 
+								  PagingMessage="{'Page' + model.InsuranceSetupSearchPageNo + '/' +  model.InsuranceSetupTotalPageNo }"
+								  MessageVisible="{ (model.InsList != null &amp;&amp; model.InsList.length > 0) ? true :false}"
+								  RecordMessage="{model.totalRecordMessage_IS}"  
+								  />
+	<components1:LabelDataGrid dataProvider="{model.InsList}" id="id_InsGrid"
+							  width="100%" height="100%" 
+							  verticalScrollBarStyleName="VScrollBar"
+							  verticalScrollPolicy="on"  horizontalScrollPolicy="auto"
+							  maxHeight="300" variableRowHeight="true"						 
+							  columnWidths="{['30%'],['30%'],['20%'],['20%']}"
+							  >
+		<components:columns>
+			<mx:DataGridColumn headerText="Sr.#" dataField="SNo" />
+			<mx:DataGridColumn 	headerText="Name" dataField="InsuranceName"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" />
+			<mx:DataGridColumn 	headerText="Type" dataField="Type"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" />
+			<mx:DataGridColumn	headerText="Street 1" dataField="Address"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn  headerText="City" dataField="City" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn  headerText="Phone" dataField="Phone" labelFunction="getPhoneNo" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" />
+			<itemEditors:DataGridColumnDel headerText="Action" editable="false" itemRenderer="com.gazuntite.provider.live.services.billing.view.common.itemEditors.EditDeleteItemRender"/>
+			<!--<mx:DataGridColumn 	headerText="" itemRenderer="com.zigron.provider.live.services.billing.view.views.insuranceSettings.itemRenderer.EditDeleteGridItemRenderer"/>-->
+		</components:columns>
+	</components1:LabelDataGrid>
+</s:VGroup>

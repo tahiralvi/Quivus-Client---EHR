@@ -1,0 +1,1193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"		 
+		 creationComplete="group1_creationCompleteHandler(event)" 
+		 xmlns:LiveGridView="com.gazuntite.common.view.LiveGridView.*" 
+		 xmlns:toolbar="com.gazuntite.provider.live.services.billing.view.views.toolbar.*" 
+		 xmlns:components="com.gazuntite.controls.extended.components.*" 
+		  width="100%" xmlns:common="com.gazuntite.provider.live.services.billing.view.common.*" 
+		  xmlns:components1="com.gazuntite.controls.extended.components.*" 
+		 >
+	<s:layout>
+		<s:VerticalLayout  gap="7"/>
+	</s:layout>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.dto.InsOrganizationDTO;
+			import com.gazuntite.common.event.LoadAllInsuranceEvent;
+			import com.gazuntite.common.util.ValidationUtils;
+			import com.gazuntite.common.view.events.ListOnlySelectionEvent;
+			import com.gazuntite.controls.extended.components.LabelComboBox;
+			import com.gazuntite.provider.live.services.billing.dto.ClaimManagement.CMSearchDTO;
+			import com.gazuntite.provider.live.services.billing.dto.ClaimManagement.CarrierDTO;
+			import com.gazuntite.provider.live.services.billing.dto.SearchClaimDTO;
+			import com.gazuntite.provider.live.services.billing.dto.settings.EDIReceiverDTO;
+			import com.gazuntite.provider.live.services.billing.event.BillingEventString;
+			import com.gazuntite.provider.live.services.billing.event.ClaimManagement.LoadClaimByCriteriaEvent;
+			import com.gazuntite.provider.live.services.billing.event.ClaimManagement.SendClaimsForProcessingEvent;
+			import com.gazuntite.provider.live.services.billing.event.LoadAllClaimDiagnosisByVisitIdEvent;
+			import com.gazuntite.provider.live.services.billing.event.LoadAllClaimTransactionByClaimIdEvent;
+			import com.gazuntite.provider.live.services.billing.event.LoadAllClaimbyProviderIdEvent;
+			import com.gazuntite.provider.live.services.billing.event.settings.LoadEDIReceiverByCriteriaEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.util.BillingConstants;
+			import com.gazuntite.provider.live.services.billing.util.BillingPopUpManager;
+			import com.gazuntite.provider.live.services.billing.view.views.PendingBills.CMSInsuranceTypePopup;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			[Bindable] 
+			private var SearchTypes:ArrayCollection = new ArrayCollection(["Claim Number","Patient Name","Date of Service","Gazuntite Id","Batch Number 1","Batch Number 2","Batch Number 3",
+																		   "Insurance Carrier 1","Insurance Carrier 2","Insurance Carrier 3","EDI Receiver 1","EDI Receiver 2", 
+																		   "EDI Receiver 3", "Provider Name", "Date Created"]);
+			
+			[Bindable] 
+			private var EDIReceivers:ArrayCollection = null;//new ArrayCollection(["All","Direct","Clearing House"]);
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(model.EDIReceiverList == null || model.EDIReceiverList.length == 0)
+				{
+					var lerEvent:LoadEDIReceiverByCriteriaEvent = new LoadEDIReceiverByCriteriaEvent(0,"0",0);
+					CairngormEventDispatcher.getInstance().dispatchEvent(lerEvent);
+				}
+				
+				if(model.EDIReceiverList != null && model.EDIReceiverList.length > 0)
+				{
+					EDIReceivers = new ArrayCollection();
+					var allItem:EDIReceiverDTO = new EDIReceiverDTO();
+					allItem.Name = "All";
+					allItem.EDIReceiverID = "0";
+					EDIReceivers.addItem(allItem);
+					for each (var receiver:EDIReceiverDTO in model.EDIReceiverList) 
+					{
+						EDIReceivers.addItem(receiver);
+					}					
+				}
+				
+				addEventListeners();
+				model.ClaimManagementSearchPageNo = 1;
+				var claimevent:LoadAllClaimbyProviderIdEvent = new LoadAllClaimbyProviderIdEvent(model.LoggedInUserProviderId,model.LoggedInUserSelectedBranchId,model.ClaimManagementSearchPageNo, RecordStatus);
+				CairngormEventDispatcher.getInstance().dispatchEvent(claimevent);
+				
+				//if(id_FilterBar.id_FieldsCmbo.selectedIndex == -1 )
+					//id_FilterBar.id_ListOnly.enabled = false;
+				
+				searchDTO = null;
+				id_FilterBar.id_FieldsCmbo.setFocus();
+			}	
+			
+			public function addEventListeners():void
+			{
+				id_FilterBar.id_FieldsCmbo.addEventListener(ListEvent.CHANGE,searchTypeChanged);
+				id_FilterBar.id_btnSearch.addEventListener(MouseEvent.CLICK, OnSearchClick);
+				id_FilterBar.id_SearchTextInput.addEventListener(KeyboardEvent.KEY_UP, OnSearchKeyUp);
+				id_FilterBar.id_SearchTextInput.addEventListener(KeyboardEvent.KEY_DOWN, OnSearchKeyDown);
+				id_FilterBar.addEventListener( BillingEventString.LIST_ONLY , 			id_FilterBar_ListOnlyHandler );
+				id_FilterBar.addEventListener( BillingEventString.CHANGE_STAUS , 		id_FilterBar_ChangeStatusHandler );
+				id_FilterBar.addEventListener( BillingEventString.GOTO_FIRST_PAGE , 	switchPageForPendingBills );
+				id_FilterBar.addEventListener( BillingEventString.GOTO_LAST_PAGE , 		switchPageForPendingBills );
+				id_FilterBar.addEventListener( BillingEventString.GOTO_NEXT_PAGE , 		switchPageForPendingBills );
+				id_FilterBar.addEventListener( BillingEventString.GOTO_PREVIOUS_PAGE ,  switchPageForPendingBills );
+				id_FilterBar.addEventListener( BillingEventString.REFRESH_VIEW , 		id_FilterBar_RefreshViewHandler);
+			}
+			
+			private function switchPageForPendingBills( event:Event ):void
+			{
+				//model.isPendingBillRemoved = false;
+				switch( event.type ) 
+				{
+					case BillingEventString.GOTO_FIRST_PAGE:
+						model.ClaimManagementSearchPageNo = 1;							
+						break;
+					case BillingEventString.GOTO_NEXT_PAGE:
+						model.ClaimManagementSearchPageNo += 1; 						
+						break;
+					case BillingEventString.GOTO_PREVIOUS_PAGE:
+						model.ClaimManagementSearchPageNo -= 1;						
+						break;
+					case BillingEventString.GOTO_LAST_PAGE:
+						model.ClaimManagementSearchPageNo = model.ClaimManagementTotalPageNo;						
+						break;
+				}	
+				
+				if(searchDTO == null)
+				{
+					var claimevent:LoadAllClaimbyProviderIdEvent = new LoadAllClaimbyProviderIdEvent(model.LoggedInUserProviderId,model.LoggedInUserSelectedBranchId,model.ClaimManagementSearchPageNo, RecordStatus);
+					CairngormEventDispatcher.getInstance().dispatchEvent(claimevent);	
+				}
+				else
+				{
+					searchDTO.PageNo = model.ClaimManagementSearchPageNo.toString();
+					var ce:LoadClaimByCriteriaEvent = new LoadClaimByCriteriaEvent(searchDTO.ToXML());
+					CairngormEventDispatcher.getInstance().dispatchEvent(ce);
+				}
+			}
+			
+			public var popup:ClaimListOnlyPopup;
+			protected function id_FilterBar_ListOnlyHandler(event:Event):void
+			{
+				if( popup && popup.isPopUp )
+				{
+					popup.removePopup();					
+					return; 
+				}			
+				
+				popup = new ClaimListOnlyPopup();				
+				
+				popup.addEventListener( ListOnlySelectionEvent.LIST_ONLY_SELECTION, ListOnlySelectionEventHandler );
+				
+				var pLoc:Point = id_FilterBar.id_ListOnly.parent.localToGlobal(new Point(id_FilterBar.id_ListOnly.x ,id_FilterBar.id_ListOnly.height));
+				
+				popup.x 		= pLoc.x - 100; 
+				popup.y 		= pLoc.y  + 10 ;			
+				
+				popup.ShowPopup( this ); 
+				BillingPopUpManager.addPopUp(popup,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+			}		
+			
+			public var changeStatusPopup:ClaimChangeStatusView;
+			protected function id_FilterBar_ChangeStatusHandler(event:Event):void
+			{
+				var selectedclaimIds:ArrayCollection = new ArrayCollection();
+				if(id_ClaimGrid.selectedItems.length > 0)
+				{					
+					for(var i:int = 0; i < id_ClaimGrid.selectedItems.length; i++)
+					{
+						selectedclaimIds.addItem((id_ClaimGrid.selectedItems[i] as SearchClaimDTO).ClaimID);
+					}
+				}
+				else
+				{
+					Alert.show('Please select at least one claim', 'No record selected',4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				if( changeStatusPopup && changeStatusPopup.isPopUp )
+				{
+					changeStatusPopup.removePopup();					
+					return; 
+				}			
+				
+				changeStatusPopup = new ClaimChangeStatusView();			
+				
+				changeStatusPopup.addEventListener( ListOnlySelectionEvent.LIST_ONLY_SELECTION, ChangeStatusSelectionEventHandler );
+				
+				var pLoc:Point = id_FilterBar.id_ListOnly.parent.localToGlobal(new Point(id_FilterBar.id_ChangeStaus.x ,id_FilterBar.id_ChangeStaus.height));
+				
+				changeStatusPopup.x 		= pLoc.x - 100; 
+				changeStatusPopup.y 		= pLoc.y  + 10 ;			
+				
+				changeStatusPopup.ShowPopup( this ); 				
+				BillingPopUpManager.addPopUp(changeStatusPopup,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+				
+				changeStatusPopup.BatchId = (id_ClaimGrid.selectedItems[0] as SearchClaimDTO).Batch1;				
+				changeStatusPopup.ClaimIDs = selectedclaimIds;
+			}
+			
+			protected function ChangeStatusSelectionEventHandler(event:ListOnlySelectionEvent):void
+			{
+				if(searchDTO == null && model.ClaimListOnlyCritera == null)
+				{
+					var claimevent:LoadAllClaimbyProviderIdEvent = new LoadAllClaimbyProviderIdEvent(model.LoggedInUserProviderId,model.LoggedInUserSelectedBranchId,model.ClaimManagementSearchPageNo, RecordStatus);
+					CairngormEventDispatcher.getInstance().dispatchEvent(claimevent);	
+				}
+				else if(searchDTO != null)
+				{
+					searchDTO.PageNo = model.ClaimManagementSearchPageNo.toString();
+					var ce:LoadClaimByCriteriaEvent = new LoadClaimByCriteriaEvent(searchDTO.ToXML(),RecordStatus);
+					CairngormEventDispatcher.getInstance().dispatchEvent(ce);	
+				}
+				else if(model.ClaimListOnlyCritera != null)
+				{
+					searchDTO.PageNo = model.ClaimManagementSearchPageNo.toString();
+					var ce2:LoadClaimByCriteriaEvent = new LoadClaimByCriteriaEvent(model.ClaimListOnlyCritera.ToXML(),RecordStatus);
+					CairngormEventDispatcher.getInstance().dispatchEvent(ce2);
+				}	
+			}
+			
+			protected function ListOnlySelectionEventHandler(event:ListOnlySelectionEvent):void
+			{
+				if(model.ClaimListOnlyCritera != null)
+					var ce:LoadClaimByCriteriaEvent = new LoadClaimByCriteriaEvent(model.ClaimListOnlyCritera.ToXML(), RecordStatus);
+				    CairngormEventDispatcher.getInstance().dispatchEvent(ce);
+			}
+			 
+			private var Id_EDIReceiverCmb:LabelComboBox = null;
+			private function searchTypeChanged( event:Event ):void
+			{
+				id_FilterBar.id_SearchTextInput.visible = true;
+				searchDTO = null;	
+				if(Id_EDIReceiverCmb)
+				{
+					id_FilterBar.removeElement(Id_EDIReceiverCmb);
+					Id_EDIReceiverCmb = null;
+				}
+				
+				id_FilterBar.id_SearchTextInput.text = "";
+				
+				id_FilterBar.id_SearchTextInput.restrict = null;
+				
+				var numIndexes:String = "*0*3*4*5*6*";
+				var cmbIndexes:String = "*10*11*12*";
+				if(numIndexes.indexOf("*" + id_FilterBar.id_FieldsCmbo.selectedIndex.toString() + "*") > -1)
+				{
+					id_FilterBar.id_SearchTextInput.restrict = "[0-9]";
+					
+					if(id_FilterBar.id_FieldsCmbo.selectedIndex == 3)
+						id_FilterBar.id_SearchTextInput.text = "Ga-";
+				}
+				else if(cmbIndexes.indexOf("*" + id_FilterBar.id_FieldsCmbo.selectedIndex.toString() + "*") > -1)
+				{
+					if(EDIReceivers == null && model.EDIReceiverList != null && model.EDIReceiverList.length > 0)
+					{
+						EDIReceivers = new ArrayCollection();
+						var allItem:EDIReceiverDTO = new EDIReceiverDTO();
+						allItem.Name = "All";
+						allItem.EDIReceiverID = "0";
+						EDIReceivers.addItem(allItem);
+						for each (var receiver:EDIReceiverDTO in model.EDIReceiverList) 
+						{
+							EDIReceivers.addItem(receiver);
+						}					
+					}
+					
+					id_FilterBar.id_SearchTextInput.visible = false;
+					Id_EDIReceiverCmb  = new LabelComboBox();
+					id_FilterBar.addElementAt(Id_EDIReceiverCmb,1);
+					Id_EDIReceiverCmb.visible = true;
+					Id_EDIReceiverCmb.width = 80;
+					Id_EDIReceiverCmb.left =id_FilterBar.left + 105;
+					Id_EDIReceiverCmb.top =id_FilterBar.top;
+					Id_EDIReceiverCmb.dataProvider = EDIReceivers;	
+					Id_EDIReceiverCmb.labelField = "Name";
+					Id_EDIReceiverCmb.selectedIndex = 0;
+				}				
+			}
+
+			public static function isValidAlphaNumericWithSpaces2(str:String = ""):Boolean
+			{
+				var isValid:Boolean = true;
+				
+				var reg:RegExp = /[a-zA-Z0-9,.'()\/\s]{1,200}/ig;
+				var result:Object;
+				
+				do
+				{
+					result = reg.exec(str);
+					
+					if ((result == null) || (result && result.index !=0))
+					{
+						isValid = false;
+						break;
+					}
+					
+				}while (reg.lastIndex < str.length)
+				
+				return isValid;
+			}
+			
+			private function isValidAlphaNumericWithSpaces(str:String = ""):Boolean
+			{
+				var isValid:Boolean = true;
+				
+				var reg:RegExp = /[a-zA-Z0-9,.'()\/\s]{1,200}/ig;
+				var result:Object;
+				
+				do
+				{
+					result = reg.exec(str);
+					
+					if ((result == null) || (result && result.index !=0))
+					{
+						isValid = false;
+						break;
+					}
+					
+				}while (reg.lastIndex < str.length)
+				
+				return isValid;
+			}
+			
+			private var searchDTO:CMSearchDTO = null;
+			protected function OnSearchClick(MouseEvent:Event):void
+			{
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == -1)
+				{
+					Alert.show("Please select search type", "Search Type Not Selected",4,FlexGlobals.topLevelApplication.mainContainer);					
+					return;
+					id_FilterBar.id_FieldsCmbo.setFocus();
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex < 0 && id_FilterBar.id_FieldsCmbo.textInput.text.length > 0)
+				{
+					Alert.show("Please select proper search type from list", "Search Type Not Selected",4,FlexGlobals.topLevelApplication.mainContainer);					
+					return;
+					id_FilterBar.id_FieldsCmbo.setFocus();
+				}
+				if(id_FilterBar.id_SearchTextInput.visible == true && UtilityFunctions.IsNullOrEmpty(id_FilterBar.id_SearchTextInput.text))	
+				{
+					Alert.show("Please enter something to search ", "Search Field Empty",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+					id_FilterBar.id_SearchTextInput.setFocus();
+				}
+				
+				id_FilterBar.id_SearchTextInput.text = UtilityFunctions.TrimString(id_FilterBar.id_SearchTextInput.text);				
+				
+				var searchName:String = "";
+				var searchFirstName:String = "";
+				var searchLastName:String = "";
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == 1 || id_FilterBar.id_FieldsCmbo.selectedIndex == 13)
+				{	
+					searchName = id_FilterBar.id_SearchTextInput.text;
+					if(searchName.indexOf(' ') > -1)
+					{
+						searchFirstName = UtilityFunctions.TrimString(searchName.split(' ')[0]);
+						searchLastName = UtilityFunctions.TrimString(searchName.split(' ')[1]);
+					}
+					else if(searchName.indexOf(',') > -1)
+					{
+						searchLastName = UtilityFunctions.TrimString(searchName.split(',')[0]);
+						searchFirstName = UtilityFunctions.TrimString(searchName.split(',')[1]);
+					}
+					else 
+						searchFirstName = searchName;					
+				}
+				
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == 1 || id_FilterBar.id_FieldsCmbo.selectedIndex == 13 )
+				{
+					if (searchFirstName.length >= 1 && searchFirstName.length <= 50)
+					{
+						if (!isValidAlphaNumericWithSpaces(searchFirstName))
+						{
+							Alert.show("Please enter valid " + id_FilterBar.id_FieldsCmbo.textInput.text.replace(" Name","") + " first name", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+							return;
+							id_FilterBar.id_SearchTextInput.setFocus();
+						}
+					}
+					else if (searchFirstName.length > 0 && searchFirstName.length > 50)
+					{						
+						Alert.show(id_FilterBar.id_FieldsCmbo.textInput.text.replace(" Name","") + " first name is too long", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					}
+					
+					if (searchLastName.length >= 1 && searchLastName.length <= 50)
+					{
+						if (!isValidAlphaNumericWithSpaces(searchLastName))
+						{
+							Alert.show("Please enter valid " + id_FilterBar.id_FieldsCmbo.textInput.text.replace(" Name","") + " first name", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+							return;
+							id_FilterBar.id_SearchTextInput.setFocus();
+						}
+					}
+					else if (searchLastName.length > 0 && searchLastName.length > 50)
+					{						
+						Alert.show(id_FilterBar.id_FieldsCmbo.textInput.text.replace(" Name","") + " last name is too long", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					}
+					
+					/* if( !  ValidationUtils.isValidNameString(id_FilterBar.id_SearchTextInput.text))
+					{
+						Alert.show("Please enter correct " + id_FilterBar.id_FieldsCmbo.textInput.text, "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					} */
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 2 || id_FilterBar.id_FieldsCmbo.selectedIndex == 14 )
+				{
+					if( !  ValidationUtils.isValidDateFormat(id_FilterBar.id_SearchTextInput.text) || !  ValidationUtils.isValidDateString(id_FilterBar.id_SearchTextInput.text))
+					{
+						Alert.show("Please enter valid " + id_FilterBar.id_FieldsCmbo.textInput.text + " in valid format [MM/DD/YYYY]", "Invalid Data/format",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					}
+				}
+				
+				searchDTO = new CMSearchDTO();
+				
+				searchDTO.BatchID = "0";
+				searchDTO.BillDate = "1900-01-01";
+				searchDTO.ClaimID = "0";
+				searchDTO.ClinicBranchId = model.LoggedInUserSelectedBranchId.toString();
+				searchDTO.DateCreated "1900-01-01";
+				searchDTO.EDIReceiverTypeID ="0";
+				searchDTO.ExcludeDone = "true"
+				searchDTO.InsOrganizationID = "0";
+				searchDTO.InsuranceTypeId = "0";
+				searchDTO.ListType = String(id_FilterBar.id_FieldsCmbo.selectedIndex + 1);
+				searchDTO.MediaTypeID = "0";
+				searchDTO.PageNo = model.ClaimManagementSearchPageNo.toString();
+				searchDTO.PatientID = "0";
+				searchDTO.QuivusID = "0";
+				searchDTO.SearchString = id_FilterBar.id_SearchTextInput.text;
+				searchDTO.StatusTypeID = "0";
+				searchDTO.Type = "1";
+				searchDTO.VisitDate = "1900-01-01";	
+				searchDTO.DateCreated = "1900-01-01";				
+								
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == 4)
+				{
+					searchDTO.BatchID = id_FilterBar.id_SearchTextInput.text;
+					searchDTO.InsuranceTypeId = "1";
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 5)
+				{
+					searchDTO.BatchID = id_FilterBar.id_SearchTextInput.text;
+					searchDTO.InsuranceTypeId = "2";
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 6)
+				{
+					searchDTO.BatchID = id_FilterBar.id_SearchTextInput.text;
+					searchDTO.InsuranceTypeId = "3";
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 7 || id_FilterBar.id_FieldsCmbo.selectedIndex == 10)
+				{	
+					if(id_FilterBar.id_FieldsCmbo.selectedIndex == 10)
+					{
+							searchDTO.ListType = "9";
+							searchDTO.SearchString = (Id_EDIReceiverCmb.selectedItem as EDIReceiverDTO).EDIReceiverID;
+					}
+					searchDTO.InsuranceTypeId = "1";
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 8 || id_FilterBar.id_FieldsCmbo.selectedIndex == 11)
+				{	
+					if(id_FilterBar.id_FieldsCmbo.selectedIndex == 8)
+						searchDTO.ListType = "8";
+					else
+					{
+						searchDTO.ListType = "9";
+						searchDTO.SearchString = (Id_EDIReceiverCmb.selectedItem as EDIReceiverDTO).EDIReceiverID;
+					};
+					searchDTO.InsuranceTypeId = "2";
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 9 || id_FilterBar.id_FieldsCmbo.selectedIndex == 12)
+				{	
+					if(id_FilterBar.id_FieldsCmbo.selectedIndex == 9)
+						searchDTO.ListType = "8";
+					else
+					{
+						searchDTO.ListType = "9";
+						searchDTO.SearchString = (Id_EDIReceiverCmb.selectedItem as EDIReceiverDTO).EDIReceiverID;
+					}
+					searchDTO.InsuranceTypeId = "3";
+				}	
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 13 )
+				{
+					searchDTO.ListType = "10";
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 14 )
+				{
+					searchDTO.ListType = "11";
+				}
+				
+				var ce:LoadClaimByCriteriaEvent = new LoadClaimByCriteriaEvent(searchDTO.ToXML(), RecordStatus);
+				CairngormEventDispatcher.getInstance().dispatchEvent(ce);
+			}
+			
+			private function OnSearchKeyUp(event:KeyboardEvent): void
+			{
+				//if(id_FilterBar.id_SearchTextInput.text.length == 0)
+				
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == 3 && id_FilterBar.id_SearchTextInput.text.length < 3 )
+					id_FilterBar.id_SearchTextInput.text = "Ga-";
+									
+			}	
+			
+			private function OnSearchKeyDown(event:KeyboardEvent): void
+			{
+				if(event.keyCode == 13)
+					OnSearchClick(null);
+				
+			}
+			
+			public function id_FilterBar_RefreshViewHandler(event:Event):void
+			{
+				if(searchDTO == null && model.ClaimListOnlyCritera == null)
+				{
+					var claimevent:LoadAllClaimbyProviderIdEvent = new LoadAllClaimbyProviderIdEvent(model.LoggedInUserProviderId,model.LoggedInUserSelectedBranchId,model.ClaimManagementSearchPageNo, RecordStatus);
+					CairngormEventDispatcher.getInstance().dispatchEvent(claimevent);	
+				}
+				else if(searchDTO != null)
+				{
+					searchDTO.PageNo = model.ClaimManagementSearchPageNo.toString();
+					var ce:LoadClaimByCriteriaEvent = new LoadClaimByCriteriaEvent(searchDTO.ToXML(),RecordStatus);
+					CairngormEventDispatcher.getInstance().dispatchEvent(ce);	
+				}
+				else if(model.ClaimListOnlyCritera != null)
+				{
+					model.ClaimListOnlyCritera.PageNo = model.ClaimManagementSearchPageNo.toString();
+					var ce2:LoadClaimByCriteriaEvent = new LoadClaimByCriteriaEvent(model.ClaimListOnlyCritera.ToXML(),RecordStatus);
+					CairngormEventDispatcher.getInstance().dispatchEvent(ce2);
+				}			
+			}
+
+			private var editClaim:ClaimEditView = null;
+			protected function claimmanagementbuttonbar1_EditHandler(event:Event):void
+			{
+				if(editClaim && editClaim.isPopUp) return;
+								
+				if(id_ClaimGrid.selectedItems.length == 0)
+				{
+					Alert.show("Please select claim.","Information",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}			
+				
+				editClaim = null;
+				
+				var claimevent:LoadAllClaimTransactionByClaimIdEvent = new LoadAllClaimTransactionByClaimIdEvent(id_ClaimGrid.selectedItem.ClaimID);
+				CairngormEventDispatcher.getInstance().dispatchEvent(claimevent);
+				
+				var claimDxevent:LoadAllClaimDiagnosisByVisitIdEvent = new LoadAllClaimDiagnosisByVisitIdEvent(id_ClaimGrid.selectedItem.VisitID);
+				CairngormEventDispatcher.getInstance().dispatchEvent(claimDxevent);					
+				
+				model.ClaimCurrentCarriers = (id_ClaimGrid.selectedItem as SearchClaimDTO).CarrierInfo;
+				setCarriers();			
+			}			
+			
+			private var carrier1:CarrierDTO 		= null;
+			private var carrier2:CarrierDTO 		= null;
+			private var carrier3:CarrierDTO 		= null;
+			private var patientBilling:CarrierDTO 	= null;
+			
+			private function setCarriers():void
+			{
+				model.ClaimCarrier1 		= null;
+				model.ClaimCarrier2 		= null;
+				model.ClaimCarrier3 		= null;
+				model.ClaimPatientBilling	= null;
+				
+				carrier1 = new CarrierDTO();
+				carrier1.InsuranceTypeId = "1";
+				carrier1.ClaimID = id_ClaimGrid.selectedItem.ClaimID;
+				carrier1.CreatedBy = "0";
+				carrier1.ModifiedBy = "0";
+				carrier1.EDIReceiverTypeID ="0";
+				carrier1.FrequencyTypeID = "0";
+				carrier1.InsOrganizationID = "0"
+				carrier1.IsDeleted = "false"
+				carrier1.InsuranceID = "0";
+				carrier1.MediaTypeID = "1";
+				carrier1.StatusTypeID = "6";
+				carrier1.SubmissionCount = "0";	
+				carrier1.StatementTypeID = "0";	
+				carrier1.isAddedToClaim = false;
+				carrier1.BillDate = id_ClaimGrid.selectedItem.BillDate1;
+				
+				carrier2 = new CarrierDTO();
+				carrier2.InsuranceTypeId = "2";
+				carrier2.ClaimID = id_ClaimGrid.selectedItem.ClaimID;
+				carrier2.CreatedBy = "0";
+				carrier2.ModifiedBy = "0";
+				carrier2.EDIReceiverTypeID ="0";
+				carrier2.FrequencyTypeID = "0";
+				carrier2.InsOrganizationID = "0"
+				carrier2.IsDeleted = "false"
+				carrier2.InsuranceID = "0";
+				carrier2.MediaTypeID = "1";
+				carrier2.StatusTypeID = "6";
+				carrier2.SubmissionCount = "0";
+				carrier2.StatementTypeID = "0";
+				carrier2.isAddedToClaim = false;
+				carrier2.BillDate = id_ClaimGrid.selectedItem.BillDate2;
+				
+				carrier3 = new CarrierDTO();
+				carrier3.InsuranceTypeId = "3";
+				carrier3.ClaimID = id_ClaimGrid.selectedItem.ClaimID;
+				carrier3.CreatedBy = "0";
+				carrier3.ModifiedBy = "0";
+				carrier3.EDIReceiverTypeID ="0";
+				carrier3.FrequencyTypeID = "0";
+				carrier3.InsOrganizationID = "0"
+				carrier3.IsDeleted = "false"
+				carrier3.InsuranceID = "0";
+				carrier3.MediaTypeID = "1";
+				carrier3.StatusTypeID = "6";
+				carrier3.SubmissionCount = "0";
+				carrier3.StatementTypeID = "0";
+				carrier3.isAddedToClaim = false;
+				carrier3.BillDate = id_ClaimGrid.selectedItem.BillDate3;
+				
+				patientBilling = new CarrierDTO();
+				patientBilling.InsuranceTypeId = "4";
+				patientBilling.ClaimID = id_ClaimGrid.selectedItem.ClaimID;
+				patientBilling.CreatedBy = "0";
+				patientBilling.ModifiedBy = "0";
+				patientBilling.EDIReceiverTypeID ="0";
+				patientBilling.FrequencyTypeID = "0";
+				patientBilling.InsOrganizationID = "0"
+				patientBilling.IsDeleted = "false"
+				patientBilling.InsuranceID = "0";
+				patientBilling.MediaTypeID = "1";
+				patientBilling.StatusTypeID = "6";
+				patientBilling.SubmissionCount = "0";
+				patientBilling.StatementTypeID = "0";
+				patientBilling.isAddedToClaim = false;
+				patientBilling.BillDate = id_ClaimGrid.selectedItem.PatientBillDate;
+				
+				if(model.ClaimCurrentCarriers != null && model.ClaimCurrentCarriers.length > 0)
+				{
+					LoadInsuranceList();	
+					
+					//loadInsuranceStatus(null);	//temporarily for local testing				
+				}
+				else
+				{
+					editClaim = null;
+					
+					editClaim = new ClaimEditView();
+					model.ClaimNote = (id_ClaimGrid.selectedItem as SearchClaimDTO).Note;
+					model.ClaimNewNote = (id_ClaimGrid.selectedItem as SearchClaimDTO).Note;
+					
+					editClaim.ShowPopup(this.parent);
+					BillingPopUpManager.addPopUp(editClaim,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+					editClaim.id_claimEditTopBar.EditClaimId = id_ClaimGrid.selectedItem.ClaimID;
+					editClaim.percentWidth = 100;
+					editClaim.percentHeight = 100;					
+					editClaim.id_claimEditMiddleBar.PatientName = id_ClaimGrid.selectedItem.PatientName;
+					editClaim.id_claimEditTopBar.DateCreated = id_ClaimGrid.selectedItem.DateCreated;
+					editClaim.id_claimEditTab.VisitID = id_ClaimGrid.selectedItem.VisitID;
+					editClaim.id_claimEditTab.ClaimID = id_ClaimGrid.selectedItem.ClaimID;
+					editClaim.id_claimEditTab.PatientName = id_ClaimGrid.selectedItem.PatientName;
+					editClaim.id_claimEditTab.EDIReceiverName1 = id_ClaimGrid.selectedItem.EDIReceiver1;
+					editClaim.id_claimEditTab.EDIReceiverName2 = id_ClaimGrid.selectedItem.EDIReceiver2;
+					editClaim.id_claimEditTab.EDIReceiverName3 = id_ClaimGrid.selectedItem.EDIReceiver3;
+					editClaim.width = 500;
+					editClaim.height = 400;
+					editClaim.title = "Edit Claim " + id_ClaimGrid.selectedItem.ClaimID;
+				}
+				
+			}
+			
+			private function LoadInsuranceList():void
+			{				
+				var insEvent : LoadAllInsuranceEvent = new LoadAllInsuranceEvent(loadInsuranceStatus);
+				CairngormEventDispatcher.getInstance().dispatchEvent( insEvent );				
+			}
+			
+			private function loadInsuranceStatus(insList:ArrayCollection):void
+			{
+				if(editClaim && editClaim.isPopUp) return;
+				
+				model.InsuranceListforCarrier1 = null;
+				model.InsuranceListforCarrier2 = null;
+				model.InsuranceListforCarrier3 = null;
+				
+				model.InsuranceListforCarrier1 = insList;
+				
+				//model.InsuranceListfoClaimListOnly = insList;
+				
+				var insListForCarrier1:ArrayCollection = new ArrayCollection();
+				for(var i:int = 0; i < model.ClaimCurrentCarriers.length; i++)
+				{
+					var car:CarrierDTO = model.ClaimCurrentCarriers[i] as CarrierDTO;						
+					
+					for each (var ins:InsOrganizationDTO in model.InsuranceListforCarrier1) 
+					{
+						if(ins.InsOrganizationID == car.InsOrganizationID)
+						{
+							if(model.InsuranceListforCarrier2 == null)
+								model.InsuranceListforCarrier2 = new ArrayCollection();
+							
+							model.InsuranceListforCarrier2.addItem(ins);
+							
+							if(model.InsuranceListforCarrier3 == null)
+								model.InsuranceListforCarrier3 = new ArrayCollection();
+							
+							model.InsuranceListforCarrier3.addItem(ins);
+							
+							insListForCarrier1.addItem(ins);
+							break;
+						}						
+					}
+					
+					if( car.InsuranceTypeId == "1" )
+					{
+						carrier1.CreatedBy = car.CreatedBy;
+						carrier1.ModifiedBy = model.LoggedInUserId.toString();
+						carrier1.EDIReceiverTypeID = car.EDIReceiverTypeID;
+						carrier1.FrequencyTypeID = car.FrequencyTypeID;
+						carrier1.InsOrganizationID = car.InsOrganizationID;
+						carrier1.InsuranceID = car.InsuranceID;
+						carrier1.MediaTypeID = car.MediaTypeID;
+						carrier1.StatusTypeID = car.StatusTypeID;
+						carrier1.SubmissionCount = car.SubmissionCount;	
+						carrier1.isAddedToClaim = car.isAddedToClaim;	
+						if(carrier1.InsOrganizationID != "0" && carrier1.StatusTypeID == "3" && (car.BillDate != null && car.BillDate != "") )
+							carrier1.BillDate = UtilityFunctions.FormatDate(car.BillDate,"MM/DD/YYYY");
+					}
+					else if( car.InsuranceTypeId == "2" )
+					{
+						carrier2.CreatedBy = car.CreatedBy;
+						carrier2.ModifiedBy = model.LoggedInUserId.toString();
+						carrier2.EDIReceiverTypeID = car.EDIReceiverTypeID;
+						carrier2.FrequencyTypeID = car.FrequencyTypeID;
+						carrier2.InsOrganizationID = car.InsOrganizationID;
+						carrier2.InsuranceID = car.InsuranceID;
+						carrier2.MediaTypeID = car.MediaTypeID;
+						carrier2.StatusTypeID = car.StatusTypeID;
+						carrier2.SubmissionCount = car.SubmissionCount;	
+						carrier2.isAddedToClaim = car.isAddedToClaim;
+						if(carrier2.InsOrganizationID != "0" && carrier2.StatusTypeID == "3" && (car.BillDate != null && car.BillDate != "") )
+							carrier2.BillDate = UtilityFunctions.FormatDate(car.BillDate,"MM/DD/YYYY");
+					}
+					else if( car.InsuranceTypeId == "3" )
+					{
+						carrier3.CreatedBy = car.CreatedBy;
+						carrier3.ModifiedBy = model.LoggedInUserId.toString();
+						carrier3.EDIReceiverTypeID = car.EDIReceiverTypeID;
+						carrier3.FrequencyTypeID = car.FrequencyTypeID;
+						carrier3.InsOrganizationID = car.InsOrganizationID;
+						carrier3.InsuranceID = car.InsuranceID;
+						carrier3.MediaTypeID = car.MediaTypeID;
+						carrier3.StatusTypeID = car.StatusTypeID;
+						carrier3.SubmissionCount = car.SubmissionCount;	
+						carrier3.isAddedToClaim = car.isAddedToClaim;
+						if(carrier3.InsOrganizationID != "0" && carrier3.StatusTypeID == "3" && (car.BillDate != null && car.BillDate != "") )
+							carrier3.BillDate = UtilityFunctions.FormatDate(car.BillDate,"MM/DD/YYYY");
+					}
+					else if( car.InsuranceTypeId == "4" )
+					{
+						patientBilling.CreatedBy = car.CreatedBy;
+						patientBilling.ModifiedBy = model.LoggedInUserId.toString();
+						patientBilling.EDIReceiverTypeID = car.EDIReceiverTypeID;
+						patientBilling.FrequencyTypeID = car.FrequencyTypeID;
+						patientBilling.InsOrganizationID = car.InsOrganizationID;
+						patientBilling.InsuranceID = car.InsuranceID;
+						patientBilling.MediaTypeID = car.MediaTypeID;
+						patientBilling.StatusTypeID = car.StatusTypeID;
+						patientBilling.SubmissionCount = car.SubmissionCount;	
+						patientBilling.isAddedToClaim = car.isAddedToClaim;
+						patientBilling.StatementTypeID = car.StatementTypeID;
+						if(patientBilling.StatusTypeID == "3" && (car.BillDate != null && car.BillDate != "") )
+							patientBilling.BillDate = UtilityFunctions.FormatDate(car.BillDate,"MM/DD/YYYY");
+					}
+					
+					model.ClaimCarrierIniBillDate = id_ClaimGrid.selectedItem.DateCreated;
+					
+				}
+				
+				model.ClaimCarrier1 = carrier1;							
+				
+				model.ClaimCarrier2 = carrier2;							
+				
+				model.ClaimCarrier3 = carrier3;	
+				
+				model.ClaimPatientBilling = patientBilling;
+				
+				model.InsuranceListforCarrier1 = insListForCarrier1;
+				
+				editClaim = null;
+				
+				editClaim = new ClaimEditView();
+				model.ClaimNote = (id_ClaimGrid.selectedItem as SearchClaimDTO).Note;
+				model.ClaimNewNote = (id_ClaimGrid.selectedItem as SearchClaimDTO).Note;
+				
+				editClaim.ShowPopup(this.parent);
+				BillingPopUpManager.addPopUp(editClaim,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+				editClaim.id_claimEditTopBar.EditClaimId = id_ClaimGrid.selectedItem.ClaimID;
+				editClaim.percentWidth = 100;
+				editClaim.percentHeight = 100;					
+				editClaim.id_claimEditMiddleBar.PatientName = id_ClaimGrid.selectedItem.PatientName;
+				editClaim.id_claimEditTopBar.DateCreated = id_ClaimGrid.selectedItem.DateCreated;
+				editClaim.id_claimEditTab.VisitID = id_ClaimGrid.selectedItem.VisitID;
+				editClaim.id_claimEditTab.ClaimID = id_ClaimGrid.selectedItem.ClaimID;
+				editClaim.id_claimEditTab.PatientName = id_ClaimGrid.selectedItem.PatientName;
+				editClaim.id_claimEditTab.EDIReceiverName1 = id_ClaimGrid.selectedItem.EDIReceiver1;
+				editClaim.id_claimEditTab.EDIReceiverName2 = id_ClaimGrid.selectedItem.EDIReceiver2;
+				editClaim.id_claimEditTab.EDIReceiverName3 = id_ClaimGrid.selectedItem.EDIReceiver3;
+				editClaim.width = 500;
+				editClaim.height = 400;
+				editClaim.title = "Edit Claim " + id_ClaimGrid.selectedItem.ClaimID;				
+			}
+			
+			protected function claimmanagementbuttonbar1_BillingSummaryHandler(event:Event):void
+			{
+				if(id_ClaimGrid.selectedItems.length == 0)
+				{
+					Alert.show("Please select claim.","Information",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				
+				BillingConstants.REPORT_PARAMETERS = "";
+				
+				BillingConstants.REPORT_TYPE_ID = "3";
+				BillingConstants.REPORT_ID = "0";
+				
+				BillingConstants.REPORT_PARAMETERS = "&VisitId=" + (id_ClaimGrid.selectedItem as SearchClaimDTO).VisitID +
+													 "&ClaimId=" + (id_ClaimGrid.selectedItem as SearchClaimDTO).ClaimID				
+				openReportPanelPopup();
+				
+			}
+			
+			private function openReportPanelPopup():void
+			{
+				//dispatchEvent(new LoadReportEvent());
+				
+				var url:String = BillingConstants.BILLING_REPORT_BASE_URL + "?ID=" + BillingConstants.REPORT_ID +"&TypeID=" + 
+					BillingConstants.REPORT_TYPE_ID + 
+					BillingConstants.REPORT_PARAMETERS;				
+				
+				var urlRequest:URLRequest = new URLRequest(url);
+				navigateToURL(urlRequest, '_blank');
+				
+				
+				BillingConstants.REPORT_PARAMETERS = "";
+			}
+			
+			protected function claimmanagementbuttonbar1_CMS1500Handler(event:Event):void
+			{
+				if(event == null)
+					isPrintCMS = true;
+				else
+					isPrintCMS = false;
+				
+				if(id_ClaimGrid.selectedItems.length == 0)
+				{
+					Alert.show("Please select claim.","Information",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				
+				if((id_ClaimGrid.selectedItem as SearchClaimDTO).CarrierInfo == null || (id_ClaimGrid.selectedItem as SearchClaimDTO).CarrierInfo.length == 0)
+				{
+					Alert.show("Claim has no insurance.","Information",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				CheckForInsuranceType();
+			}
+			
+			private function ViewCMS1500():void
+			{
+				var claimevent:LoadAllClaimTransactionByClaimIdEvent = new LoadAllClaimTransactionByClaimIdEvent(id_ClaimGrid.selectedItem.ClaimID,ClaimTransactionStatus);
+				CairngormEventDispatcher.getInstance().dispatchEvent(claimevent);
+			}
+			
+			private function CheckForInsuranceType(): void
+			{
+				
+				var isPopupOpen: Boolean = false;
+				var PriInsOrganizationID:String = "0";
+				var SecInsOrganizationID:String = "0";
+				var TerInsOrganizationID:String = "0";
+				
+				BillingConstants.REPORT_PARAMETERS = "";				
+				
+				for (var i:int = 0; i < (id_ClaimGrid.selectedItem as SearchClaimDTO).CarrierInfo.length; i++)
+				{
+					var crr:CarrierDTO = (id_ClaimGrid.selectedItem as SearchClaimDTO).CarrierInfo[i] as CarrierDTO;
+					if(crr.InsOrganizationID != "0")
+					{
+						if(crr.InsuranceTypeId == "1")
+							PriInsOrganizationID = crr.InsOrganizationID;
+						else if(crr.InsuranceTypeId == "2")
+							SecInsOrganizationID = crr.InsOrganizationID;
+						else if(crr.InsuranceTypeId == "3")
+							TerInsOrganizationID = crr.InsOrganizationID;
+					}
+				}
+			
+				model.CMSViewInsuranceType = "P";
+				/* if(PriInsOrganizationID != "0" && SecInsOrganizationID == "0" && TerInsOrganizationID == "0")
+				{
+					model.CMSViewInsuranceType = "P";
+				}
+				else  */ 
+				if(SecInsOrganizationID != "0" && PriInsOrganizationID == "0" && TerInsOrganizationID == "0")
+				{
+					model.CMSViewInsuranceType = "S";
+				}
+				else if(TerInsOrganizationID != "0" && PriInsOrganizationID == "0" && SecInsOrganizationID == "0")
+				{
+					model.CMSViewInsuranceType = "T";
+				}
+				else if(PriInsOrganizationID != "0" && SecInsOrganizationID != "0" && TerInsOrganizationID == "0")
+				{
+					isPopupOpen = true;
+					var insTypePopup:CMSInsuranceTypePopup = new CMSInsuranceTypePopup();					
+					insTypePopup.height =  130 ;
+					insTypePopup.width  =  250;
+					insTypePopup.viewTertiary = false;
+					insTypePopup.ShowPopup(this.parent,true);
+					BillingPopUpManager.addPopUp(insTypePopup,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+					
+					insTypePopup.id_Ok.addEventListener(MouseEvent.CLICK,function(event:MouseEvent):void
+					{
+						insTypePopup.removePopup();
+						BillingConstants.REPORT_PARAMETERS = "&CMSInsType=" + model.CMSViewInsuranceType;
+						BillingPopUpManager.removePopUp(insTypePopup,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+						ViewCMS1500();
+					});
+					
+					insTypePopup.id_Cancel.addEventListener(MouseEvent.CLICK,function(event:MouseEvent):void
+					{
+						insTypePopup.removePopup();
+						BillingPopUpManager.removePopUp(insTypePopup,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+						return;
+					});
+					
+					insTypePopup.addEventListener(CloseEvent.CLOSE,function ClosePopup(event:CloseEvent):void
+					{
+						BillingPopUpManager.removePopUp(insTypePopup,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+						return;
+						
+					}); 					
+					
+				}
+				else if(PriInsOrganizationID != "0" && SecInsOrganizationID != "0" && TerInsOrganizationID != "0")
+				{
+					isPopupOpen = true;
+				//	var insTypePopup:CMSInsuranceTypePopup = new CMSInsuranceTypePopup();
+					
+					insTypePopup.viewTertiary = true;					
+					insTypePopup.ShowPopup(this.parent,true);
+					BillingPopUpManager.addPopUp(insTypePopup,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+					
+					insTypePopup.id_Ok.addEventListener(MouseEvent.CLICK,function(event:MouseEvent):void
+					{
+						insTypePopup.removePopup();
+						BillingConstants.REPORT_PARAMETERS = "&CMSInsType=" + model.CMSViewInsuranceType;
+						BillingPopUpManager.removePopUp(insTypePopup,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+						ViewCMS1500();
+					});
+					
+					insTypePopup.id_Cancel.addEventListener(MouseEvent.CLICK,function(event:MouseEvent):void
+					{
+						insTypePopup.removePopup();
+						BillingPopUpManager.removePopUp(insTypePopup,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+						return;
+					});
+					
+					insTypePopup.addEventListener(CloseEvent.CLOSE,function ClosePopup(event:CloseEvent):void
+					{
+						BillingPopUpManager.removePopUp(insTypePopup,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+						return;						
+					}); 
+				}
+				
+				if( ! isPopupOpen)
+				{
+					BillingConstants.REPORT_PARAMETERS = "&CMSInsType=" + model.CMSViewInsuranceType;
+					ViewCMS1500();
+				}
+			}
+			
+			private var isPrintCMS:Boolean = false;
+			private function ClaimTransactionStatus():void
+			{
+				if(model.SearchClaimTransactionResults.ClaimTransactions && model.SearchClaimTransactionResults.ClaimTransactions.length > 0 )
+				{				
+					
+					if(isPrintCMS)
+						BillingConstants.REPORT_TYPE_ID = "41";
+					else
+						BillingConstants.REPORT_TYPE_ID = "4";
+					BillingConstants.REPORT_ID = "0";
+					
+					BillingConstants.REPORT_PARAMETERS += "&VisitId=" + (id_ClaimGrid.selectedItem as SearchClaimDTO).VisitID +
+						"&ClaimId=" + (id_ClaimGrid.selectedItem as SearchClaimDTO).ClaimID				
+					openReportPanelPopup();
+				}
+				else
+				{
+					Alert.show("Claim has no trancastion/procedure.","Information",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+			}
+			
+			private function RecordStatus():void
+			{
+				if(model.totalrecords_CM < BillingConstants.PAGE_SIZE)
+				{
+					id_FilterBar.id_GoToFirstPage.enabled = false;
+					id_FilterBar.id_GoToLastPage.enabled = false;
+					id_FilterBar.id_GoToNextPage.enabled = false;
+					id_FilterBar.id_GoToPreviousPage.enabled = false;
+				}
+				else
+				{
+					if(model.ClaimManagementSearchPageNo == 1)
+					{
+						id_FilterBar.id_GoToFirstPage.enabled = false;
+						id_FilterBar.id_GoToPreviousPage.enabled = false;
+					}
+					else
+					{
+						id_FilterBar.id_GoToFirstPage.enabled = true;
+						id_FilterBar.id_GoToPreviousPage.enabled = true;
+					}
+					if(model.ClaimManagementSearchPageNo == model.ClaimManagementTotalPageNo)
+					{
+						id_FilterBar.id_GoToNextPage.enabled = false;
+						id_FilterBar.id_GoToLastPage.enabled = false;
+					}
+					else
+					{
+						id_FilterBar.id_GoToNextPage.enabled = true;
+						id_FilterBar.id_GoToLastPage.enabled = true;
+					}					
+					
+				}
+				
+			}	
+			
+			/* public function displayRowNum(oItem:Object,iCol:int):String
+			{
+				var ret:String;
+				try
+				{
+					var rowNumber:int = id_ClaimGrid.dataProvider.getItemIndex(oItem) + 1; //Sort able column fails some how, don't know why?
+					ret = String(rowNumber);
+				}
+				catch(e:Error )
+				{
+					ret = "##";
+				}
+				return ret;
+			} */
+			
+			protected function id_ClaimGrid_changeHandler(event:ListEvent):void
+			{
+				id_buttonBar.id_editBtn.enabled = true;
+				id_buttonBar.id_Billingsummary .enabled = true;
+				id_buttonBar.id_CMS1500.enabled = true;
+				id_buttonBar.id_printSendBtn.enabled = true;
+				if(id_ClaimGrid.selectedItems.length > 1)
+				{
+					id_buttonBar.id_editBtn.enabled = false;
+					id_buttonBar.id_Billingsummary.enabled = false;
+					id_buttonBar.id_CMS1500.enabled = false;
+					id_buttonBar.id_printSendBtn.enabled = false;
+				}
+			}
+			
+			private var criteriaPopup:SendPrintPopup = null
+			protected function id_buttonBar_PrintSendHandler(event:Event):void
+			{	
+				if(criteriaPopup && criteriaPopup.isPopUp) return;
+								
+				criteriaPopup = new SendPrintPopup();					
+				criteriaPopup.height =  150 ;
+				criteriaPopup.width  =  300;				
+				criteriaPopup.ShowPopup(this.parent,true);
+				BillingPopUpManager.addPopUp(criteriaPopup,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+				
+				criteriaPopup.id_Ok.addEventListener(MouseEvent.CLICK,function(event:MouseEvent):void
+				{
+					if(model.SendClaimMediaTypeId == 2 && model.SendClaimEDIReceiverId == 0)
+					{
+						Alert.show("Please Select EDI Receiver.","Required Field",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+					}
+					else
+					{
+						criteriaPopup.removePopup();					
+						BillingPopUpManager.removePopUp(criteriaPopup,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+						
+						if(model.SendClaimMediaTypeId == 2 && model.SendClaimEDIReceiverId > 0)
+						{
+							var scEvent: SendClaimsForProcessingEvent = new SendClaimsForProcessingEvent(model.SendClaimEDIReceiverId,model.SendClaimInsuranceTypeId,model.LoggedInUserSelectedBranchId,model.LoggedInUserId,claimsProcessingResult);
+							CairngormEventDispatcher.getInstance().dispatchEvent(scEvent);
+						}
+						else
+						{
+							//multiple claim printing
+						}
+					}
+				});
+				
+				criteriaPopup.id_Cancel.addEventListener(MouseEvent.CLICK,function(event:MouseEvent):void
+				{
+					criteriaPopup.removePopup();
+					BillingPopUpManager.removePopUp(criteriaPopup,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);					
+				});
+				
+				criteriaPopup.addEventListener(CloseEvent.CLOSE,function ClosePopup(event:CloseEvent):void
+				{
+					BillingPopUpManager.removePopUp(criteriaPopup,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);					
+				}); 			
+			}
+			
+			private function claimsProcessingResult(result:String):void
+			{
+				var requestPopup:ClaimSubmissionRequestPopup = new ClaimSubmissionRequestPopup();
+				
+				requestPopup.width = 500;
+				requestPopup.height = 400;
+				requestPopup.ShowPopup(this,true);
+				requestPopup.RequestString = result;
+			}
+			
+			protected function id_buttonBar_CMS1500PrePrintedHandler(event:Event):void
+			{
+				claimmanagementbuttonbar1_CMS1500Handler(null);
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	
+	<common:BillingGridFilterView width="100%" id="id_FilterBar"									
+									PagingMessage="{ 'Page ' + model.ClaimManagementSearchPageNo + '/' + model.ClaimManagementTotalPageNo}" 
+									MessageVisible="{ (model.SearchClaimResults.Claims != null &amp;&amp;  model.SearchClaimResults.Claims.length > 0 ) ? true : false}"
+									RecordMessage="{model.totalRecordMessage_CM}" EnableChangeStausButton="true"
+									DataProvider="{SearchTypes}" tabIndex="1"
+									/>
+	<components1:LabelDataGrid id="id_ClaimGrid" width="100%" dataProvider="{model.SearchClaimResults.Claims}" 
+						 itemDoubleClick="claimmanagementbuttonbar1_EditHandler(event)" height="100"
+						 useRollOver="false" editable="false" allowMultipleSelection="true" change="id_ClaimGrid_changeHandler(event)"
+						  verticalScrollPolicy="on"   verticalScrollBarStyleName="VScrollBar" horizontalScrollPolicy="auto"
+					      maxHeight="150" variableRowHeight="true" tabIndex="12" horizontalScrollBarStyleName="VScrollBar"
+						 columnWidths="{['3%'],['7%'],['4%'],['4%'],['4%'],['4%'],['4%'],['4%'],['4%'],['4%'],['4%'],['4%'],['4%'],['4%'],['6%'],['4%'],['4%'],['4%'],['4%'],['4%'],['6%'],['6%'],['4%']}"
+						 >
+		<components:columns>
+			<mx:DataGridColumn headerText="Sr.#" dataField="SNo" />
+			<mx:DataGridColumn headerText="Claim #" dataField="ClaimID" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Patient Name" dataField="PatientName" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Date of Service" dataField="VisitDate" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="GID" dataField="QuivusID" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Carrier 1" dataField="Carrier1" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Status 1" dataField="Status1" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Media 1" dataField="Media1" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Batch 1" dataField="Batch1" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Billing Date 1" dataField="BillDate1" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="EDI Receiver 1" dataField="EDIReceiver1" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>							
+			<mx:DataGridColumn headerText="Carrier 2" dataField="Carrier2" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Status 2" dataField="Status2" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Media 2" dataField="Media2" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Batch 2" dataField="Batch2" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Billing Date 2" dataField="BillDate2" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="EDI Receiver 2" dataField="EDIReceiver2" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>							
+			<mx:DataGridColumn headerText="Carrier 3" dataField="Carrier3" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Status 3" dataField="Status3" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Media 3" dataField="Media3" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Batch 3" dataField="Batch3" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Billing Date 3" dataField="BillDate3" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="EDI Receiver 3" dataField="EDIReceiver3" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Patient Status" dataField="PatientStatus" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Patient Billing Media" dataField="PatientMedia" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Patient Billing Batch" dataField="PatientBatch" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Patient Bill Date" dataField="PatientBillDate" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Provider" dataField="ProviderName" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Date Created" dataField="DateCreated" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Visit ID" dataField="VisitID" visible="false" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+		</components:columns>
+	</components1:LabelDataGrid>
+	<toolbar:ClaimManagementButtonBar id="id_buttonBar"  Edit="claimmanagementbuttonbar1_EditHandler(event)" PrintSend="id_buttonBar_PrintSendHandler(event)"
+										BillingSummary="claimmanagementbuttonbar1_BillingSummaryHandler(event)" CMS1500PrePrinted="id_buttonBar_CMS1500PrePrintedHandler(event)"
+										CMS1500="claimmanagementbuttonbar1_CMS1500Handler(event)" tabIndex="13"
+										/>
+</s:SkinnableContainer>

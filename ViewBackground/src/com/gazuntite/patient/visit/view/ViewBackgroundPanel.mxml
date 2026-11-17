@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<common:VBCollapsibleView xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark" 
+						   xmlns:mx="library://ns.adobe.com/flex/mx" 
+						   xmlns:common="com.gazuntite.patient.visit.view.common.*" 
+						   xmlns:vbViews="com.gazuntite.patient.visit.view.vbViews.*" 
+						   xmlns:components="com.gazuntite.controls.extended.components.*"
+						   creationComplete="cc()"
+						   QSViewStateChange="QSViewStateChangeHandler(event)">
+	<fx:Metadata>
+		 [Event(name="CreateVisitUI", type="com.gazuntite.patient.visit.view.event.CreateVisitUIEvent")] 
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.loadVisitFilterBtn;
+			import com.adobe.gazuntite.skins.chrome.skinnableContainers.PP_headerSkin_disabled;
+			import com.adobe.gazuntite.skins.viewBackground.ViewBackgroundHeaderSkin;
+			import com.gazuntite.common.util.QSAppUtils;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.patient.visit.dto.PageDTO;
+			import com.gazuntite.patient.visit.event.LoadPatientVisitsByPatientIdAndClinicIdEvent;
+			import com.gazuntite.patient.visit.event.summary.LoadSummaryEvent;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			import com.gazuntite.patient.visit.view.event.CreateVisitUIEvent;
+			import com.gazuntite.patient.visit.view.vbViews.paging.PagingAndFilterWindow;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			
+			import spark.resize.ResizeManager;
+			import spark.resize.verticalResizeHandle;
+			
+			private var model:VBModelLocator = VBModelLocator.getInstance();
+			
+			private function cc():void
+			{
+				id_viewBackgroundBody.id_PatientEncounterPanel.id_PatientEncounterView.id_PatientEncounterGrid.addEventListener(MouseEvent.CLICK , encounterGridClickHandler);
+				id_header.id_LoadVBBtn.addEventListener( MouseEvent.CLICK, id_LoadVBBtn_clickHandler );
+				
+				
+				id_header.id_headerSkin.setStyle("skinClass", ViewBackgroundHeaderSkin);
+			}
+			
+			private function QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				//if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.VIEW_BACKGROUND_PANEL ) )//Tahir Alvi - on VB Header click implement security check
+				//{
+				if (event.viewState == QSViewStateEvent.COLLAPSED_VIEW)
+				{
+					//QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.PATIENT_ENCOUNTER_LIST);
+				}
+				
+				if(id_header)
+				{
+					if(this.expandedView)
+					{
+						id_header.id_expandBtn.selected = true;
+						id_header.id_label.text = id_header.id_label.text.toUpperCase();
+						id_header.id_headerSkin.setStyle("skinClass", ViewBackgroundHeaderSkin);
+						id_header.alpha = 1;
+						
+					}
+					else
+					{
+						id_header.id_expandBtn.selected = false;
+						//id_header.id_label.text.toLowerCase();
+						id_header.id_label.text = QSAppUtils.TitleCase(id_header.id_label.text);
+						id_header.id_headerSkin.setStyle("skinClass", PP_headerSkin_disabled);
+						//id_header.alpha = 0.4;
+					}
+				}
+				//}
+			}
+			
+			private function encounterGridClickHandler(event:MouseEvent):void
+			{
+				if (event.target is Button)
+				{
+					//Alert.show( event.target.id );
+					switch (event.target.id)
+					{
+						case "id_Edit":
+							
+							var peDTO:Object/*PatientEncounterDTO*/ = event.currentTarget.selectedItem;// as PatientEncounterDTO;
+							if( peDTO )
+							{	
+								 var cvui:CreateVisitUIEvent = new CreateVisitUIEvent();
+								cvui.createNewVisit = false;
+								dispatchEvent( cvui );
+							}
+							
+							break;
+					}
+				}
+			}
+			
+			private function id_LoadVBBtn_clickHandler(event:MouseEvent):void
+			{
+				//if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.VB_SUMMARY_VIEW ) )//Tahir Alvi 
+				//{
+					if( UtilityFunctions.IsNullOrEmpty( model.defaultFilterAndPaging ) )
+						model.defaultFilterAndPaging = new PageDTO();
+					
+					var pfWin:PagingAndFilterWindow = new PagingAndFilterWindow();
+					pfWin.width = 205;
+					pfWin.page = model.defaultFilterAndPaging;
+					pfWin.ShowPopup( this );
+					
+					var point:Point = new Point(event.currentTarget.x, event.currentTarget.y );
+					point = event.currentTarget.parent.localToGlobal( point );
+					
+					
+					pfWin.id_okBtn.addEventListener(MouseEvent.CLICK, function():void
+					{
+						id_header.id_LoadVBBtn.setStyle("skinClass", loadVisitFilterBtn);
+					});
+					
+					pfWin.move( (point.x - pfWin.width / 2 + 15) -30, point.y + 25 );
+					//if(model.securityProxyObject && model.securityProxyObject.ViewBackground.IsViewAllowed)
+					/* {
+					QuivusCombineEventDispatcher.loadVB();
+					
+					if(!this.ExpandedView)
+					{
+					this.ExpandedView = true;
+					}
+					
+					event.stopImmediatePropagation();
+					} */
+					/* else
+					{
+					Alert.show("You are not authorized.");
+					} */
+					
+					event.stopImmediatePropagation();
+				//}
+			}
+			
+			private function onCreateVisitUI(event:CreateVisitUIEvent):void
+			{
+				var evt:CreateVisitUIEvent 	= new CreateVisitUIEvent();
+				evt.createNewVisit = event.createNewVisit;
+				evt.visitDate = event.visitDate;
+				dispatchEvent(evt);
+			}
+			
+			protected function scrollUp(event:MouseEvent):void
+			{
+				id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition + 15;
+				// id_viewBackgroundBody.id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition + 15;
+				// id_viewBackgroundBody.id_PatientEncounterPanel.ScrollUp(event);
+				
+				//id_viewBackgroundBody.id_backgroundTabView.id_PMHView(event);
+				/* switch( id_viewBackgroundBody.id_backgroundTabView.id_VBViews.selectedIndex )
+				{
+				case 0:
+				id_viewBackgroundBody.id_backgroundTabView.id_PMHView.ScrollUp();
+				break;
+				case 1:
+				id_viewBackgroundBody.id_backgroundTabView.id_physicalView.ScrollUp();
+				break;
+				case 2:
+				id_viewBackgroundBody.id_backgroundTabView.id_assesment.ScrollUp();
+				break;
+				} */
+			}
+			
+			protected function scrollDown(event:MouseEvent):void
+			{
+				id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition - 15;
+				//id_viewBackgroundBody.id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition - 15;
+				//id_viewBackgroundBody.id_PatientEncounterPanel.ScrollDown(event);
+				/* 	switch( id_viewBackgroundBody.id_backgroundTabView.id_VBViews.selectedIndex )
+				{
+				case 0:
+				id_viewBackgroundBody.id_backgroundTabView.id_PMHView.ScrollDown();
+				break
+				case 1:
+				id_viewBackgroundBody.id_backgroundTabView.id_physicalView.ScrollDown();
+				break
+				case 2:
+				id_viewBackgroundBody.id_backgroundTabView.id_assesment.ScrollDown();
+				break
+				}		 */		
+			}
+			
+			public function loadVBSummary():void
+			{
+				var evt:LoadSummaryEvent = new LoadSummaryEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( evt );
+				
+				var loadPatientEncounters:LoadPatientVisitsByPatientIdAndClinicIdEvent = new LoadPatientVisitsByPatientIdAndClinicIdEvent(model.patientID, model.LoggedInUserSelectedBranchId, false, model.LoggedInUserId, model.LoggedInUserProviderTypeId, model.LoggedInUserSessionID);
+				CairngormEventDispatcher.getInstance().dispatchEvent( loadPatientEncounters );
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<common:headerContents>
+		<vbViews:ViewBackgroundHeader id="id_header" width="100%" CreateVisitUI="onCreateVisitUI(event)"/>
+	</common:headerContents>
+	
+	<components:ResizeableGroup id="id_contentsResizer" width="{id_header.width }" height="100%" bottom="0" maxHeight="{this.maxHeight - 50}"  minHeight="50"
+								resizeDirection="{ResizeManager.DIRECTION_VERTICAL}" resizeHandle="{new verticalResizeHandle()}" >
+		
+		<s:VGroup id="id_contents"  width="100%" height="100%" horizontalAlign="center" gap="-1">
+			<s:Scroller id="id_Scroller" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+				
+				<s:VGroup id="id_scrollGrp" gap="0" width="100%" height="100%" paddingTop="-4" horizontalAlign="center">
+						<vbViews:viewBackgroundBody id="id_viewBackgroundBody" width="{id_header.width - 0.5}" height="485"/>
+				</s:VGroup>
+				
+			</s:Scroller>
+			
+			<s:SkinnableContainer width="100%" height="22" skinClass="com.adobe.gazuntite.skins.chrome.skinnableContainers.ScrollerYellowBG">
+				<s:layout>
+					<s:HorizontalLayout verticalAlign="top" horizontalAlign="center" paddingBottom="0" paddingTop="0" />
+				</s:layout>
+				
+				<s:Button height="8" width="40" toolTip="Scroll Up" mouseDown="scrollDown(event)" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.PEscrollUp" 
+						  buttonMode="true" useHandCursor="true"/>
+				<s:Button height="8" width="40" toolTip="Scroll Down" click="scrollUp(event)" mouseDown="scrollUp(event)" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.PEScrollDown" 
+						  buttonMode="true" useHandCursor="true"/>
+				
+			</s:SkinnableContainer>
+		</s:VGroup>
+	</components:ResizeableGroup>
+</common:VBCollapsibleView>

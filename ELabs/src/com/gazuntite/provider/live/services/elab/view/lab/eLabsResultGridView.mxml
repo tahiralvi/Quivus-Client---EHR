@@ -1,0 +1,408 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:document="com.gazuntite.provider.live.services.documentMgmt.view.document.*"
+		 xmlns:lab="com.gazuntite.provider.live.services.elab.view.lab.*" 
+		 xmlns:LiveGridView="com.gazuntite.common.view.LiveGridView.*"
+		 xmlns:CheckBoxGrid="com.gazuntite.controls.extended.components.CheckBoxGrid.*"
+		 width="100%" height="100%"  styleName="blackTitleBGContainerSkin"
+		 xmlns:components="com.gazuntite.controls.extended.components.*"
+		 xmlns:LiveGridView1="com.gazuntite.common.view.LiveGridView.*" 
+		 xmlns:components1="com.gazuntite.controls.extended.components.*" 
+		 creationComplete="group1_creationCompleteHandler(event)" 
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.util.upload.FileStreamUploader;
+			import com.gazuntite.common.view.LiveGridView.FilterViewForGrid;
+			import com.gazuntite.common.view.events.ListOnlySelectionEvent;
+			import com.gazuntite.common.view.events.OpenFileOrWithNativeAppEvent;
+			import com.gazuntite.provider.live.services.elab.dto.LabDTO;
+			import com.gazuntite.provider.live.services.elab.event.ELabsEventString;
+			import com.gazuntite.provider.live.services.elab.event.EnterResultEvent;
+			import com.gazuntite.provider.live.services.elab.event.ListOnlyLabsEvent;
+			import com.gazuntite.provider.live.services.elab.event.LoadPatientLabOrdersByClinicIdEvent;
+			import com.gazuntite.provider.live.services.elab.event.ProcessLabResultByCriteriaEvent;
+			import com.gazuntite.provider.live.services.elab.event.ProcessLabResultEvent;
+			import com.gazuntite.provider.live.services.elab.event.ViewResultEvent;
+			import com.gazuntite.provider.live.services.elab.model.ELabsAppModelLocator;
+			import com.gazuntite.provider.live.services.elab.util.ELabsConstant;
+			import com.gazuntite.provider.live.services.elab.util.ELabsQuivusCombineEventDispatcher;
+			import com.gazuntite.provider.live.services.elab.util.ELabsServiceMethods;
+			import com.gazuntite.provider.live.services.elab.view.Filters.ElabDoOnlyView;
+			import com.gazuntite.provider.live.services.elab.view.event.ElabActionEvent;
+			import com.gazuntite.provider.live.services.elab.view.renderers.EditButtonRenderer;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			private var ListOnlyPopup:ElabDoOnlyView;
+			private var ProcessOnlyPopup:ElabDoOnlyView;
+			private var EnterResultPopup:EnterResultView;
+			
+			[Bindable]
+			public var model : ELabsAppModelLocator = ELabsAppModelLocator.getInstance();
+			
+			[Bindable]
+			private var m_oDataProvider:ArrayCollection ;
+			
+			[Bindable]
+			public function get DataProvider():ArrayCollection
+			{
+				return m_oDataProvider;
+			}
+			
+			public function set DataProvider(value:ArrayCollection):void
+			{
+				m_oDataProvider = value;			
+			}
+			
+			protected function ListOnlyHandler(event:Event):void
+			{
+				if( ListOnlyPopup && ListOnlyPopup.isPopUp )
+				{
+					ListOnlyPopup.removePopup();
+					ListOnlyPopup.removeEventListener( ListOnlySelectionEvent.LIST_ONLY_SELECTION, ListOnlySelectionEventHandler );
+					ListOnlyPopup = null;
+				}
+				
+				ListOnlyPopup = new ElabDoOnlyView();
+				ListOnlyPopup.title = "List Only";
+				//popup.DataProvider = model.LabOrdersListDto;
+				ListOnlyPopup.addEventListener( ListOnlySelectionEvent.LIST_ONLY_SELECTION, ListOnlySelectionEventHandler );
+				
+				var pLoc:Point 			= new Point( id_FilterGridView.id_ListOnly.x - 10,
+					id_FilterGridView.y + id_FilterGridView.y + id_FilterGridView.height - 12);
+				var loc:Point 			= this.localToGlobal( pLoc );
+				
+				ListOnlyPopup.x 		= loc.x; 
+				ListOnlyPopup.y 		= loc.y; 
+				
+				ListOnlyPopup.ShowPopup( this );
+				ListOnlyPopup.id_FromDate.setFocus();
+			}
+			
+			protected function GoToPageHandler(event:Event):void
+			{
+				switch( event.type )
+				{
+					case FilterViewForGrid.GOTO_FIRST_PAGE:
+						ELabsQuivusCombineEventDispatcher.LoadLabResultListByClinic( 1 );
+						break;
+					case FilterViewForGrid.GOTO_NEXT_PAGE:
+						++model.CurrentPageNo; 
+						ELabsQuivusCombineEventDispatcher.LoadLabResultListByClinic( model.CurrentPageNo ); 
+						break;
+					case FilterViewForGrid.GOTO_PREVIOUS_PAGE:
+						--model.CurrentPageNo;
+						ELabsQuivusCombineEventDispatcher.LoadLabResultListByClinic( model.CurrentPageNo ); 
+						break;
+					case FilterViewForGrid.GOTO_LAST_PAGE:
+						ELabsQuivusCombineEventDispatcher.LoadLabResultListByClinic( model.TotalPageNo ); 
+						break;
+				}
+				
+				id_FilterGridView.EnableNavigationButtons( model.CurrentPageNo, model.TotalPageNo );
+			}
+			
+			protected function RefreshViewHandler(event:Event):void
+			{
+				ELabsQuivusCombineEventDispatcher.LoadLabResultListByClinic( 1 );
+			}
+			
+			protected function EditLabClickHandler(event:Event):void
+			{
+				// TODO Auto-generated method stub
+			}
+			
+			
+			protected function id_LabsGridView_creationCompleteHandler(event:FlexEvent):void
+			{
+				addEventListener("EditLabClick", EditLabClickHandler);
+			}
+			
+			protected function ListOnlySelectionEventHandler(event:ListOnlySelectionEvent):void
+			{
+				var sel:Object 		= event.selection as Object;
+				var from:String		= event.from;
+				var to:String		= event.to;
+				
+				if( sel || ( ! UtilityFunctions.IsNullOrEmpty( from.length ) && ! UtilityFunctions.IsNullOrEmpty( to.length ) ) )
+				{
+					var searchStr:String = "";
+					searchStr += UtilityFunctions.getDelimitedValue( event.from );
+					searchStr += UtilityFunctions.getDelimitedValue( event.to );
+					searchStr += UtilityFunctions.getDelimitedValue( sel.methodID );
+					searchStr += UtilityFunctions.getDelimitedValue( sel.LaboratoryID );
+					searchStr += UtilityFunctions.getDelimitedValue( sel.StatusID );
+					searchStr += UtilityFunctions.getDelimitedValue( sel.patientID, false );
+					
+					var e:ListOnlyLabsEvent = new ListOnlyLabsEvent( model.LoggedInUserSelectedBranchId, model.CurrentPageNo, true, searchStr ); 
+					CairngormEventDispatcher.getInstance().dispatchEvent( e );
+				}
+				else
+				{
+					Alert.show( "Please Select Field / Date Range", "Invalid Data", Alert.OK, FlexGlobals.topLevelApplication.mainContainer);
+				}
+			}
+			
+			private function GridRowNumber(item:Object, iCol:int):String
+			{
+				var strRowNum:String = "";
+				
+				if (id_LabsGridView.dataProvider)
+				{
+					var rowNum:int = id_LabsGridView.dataProvider.getItemIndex(item) + 1;
+					strRowNum = String(rowNum);
+				}
+				
+				return strRowNum;
+			}
+			
+
+			protected function id_ProcessResult_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_ProcessResult.id_ApplyBatchResult.addEventListener(MouseEvent.CLICK, OnBatchResultClick);
+				id_ProcessResult.id_ApplyResultOnly.addEventListener(MouseEvent.CLICK, OnResultOnlyClick);
+			}
+
+
+			protected function OnBatchResultClick(event:MouseEvent):void
+			{
+				if( id_ProcessResult.id_ForDate.selectedDate )
+				{
+					var xData:XML = model.LabResultListDto.getListIDsXML( id_LabsGridView.selectedItems );
+					var evt:ProcessLabResultEvent = new ProcessLabResultEvent( xData, id_ProcessResult.id_ForDate.selectedDate );
+					CairngormEventDispatcher.getInstance().dispatchEvent( evt );
+					
+					ELabsQuivusCombineEventDispatcher.LoadLabOrdersListByClinic( 1 );
+				}
+				else
+				{
+					Alert.show("please select date","Select Date", Alert.OK, FlexGlobals.topLevelApplication.mainContainer);
+				}
+			}
+			
+			protected function OnResultOnlyClick(event:MouseEvent):void
+			{
+				if( ProcessOnlyPopup && ProcessOnlyPopup.isPopUp )
+				{
+					ProcessOnlyPopup.removePopup();
+					ProcessOnlyPopup.removeEventListener( ListOnlySelectionEvent.LIST_ONLY_SELECTION, ProcessOnlySelectionEventHandler );
+					ProcessOnlyPopup = null;
+				}
+				
+				ProcessOnlyPopup = new ElabDoOnlyView();
+				ProcessOnlyPopup.title = "Process Lab Result By Criteria"
+				//ProcessOnlyPopup.DataProvider = model.LabOrdersListDto;
+				ProcessOnlyPopup.addEventListener( ListOnlySelectionEvent.LIST_ONLY_SELECTION, ProcessOnlySelectionEventHandler );
+				
+				var pLoc:Point 			= new Point( id_ProcessResult.id_ApplyResultOnly.x - 10,
+					id_ProcessResult.y + id_ProcessResult.y + id_ProcessResult.height - 12);
+				var loc:Point 			= this.localToGlobal( pLoc );
+				
+				ProcessOnlyPopup.x 		= loc.x; 
+				ProcessOnlyPopup.y 		= loc.y; 
+				
+				ProcessOnlyPopup.ShowPopup( this );
+				ProcessOnlyPopup.id_FromDate.setFocus();
+			}
+			
+			protected function ProcessOnlySelectionEventHandler(event:ListOnlySelectionEvent):void
+			{
+				var sel:Object 		= event.selection as Object;
+				var from:String		= event.from;
+				var to:String		= event.to;
+				
+				if( sel || ( ! UtilityFunctions.IsNullOrEmpty( from.length ) && ! UtilityFunctions.IsNullOrEmpty( to.length ) ) )
+				{
+					var searchStr:String = "";
+					
+					searchStr += UtilityFunctions.getDelimitedValue( event.from );
+					searchStr += UtilityFunctions.getDelimitedValue( event.to );
+					searchStr += UtilityFunctions.getDelimitedValue( sel.methodID );
+					searchStr += UtilityFunctions.getDelimitedValue( sel.patientID );
+					searchStr += UtilityFunctions.getDelimitedValue( sel.LaboratoryID );
+					
+					
+					var evt:ProcessLabResultByCriteriaEvent = new ProcessLabResultByCriteriaEvent( searchStr );
+					CairngormEventDispatcher.getInstance().dispatchEvent( evt );
+				}
+				else
+				{
+					Alert.show( "Please Select Field / Date Range", "Invalid Data", Alert.OK, FlexGlobals.topLevelApplication.mainContainer);
+				}
+			}
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				ELabsQuivusCombineEventDispatcher.LoadLabResultListByClinic( 1 );
+				
+				addEventListener(ElabActionEvent.ENTER_RESULT_CLICK, OnEnterResult_ClickHandler );
+				addEventListener(ElabActionEvent.VIEW_ATTACHMENT_CLICK, OnViewAttachement_ClickHandler );
+				addEventListener(ElabActionEvent.VIEW_RESULT_CLICK, OnViewResult_ClickHandler );
+				
+				id_FilterGridView.id_FieldsCmbo.setFocus();
+			}
+
+
+			protected function OnEnterResult_ClickHandler(event:Event):void
+			{
+				if( EnterResultPopup && EnterResultPopup.isPopUp )
+				{
+					EnterResultPopup.removePopup();
+					EnterResultPopup.removeEventListener( EnterResultView.ATTACHMENT_EVENT, AttachmentEventHandler );
+					EnterResultPopup = null;
+				}
+				
+				var selectedLab:LabDTO 			= id_LabsGridView.selectedItem as LabDTO;
+				
+				EnterResultPopup 				= new EnterResultView();
+				EnterResultPopup.PatientName 	= selectedLab.Patient.FullName;
+				EnterResultPopup.TestName 		= selectedLab.Test.Name;
+				EnterResultPopup.RefRange 		= selectedLab.Test.NormalRange;
+				EnterResultPopup.MethodName 	= selectedLab.Method.Name;
+				EnterResultPopup.title 			= "Enter Lab Results"
+				//EnterResultPopup.DataProvider = model.LabOrdersListDto;
+				EnterResultPopup.addEventListener( EnterResultView.ATTACHMENT_EVENT, AttachmentEventHandler );
+				EnterResultPopup.addEventListener( EnterResultView.SAVE_RESULT_EVENT, function(event:Event):void
+				{
+					var resultRanage:String = UtilityFunctions.ReplaceSlashWith( EnterResultPopup.id_txtResult.text );
+					if(resultRanage != '')
+					{
+						//save result here
+						var er:EnterResultEvent = new EnterResultEvent( selectedLab, resultRanage, function():void{
+							RefreshViewHandler( null );
+							EnterResultPopup.removePopup();
+						});
+						CairngormEventDispatcher.getInstance().dispatchEvent( er );
+					}else
+					{
+						Alert.show('Please enter result.', 'Info',4, FlexGlobals.topLevelApplication.mainContainer);
+					}
+					
+				});
+				EnterResultPopup.addEventListener( EnterResultView.CANCEL_RESULT_EVENT, function(event:Event):void
+				{
+					EnterResultPopup.removePopup();
+				});
+				var pLoc:Point 			= new Point( id_ProcessResult.id_ApplyResultOnly.x - 10,
+					id_ProcessResult.y + id_ProcessResult.y + id_ProcessResult.height - 12);
+				var loc:Point 			= this.localToGlobal( pLoc );
+				
+				EnterResultPopup.x 		= loc.x; 
+				EnterResultPopup.y 		= loc.y; 
+				
+				EnterResultPopup.ShowPopup( this );
+				EnterResultPopup.id_txtResult.setFocus();
+			}
+			
+			private var fileStreamUploader:FileStreamUploader;
+			protected function AttachmentEventHandler(event:Event):void
+			{
+				var selectedLab:LabDTO 	= id_LabsGridView.selectedItem as LabDTO;
+				var OrderID:String 		= selectedLab.OrderID;
+				//var ContentType:String	= selectedLab.Method != null ? selectedLab.Method.Name:"NULL_Method"; //test3@quivus.com	quivus123
+				//TJ code
+				var ContentType:String	= "pdf";
+				var FileName:String	   	= selectedLab.Test.Type + "_" + selectedLab.Test.Name + "_" + selectedLab.LabName;
+				var url:String 			= ELabsConstant.RESTFULL_SERVICE_BASE_URL + ELabsServiceMethods.UPLOAD_FILE + "/" + OrderID + "/" + ContentType + "/" + FileName;
+				
+				fileStreamUploader = new FileStreamUploader( url, 'multipart/form-data' );
+				fileStreamUploader.Browse();
+				
+				fileStreamUploader.addEventListener( FileStreamUploader.FILE_STREAM_UPLOAD_COMPLETED_EVENT, function(event:Event):void
+				{
+					if( EnterResultPopup )
+					{
+						EnterResultPopup.id_UploadStatus.visible = true;
+						EnterResultPopup.id_UploadStatus.text	 = "File Uploaded successfully.";
+					}
+					//Alert.show("FileStream Upload Succeeded","Uploaded with Success !", Alert.OK, FlexGlobals.topLevelApplication.mainContainer );
+				});
+				fileStreamUploader.addEventListener( FileStreamUploader.FILE_STREAM_UPLOAD_FAILED_EVENT, function(event:Event):void
+				{
+					if( EnterResultPopup )
+					{
+						EnterResultPopup.id_UploadStatus.visible = true;
+						EnterResultPopup.id_UploadStatus.text	 = "File Upload Failed.";
+					}
+					//Alert.show("FileStream Upload Failed","Upload Failed !", Alert.OK, FlexGlobals.topLevelApplication.mainContainer );
+				});
+				
+				
+			}
+			
+			protected function OnViewResult_ClickHandler(event:Event):void
+			{
+				var selectedLab:LabDTO 	= id_LabsGridView.selectedItem as LabDTO;
+				var OrderID:String 		= selectedLab.OrderID;
+				var e:ViewResultEvent = new ViewResultEvent( OrderID, ShowDocumentInViewer );
+				CairngormEventDispatcher.getInstance().dispatchEvent( e );
+			}
+			
+			protected function OnViewAttachement_ClickHandler(event:Event):void
+			{
+				var selectedLab:LabDTO 	= id_LabsGridView.selectedItem as LabDTO;
+				ShowDocumentInViewer(selectedLab.Result.File.toString());
+			}
+			
+			
+			protected function id_FilterGridView_SearchClickHandler(event:Event):void
+			{
+				ELabsQuivusCombineEventDispatcher.SearchResultListByClinic( id_FilterGridView.id_SearchTextInput.text, 1, id_FilterGridView.id_FieldsCmbo.selectedItem.ID );
+			}
+			
+			private function ShowDocumentInViewer(url:String):void
+			{
+				var evt:OpenFileOrWithNativeAppEvent = new OpenFileOrWithNativeAppEvent(true, true);
+				evt.FileName = "Quivus Lab Result";
+				evt.FileURL = url;
+				
+				dispatchEvent( evt );
+			}
+			
+
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+		<s:VerticalLayout gap="1"  paddingBottom="5" paddingRight="5" paddingLeft="5" paddingTop="5"/>
+	</s:layout>
+	
+	<LiveGridView1:FilterViewForGrid id="id_FilterGridView" width="100%"
+									ListOnly="ListOnlyHandler(event)"
+									GoToFirstPage="GoToPageHandler(event)"
+									GoToLastPage="GoToPageHandler(event)"
+									GoToNextPage="GoToPageHandler(event)"
+									GoToPreviousPage="GoToPageHandler(event)"
+									RefreshView="RefreshViewHandler(event)"
+									DataProvider="{model.ResultSearchFieldsList.Fields}"
+									SearchClick="id_FilterGridView_SearchClickHandler(event)"
+									labelField="Name"/>
+	
+	<components1:LabelDataGrid id="id_LabsGridView" width="100%" dataProvider="{model.LabResultListDto.Labs}"  maxHeight="130" height="100%"  
+				 variableRowHeight="true"  columnWidths="{[30,'10%','10%','10%','10%','10%','10%','10%','5%','15%']}"
+				 creationComplete="id_LabsGridView_creationCompleteHandler(event)" horizontalScrollPolicy="on" >  
+		<components:columns>	
+			<!--<mx:DataGridColumn width="50" dataField="ID" 				headerText="" textAlign="center" itemRenderer="mx.controls.CheckBox"  rendererIsEditor="true" editorDataField="selected"/>-->  
+			<mx:DataGridColumn headerText="Sr.#"  				labelFunction="GridRowNumber" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" />
+			<mx:DataGridColumn  dataField="ID"  				headerText="Order #" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" 	/>
+			<mx:DataGridColumn  dataField="OrderDate" 			headerText="Date"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"	wordWrap="true" 	/>
+			<mx:DataGridColumn  dataField="Patient.FullName" 	headerText="Patient" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" 	/>
+			<mx:DataGridColumn  dataField="Test.Name" 			headerText="Test" 	 itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" 	/>
+			<mx:DataGridColumn  dataField="Result.Range" 		headerText="Range" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" 	wordWrap="true" 	/>
+			<mx:DataGridColumn  dataField="Provider.FullName" 	headerText="Provider" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" 	/> 
+			<mx:DataGridColumn  dataField="LabName" 			headerText="Lab" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"  wordWrap="true"  		/>
+			<mx:DataGridColumn  dataField="Result.Status" 		headerText="Status" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"  wordWrap="true" 	/>
+			<mx:DataGridColumn  headerText="Result" 			itemRenderer="com.gazuntite.provider.live.services.elab.view.renderers.ResultButtonRenderer" />
+		</components:columns>
+	</components1:LabelDataGrid>
+	<lab:ProcessResult id="id_ProcessResult" width="100%"  creationComplete="id_ProcessResult_creationCompleteHandler(event)" />
+</s:SkinnableContainer>

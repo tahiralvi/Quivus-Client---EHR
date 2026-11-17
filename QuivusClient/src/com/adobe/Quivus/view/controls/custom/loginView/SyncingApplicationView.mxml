@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:syncing="com.adobe.Quivus.view.controls.custom.loginView.syncing.*">
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			[Bindable]
+			private var syncDataProvider:ArrayCollection;
+			
+			
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				syncDataProvider = new ArrayCollection();
+				for( var i:int = 0 ; i < 5; i++ )
+				{
+					var obj:Object = {status:"sucess", message:"Syncing stage " + i, progress:"show"};
+					if( i % 2 )
+					{
+						obj.status = "fail";
+						obj.progress = "hide";
+					}
+					syncDataProvider.addItem( obj );
+				}
+				
+				
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:VGroup width="100%" height="{ChromeUtil.topLevelMainContainer.height-200}"
+			  horizontalAlign="center" verticalAlign="middle">
+		
+		<s:SkinnableContainer id="id_loginBG" width="501" height="300"
+							  skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.loginPanelBG"
+							  
+							  >
+			
+			
+			<s:layout>
+				<s:VerticalLayout gap="6" horizontalAlign="center" paddingLeft="20" paddingRight="20"
+								  paddingTop="20" verticalAlign="top"
+								  />
+			</s:layout>
+			
+			
+			<!--<syncing:LoadingPatient width="100%" height="100%" />-->
+			<s:Label text="{model.SyncHeaderLabel}" width="100%" textAlign="left" fontFamily="Calibri Bold" fontSize="14"/>
+			<s:List width="100%" height="100%" dataProvider="{model.syncInfo.syncDTOList}" itemRenderer="com.adobe.Quivus.view.controls.custom.loginView.syncing.SyncIR" 
+					skinClass="com.adobe.Quivus.view.controls.skins.syncingView.SyncingListSkin" />		
+			
+			
+		</s:SkinnableContainer>	
+	</s:VGroup>
+	
+	
+	<s:Group width="100%">
+		<s:layout>
+			<s:VerticalLayout horizontalAlign="center" verticalAlign="bottom"/>
+		</s:layout>
+		<mx:Label width="350" color="#ffffff" fontFamily="Calibri" fontSize="11"
+				  text="{model.errorStatus}"/>
+	</s:Group>
+	
+	
+	<s:Group width="100%" height="100%">
+		<s:layout>
+			<s:VerticalLayout horizontalAlign="left" paddingBottom="7" paddingLeft="5"
+							  verticalAlign="bottom"/>
+		</s:layout>
+		<s:VGroup width="100%" horizontalAlign="center">
+			
+			<s:Label color="#888888" fontFamily="Calibri" fontSize="13"
+					 text="{'Gazuntite Online Clinic V ' +QuivusClient.appVersion }" textAlign="left"/>	
+			<s:Label color="#888888" fontFamily="Calibri" fontSize="11"
+					 text="Copyright 2009-2013 Gazuntite Online Clinic LLC, All Rights Reserved."
+					 textAlign="left"/>
+		</s:VGroup>
+	</s:Group>
+	
+</s:Group>

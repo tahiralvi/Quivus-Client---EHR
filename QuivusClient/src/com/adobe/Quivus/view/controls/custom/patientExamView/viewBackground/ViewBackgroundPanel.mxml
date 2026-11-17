@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:SlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*"
+					  xmlns:viewBackground="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.*" 
+					  xmlns:components="com.zigron.controls.extended.components.*"	
+					  ButtonAreaHeight="22" ButtonAreaWidth="26" ButtonAreaSource="{ButtonBG}" 
+					  ButtonAreaSourceOver="{ButtonBGOver}" 
+					  QSSlideStateChange="slideoutpanel1_QSSlideStateChangeHandler(event)"
+					  QSViewStateChange="slideoutpanel1_QSViewStateChangeHandler(event)"
+					  creationComplete="slideoutpanel1_creationCompleteHandler(event)" xmlns:components1="com.gazuntite.controls.extended.components.*" 
+					  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.viewBackground.immunization.LoadPatientVisitImmunizationEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.utils.QuivusCombineEventDispatcher;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.paging.PagingAndFilterWindow;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.PP_headerSkin_disabled;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.createVisitBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.loadVisitFilterBtn;
+			import com.adobe.Quivus.view.controls.skins.viewBackgroundHeaderSkin;
+			import com.adobe.Quivus.view.events.CreateVisitUIEvent;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.yellowCreateVisitButton;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.controls.Alert;
+			import mx.controls.ProgressBar;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.components.Button;
+			import spark.components.Label;
+			import spark.components.PopUpAnchor;
+			import spark.resize.ResizeManager;
+			import spark.resize.verticalResizeHandle;
+			
+			import valueObjects.PageDTO;
+			import valueObjects.PatientEncounterDTO;
+			
+			
+			private var p1:PopUpAnchor = new PopUpAnchor();
+			private var popGroup:Group;
+			//var prog:ProgressBar = new ProgressBar();	
+			
+			[Bindable]
+			[Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='arrow_yellow')]
+			private var ButtonBG:Class
+			
+			[Bindable]
+			[Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='arrow_yellow')]
+			private var ButtonBGOver:Class;
+			
+			
+			public var maxPanelHeight:int;
+			public var heightDiff:int = 303;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			protected function viewbackgroundheader1_CreateVisitUIHandler(event:CreateVisitUIEvent):void
+			{
+				var evt:CreateVisitUIEvent 	= new CreateVisitUIEvent();
+				evt.createNewVisit 			= event.createNewVisit;
+				evt.visitDate 				= event.visitDate;
+				dispatchEvent( evt );
+			}
+			
+			
+			protected function slideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				
+				
+				id_viewBackgroundBody.id_PatientEncounterPanel.id_PatientEncounterView.id_PatientEncounterGrid.addEventListener( MouseEvent.CLICK , OnEncounterGridClick);
+				id_header.id_LoadVBBtn.addEventListener( MouseEvent.CLICK, id_LoadVBBtn_clickHandler );
+				
+				
+				id_header.id_headerSkin.setStyle("skinClass", viewBackgroundHeaderSkin);
+				
+				id_header.id_slideoutBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					ToggleSlideOut();
+					event.stopImmediatePropagation();
+				});
+				
+				if(ChromeUtil.topLevelMainContainer.maxHeight < Capabilities.screenResolutionY)
+				{
+					maxPanelHeight = Capabilities.screenResolutionY - heightDiff;
+				}
+				else
+				{
+					maxPanelHeight = ChromeUtil.topLevelMainContainer.maxHeight - heightDiff;
+				}
+			}
+			
+			
+			
+			protected function OnEncounterGridClick(event:MouseEvent):void
+			{
+				if( event.target is Button )
+				{
+					//Alert.show( event.target.id );
+					switch(  event.target.id )
+					{
+						case "id_Edit":
+							
+							var peDTO:PatientEncounterDTO = event.currentTarget.selectedItem as PatientEncounterDTO;
+							if( peDTO )
+							{
+								
+								var cvui:CreateVisitUIEvent = new CreateVisitUIEvent();
+								cvui.createNewVisit = false;
+								dispatchEvent( cvui );
+							}
+							
+							break;
+					}
+				}
+			}
+			
+			protected function ScrollUp(event:MouseEvent):void
+			{
+				id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition + 15;
+				// id_viewBackgroundBody.id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition + 15;
+				// id_viewBackgroundBody.id_PatientEncounterPanel.ScrollUp(event);
+				
+				//id_viewBackgroundBody.id_backgroundTabView.id_PMHView(event);
+				/* switch( id_viewBackgroundBody.id_backgroundTabView.id_VBViews.selectedIndex )
+				{
+				case 0:
+				id_viewBackgroundBody.id_backgroundTabView.id_PMHView.ScrollUp();
+				break;
+				case 1:
+				id_viewBackgroundBody.id_backgroundTabView.id_physicalView.ScrollUp();
+				break;
+				case 2:
+				id_viewBackgroundBody.id_backgroundTabView.id_assesment.ScrollUp();
+				break;
+				} */
+			}
+			
+			protected function ScrollDown(event:MouseEvent):void
+			{
+				id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition - 15;
+				//id_viewBackgroundBody.id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition - 15;
+				//id_viewBackgroundBody.id_PatientEncounterPanel.ScrollDown(event);
+				/* 	switch( id_viewBackgroundBody.id_backgroundTabView.id_VBViews.selectedIndex )
+				{
+				case 0:
+				id_viewBackgroundBody.id_backgroundTabView.id_PMHView.ScrollDown();
+				break
+				case 1:
+				id_viewBackgroundBody.id_backgroundTabView.id_physicalView.ScrollDown();
+				break
+				case 2:
+				id_viewBackgroundBody.id_backgroundTabView.id_assesment.ScrollDown();
+				break
+				}		 */		
+			} 
+			
+			
+			
+			
+			
+			protected function slideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.VIEW_BACKGROUND_PANEL ) )//Tahir Alvi - on VB Header click implement security check
+				{
+					if (event.viewState == QSViewStateEvent.COLLAPSED_VIEW)
+					{
+						QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.PATIENT_ENCOUNTER_LIST);
+					}
+					if(id_header)
+					{
+						if(this.ExpandedView)
+						{
+							id_header.id_expandBtn.selected = true;
+							id_header.id_label.text = id_header.id_label.text.toUpperCase();
+							id_header.id_headerSkin.setStyle("skinClass", viewBackgroundHeaderSkin);
+							id_header.alpha = 1;
+							
+						}
+						else
+						{
+							id_header.id_expandBtn.selected = false;
+							//id_header.id_label.text.toLowerCase();
+							id_header.id_label.text = AppUtils.TitleCase(id_header.id_label.text);
+							id_header.id_headerSkin.setStyle("skinClass", PP_headerSkin_disabled);
+							//id_header.alpha = 0.4;
+						}
+					}
+				}
+			}
+			
+			
+			protected function slideoutpanel1_QSSlideStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if(this.isSlideOut)
+				{
+					id_contentsResizer.maxHeight = ChromeUtil.topLevelMainContainer.height-98;					
+				}
+				else
+				{
+					id_contentsResizer.maxHeight = ChromeUtil.topLevelMainContainer.height-205; //500;
+					//id_contentsResizer.height = 500;
+				}
+			}
+			
+			public function InitComponent():void
+			{
+				//id_viewBackgroundBody.id_backgroundTabView.id_TabBar.selectedIndex = 0;
+				
+				
+				
+				//id_viewBackgroundBody.InitComponent();
+			}
+			
+			protected function id_LoadVBBtn_clickHandler(event:MouseEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.VB_SUMMARY_VIEW ) )//Tahir Alvi 
+				{
+					if( UtilityFunctions.IsNullOrEmpty( model.defaultFilterAndPaging ) )
+						model.defaultFilterAndPaging = new PageDTO();
+					
+					var pfWin:PagingAndFilterWindow = new PagingAndFilterWindow();
+					pfWin.width = 205;
+					pfWin.Page = model.defaultFilterAndPaging;
+					pfWin.ShowPopup( this );
+					
+					var point:Point = new Point(event.currentTarget.x, event.currentTarget.y );
+					point = event.currentTarget.parent.localToGlobal( point );
+					
+					
+					pfWin.id_okBtn.addEventListener(MouseEvent.CLICK, function():void
+					{
+						id_header.id_LoadVBBtn.setStyle("skinClass", loadVisitFilterBtn);
+					});
+					
+					pfWin.move( (point.x - pfWin.width / 2 + 15) -30, point.y + 25 );
+					//if(model.securityProxyObject && model.securityProxyObject.ViewBackground.IsViewAllowed)
+					/* {
+					QuivusCombineEventDispatcher.loadVB();
+					
+					if(!this.ExpandedView)
+					{
+					this.ExpandedView = true;
+					}
+					
+					event.stopImmediatePropagation();
+					} */
+					/* else
+					{
+					Alert.show("You are not authorized.");
+					} */
+					
+					event.stopImmediatePropagation();
+				}
+			}
+			
+			public override function set ExpandedView(value:Boolean):void
+			{
+				super.ExpandedView = value;//false;
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Metadata>
+		[Event(name="CreateVisitUI", type="com.adobe.Quivus.view.events.CreateVisitUIEvent")]
+	</fx:Metadata>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	
+	
+	<custom:HeaderContents>
+		<s:Group width="100%">
+			<s:layout>
+				<s:VerticalLayout horizontalAlign="left" paddingLeft="{isSlideOut? 10:0}"  />
+			</s:layout>			
+			<viewBackground:ViewBackgroundHeader id="id_header" width="100%" minWidth="{ChromeUtil.topLevelMainContainer.width - 25}" CreateVisitUI="viewbackgroundheader1_CreateVisitUIHandler(event)"		 />
+		</s:Group>
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		<viewBackground:VBSectionSlideoutHeader id="id_slideoutHeader" width="100%" label="Viewbackground" />
+		
+	</custom:SlideHeaderContents>
+	<custom:Contents>
+		
+		<components1:ResizeableGroup id="id_contentsResizer" width="{id_header.width }" height="100%" bottom="0" maxHeight="{this.maxHeight - 50}"  minHeight="50"
+									resizeDirection="{ResizeManager.DIRECTION_VERTICAL}" resizeHandle="{new verticalResizeHandle()}" >			
+			<s:Group id="id_contents"  width="100%" height="100%" >
+				<s:layout>
+					<s:VerticalLayout gap="-1" horizontalAlign="center" paddingLeft="{isSlideOut? 10:0}"   />
+				</s:layout>
+				
+				<s:Scroller id="id_Scroller" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off" 
+							>
+					<s:Group id="id_scrollGrp"  width="100%" height="100%" >
+						<s:layout>
+							<s:VerticalLayout  horizontalAlign="center" gap="0" />
+						</s:layout>
+						<viewBackground:viewBackgroundBody id="id_viewBackgroundBody" width="{id_header.width - 0.5}" height="485" />
+					</s:Group>
+				</s:Scroller>	
+				
+				<s:SkinnableContainer width="100%" height="22" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.scrollerYellowBG">
+					<s:layout>
+						<s:HorizontalLayout verticalAlign="top" horizontalAlign="center" paddingBottom="0" paddingTop="0" />
+					</s:layout>
+					
+					<s:Button height="8" width="40" toolTip="Scroll Up" mouseDown="ScrollDown(event)" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.PEscrollUp" 
+							  buttonMode="true" useHandCursor="true"/>
+					<s:Button height="8" width="40" toolTip="Scroll Down" click="ScrollUp(event)" mouseDown="ScrollUp(event)" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.PEScrollDown" 
+							  buttonMode="true" useHandCursor="true"/>
+					
+					
+				</s:SkinnableContainer>
+	
+			</s:Group>
+			
+			
+		</components1:ResizeableGroup>
+	</custom:Contents>
+	
+</custom:SlideOutPanel>

@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:SlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*"
+					  xmlns:profile="com.adobe.Quivus.view.controls.custom.patientExamView.profile.*" 
+					  xmlns:patientExamView="com.adobe.Quivus.view.controls.custom.patientExamView.*" 
+					  xmlns:view="com.gazuntite.provider.eprescription.services.patient.view.*"
+					  QSSlideStateChange="OnSlideStateChange(event)"
+					  QSViewStateChange="slideoutpanel1_QSViewStateChangeHandler(event)"
+					  move="slideoutpanel1_moveHandler(event)"
+					  creationComplete="slideoutpanel1_creationCompleteHandler(event)" 
+					  xmlns:components1="com.gazuntite.controls.extended.components.*" 
+					  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.PP_headerSkin;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.MoveEvent;
+			
+			import spark.resize.ResizeManager;
+			import spark.resize.verticalResizeHandle;
+			
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			protected function slideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if(id_ProfilePanelHeader && id_ProfilePanelHeader.id_expandBtn)
+				{
+					
+					if(this.ExpandedView)
+					{
+						id_ProfilePanelHeader.id_expandBtn.selected = true;
+						id_ProfilePanelHeader.id_headerSkin.setStyle("skinClass", PP_headerSkin);
+						id_ProfilePanelHeader.alpha = 1;
+						//id_patientSearchBoxContainer.alpha = 1;
+					}
+					else
+					{
+						id_ProfilePanelHeader.id_expandBtn.selected = false;
+						//id_ProfilePanelHeader.id_headerSkin.setStyle("skinClass", PP_headerSkin_disabled);
+						id_ProfilePanelHeader.alpha = 0.4;
+						//id_patientSearchBoxContainer.alpha = 0.4;
+					}
+					
+				}
+			}
+			
+			
+			protected function button1_buttonDownHandler(event:FlexEvent):void
+			{
+				id_PatientProfileBodyView.func_ScrollUp();
+			}
+			
+			
+			protected function button2_buttonDownHandler(event:FlexEvent):void
+			{
+				id_PatientProfileBodyView.func_ScrollDown();
+			}
+			
+			protected function OnSlideStateChange(event:QSViewStateEvent):void
+			{
+				id_ProfilePanelHeader.OnMoveHandler( null );
+				if(this.isSlideOut)
+				{
+					if(id_ProfilePanelHeader)
+					{
+						if( id_ProfilePanelHeader.TagHealthCustomPanel && id_ProfilePanelHeader.TagHealthCustomPanel.isPopUp )
+						{
+							id_ProfilePanelHeader.TagHealthCustomPanel.removePopup();
+							
+						}
+						
+						
+						if( id_ProfilePanelHeader.TagProfileCustomPanel1stSection && id_ProfilePanelHeader.TagProfileCustomPanel1stSection.isPopUp )
+						{
+							id_ProfilePanelHeader.TagProfileCustomPanel1stSection.removePopup();
+							
+						}	
+						
+						
+						if( id_ProfilePanelHeader.TagProfileCustomPanel2ndSection && id_ProfilePanelHeader.TagProfileCustomPanel2ndSection.isPopUp )
+						{
+							id_ProfilePanelHeader.TagProfileCustomPanel2ndSection.removePopup();
+							
+						}
+						
+						if( id_ProfilePanelHeader.TagUserInfoPanel && id_ProfilePanelHeader.TagUserInfoPanel.isPopUp )
+						{
+							id_ProfilePanelHeader.TagUserInfoPanel.removePopup();
+							
+						}
+						
+						if( id_ProfilePanelHeader.TagHealthCustomPanel && id_ProfilePanelHeader.TagHealthCustomPanel.isPopUp )
+						{
+							id_ProfilePanelHeader.TagHealthCustomPanel.removePopup();
+							
+						}
+						
+						
+					}
+				}
+				
+				if(this.isSlideOut)
+				{
+					id_contentsResizer.maxHeight = ChromeUtil.topLevelMainContainer.height-98;
+				}
+				else
+				{
+					id_contentsResizer.maxHeight = 500;
+					id_contentsResizer.height = 500;
+				}
+			}
+			
+			
+			
+			protected function slideoutpanel1_moveHandler(event:MoveEvent):void
+			{
+				id_ProfilePanelHeader.OnMoveHandler( null );
+				id_ProfilePanelHeader.ClosePopups();
+			}
+			
+			public override function set ExpandedView(value:Boolean):void
+			{
+				super.ExpandedView = value;//false;
+			}
+			
+			
+			protected function slideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_ProfilePanelHeader.id_OptionPopUp.displayPopUp = true;
+				
+				id_ProfilePanelHeader.id_headerSkin.setStyle("skinClass", PP_headerSkin);
+				id_ProfilePanelHeader.alpha = 0.4;
+				//id_patientSearchBoxContainer.alpha = 0.4;
+				// ---- displaying header at top 
+				/* 	setChildIndex(id_header, 1000);
+				setChildIndex(id_PatientProfileBodyView,500); */
+				
+				// ---- end displaying header at top
+				
+				id_ProfilePanelHeader.id_slideoutBtn.addEventListener(MouseEvent.CLICK, slideoutBtn_clickHandler);
+				id_PanelBody.addEventListener(MoveEvent.MOVE, function(event:Event):void 
+				{ 
+					id_ProfilePanelHeader.ClosePopups();
+				});
+				
+				id_ProfilePanelHeader.id_OptionPopUp.displayPopUp = false;
+			}
+			
+			protected function slideoutBtn_clickHandler(event:MouseEvent):void
+			{
+				this.ToggleSlideOut();
+				FlexGlobals.topLevelApplication.slideout_count++; 		
+				event.stopImmediatePropagation();
+			}			
+			
+			public function InitComponent():void
+			{
+				id_PatientProfileBodyView.id_PatientProfileView.InitComponent();
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<custom:HeaderContents>
+		<s:Group id="id_header" width="100%" minWidth="{ChromeUtil.topLevelMainContainer.width - 25}" height="21" >
+			<s:layout>
+				<s:VerticalLayout verticalAlign="middle" horizontalAlign="center" paddingTop="0" paddingBottom="0" paddingLeft="{isSlideOut? 10:0}" gap="0" />
+			</s:layout>			
+			<profile:ProfilePanelHeader id="id_ProfilePanelHeader" height="21" width="100%" />
+		</s:Group>
+		
+		
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		<s:HGroup paddingTop="1" width="100%">		
+			<!--<s:BorderContainer width="100%" height="22" borderColor="red" borderVisible="false" backgroundAlpha="1" backgroundColor="#DF1313" />-->
+			<s:SkinnableContainer height="22" minWidth="617" width="{id_header.width}" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.shade_patientProfileSkin" />
+			<s:filters>
+				<s:GlowFilter id="id_glowFocus" strength="1"  blurX="6" blurY="6" alpha="0"  color="#bb0000" />
+			</s:filters>
+			
+		</s:HGroup>
+	</custom:SlideHeaderContents>
+	<custom:Contents>
+		<components1:ResizeableGroup id="id_contentsResizer" width="{id_header.width }" height="100%" bottom="0" maxHeight="{isSlideOut? ChromeUtil.topLevelMainContainer.height-98: ChromeUtil.topLevelMainContainer.height-205}" minHeight="200"
+									resizeDirection="{ResizeManager.DIRECTION_VERTICAL}" resizeHandle="{new verticalResizeHandle()}">
+			
+			<components1:layout>
+				<s:VerticalLayout horizontalAlign="center" paddingBottom="-5" />
+			</components1:layout>
+			<s:Group id="id_contents"  width="100%" height="100%" >
+				<s:layout>
+					<s:VerticalLayout gap="-15" paddingBottom="0" horizontalAlign="center" paddingLeft="{isSlideOut? 10:0}" paddingTop="{isSlideOut? -4:-4}"  />
+				</s:layout>
+				
+				
+				
+				<profile:PatientProfileBodyView id="id_PatientProfileBodyView" height="100%" width="100%" />
+				<!--<s:HGroup width="100%" horizontalAlign="center" >-->
+				<s:SkinnableContainer width="100%" height="22" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.scrollerRedBG">
+					<s:layout>
+						<s:HorizontalLayout verticalAlign="top" horizontalAlign="center" paddingBottom="0" paddingTop="0" />
+					</s:layout>
+					
+					
+					
+					<s:Button height="8" width="40" toolTip="Scroll Up"   buttonDown="button1_buttonDownHandler(event)"
+							  click="id_PatientProfileBodyView.ScrollUp(event)" autoRepeat="true"
+							  skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.PEscrollUp" 
+							  buttonMode="true" useHandCursor="true" />
+					<s:Button height="8" width="40" toolTip="Scroll Down"  buttonDown="button2_buttonDownHandler(event)" autoRepeat="true" 
+							  click="id_PatientProfileBodyView.ScrollDown(event)" 
+							  skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.PEScrollDown" 
+							  buttonMode="true" useHandCursor="true"/>
+					
+					<!--</s:HGroup>-->
+				</s:SkinnableContainer>
+				
+			</s:Group>
+			
+		</components1:ResizeableGroup>
+	</custom:Contents>
+	
+	
+	
+	
+</custom:SlideOutPanel>

@@ -1,0 +1,19 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+
+/*********************************************************************************************/
+/*Tabbars
+Black buttonbars */
+
+.blackButtonBarSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.buttonBarSkins.blackButtonBar");
+}
+
+/*Grey buttonbars */
+.greyButtonBarSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.buttonBarSkins.greyButtonBar");
+}
+

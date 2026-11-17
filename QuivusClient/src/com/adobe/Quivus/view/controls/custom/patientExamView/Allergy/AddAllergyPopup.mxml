@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   xmlns:components1="com.gazuntite.controls.extended.components.*"
+					   >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.search.SearchAllergyTypeByNameEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.blueButtonSkin;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.controls.extended.components.LabelComboBox;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CalendarLayoutChangeEvent;
+			import mx.events.FlexEvent;
+			
+			import valueObjects.AllergySearchDTO;
+			import valueObjects.AllergyTypeDTO;
+			import valueObjects.PatientAllergyDTO;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+
+			public function isInvalid():Boolean
+			{
+				var isNotValid:Boolean = false;
+				var errorStr:String = "";
+				var toSetFocus:*;
+				
+				/* if (!ValidationUtils.isValidDOB(id_OnsetDate)) // date to string converion
+				{
+					isNotValid = true;
+					errorStr += "Enter valid onset date.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_OnsetDate;
+				} */
+				
+				if (!ValidationUtils.isValidValueSelected(id_AllergyNameList))
+				{
+					isNotValid = true;
+					errorStr += "Select valid allergy name.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_AllergyNameList;
+				}
+				
+				if (!ValidationUtils.isValidName(id_Reaction.text))
+				{
+					isNotValid = true;
+					errorStr += "Enter reaction of allergy.\n";
+					
+					if (!toSetFocus)
+						toSetFocus =id_Reaction;
+				}
+				if (isNotValid && errorStr.length)
+				{
+					Alert.show(errorStr, "Add allergy entry error", 4, FlexGlobals.topLevelApplication.mainContainer, function():void
+					{
+						if (toSetFocus)
+							toSetFocus.setFocus();
+					});
+				}
+				
+				return isNotValid;
+			}
+			
+			protected function id_AllergyNameList_keyUpHandler(event:KeyboardEvent):void
+			{
+				// TODO Auto-generated method stub
+				var searchString:String = id_AllergyNameList.textInput.text;
+				trace(searchString);
+				if(searchString.length > 2)
+				{
+					var allergyEvent : SearchAllergyTypeByNameEvent = new SearchAllergyTypeByNameEvent(searchString);
+					CairngormEventDispatcher.getInstance().dispatchEvent( allergyEvent );					
+					//id_AllergyNameList.dataProvider = model.allergyDTOList;
+					//allergyHistoryList
+				}
+			}
+
+			protected function Add_clickHandler(event:MouseEvent):void
+			{
+				//see patientHealthSectionPopup.xml for click listener....
+			}
+
+
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				removePopup();
+			}
+
+			private function id_AllergyNameListClickHandler(e:MouseEvent):void
+			{
+				e.currentTarget.setFocus();
+			}
+			
+			private function id_ReactionClickHandler(e:MouseEvent):void
+			{
+				e.currentTarget.setFocus();
+			}
+
+			protected function id_OnsetDate_changeHandler(event:CalendarLayoutChangeEvent):void
+			{
+				id_OnsetDate.setFocus();
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	
+	<components1:layout>
+		<s:VerticalLayout />
+	</components1:layout>
+	<s:Group>
+	
+		
+		<s:Rect height="115" id="rect3" radiusX="3" width="227" x="0" y="0">
+			<!--<s:fill>
+				<s:LinearGradient rotation="270">
+					<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="0"/>
+					<s:GradientEntry alpha="1" color="#FFFFFF" ratio="0.25882352941176473"/>
+					<s:GradientEntry alpha="1.0" color="#E4E4E4" ratio="1"/>
+					
+					
+				</s:LinearGradient>
+			</s:fill>-->
+			<s:fill>
+				<s:LinearGradient rotation="270">
+					<s:GradientEntry alpha="1.0" color="#BFBFBF" ratio="0"/>
+					<s:GradientEntry alpha="1" color="#FFFFFF" ratio="0.19215686274509805"/>
+					<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+			<s:filters>
+				<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			</s:filters>
+		</s:Rect>
+		
+	
+		<!--	<s:Path data="M 215 22.25 L 125 22.25 L 125 3 C 125 1.343 123.656 0 122 0 L 3 0 C 1.343 0 0 1.343 0 3 L 0 25.25 L 0 27 L 0 123.25 C 0 124.907 1.343 126.25 3 126.25 L 215 126.25 C 216.657 126.25 218 124.907 218 123.25 L 218 25.25 C 218 23.594 216.657 22.25 215 22.25 Z" x="4" y="7">
+			<s:fill>
+				<s:LinearGradient rotation="90">
+					<s:GradientEntry alpha="1.0" color="#E9EBDD" ratio="0"/>
+					<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="0.5058823529411764"/>
+					<s:GradientEntry alpha="1.0" color="#E9EBDD" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+			<s:filters>
+				<s:DropShadowFilter alpha="0.75" angle="90" blurX="3" blurY="3" color="0x000000" distance="0" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+			</s:filters>
+		</s:Path>-->
+		
+
+		<!--<s:Group width="100%" height="20">
+			
+			
+			<s:Button id="id_CloseBtn" right="7" click="button1_clickHandler(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.popupCloseBtnSkin_black" 
+					   useHandCursor="true" buttonMode="true" toolTip="Close" y="4"/>
+		</s:Group>-->
+	
+	<s:VGroup width="100%" gap="2" y="10" x="12">
+		
+		<!--<components:LabelDateField id="id_OnsetDate" prompt="OnSet" height="20" editable="true" yearNavigationEnabled="true" tabIndex="0"/>-->
+		<components1:LabelDateField id="id_OnsetDate" prompt="OnSet" width="200" height="23" tabIndex="1" 
+								   change="id_OnsetDate_changeHandler(event)"
+								   toolTip="Onset Date" yearNavigationEnabled="true" editable="true" selectableRange="{{rangeEnd : new Date()}}" maxYear="{new Date().getFullYear()}" minYear="1901"/>
+		<components1:LabelComboBox id="id_AllergyNameList" prompt="Allergy Name" labelField="AllergyName" dataProvider="{model.allergyDTOList}"
+					width="202" enabled="true" keyUp="id_AllergyNameList_keyUpHandler(event)"
+					height="23"  tabIndex="2" click="id_AllergyNameListClickHandler(event)"/>
+		<!--<components:LabelTextInput id="id_Reaction" prompt="Reaction" 
+								   width="90%" height="22" fontSize="10" fontFamily="Calibri" />-->
+		<components1:LabelTextInput id="id_Reaction" prompt="Reaction" height="22" width="202" tabIndex="3" focusColor="#FF0000"
+								   click="id_ReactionClickHandler(event)"  skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin" />
+		
+		<s:HGroup width="100%" verticalAlign="middle" paddingTop="5">
+			<s:Label text="Active" fontSize="12" fontFamily="Calibri" />
+			<s:CheckBox id="id_Status" tabIndex="4"/>
+			
+			<s:HGroup width="100%" horizontalAlign="right" verticalAlign="top" paddingBottom="5" paddingRight="14" paddingTop="-7">
+				
+			<s:Button id="id_AddBtn" height="12" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.addAllergyPopupAddBtn" label="Add" 
+					  click="Add_clickHandler(event)" buttonMode="true" useHandCursor="true" toolTip="Add Allergy" tabIndex="5" />
+			</s:HGroup>
+		</s:HGroup>	
+	</s:VGroup>
+	</s:Group>
+</components1:PopupGroup>

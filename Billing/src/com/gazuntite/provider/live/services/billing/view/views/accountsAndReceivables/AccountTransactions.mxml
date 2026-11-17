@@ -1,0 +1,428 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  xmlns:components="com.gazuntite.controls.extended.components.*" 
+		  xmlns:accountsAndReceivables="com.gazuntite.provider.live.services.billing.view.views.accountsAndReceivables.*" 
+		  xmlns:itemEditors="com.gazuntite.provider.live.services.billing.view.common.itemEditors.*"
+		  xmlns:components1="com.gazuntite.controls.extended.components.*"
+		  paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5"
+		  creationComplete="vgroup1_creationCompleteHandler(event)" 
+		  >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.util.xml.XmlUtils;
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.SuperBillDiagnosisInfoDTO;
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.SuperBillPatientInfoDTO;
+			import com.gazuntite.provider.live.services.billing.dto.accountsAndReceiveables.AccountClaimDTO;
+			import com.gazuntite.provider.live.services.billing.dto.accountsAndReceiveables.ClaimAdjustmentDTO;
+			import com.gazuntite.provider.live.services.billing.dto.accountsAndReceiveables.ClaimPaymentDTO;
+			import com.gazuntite.provider.live.services.billing.event.accountsAndReceiveables.LoadPatientAccountEvent;
+			import com.gazuntite.provider.live.services.billing.event.accountsAndReceiveables.ManageClaimPaymentEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.view.event.DataGridActionEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			
+			import spark.events.IndexChangeEvent;
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			[Bindable]
+			private var claimCharges:ArrayCollection = null;
+			
+			[Bindable]
+			private var claimPayments:ArrayCollection = null;
+			
+			protected function id_PatientList_changeHandler(event:IndexChangeEvent):void
+			{
+				if(event != null) selectedClaimId = "0";
+				
+				var patientId:int;
+				
+				model.CurrentPatienAccount = null;
+				
+				if(claimCharges && claimCharges.length > 0)
+					claimCharges.removeAll();
+				if(claimPayments && claimPayments.length > 0)
+					claimPayments.removeAll();
+				
+				if(id_PatientList.selectedIndex > -1)
+				{
+					patientId = parseInt( (id_PatientList.selectedItem as SuperBillPatientInfoDTO).PatientId);
+					var pae:LoadPatientAccountEvent = new LoadPatientAccountEvent(patientId, model.LoggedInUserSelectedBranchId,PatientAccountStatus);
+					
+					cursorManager.setBusyCursor();
+					
+					CairngormEventDispatcher.getInstance().dispatchEvent(pae);
+				} 
+			}
+			
+			private function PatientAccountStatus():void
+			{
+				cursorManager.removeBusyCursor();
+				id_carriers.Carriers = model.CurrentPatienAccount.PatientCarrirs;
+				id_carriers.vgroup1_creationCompleteHandler(null);
+				 if(selectedClaimId != "0" && model.CurrentPatienAccount.PatientClaims != null && model.CurrentPatienAccount.PatientClaims.length > 0)
+				{
+					 for (var i:int = 0; i < model.CurrentPatienAccount.PatientClaims.length; i++) 
+					 {
+						 var claim:AccountClaimDTO = model.CurrentPatienAccount.PatientClaims[i] as AccountClaimDTO;
+						 
+						 if(selectedClaimId == claim.ClaimID )
+						 {
+							 id_claimsGrid.selectedIndex = i;
+							 //sometimes scrollToIndex doesnt work if validateNow() not done
+							 id_claimsGrid.validateNow();
+							 id_claimsGrid.scrollToIndex(i);
+							 id_claimsGrid_clickHandler(null);
+							 break;
+						 }
+					 }	 
+				}
+				
+				//selectedClaimId = "0";  
+			}			
+						
+			protected function id_claimsGrid_clickHandler(event:MouseEvent):void
+			{
+				if( ! id_claimsGrid.selectedItem) return;
+				
+				selectedClaimId = (id_claimsGrid.selectedItem as AccountClaimDTO).ClaimID;
+				
+				claimCharges = (id_claimsGrid.selectedItem as AccountClaimDTO).ClaimCharges;
+				claimPayments = (id_claimsGrid.selectedItem as AccountClaimDTO).ClaimPayments;
+				
+				var diagnosis:ArrayCollection = (id_claimsGrid.selectedItem as AccountClaimDTO).ClaimDiagnoses;
+				var counter:int = 0;
+				
+				id_DG2.visible = false;
+				id_DG2.includeInLayout = false;
+				id_DG3.visible = false;
+				id_DG3.includeInLayout = false;
+				
+				id_DG1.removeAllElements();
+				id_DG2.removeAllElements();
+				id_DG3.removeAllElements();
+				
+				do 
+				{
+					var dxLabel:spark.components.Label = new spark.components.Label();
+					dxLabel.text = String(counter + 1) + ": " + (diagnosis[counter] as SuperBillDiagnosisInfoDTO).ICDCodeName
+					dxLabel.width = 100;
+					dxLabel.visible = true;					
+					
+					if(counter == 12) break;
+					
+					if(counter > 7)
+					{
+						id_DG3.visible = true;
+						id_DG3.includeInLayout = true;
+						id_DG3.addElement(dxLabel);
+					}
+					else if(counter > 3)
+					{
+						id_DG2.visible = true;
+						id_DG2.includeInLayout = true;
+						id_DG2.addElement(dxLabel);
+					}
+					else						
+					{
+						id_DG1.addElement(dxLabel);
+					}
+					
+					counter +=1;
+					
+				} while(counter < diagnosis.length );
+				
+			}
+			
+			private var selectedClaimId:String = "0";
+			
+			protected function id_ApplyPayments_clickHandler(event:MouseEvent):void
+			{
+				if(id_claimsGrid.selectedIndex < 0)
+				{
+					Alert.show("Please select claim","Claim Not Selected",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				
+				selectedClaimId = (id_claimsGrid.selectedItem as AccountClaimDTO).ClaimID;
+				
+				var applyPaymentPopup:ApplyPaymentsPopup = new ApplyPaymentsPopup();
+				applyPaymentPopup.title = "New Payment: Claim No# " + (id_claimsGrid.selectedItem as AccountClaimDTO).ClaimID +
+										" [" +	(id_claimsGrid.selectedItem as AccountClaimDTO).VisitDate + "]";
+				applyPaymentPopup.width = 475;
+				applyPaymentPopup.ShowPopup(this,true);
+				applyPaymentPopup.ClaimProcedures = claimCharges;
+				applyPaymentPopup.ClaimID = (id_claimsGrid.selectedItem as AccountClaimDTO).ClaimID;
+				applyPaymentPopup.PatientID = (id_PatientList.selectedItem as SuperBillPatientInfoDTO).PatientId;
+				applyPaymentPopup.ClaimPaymentID = "0";
+				applyPaymentPopup.VisitDate = UtilityFunctions.FormatDate((id_claimsGrid.selectedItem as AccountClaimDTO).VisitDate);
+				applyPaymentPopup.addEventListener("saveClick", RefreshClaim);
+			}
+			
+			private function RefreshClaim(event:Event):void
+			{
+				id_PatientList_changeHandler(null);
+			}
+			
+			protected function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_PaymentGrid .addEventListener(DataGridActionEvent.EDIT_RECORD_CLICK, editClaimPayment, false, 0, true);
+				id_PaymentGrid.addEventListener(DataGridActionEvent.DELETE_RECORD_CLICK, deleteClaimPayment, false, 0, true);
+			}
+			
+			private function deleteClaimPayment(event:DataGridActionEvent):void
+			{				
+				Alert.show("Are you sure, you want to delete selected payment?","Confirmation", Alert.YES|Alert.NO, this, function( event:CloseEvent):void
+				{
+					if( event.detail == Alert.YES )
+					{
+						
+						var dto:ClaimPaymentDTO = id_PaymentGrid.selectedItem as ClaimPaymentDTO;
+						
+						dto.IsDeleted = "true";
+						dto.ModifiedBy = model.LoggedInUserId.toString();
+						
+						
+						var updateXML:XML = XmlUtils.getNodeByTagName("ClaimPayments");
+						
+						updateXML.appendChild(dto.ToXML());							
+						
+						var rpEvent : ManageClaimPaymentEvent = new ManageClaimPaymentEvent(updateXML, saveResult);				
+						CairngormEventDispatcher.getInstance().dispatchEvent( rpEvent );  						
+					} 
+				});
+			}
+			
+			private function saveResult(result:String):void
+			{
+				if(result == "true")
+				{		
+					
+					id_PatientList_changeHandler(null);					
+					Alert.show("Claim Payment deleted successfully.", "Confirmation", 4, FlexGlobals.topLevelApplication.mainContainer);		
+				}
+				else
+					Alert.show("Claim Payment not deleted.","Confirmation", 4, FlexGlobals.topLevelApplication.mainContainer);			
+			}
+			
+			private function editClaimPayment(event:DataGridActionEvent):void
+			{	
+				if(id_PaymentGrid.selectedItems.length == 0)
+				{
+					Alert.show("Please select a record", "No record selected", 4, FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+							
+				var applyPaymentPopup:ApplyPaymentsPopup = new ApplyPaymentsPopup();
+				applyPaymentPopup.title = "Edit Payment: Claim No# " + (id_claimsGrid.selectedItem as AccountClaimDTO).ClaimID +
+					" [" +	(id_claimsGrid.selectedItem as AccountClaimDTO).VisitDate + "]";
+				applyPaymentPopup.width = 475;				
+				applyPaymentPopup.ClaimProcedures = claimCharges;
+				applyPaymentPopup.ClaimID = (id_claimsGrid.selectedItem as AccountClaimDTO).ClaimID;
+				applyPaymentPopup.PatientID = (id_PatientList.selectedItem as SuperBillPatientInfoDTO).PatientId;
+				applyPaymentPopup.ClaimPaymentID = (id_PaymentGrid.selectedItem as ClaimPaymentDTO).ClaimPaymentID;
+				applyPaymentPopup.VisitDate = UtilityFunctions.FormatDate((id_claimsGrid.selectedItem as AccountClaimDTO).VisitDate);
+				applyPaymentPopup.EditPaymentDTO = id_PaymentGrid.selectedItem as ClaimPaymentDTO;
+				applyPaymentPopup.ShowPopup(this,true);
+				applyPaymentPopup.addEventListener("saveClick", RefreshClaim);
+			}
+			
+			private var reasonPopup:AdjustmentReasonsPopup = null;
+			
+			protected function id_PaymentGrid_itemRollOverHandler(event:ListEvent):void
+			{
+				if(reasonPopup && reasonPopup.isPopUp) reasonPopup.removePopup();
+				
+				var adjTypeId:String = "0";
+				if(event.columnIndex == 12 )
+					adjTypeId = "1"
+				else if(event.columnIndex == 13 )
+					adjTypeId = "2"	
+				else
+					return;
+								
+				var reasons:ArrayCollection = null;
+				var selectedPayment:ClaimPaymentDTO =  claimPayments[event.rowIndex] as ClaimPaymentDTO;
+				if(selectedPayment.PaymentAdjustments != null && selectedPayment.PaymentAdjustments.length > 0 )
+				{	
+					reasons = new ArrayCollection();
+					for each (var adj:ClaimAdjustmentDTO in selectedPayment.PaymentAdjustments) 
+					{						
+						if(adj.AdjustmentTypeID == adjTypeId)
+							reasons.addItem(adj);	
+					}
+				}
+				
+				if(reasons && reasons.length > 0)
+				{
+					reasonPopup = new AdjustmentReasonsPopup();
+					
+					reasonPopup.width = 400;
+					reasonPopup.height = 125;
+					//reasonPopup.x = event.itemRenderer.x;
+					//reasonPopup.y = event.itemRenderer.y;
+					reasonPopup.move(event.itemRenderer.x,event.itemRenderer.y)
+					reasonPopup.Reasons = reasons;
+					reasonPopup.title = adjTypeId == "1" ? "Write Off Reasons" : "Rejection Reasons";					
+					reasonPopup.ShowPopup(this,false);
+					reasonPopup.closeButton.visible = false;
+				}
+			}
+			
+			protected function id_PaymentGrid_itemRollOutHandler(event:ListEvent):void
+			{
+				if(reasonPopup && reasonPopup.isPopUp) reasonPopup.removePopup();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:HGroup width="100%">
+		<s:VGroup width="50%">
+			<s:HGroup width="100%">
+				<components1:LabelComboBox id="id_PatientList" prompt="Select Patient" width="50%" change="id_PatientList_changeHandler(event)"
+										  dataProvider="{model.PatienListForAccount}" labelField="Patient" height="28"  />
+				<s:Label width="50%" id="id_patientName" text="{(id_PatientList.selectedItem as SuperBillPatientInfoDTO).Patient}" />
+			</s:HGroup>	
+			<s:HGroup width="100%">				
+				<s:Label width="100%" text="CHARGES:" />				
+			</s:HGroup>	
+			<s:HGroup width="100%">				
+				<s:Label width="50%" text="Last Payment Date:" />
+				<s:Label width="50%" text="{model.CurrentPatienAccount.LastPaymentDate}" textAlign="left" />
+			</s:HGroup>
+			<s:HGroup width="100%">				
+				<s:Label width="50%" text="Last Payment Amount:" />
+				<s:Label width="50%" text="{Number(model.CurrentPatienAccount.LastPaymentAmount).toFixed(2)}" textAlign="left" />
+			</s:HGroup>
+			<s:HGroup width="100%">				
+				<s:Label width="50%" text="Last Visit Date:" />
+				<s:Label width="50%" text="{model.CurrentPatienAccount.LastVisitDate}" textAlign="left" />
+			</s:HGroup>
+			<s:HGroup width="100%">				
+				<s:Label width="50%" text="Visit:" />
+				<s:Label width="50%" text="{(model.CurrentPatienAccount.PatientClaims != null  &amp;&amp; model.CurrentPatienAccount.PatientClaims.length > 0) ? 
+						 	String(id_claimsGrid.selectedIndex + 1) + ' of ' + model.CurrentPatienAccount.PatientClaims.length.toString() : '0 of 0' }"  />
+			</s:HGroup>
+			<s:HGroup width="100%">				
+				<s:Label width="50%" text="Global Coverage Until:" />
+				<s:Label width="50%" id="id_global"  />
+			</s:HGroup>
+		</s:VGroup>		
+		<s:HGroup width="50%">
+			<accountsAndReceivables:AccountCarriers id="id_carriers" width="50%" />
+			<accountsAndReceivables:AccountTotals width="50%" />
+		</s:HGroup>
+	</s:HGroup>
+	<components1:LabelDataGrid id="id_claimsGrid" width="100%"  dataProvider="{model.CurrentPatienAccount.PatientClaims}"
+							  height="100" useRollOver="false" editable="false" click="id_claimsGrid_clickHandler(event)"
+							  styleName="QIGrid" verticalScrollPolicy="on" fontFamily="Verdana" horizontalScrollPolicy="auto"
+							  maxHeight="150" variableRowHeight="true" tabIndex="12"
+							  columnWidths="{['5%'],['25%'],['15%'],['5%'],['25%'],['25%']}"
+							  >
+		<components:columns>
+			<!--<mx:DataGridColumn headerText="Sr.#" dataField="SNo" />-->
+			<mx:DataGridColumn headerText="Claim No." dataField="ClaimID" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Visit Date" dataField="VisitDate" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" />
+			<mx:DataGridColumn headerText="Primary Status" dataField="PrimaryStatus" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Secondary Status" dataField="SecondaryStatus" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Tertiary Status" dataField="TertiaryStatus" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Provider" dataField="ProviderName" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Charges" dataField="TotalCharges" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Primary Payment" dataField="PrimaryPayment" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Secondary Payment" dataField="SecondaryPayment" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Tertiary Payment" dataField="TertiaryPayment" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Patient Payment" dataField="PatientPayment" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Total Paid Amount" dataField="TotalPaidAmount" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Total Adjustment" dataField="TotalAdjustment" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Due Amount" dataField="DueAmount" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Date Created" dataField="DateCreated" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>			
+			
+		</components:columns>
+	</components1:LabelDataGrid>	
+	<s:VGroup width="100%" >
+		<s:Label width="100%" text="Visit Claim Detail:" />	
+		<s:VGroup width="100%">
+			<s:Label width="100%" text="Diagnoses:" />
+			<s:HGroup id="id_DG1" width="100%" />			
+			<s:HGroup id="id_DG2" visible="false" includeInLayout="false" width="100%" />
+			<s:HGroup id="id_DG3" visible="false" includeInLayout="false" width="100%" />
+			<s:Label width="100%" text="Charges:" />
+			<components1:LabelDataGrid id="id_ProcedureGrid" width="100%"  dataProvider="{claimCharges}"
+									  height="100" useRollOver="false" editable="false"  
+									  styleName="QIGrid" verticalScrollPolicy="on" fontFamily="Verdana" horizontalScrollPolicy="auto"
+									  maxHeight="150" variableRowHeight="true" tabIndex="12"
+									  columnWidths="{['5%'],['25%'],['15%'],['5%'],['25%'],['25%']}"
+									  >
+				<components:columns>
+					<!--<mx:DataGridColumn headerText="Sr.#" dataField="SNo" />-->
+					<mx:DataGridColumn headerText="Procedure Code" dataField="ProcedureCode" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Procedure Description" dataField="ProcedureDescription" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" />
+					<mx:DataGridColumn headerText="Charges" dataField="Fee" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Unit" dataField="Unit" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Modifier1" dataField="Modifier1" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Modifier2" dataField="Modifier2" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Modifier3" dataField="Modifier3" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Modifier4" dataField="Modifier4" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					
+				</components:columns>
+			</components1:LabelDataGrid>	
+			<s:Label width="100%" text="Payments:" />
+			<components1:LabelDataGrid id="id_PaymentGrid" width="100%"  dataProvider="{claimPayments}"
+									  height="100" editable="false" 
+									  itemRollOver="id_PaymentGrid_itemRollOverHandler(event)"
+									  itemRollOut="id_PaymentGrid_itemRollOutHandler(event)"
+									  styleName="QIGrid" verticalScrollPolicy="on" 
+									  fontFamily="Verdana" horizontalScrollPolicy="auto"
+									  maxHeight="150" variableRowHeight="true" tabIndex="12"
+									  columnWidths="{['5%'],['25%'],['15%'],['5%'],['25%'],['25%']}"
+									  >
+				<components:columns>
+					<!--<mx:DataGridColumn headerText="Sr.#" dataField="SNo" />-->
+					<mx:DataGridColumn headerText="Entry Date" dataField="EntryDate" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Entry Type" dataField="PaymentEntryTypeName" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" />
+					<mx:DataGridColumn headerText="Filing Date" dataField="FilingDate" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Payment Source" dataField="PaymentSourceName" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Payment Type" dataField="PaymentTypeName" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Payment Mode" dataField="PaymentModeName" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Check/EFT Number" dataField="CheckNumber" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Charged Procedure" dataField="ChargedProcedure" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Paid Procedure" dataField="PaidProcedure" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" />
+					<mx:DataGridColumn headerText="Allowed Amount" dataField="AllowedAmount" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Paid Amount" dataField="PaidAmount" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>					
+					<mx:DataGridColumn headerText="Unit" dataField="Unit" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Write Off" dataField="AdjustedAmount" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Rejected Amount" dataField="RejectedAmount" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Modifier1" dataField="Modifier1" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Modifier2" dataField="Modifier2" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Modifier3" dataField="Modifier3" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Modifier4" dataField="Modifier4" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<!--<mx:DataGridColumn headerText="Service Date From" dataField="ServiceDateFrom" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Service Date To" dataField="ServiceDateTo" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>-->				
+					<itemEditors:DataGridColumnDel headerText="" editable="false" itemRenderer="com.gazuntite.provider.live.services.billing.view.common.itemEditors.EditDeleteItemRender"/>
+				</components:columns>
+			</components1:LabelDataGrid>	
+			<s:HGroup width="100%">
+				<s:Spacer width="100%"/>
+				<s:Button id="id_ApplyPayments" label="Add Payment" width="150" click="id_ApplyPayments_clickHandler(event)" />	
+			</s:HGroup>
+		</s:VGroup>	
+		
+	</s:VGroup>	
+	
+</s:VGroup>

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:document="com.zigron.provider.live.services.documentMgmt.view.document.*"
+		 xmlns:lab="com.gazuntite.provider.live.services.elab.view.lab.*" 
+		 xmlns:LiveGridView="com.zigron.common.view.LiveGridView.*" xmlns:LiveGridView1="com.gazuntite.common.view.LiveGridView.*"
+		 
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.view.LiveGridView.FilterViewForGrid;
+			import com.gazuntite.common.view.LiveGridView.ListOnlyPopup;
+			import com.gazuntite.common.view.events.ListOnlySelectionEvent;
+			import com.gazuntite.provider.live.services.elab.event.ELabsEventString;
+			import com.gazuntite.provider.live.services.elab.model.ELabsAppModelLocator;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			private var popup:ListOnlyPopup;
+			
+			[Bindable]
+			public var model : ELabsAppModelLocator = ELabsAppModelLocator.getInstance();
+			
+			[Bindable]
+			private var m_oDataProvider:ArrayCollection ;
+			
+			[Bindable]
+			public function get DataProvider():ArrayCollection
+			{
+				return m_oDataProvider;
+			}
+			
+			public function set DataProvider(value:ArrayCollection):void
+			{
+				m_oDataProvider = value;			
+			}
+
+			protected function ListOnlyHandler(event:Event):void
+			{
+				if( popup && popup.isPopUp )
+				{
+					popup.removePopup();
+					popup.removeEventListener( ListOnlySelectionEvent.LIST_ONLY_SELECTION, ListOnlySelectionEventHandler );
+					popup = null;
+				}
+				
+				popup = new ListOnlyPopup();
+				//popup.DataProvider = model.LabOrdersListDto;
+				popup.addEventListener( ListOnlySelectionEvent.LIST_ONLY_SELECTION, ListOnlySelectionEventHandler );
+				
+				var pLoc:Point 			= new Point( id_FilterGridView.id_ListOnly.x - 10,
+					id_FilterGridView.y + id_FilterGridView.y + id_FilterGridView.height - 12);
+				var loc:Point 			= this.localToGlobal( pLoc );
+				
+				popup.x 		= loc.x; 
+				popup.y 		= loc.y; 
+				
+				popup.ShowPopup( this );
+			}
+
+			protected function GoToPageHandler(event:Event):void
+			{
+				// TODO Auto-generated method stub
+			}
+
+			protected function RefreshViewHandler(event:Event):void
+			{
+				// TODO Auto-generated method stub
+			}
+
+			protected function EditLabClickHandler(event:Event):void
+			{
+				// TODO Auto-generated method stub
+			}
+
+
+			protected function id_LabsGridView_creationCompleteHandler(event:FlexEvent):void
+			{
+				addEventListener("EditLabClick", EditLabClickHandler);
+			}
+			
+			protected function ListOnlySelectionEventHandler(event:ListOnlySelectionEvent):void
+			{
+				var sel:Object 		= event.selection as Object;
+				var from:String		= event.from;
+				var to:String		= event.to;
+				
+				if( sel || ( from.length > 0 && to.length > 0 ) )
+				{
+					var searchStr:String = ",,";
+					if( sel != null)
+						searchStr = sel.SectionName + "," + from + "," + to ;
+					else 
+						searchStr ="," + from + "," + to ;
+					
+					//var e:* = new SearchEvent( 0 , searchStr, Constant.FIRST_PAGE_NUMBER );
+					//CairngormEventDispatcher.getInstance().dispatchEvent( e );
+					
+					
+				}
+				else
+				{
+					Alert.show( "Please Select Field / Date Range", "Invalid Data", 4, this);
+				}
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+		<s:VerticalLayout gap="0" />
+	</s:layout>
+	
+	<LiveGridView1:FilterViewForGrid id="id_FilterGridView" width="100%"
+									ListOnly="ListOnlyHandler(event)"
+									GoToFirstPage="GoToPageHandler(event)"
+									GoToLastPage="GoToPageHandler(event)"
+									GoToNextPage="GoToPageHandler(event)"
+									GoToPreviousPage="GoToPageHandler(event)"
+									RefreshView="RefreshViewHandler(event)"
+									/>
+	
+	<mx:DataGrid id="id_LabsGridView" width="100%" variableRowHeight="true" styleName="LSGridStyle" headerStyleName="LSGridStyleHeader"
+				 creationComplete="id_LabsGridView_creationCompleteHandler(event)" >  
+		<mx:columns>
+			<mx:DataGridColumn width="50" dataField="isSelected" 		headerText="" textAlign="center" itemRenderer="mx.controls.CheckBox"  rendererIsEditor="true" editorDataField="selected"/>  
+			<mx:DataGridColumn width="100" dataField="Order"  			headerText="Order #"  />
+			<mx:DataGridColumn width="100" dataField="OrderDate" 		headerText="Date" />
+			<mx:DataGridColumn width="120" dataField="PatientFullName" 	headerText="Patient" />
+			<mx:DataGridColumn width="120" dataField="DocumentName" 	headerText="Test" />
+			<mx:DataGridColumn width="120" dataField="ProviderFullName" headerText="Provider" /> 
+			<mx:DataGridColumn width="120" dataField="LabName" 			headerText="Lab"   />
+			<mx:DataGridColumn width="100" dataField="" 				headerText="" >
+				<mx:itemRenderer>
+					<fx:Component>
+						<s:Button label="Edit" click="button1_clickHandler(event)" >
+							<fx:Script>
+								<![CDATA[
+									protected function button1_clickHandler(event:MouseEvent):void
+									{
+										dispatchEvent(new Event("EditLabClick", true, false));
+									}
+								]]>
+							</fx:Script>
+						</s:Button>
+					</fx:Component>
+				</mx:itemRenderer>
+			</mx:DataGridColumn>
+		</mx:columns>
+	</mx:DataGrid>
+	
+</s:Group>

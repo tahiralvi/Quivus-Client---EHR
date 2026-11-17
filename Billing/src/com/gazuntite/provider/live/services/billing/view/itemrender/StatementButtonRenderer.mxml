@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:MXDataGridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						  xmlns:s="library://ns.adobe.com/flex/spark" 
+						  xmlns:mx="library://ns.adobe.com/flex/mx" 
+						  focusEnabled="true"						  						  
+						  >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.provider.live.services.billing.dto.accountsAndReceiveables.PatientStatementDTO;
+			import com.gazuntite.provider.live.services.billing.dto.accountsAndReceiveables.StatementPatientDetailDTO;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.util.BillingPopUpManager;
+			import com.gazuntite.provider.live.services.billing.view.views.accountsAndReceivables.PatientStatementInfoPopup;
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			private var popup:PatientStatementInfoPopup = null;
+			public function id_claimInfo_clickHandler():void
+			{
+				BillingPopUpManager.removeAllSectionPopUps(BillingPopUpManager.ACCOUNTS_STATEMENT_POPUPS);
+				
+				if(popup)
+				{
+					popup.removePopup();
+					popup = null;					
+				}
+				
+				popup = new PatientStatementInfoPopup();
+				var psDTO:PatientStatementDTO =  data as PatientStatementDTO;
+				var pLoc:Point = id_btn.localToGlobal(new Point(id_btn.x ,id_btn.height));
+				if(dataGridListData.columnIndex == 1)	
+				{	
+					popup.SubmissionCount = psDTO.SubmissionCount;
+					popup.LastSubmissionDate = psDTO.LastSubmissionDate;				
+					popup.title = "Claim: " + psDTO.ClaimID;
+				}
+				else
+				{
+					for each (var pdd:StatementPatientDetailDTO in model.StatementPatientDetailList) 
+					{
+						if(psDTO.PatientID == pdd.PatientID)
+						{
+							popup.SubmissionCount = pdd.SubmissionCount;
+							popup.LastSubmissionDate = pdd.LastSubmissionDate;				
+							popup.title = "Guarantor: " + psDTO.Guarantor;
+						}
+					}
+					
+				}
+				popup.x 		= pLoc.x + id_btn.width; 
+				popup.y 		= pLoc.y ;				
+								
+				popup.ShowPopup( this );
+				BillingPopUpManager.addPopUp(popup,BillingPopUpManager.ACCOUNTS_STATEMENT_POPUPS);
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				
+				id_claimInfo_clickHandler();				
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Label id="lblData" top="0" left="0" right="0" bottom="0" text="{dataGridListData.label}" />
+	<s:Button id="id_btn"  width="25" label="i" click="button1_clickHandler(event)" />
+</s:MXDataGridItemRenderer>

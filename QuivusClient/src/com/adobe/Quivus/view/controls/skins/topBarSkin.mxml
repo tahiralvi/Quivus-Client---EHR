@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin  
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:s="library://ns.adobe.com/flex/spark" 
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	width="100%" minHeight="220"
+	>
+
+	<s:states>
+		<s:State name="normal"/><s:State name="normalWithPrompt"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+	</s:states>	
+	
+	<!--<mx:Image source="@Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='topBar')" 
+			  x="5" y="5" alpha="0" height="100%" minHeight="230"  left="0" right="0" top="0" bottom="0"/>-->
+	
+	
+	<s:Group width="100%" alpha="0.01">
+		<s:Path data="M 627 0 L 5 0 C 2.239 0 0 2.239 0 5 L 0 60.855 L 632 60.855 L 632 5 C 632 2.239 629.762 0 627 0 Z" x="0" y="0">
+			<s:fill>
+				<s:LinearGradient rotation="90" scaleX="60" x="0" y="0">
+					<s:GradientEntry color="#484850" ratio="0"/>
+					<s:GradientEntry color="#32323C" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+		</s:Path>
+	</s:Group>
+	
+	<s:Group id="contentGroup" left="0" right="0" top="0" bottom="0">
+		<s:layout>
+			<s:BasicLayout/>
+		</s:layout>
+	</s:Group>
+	
+</s:Skin>

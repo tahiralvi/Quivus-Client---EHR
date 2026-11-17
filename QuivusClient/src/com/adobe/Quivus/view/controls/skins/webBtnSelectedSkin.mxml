@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:flm="http://ns.adobe.com/flame/2008" xmlns:ATE="http://ns.adobe.com/ate/2009" xmlns:lib="assets.graphics.*" xmlns:fc="http://ns.adobe.com/flashcatalyst/2009">
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect height="18" id="rect2" radiusX="2.99979" radiusY="2.99979" visible.disabledAndSelected="false" visible.down="false" visible.downAndSelected="false" visible.over="false" visible.overAndSelected="false" visible.upAndSelected="false" width="90" x="0" y="0" x.up="0" y.up="6" x.over="0" y.over="6" x.down="0" y.down="5" x.upAndSelected="0" y.upAndSelected="4">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#E3E3E3" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#ADADAD" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.7000000000000001" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.2" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="18" id="rect0" includeIn="down,over,up" radiusX="2.99979" radiusY="2.99979" width="90" x="0" visible.up="false" y="0" x.over="0" y.over="6" x.down="0" y.down="5">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#AFD1FF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#6593D5" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.7000000000000001" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.2" alpha.down="1" angle="90" blurX="0" blurX.down="3" blurY="0" blurY.down="3" color="#FFFFFF" color.down="#79A4E0" distance="1" distance.down="3" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="20" id="rect5" includeIn="disabledAndSelected,downAndSelected,overAndSelected,up,upAndSelected" radiusX="2.99979" radiusY="2.99979" width="90" visible.up="false" y="6" x="1">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#E5E5E5" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="0.6941176470588235"/>
+				<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.7000000000000001" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.2" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:RichText color="#141414" fontFamily="Calibri" fontSize="12" tabStops="S0 S50 S100" text="Web" x="27" y="6" x.up="27" y.up="8" x.over="27" y.over="9" x.down="27" y.down="9" x.upAndSelected="27" y.upAndSelected="8" x.overAndSelected="27" y.overAndSelected="8" x.downAndSelected="27" y.downAndSelected="8"/>
+	<s:Path data="M 0 0 L 4.127 3.843 L 8.254 0 L 0 0 Z" height="5" width="8.347" x="77" y="7" includeIn="disabled,disabledAndSelected">
+		<s:fill>
+			<s:SolidColor color="#2B2B2B"/>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.2" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Path>
+	
+</s:Skin>

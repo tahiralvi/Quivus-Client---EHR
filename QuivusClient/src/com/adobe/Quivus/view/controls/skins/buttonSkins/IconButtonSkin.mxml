@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SparkSkin
+	xmlns:fx="http://ns.adobe.com/mxml/2009"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:mx="library://ns.adobe.com/flex/mx" alpha.disabled="0.5"
+	currentStateChanging="onCurrentStateChanging(event)" 
+	>
+	<fx:Metadata>
+		[HostComponent("spark.components.Button")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.StateChangeEvent;
+			
+			private function onCurrentStateChanging(event:StateChangeEvent):void{
+				switch(event.newState){
+					case "up":
+						setIcon("icon");
+						onMouseOut();
+						break;
+					case "over":
+						setIcon("mouseOverIcon");
+						onMouseOver();
+						break;
+					case "down":
+						setIcon("mouseDownIcon");
+						break;
+					case "disabled":
+						setIcon("disabledIcon");
+						break;
+					
+				}
+			}
+			private function setIcon(type:String):void{
+				if(hostComponent.getStyle(type) != null){
+					icon.source = hostComponent.getStyle(type);
+				}
+			}
+			
+			private function onMouseOver():void{
+				label.setStyle("color","#FFFFFF");
+				if(hostComponent.getStyle("textDecoration")!=null)
+					label.setStyle("textDecoration",hostComponent.getStyle("textDecoration"));
+				else
+					label.setStyle("textDecoration","none");
+			}
+			
+			private function onMouseOut():void{
+				label.setStyle("color","#FFFFFF");
+				if(hostComponent.getStyle("textDecoration")!=null)
+					label.setStyle("textDecoration",hostComponent.getStyle("textDecoration"));
+				else
+					label.setStyle("textDecoration","none");
+			}
+			
+		]]>
+	</fx:Script>
+	<s:layout>
+		<s:BasicLayout/>
+	</s:layout>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+	</s:states> 
+	
+	<!--<s:Rect left="0" right="0" top="0" bottom="0" width="69" height="20" radiusX="2" radiusY="2">
+		<s:stroke>
+			<s:SolidColorStroke id="outline" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<mx:LinearGradient>
+				<mx:GradientEntry color="#ffffff" ratio="0"/>
+				<mx:GradientEntry color="#cccccc" ratio="1"/>
+			</mx:LinearGradient>
+		</s:fill>
+	</s:Rect>-->
+	<s:Group id="id_group" horizontalCenter="0" verticalCenter="0">
+		<s:layout>
+			<s:HorizontalLayout verticalAlign="middle"
+				paddingBottom="1"
+				paddingTop="1"
+				paddingLeft="1"
+				paddingRight="1" />
+		</s:layout>
+		<mx:Image 
+			id="icon" 
+			source="{hostComponent.getStyle('icon')}"
+			verticalCenter="0"/>
+		<s:Label id="label" textAlign="left" fontWeight="bold" verticalAlign="middle"
+			text="{hostComponent.label}" mouseOver="onMouseOver()" mouseOut="onMouseOut()"
+			verticalCenter="0" color="#FFFFFF"
+			includeInLayout="{( hostComponent.label != '' )}"
+			visible="{( hostComponent.label != '' )}"/>
+	</s:Group>
+	
+</s:SparkSkin>

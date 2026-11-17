@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:MXTreeItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx"  >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.common.util.xml.XmlConstants;
+			
+			import mx.events.FlexEvent;
+			
+			import com.gazuntite.provider.live.services.administration.dto.RoleRightDTO;
+			import com.gazuntite.provider.live.services.administration.model.AdminAppModelLocator;
+			import com.gazuntite.provider.live.services.administration.view.roleManagement.RoleManagView;
+			
+			
+			[Bindable]
+			public var model : AdminAppModelLocator = AdminAppModelLocator.getInstance();
+			//On view check box change handler
+			protected function checkbox1_changeHandler(event:Event):void
+			{
+				data.IsViewAllowed = event.currentTarget.selected ? XmlConstants.STRING_TRUE:XmlConstants.STRING_FALSE;
+				data.IsDirty  = XmlConstants.STRING_TRUE;
+				
+				
+				if(data.children)
+				{
+					var i:int;
+					for(i=0;i<data.children.length;i++)
+					{
+						data.children[i].IsViewAllowed=data.IsViewAllowed;	
+						data.children[i].IsDirty=data.IsDirty;	
+						//for 2nd level children
+						if(data.children[i].children)
+						{
+							for(var c:uint=0; c<data.children[i].children.length; c++)
+							{
+								data.children[i].children[c].IsViewAllowed=data.IsViewAllowed;	
+								data.children[i].children[c].IsDirty=data.IsDirty;
+								
+								//for 3rd level children
+								if(data.children[i].children[c].children)
+								{
+									for(var d:uint=0; d<data.children[i].children[c].children.length; d++)
+									{
+										data.children[i].children[c].children[d].IsViewAllowed=data.IsViewAllowed;	
+										data.children[i].children[c].children[d].IsDirty=data.IsDirty;
+									}
+								}
+							}
+						}
+					}
+				}
+				/* if(data.IsViewAllowed ==XmlConstants.STRING_TRUE)
+				{
+					if(data.ParentName!="")
+					{
+						
+						var strParentName:String = data.ParentName;
+						var topbar:RoleRightDTO= model.AccessRightDTOList.getItemAt(0) as RoleRightDTO;
+						var PatientExam:RoleRightDTO= model.AccessRightDTOList.getItemAt(1) as RoleRightDTO;
+						
+						
+						
+						if(strParentName==topbar.Name)
+						{
+							topbar.IsViewAllowed=XmlConstants.STRING_TRUE;
+							topbar.IsDirty=XmlConstants.STRING_TRUE;
+						}
+						else if(strParentName==PatientExam.Name)
+						{
+							topbar.IsViewAllowed=XmlConstants.STRING_TRUE;
+							topbar.IsDirty=XmlConstants.STRING_TRUE;							
+						}
+						else
+						{	
+							
+							if(topbar.children)
+							{
+								var i:int;
+								for(i=0;i<topbar.children.length;i++)
+								{
+									if(topbar.children[i].Name==strParentName && topbar.children[i].children)
+									{
+										topbar.children[i].IsViewAllowed=topbar.IsViewAllowed;	
+										topbar.children[i].IsDirty=topbar.IsDirty;																		
+									}
+									else if(topbar.children[i].children)
+									{
+										for(var c:uint=0; c<topbar.children[i].children.length; c++)
+										{
+											if(topbar.children[i].children[c].Name==strParentName && topbar.children[i].children[c].children)
+											{
+												topbar.children[i].children[c].IsViewAllowed=topbar.IsViewAllowed;	
+												topbar.children[i].children[c].IsDirty=topbar.IsDirty;																		
+											}
+											else if(topbar.children[i].children[c].children)
+											{
+												for(var d:uint=0; d<topbar.children[i].children.length; d++)
+												{
+													if(topbar.children[i].children[c].children[d].Name==strParentName && topbar.children[i].children[c].children[d].children)
+													{
+														topbar.children[i].children[c].children[d].IsViewAllowed=topbar.IsViewAllowed;	
+														topbar.children[i].children[c].children[d].IsDirty=topbar.IsDirty;																		
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+							if(PatientExam.children)
+							{
+								var i:int;
+								for(i=0;i<PatientExam.children.length;i++)
+								{
+									if(PatientExam.children[i].Name==strParentName && PatientExam.children[i].children)
+									{
+										PatientExam.children[i].IsViewAllowed=PatientExam.IsViewAllowed;	
+										PatientExam.children[i].IsDirty=PatientExam.IsDirty;																		
+									}
+									else if(PatientExam.children[i].children)
+									{
+										for(var f:int=0; f<PatientExam.children[i].children.length;f++)
+										{
+											if(PatientExam.children[i].children[f].Name==strParentName && PatientExam.children[i].children[f].children)
+											{
+												PatientExam.children[i].children[f].IsViewAllowed=PatientExam.IsViewAllowed;	
+												PatientExam.children[i].children[f].IsDirty=PatientExam.IsDirty;																		
+											}
+											else if(PatientExam.children[i].children[f].children)
+											{
+												for(var g:int=0; g<PatientExam.children[i].children[f].children.length; g++)
+												{
+													if(PatientExam.children[i].children[f].children[g].Name==strParentName && PatientExam.children[i].children[f].children[g].children)
+													{
+														PatientExam.children[i].children[f].children[g].IsViewAllowed=PatientExam.IsViewAllowed;	
+														PatientExam.children[i].children[f].children[g].IsDirty=PatientExam.IsDirty;																		
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+					
+				} */
+				
+			}
+			//On edit check box change handler
+			protected function checkbox2_changeHandler(event:Event):void
+			{
+				data.IsEditAllowed = event.currentTarget.selected ? XmlConstants.STRING_TRUE:XmlConstants.STRING_FALSE;
+				data.IsDirty  = XmlConstants.STRING_TRUE;
+				
+				if(data.children)
+				{
+					var i:int;
+					for(i=0;i<data.children.length;i++)
+					{
+						data.children[i].IsEditAllowed=data.IsEditAllowed;
+						data.IsDirty  = data.IsDirty;
+						
+						//for 2nd level children
+						if(data.children[i].children)
+						{
+							for(var c:uint=0; c<data.children[i].children.length; c++)
+							{
+								data.children[i].children[c].IsEditAllowed=data.IsEditAllowed;	
+								data.children[i].children[c].IsDirty=data.IsDirty;
+								
+								//for 3rd level children
+								if(data.children[i].children[c].children)
+								{
+									for(var d:uint=0; d<data.children[i].children[c].children.length; d++)
+									{
+										data.children[i].children[c].children[d].IsEditAllowed=data.IsEditAllowed;	
+										data.children[i].children[c].children[d].IsDirty=data.IsDirty;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			//On sign check box change handler
+			protected function checkbox3_changeHandler(event:Event):void
+			{
+				data.IsSignAllowed = event.currentTarget.selected ? XmlConstants.STRING_TRUE:XmlConstants.STRING_FALSE;
+				data.IsDirty  = XmlConstants.STRING_TRUE;
+				
+				if(data.children)
+				{
+					var i:int;
+					for(i=0;i<data.children.length;i++)
+					{
+						data.children[i].IsSignAllowed=data.IsSignAllowed;
+						data.IsDirty  = data.IsDirty;
+					}
+				}
+			}
+			//On import check box change handler
+			protected function checkbox4_changeHandler(event:Event):void
+			{
+				data.IsImportAllowed = event.currentTarget.selected ? XmlConstants.STRING_TRUE:XmlConstants.STRING_FALSE;
+				data.IsDirty  = XmlConstants.STRING_TRUE;
+				
+				if(data.children)
+				{
+					var i:int;
+					for(i=0;i<data.children.length;i++)
+					{
+						data.children[i].IsImportAllowed=data.IsImportAllowed;
+						data.IsDirty  = data.IsDirty;
+					}
+				}
+			}
+			
+			
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+		<s:HorizontalLayout />
+	</s:layout>
+	
+	<s:Rect id="indentationSpacer" width="{treeListData.indent}" percentHeight="100" alpha="0">
+		<s:fill>
+			<s:SolidColor color="0xFFFFFF" />
+		</s:fill>
+	</s:Rect>
+	
+	<s:Group id="disclosureGroup">
+		<s:BitmapImage source="{treeListData.disclosureIcon}" visible="{treeListData.hasChildren}" />
+	</s:Group>
+	
+	<s:BitmapImage source="{treeListData.icon}" />
+	
+	<s:Label id="labelField" text="{treeListData.label}" paddingTop="2" width="185" fontFamily="Calibri" fontSize="12" />
+	
+	<s:Group id="spacer" width="100%" />
+	
+	<s:CheckBox label="View" toolTip="View" selected="{data.IsViewAllowed == XmlConstants.STRING_TRUE ? true:false}" width="60" change="checkbox1_changeHandler(event)" buttonMode="true" useHandCursor="true"/>
+	<s:CheckBox label="Edit" toolTip="Edit" selected="{data.IsEditAllowed == XmlConstants.STRING_TRUE ? true:false}" width="60" change="checkbox2_changeHandler(event)" buttonMode="true" useHandCursor="true"/>
+	<s:CheckBox id="id_Sign" toolTip="Sign" label="Sign" selected="{data.IsSignAllowed == XmlConstants.STRING_TRUE ? true:false}" width="60" change="checkbox3_changeHandler(event)" buttonMode="true" useHandCursor="true"
+				visible="{data.IsSignAllowed}" includeInLayout="{id_Sign.visible}"/>
+	<s:CheckBox id="id_Import" toolTip="Import" label="Import" selected="{data.IsImportAllowed == XmlConstants.STRING_TRUE ? true:false}" width="60" change="checkbox4_changeHandler(event)" buttonMode="true" useHandCursor="true"
+				visible="{data.IsImportAllowed}" includeInLayout="{id_Import.visible}"/>
+	
+</s:MXTreeItemRenderer>

@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:CollapsiblePanel xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 title="Other Details"
+		 xmlns:d="http://ns.adobe.com/fxg/2008/dt" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:components1="com.gazuntite.controls.extended.components.*" >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.TransparentCollapsiblePanelSkin;
+			
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var _isData:String;
+
+			[Bindable]
+			public function get isData():String
+			{
+				return _isData;
+			}
+
+			public function set isData(value:String):void
+			{
+				_isData = value;
+				if(model.patientProfileDTO._PatientDTO.RaceType.RaceName.length >0)
+					hasChange = true;
+				if(model.patientProfileDTO._PatientDTO.MotherMaidenName.length >0)
+					hasChange = true;
+				if(model.patientProfileDTO._PatientDTO.FatherName.length >0)
+					hasChange = true;
+				if(model.patientProfileDTO._PatientDTO.OccupationType.OccupationName.length >0)
+					hasChange = true;
+				if(model.patientProfileDTO._PatientDTO.EthinicityType.EthinicityName.length >0)
+					hasChange = true;
+				if(model.motherPrimaryPhoneDTO.PhoneNumber.length >0)
+					hasChange = true;
+				if(model.fatherPrimaryPhoneDTO.PhoneNumber.length >0)
+					hasChange = true;
+				if(model.patientProfileDTO._PatientDTO.EmployerName.length >0)
+					hasChange = true;
+				if(model.patientProfileDTO._PatientDTO.MaritalStatusType.MaritalStatusName.length >0)
+					hasChange = true;
+				if(model.patientLanguageDTO.PatientLanguageAbilityMode.LangaugeAbilityModeDescription.length >0)
+					hasChange = true;
+				if(model.patientlanguage.length >0)
+					hasChange = true;
+				if(model.patientProfileDTO._PatientDTO.MedicareNumber.length >0)
+					hasChange = true;
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Binding source="model.patientProfileDTO._PatientDTO.RaceType.RaceName" destination="isData" />
+	<fx:Binding source="model.patientProfileDTO._PatientDTO.MotherMaidenName" destination="isData" />
+	<fx:Binding source="model.patientProfileDTO._PatientDTO.FatherName" destination="isData" />
+	<fx:Binding source="model.patientProfileDTO._PatientDTO.OccupationType.OccupationName" destination="isData" />
+	<fx:Binding source="model.patientProfileDTO._PatientDTO.EthinicityType.EthinicityName" destination="isData" />
+	<fx:Binding source="model.motherPrimaryPhoneDTO.PhoneNumber" destination="isData" />
+	<fx:Binding source="model.fatherPrimaryPhoneDTO.PhoneNumber" destination="isData" />
+	<fx:Binding source="model.patientProfileDTO._PatientDTO.EmployerName" destination="isData" />
+	<fx:Binding source="model.patientProfileDTO._PatientDTO.MaritalStatusType.MaritalStatusName" destination="isData" />
+	<fx:Binding source="model.patientLanguageDTO.PatientLanguageAbilityMode.LangaugeAbilityModeDescription" destination="isData" />
+	<fx:Binding source="model.patientlanguage" destination="isData" />
+	<fx:Binding source="model.patientProfileDTO._PatientDTO.MedicareNumber" destination="isData" />
+	
+	
+	
+	<components1:layout >
+		<s:VerticalLayout paddingBottom="5" paddingLeft="5" paddingRight="5" gap="0" />
+	</components1:layout >
+	<!--<s:SkinnableContainer width="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.headingBG">
+		<s:Label text="OTHER INFORMATION" fontFamily="Calibri Bold" fontSize="12" color="#303841" paddingLeft="5" paddingTop="8" />
+	</s:SkinnableContainer>
+	<mx:Spacer height="2" />-->
+	<s:HGroup gap="0" width="100%" paddingBottom="5" paddingRight="5" paddingLeft="5">
+		<s:SkinnableContainer width="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.otherInfoSectionBG">
+			<s:layout>
+				<s:HorizontalLayout paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="2" />
+			</s:layout>	
+			<s:VGroup width="100%" maxWidth="95" gap="7" >
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" id="textDisplay15" tabStops="S0 S50 S100 S150" text="Race:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" id="textDisplay21" tabStops="S0 S50 S100 S150" text="Mother's M Name:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" id="textDisplay27" tabStops="S0 S50 S100 S150" text="Father's Name:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12" id="textDisplay0" tabStops="S0 S50 S100 S150" text="Occupation:" />
+			</s:VGroup>
+			
+			<s:VGroup width="100%" maxWidth="95" horizontalAlign="left" gap="7" >
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" text="{model.patientProfileDTO._PatientDTO.RaceType.RaceName}" toolTip="{model.patientProfileDTO._PatientDTO.RaceType.RaceName}" maxDisplayedLines="1" maxWidth="90" />
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" text="{model.patientProfileDTO._PatientDTO.MotherMaidenName}" toolTip="{model.patientProfileDTO._PatientDTO.MotherMaidenName}" maxDisplayedLines="1" maxWidth="90" />
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" text="{model.patientProfileDTO._PatientDTO.FatherName}" toolTip="{model.patientProfileDTO._PatientDTO.FatherName}" maxDisplayedLines="1" maxWidth="90" />
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12" lineBreak="toFit" text="{model.patientProfileDTO._PatientDTO.OccupationType.OccupationName}" toolTip="{model.patientProfileDTO._PatientDTO.OccupationType.OccupationName}" maxDisplayedLines="1" maxWidth="90" />
+			</s:VGroup>	
+		</s:SkinnableContainer>
+		<s:SkinnableContainer width="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.otherInfoSectionBG">
+			<!--  skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.patientProfileColumnBG">-->
+			<s:layout>
+				<s:HorizontalLayout paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5" />
+			</s:layout>
+			<s:VGroup width="100%" maxWidth="70" gap="7">
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  text="Ethencity:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  text="Phone:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  text="Phone:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  text="Employer:" />
+			</s:VGroup>
+			<s:VGroup width="100%" maxWidth="100" horizontalAlign="left" gap="7">
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12"  text="{model.patientProfileDTO._PatientDTO.EthinicityType.EthinicityName}" toolTip="{model.patientProfileDTO._PatientDTO.EthinicityType.EthinicityName}" maxDisplayedLines="1" maxWidth="95"/>
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12"  text="{ValidationUtils.setPhoneNumberMasking(model.motherPrimaryPhoneDTO.PhoneNumber)}" toolTip="{ValidationUtils.setPhoneNumberMasking(model.motherPrimaryPhoneDTO.PhoneNumber)}" maxDisplayedLines="1" maxWidth="95"/>
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12"  text="{ValidationUtils.setPhoneNumberMasking(model.fatherPrimaryPhoneDTO.PhoneNumber)}" toolTip="{ValidationUtils.setPhoneNumberMasking(model.fatherPrimaryPhoneDTO.PhoneNumber)}" maxDisplayedLines="1" maxWidth="95"/>
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12"  text="{model.patientProfileDTO._PatientDTO.EmployerName}" toolTip="{model.patientProfileDTO._PatientDTO.EmployerName}" maxDisplayedLines="1" maxWidth="95"/>
+			</s:VGroup>
+		</s:SkinnableContainer>
+		<s:SkinnableContainer width="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.otherInfoSectionBG">
+			<s:layout>
+				<s:HorizontalLayout paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5" />
+			</s:layout>
+			<s:VGroup width="100%" maxWidth="75" gap="7" >
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  text="Marital Status:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  text="Ability:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  text="Language:" />
+				<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  text="Medicare #" />
+			</s:VGroup>
+			
+			<s:VGroup width="100%" maxWidth="95" horizontalAlign="left" paddingRight="5" gap="7" >
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12"  text="{model.patientProfileDTO._PatientDTO.MaritalStatusType.MaritalStatusName}" toolTip="{model.patientProfileDTO._PatientDTO.MaritalStatusType.MaritalStatusName}" maxDisplayedLines="1" maxWidth="95"/>
+				<s:Label id="id_ability" color="#000000" fontFamily="Calibri" fontSize="12"  text="{model.patientLanguageDTO.PatientLanguageAbilityMode.LangaugeAbilityModeDescription}" toolTip="{model.patientLanguageDTO.PatientLanguageAbilityMode.LangaugeAbilityModeDescription}" maxDisplayedLines="1" maxWidth="95"/>
+				<s:Label id="id_language" color="#000000" fontFamily="Calibri" fontSize="12"  text="{model.patientlanguage}" toolTip="{model.patientlanguage}" maxDisplayedLines="1" maxWidth="95"/>
+				<s:RichText color="#000000" fontFamily="Calibri" fontSize="12"  text="{model.patientProfileDTO._PatientDTO.MedicareNumber}" toolTip="{model.patientProfileDTO._PatientDTO.MedicareNumber}" maxDisplayedLines="1" maxWidth="95"/>
+			</s:VGroup>
+		</s:SkinnableContainer>
+		
+	</s:HGroup>
+	
+</components1:CollapsiblePanel>

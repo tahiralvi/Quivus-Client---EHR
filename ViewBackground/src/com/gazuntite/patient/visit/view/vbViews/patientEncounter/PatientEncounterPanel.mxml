@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				xmlns:buttonSeparators="com.adobe.gazuntite.skins.chrome.buttonSeparators.*" 
+				xmlns:patientEncounter="com.gazuntite.patient.visit.view.vbViews.patientEncounter.*"
+				>
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			
+			[Bindable]
+			private var model:VBModelLocator = VBModelLocator.getInstance();
+			
+			
+			public function ScrollUp(event:MouseEvent = null):void
+			{
+				id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition + 15;
+			}
+			
+			public function ScrollDown(event:MouseEvent = null):void
+			{
+				id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition - 15;
+			}
+		
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+	</fx:Declarations>
+	
+	<!--<custom:HeaderContents>-->
+		<s:SkinnableContainer id="id_header" width="100%" height="23" skinClass="com.adobe.gazuntite.skins.viewBackground.VBInternalHeaderBarSkin">
+			<s:layout>
+				<s:HorizontalLayout horizontalAlign="left" verticalAlign="middle" />
+			</s:layout>
+			
+			<s:HGroup paddingLeft="5">
+				<s:Label id="id_HeaderLabel" text="PATIENT ENCOUNTER" color="#4A3824" fontFamily="Calibri Bold" fontSize="12"/>
+			</s:HGroup>
+			<s:HGroup width="100%" horizontalAlign="right" paddingRight="2" gap="0">
+				<buttonSeparators:buttonSeparator/>
+				<s:HGroup paddingTop="-2">
+					<s:ToggleButton id="id_expandBtn" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.expandButton_grey" selected="true" 
+									buttonMode="true" useHandCursor="true" toolTip="{id_expandBtn.selected?'Collapse':'Expand'}"
+									width="23" height="23" />
+				</s:HGroup>
+				
+			</s:HGroup>	
+		</s:SkinnableContainer>
+	<!--</custom:HeaderContents>-->
+	
+	<!--<custom:Contents>-->
+		<s:BorderContainer id="id_contents" width="100%" height="100%" backgroundAlpha="0" backgroundColor="#E0DFCB" borderVisible="false" >
+			<s:layout>
+				<s:HorizontalLayout horizontalAlign="left" verticalAlign="middle" paddingBottom="2" />
+			</s:layout>
+			<s:Scroller id="id_Scroller" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off" >
+				<patientEncounter:PatientEncounterView id="id_PatientEncounterView" 
+													   width="100%" height="100%" minHeight="175" DataProvider="{model.patientEncounterList}" />
+			</s:Scroller>
+		</s:BorderContainer>
+	<!--</custom:Contents>-->
+	
+</s:Group>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false" >
+	
+	
+	<!--<s:layout>
+		<s:VerticalLayout gap="1"/>
+	</s:layout>
+	-->
+	
+	<s:states>
+		<s:State name="normal" />
+		<s:State name="hovered" />
+		<s:State name="selected" />
+	</s:states>
+	<s:Path data="M 0 0 L 0 20 L 139.692 20 L 145.818 10 L 139.692 0" width="100%" includeIn="selected" winding="nonZero" height="19">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#FFD2BE" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#FFB4A0" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="3" blurY="3" color="0x000000" distance="0" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Path>
+	<!--<s:Rect left="0" right="0" top="0" bottom="0" width="100%"  includeIn="selected">
+		<s:fill>
+			<s:SolidColor  color="#333333"  />
+		</s:fill>
+	</s:Rect>-->
+	<s:HGroup width="100%">
+		<!--<s:Label color="#333333" id="id_Name" text="{ data.FirstName + ' ' + data.MiddleName + ' ' + data.LastName }" 
+				 fontFamily="Calibri" fontSize="12" verticalAlign="middle" 
+				 maxDisplayedLines="1" width="100%" />--> 
+		<s:Label color="#333333" id="id_Name"   text="{ data.ProviderCompleteName }"  
+				 fontFamily="Calibri" fontSize="12" height="19" verticalAlign="middle"
+				 maxDisplayedLines="1"  typographicCase.selected="uppercase"   />
+	</s:HGroup>
+	</s:ItemRenderer>

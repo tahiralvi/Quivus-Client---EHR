@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="group1_creationCompleteHandler(event)" xmlns:components="com.gazuntite.controls.extended.components.*" 
+		 xmlns:itemEditors="com.gazuntite.common.view.itemEditors.*" xmlns:grid="com.gazuntite.common.view.components.grid.*"
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.QIWriteNotesSelected;
+			import com.gazuntite.common.util.LoggingUtil;
+			import com.gazuntite.common.view.events.DataGridActionsEvent;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			
+			import mx.events.FlexEvent;
+			import mx.logging.ILogger;
+			
+			[Bindable]
+			public var model:VBModelLocator = VBModelLocator.getInstance();
+			private var logger:ILogger = LoggingUtil.getLogger( this );
+			
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_DataGrid.addEventListener(DataGridActionsEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+				id_DataGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				id_DataGrid.addEventListener(DataGridActionsEvent.ITEM_EDIT_KEY_UP, itemEditKeyUpHandler, false, 0, true);
+			}
+			
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				/* if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_FOLLOW_UP ) )//Tahir Alvi - implement security check 
+				{
+					var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+					
+					if (curTar.selectedItem)
+					{
+						var followUpInstructionID:int = PatientFollowupMergedDTO(curTar.selectedItem).PatientFollowUpMergeID;
+						
+						if (followUpInstructionID == 0)
+						{
+							model.quickInputDTO.Assessment.PatientFollowupMerged.removeItemAt(curTar.selectedIndex);
+							
+							if (model.quickInputDTO.Assessment.PatientFollowupMerged.length <= 0)
+							{
+								_hasGridChanged = false;
+								hasViewChanged = isGetEdited();
+							}
+						}
+						else
+						{
+							UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+							{
+								id_DataGrid.selectedItem.IsDeleted = true;
+								model.quickInputDTO.Assessment.PatientFollowupMerged.filterFunction = filterDeletedItems;
+								model.quickInputDTO.Assessment.PatientFollowupMerged.refresh();
+								
+								hasViewChanged = _hasGridChanged = true;
+							});
+						}
+					}
+					
+				} */
+			}
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			private function itemEditKeyUpHandler(event:DataGridActionsEvent):void
+			{
+				/* if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_FOLLOW_UP ) )//Tahir Alvi - implement security check 
+				{
+					
+					
+					//var lblFld:String = SparkComboBoxItemEditor(event.target).labelField;
+					
+					/* if (lblFld == "Dose")
+					{
+					if( event.searchString.length > 2 )
+					{
+					var doseEvent : LoadImmunizationDoseStaticDataEvent = new LoadImmunizationDoseStaticDataEvent( event.searchString );
+					CairngormEventDispatcher.getInstance().dispatchEvent( doseEvent );					
+					}
+					}
+					else if (lblFld == "LotNumber")
+					{
+					if( event.searchString.length > 0 )
+					{
+					var lotNumberEvent : LoadImmunizationLotNumberStaticDataEvent = new LoadImmunizationLotNumberStaticDataEvent( event.searchString );
+					CairngormEventDispatcher.getInstance().dispatchEvent( lotNumberEvent );					
+					}
+					}
+				} */
+			}
+			
+			private function editRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				/* if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_FOLLOW_UP ) )//Tahir Alvi - implement security check 
+				{
+					id_DataGrid.editable = true;
+					var rowIndex:int = id_DataGrid.selectedIndex;
+					var itemToSetInEditableMode:IListItemRenderer = id_DataGrid.indexToItemRenderer(rowIndex);
+					
+					var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+					ev.columnIndex = 2;
+					ev.rowIndex = rowIndex;
+					ev.itemRenderer = itemToSetInEditableMode;
+					ev.dataField = "DateAdmin";
+					id_DataGrid.dispatchEvent(ev);
+					
+				} */
+			}
+			
+			
+			public function TypeLabelFunction(item:Object/*PatientFollowupMergedDTO*/,iCol:int) : String
+			{		
+				if( item.IsByDate )
+					return item.FollowUpDate ;
+				else if( item.IsOnCompletion )
+				{
+					if( item.IsDrugselected )
+						return item.DrugID.toString();// provide name
+					else if( item.IsLabTestSelected )
+						return item.LabTestID.toString(); //provide name
+				}
+				return "";
+			}
+			
+			
+			public function NatureLabelFunction(item:Object/*PatientFollowupMergedDTO*/, iCol:int):String
+			{
+				if( item.IsAcute )
+					return "Acute";
+				if( item.IsChronic )
+					return "Chronic";
+				if( item.IsPreventive )
+					return "Preventive";
+				
+				return "";
+			}
+			
+			public function frequencyLabelFunction(item:Object, iCol:int):String
+			{
+				var label:String = "";
+				var freq:Object/*PatientFollowupMergedDTO*/ = item;//PatientFollowupMergedDTO(item);
+				
+				if (freq.IsAgeSelected)
+				{
+					if (freq.AgeTypeDTO && freq.AgeTypeDTO.AgeTypeName)
+						label += freq.AgeTypeDTO.AgeTypeName + " " ;
+					
+					if (freq.AgeValueTypeDTO && freq.AgeValueTypeDTO.AgeValueTypeName)
+						label += freq.AgeValueTypeDTO.AgeValueTypeName;
+				}
+				else if (freq.IsDurationSelected)
+				{
+					if (!isNaN(freq.AfterDurationValue))
+						label += "After " + freq.AfterDurationValue + " ";
+					
+					if (freq.AfterInstructionDurationTypeDTO && freq.AfterInstructionDurationTypeDTO.DurationTypeName)
+						label += freq.AfterInstructionDurationTypeDTO.DurationTypeName + " ";
+					
+					if (!isNaN(freq.ForDurationValue))
+						label += "for " + freq.ForDurationValue + " ";
+					
+					if (freq.ForInstructionDurationTypeDTO && freq.ForInstructionDurationTypeDTO.DurationTypeName)
+						label += freq.ForInstructionDurationTypeDTO.DurationTypeName;
+				} 
+				
+				return label;
+			}
+			
+			public function displayRowNum(oItem:Object,iCol:int):String
+			{
+				var rowNumber:int = id_DataGrid.dataProvider.getItemIndex(oItem) + 1;
+				return String(rowNumber);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+	</fx:Declarations>
+	
+	<components:LabelDataGrid  id="id_DataGrid" width="100%" 
+							   dataProvider="{model.followUpDTOListByPatientId}" 
+							   rowCount="{id_DataGrid.dataProvider.length + 1}"
+							   editable="true"
+							   styleName="QIGrid" 
+							   headerBackgroundSkin="com.adobe.gazuntite.skins.chrome.dataGridSkins.DataGridHeaderBlueSkin"
+							   headerSeparatorSkin="com.adobe.gazuntite.skins.chrome.dataGridSkins.DatagridHeaderSeparatorSkin"
+							   minHeight="70" maxHeight="250"
+							   horizontalScrollPolicy="on" verticalScrollPolicy="on"
+							   columnWidths="{[30,80, 80, '40%', '8%', '8%', '12%']}"
+							   visible="{id_DataGrid.dataProvider.length > 0? true: false}" 
+							   includeInLayout="{id_DataGrid.dataProvider.length > 0? true: false}"
+							   >
+		<components:columns>
+			<mx:DataGridColumn headerText="Sr.#" width="30" editable="false" labelFunction="displayRowNum" headerWordWrap="true" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Type" width="60" dataField="IsByDate" editable="false" labelFunction="TypeLabelFunction" />
+			<mx:DataGridColumn headerText="Method" width="60" dataField="FollowUpMethodType.MethodName" editable="false" />
+			<mx:DataGridColumn headerText="Service"  dataField="objServiceTypeDTO.FollowupService" headerWordWrap="true" wordWrap="true">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:ComboBoxItemEditor labelField="FollowupServiceTypeName"/><!--dataProvider="{outerDocument.model.serviceTypeDTOList}"-->
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Frequency" headerWordWrap="true" wordWrap="true" width="100" labelFunction="frequencyLabelFunction" />
+			<mx:DataGridColumn headerText="Nature" headerWordWrap="true" wordWrap="true" width="60" labelFunction="NatureLabelFunction" />
+			<grid:DataGridColumnEx itemRenderer="com.gazuntite.patient.visit.view.itemrenderer.VBRenderer" editable="false"/>
+		</components:columns>	
+	</components:LabelDataGrid>
+</s:Group>

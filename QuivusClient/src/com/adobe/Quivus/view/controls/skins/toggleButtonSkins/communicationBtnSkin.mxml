@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009">
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect alpha.up="0.2" height="20" radiusX="3.99972" visible.disabledAndSelected="false" visible.downAndSelected="false" visible.disabled="false" 
+			visible.overAndSelected="false" visible.up="false" visible.upAndSelected="false" width="45" x="0" y="0" radiusX.over="2" radiusY.downAndSelected="4.24904" radiusY.disabledAndSelected="4.24904" radiusY.overAndSelected="4.24904" radiusY.upAndSelected="4.24904" radiusY.up="4.24904" radiusX.down="2" radiusX.disabled="2">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#565656" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#292929" ratio="0.47058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#4A4A4A" ratio="0.5058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#737373" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:stroke>
+			<s:LinearGradientStroke caps="none" joints="miter" miterLimit="4" rotation="90" weight="1">
+				<s:GradientEntry alpha="1" color="#727272" ratio="0"/>
+				<s:GradientEntry alpha="1" color="#000000" ratio="0.5058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#727272" ratio="1"/>
+			</s:LinearGradientStroke>
+		</s:stroke>
+	</s:Rect>
+	<s:Rect alpha="0.25" height="20" includeIn="up" radiusX="2" width="44" x="0.5" y="0.5" visible="false">
+		<s:filters>
+		</s:filters>
+		<s:fill>
+			<s:SolidColor color="#FFFFFF"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#FFFFFF" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Rect height="20" id="rect5" includeIn="disabledAndSelected,downAndSelected,overAndSelected,up,upAndSelected" radiusX="2.99979" visible.up="false" width="45" x="0" y="0" radiusX.upAndSelected="2" radiusY.up="2.99979" radiusX.overAndSelected="2" radiusX.downAndSelected="2" radiusX.disabledAndSelected="2">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#CDC3D8" ratio="0.27450980392156865"/>
+				<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.7000000000000001" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.2" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:BitmapImage smooth="true" includeIn="up, over, down, upAndSelected, overAndSelected, downAndSelected" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/communicationicon_black.png')" x="7" y="2"/>
+	<s:BitmapImage includeIn="disabled, disabledAndSelected" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/communicationicon_grey.png')" x="7" y="2"/>
+</s:Skin>
+
+
+
+

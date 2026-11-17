@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:CollapsiblePanel xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							 xmlns:d="http://ns.adobe.com/fxg/2008/dt" 
+							 title="Insurance"
+							 xmlns:mx="library://ns.adobe.com/flex/mx"
+							 hasChange="{model.patientProfileDTO.PatientInsuranceList.length >0 ? true:false}" 
+							 xmlns:components1="com.gazuntite.controls.extended.components.*"
+							 >
+	<fx:Declarations>
+		<mx:DateFormatter id="id_dateformater" formatString="MM-DD-YY" />
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			
+			import mx.controls.Label;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			//--Tahir Alvi -  Label function for DOB
+			public function getDate(item:Object,column:DataGridColumn):String
+			{
+				if(!item.InsuredPersonDOB)
+					return '';
+				var dob:String = item.InsuredPersonDOB;
+				dob            = id_dateformater.format(dob).toString();
+				return dob;
+			}
+			//--Tahir Alvi -  Label function for Start Date
+			private function getSDate(item:Object,column:DataGridColumn):String
+			{
+				if(!item.StartDate)
+					return '';
+				var dob:String = item.StartDate;
+				dob            = id_dateformater.format(dob).toString();
+				return dob;
+			}
+			//--Tahir Alvi -  Label function for End Date
+			private function getEDate(item:Object,column:DataGridColumn):String
+			{
+				if(!item.EndDate)
+					return '';
+				var dob:String = item.EndDate;
+				dob            = id_dateformater.format(dob).toString();
+				return dob;
+			}
+			
+		]]>
+	</fx:Script>
+	<components1:layout>
+		<s:VerticalLayout verticalAlign="middle" paddingBottom="5" paddingLeft="5" paddingRight="5"  paddingTop="5" />
+	</components1:layout>
+	<s:Label text="There are no entries/data" fontFamily="Calibri" fontSize="13"  fontWeight="bold" verticalAlign="top" visible="{!id_InsuranceList.visible}" includeInLayout="{!id_InsuranceList.includeInLayout}"/>
+	<components1:LabelDataGrid id="id_InsuranceList" width="100%"
+							  dataProvider="{model.patientProfileDTO.PatientInsuranceList}"
+							  rowCount="{id_InsuranceList.dataProvider.length +1}"
+							  visible="{model.patientProfileDTO.PatientInsuranceList.length >0 ? true:false}"
+							  includeInLayout="{id_InsuranceList.visible}"
+							  rowHeight="23" sortableColumns="false" horizontalScrollPolicy="off" verticalScrollPolicy="off"
+							  columnWidths="{['10%','10%', '10%', '10%','10%', '10%', '10%','10%', '10%','10%']}" >
+		<components1:columns>
+			<mx:DataGridColumn headerText="Insurance Type"  dataField="InsuranceType.InsuranceTypeName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Insurance company" dataField="InsuranceOrganization.InsuranceOrganizationName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Policy Number" dataField="PolicyNumber" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Group Number" dataField="GroupNumber" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Plan" dataField="InsurancePlan" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Start Date" dataField="StartDate" labelFunction="getSDate" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="End Date" dataField="EndDate" labelFunction="getEDate" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Name" dataField="InsuredPersonName"/>
+			<mx:DataGridColumn headerText="Gender" dataField="InsuredPersonGender.GenderName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="DOB" dataField="InsuredPersonDOB" labelFunction="getDate" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+		</components1:columns>
+	</components1:LabelDataGrid>
+</components1:CollapsiblePanel>

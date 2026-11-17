@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:MXDataGridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						  xmlns:s="library://ns.adobe.com/flex/spark" 
+						  xmlns:mx="library://ns.adobe.com/flex/mx" 
+						  focusEnabled="true">
+	<s:Label id="lblData" top="0" left="0" right="0" bottom="0" text="{dataGridListData.label}" />
+	
+	<fx:Script>
+		<![CDATA[
+			
+			import com.gazuntite.provider.live.services.billing.view.event.DataGridActionEvent;
+			
+			private var headerField:String;			
+			private var statusFunction:Function;
+			
+			private var section:String;
+			
+			override public function set data(value:Object):void
+			{
+				super.data = value;			
+				
+			}
+			
+			
+			private function deriveComplexData(field:String):*	
+			{
+				var currentObj:*;
+				
+				if (field)
+				{
+					var arr:Array = [field];
+					
+					if (field.indexOf(".") != -1)
+					{
+						arr = field.split(".");
+						field = arr[arr.length - 1];
+					}
+					
+					currentObj = data
+					
+					if (currentObj)
+					{
+						for (var i:int = 0; i < arr.length; i++)
+						{
+							currentObj = currentObj[arr[i]];
+						}
+					}
+				}
+				
+				return currentObj;
+			}
+			
+			
+			private function onEditClick(event:MouseEvent):void
+			{
+				dispatchEvent(new DataGridActionEvent(DataGridActionEvent.EDIT_RECORD_CLICK, true));
+			}			
+			
+		]]>
+	</fx:Script>			
+		<s:Button id="id_Edit" width="20" height="20" click="onEditClick(event)"
+				  label="E"
+				  buttonMode="true" toolTip="Edit"/>		
+</s:MXDataGridItemRenderer>

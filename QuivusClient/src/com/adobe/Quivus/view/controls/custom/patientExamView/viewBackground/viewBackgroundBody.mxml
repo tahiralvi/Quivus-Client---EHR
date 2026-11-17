@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:viewBackground="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.*" 
+		 xmlns:patientEncounter="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.patientEncounter.*" 
+		 xmlns:vbTabSection="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.*" 
+		 xmlns:document="com.gazuntite.provider.live.services.documentMgmt.view.document.*"
+		 creationComplete="group1_creationCompleteHandler(event)" 
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.viewBackground.document.SearchPatientDocumentByPatientIdEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.QuivusCombineEventDispatcher;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBBGSkin;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			import valueObjects.PatientDocumentDTO;
+			
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			
+			protected function ScrollUp(event:MouseEvent):void
+			{
+				
+				//id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition + 15;
+				// id_viewBackgroundBody.id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition + 15;
+				/* id_PatientEncounterPanel.ScrollUp(event);
+				id_backgroundTabView.id_PMHView.ScrollUp(); */
+				
+				
+				//id_viewBackgroundBody.id_backgroundTabView.id_PMHView(event);
+				/* switch( id_backgroundTabView.id_VBViews.selectedIndex )
+				{
+				case 0:
+				id_backgroundTabView.id_PMHView.ScrollUp();
+				break;
+				case 1:
+				id_backgroundTabView.id_physicalView.ScrollUp();
+				break;
+				case 2:
+				id_backgroundTabView.id_assesment.ScrollUp();
+				break;
+				} */
+			}
+			protected function ScrollDown(event:MouseEvent):void
+			{
+				
+				//id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition - 15;
+				
+				/* 
+				id_PatientEncounterPanel.ScrollDown(event);
+				id_backgroundTabView.id_PMHView.ScrollDown(); */
+				
+				//id_viewBackgroundBody.id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition - 15;
+				
+				/* switch( id_backgroundTabView.id_VBViews.selectedIndex )
+				{
+				case 0:
+				id_backgroundTabView.id_PMHView.ScrollDown();
+				break
+				case 1:
+				id_backgroundTabView.id_physicalView.ScrollDown();
+				break
+				case 2:
+				id_backgroundTabView.id_assesment.ScrollDown();
+				break
+				}	 */		
+			} 
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				//ToggleDocumentView();
+			} 
+			
+			
+			protected function id_PatientEncounterPanel_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( event.viewState == QSViewStateEvent.EXPANDED_VIEW )
+				{
+					//id_PatientEncounterPanel.id_HeaderLabel.text = id_PatientEncounterPanel.id_HeaderLabel.text.toUpperCase();
+				}
+				else
+				{
+					//id_PatientEncounterPanel.id_HeaderLabel.text = AppUtils.TitleCase( id_PatientEncounterPanel.id_HeaderLabel.text );
+				}
+			}
+			
+			/* private function ToggleDocumentView():void
+			{
+			if(id_DocumentGridView.visible)
+			{
+			id_DocumentGridView.visible 		= false;
+			id_DocumentGridView.includeInLayout = false;
+			
+			}
+			else
+			{
+			
+			id_DocumentGridView.visible 		= true;
+			id_DocumentGridView.includeInLayout = true;					
+			}
+			}
+			
+			*/
+			
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				//id_backgroundTabView.id_VBViews.selectedIndex = 0;
+			}
+			
+			public function InitComponent():void
+			{
+				//id_backgroundTabView.InitComponent();				
+			}
+			
+		]]>
+	</fx:Script>
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="center" gap="-2" paddingBottom="-2"  />
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+			
+	<s:SkinnableContainer id="sc_Vb" width="100%" height="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBBodySkin"
+						  visible="{model.securityProxyObject.PatientExam.ViewBackground.IsViewAllowed}" includeInLayout="{sc_Vb.visible}">
+		<s:layout>
+			<s:VerticalLayout verticalAlign="top" horizontalAlign="center" gap="-4" paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5" />
+		</s:layout>
+		
+		<s:HGroup width="100%" horizontalAlign="left"  paddingLeft="10" >
+			
+			<s:TabBar id="id_TabBar" dataProvider="{id_VBViews}" minWidth="375" maxWidth="420" width="100%" buttonMode="true" 				  
+					  skinClass="com.adobe.Quivus.view.controls.skins.TabBarSkins.VBMainTabs" />
+			
+			<!--	<s:SkinnableContainer width="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBTopNav">
+			<s:layout>
+			<s:HorizontalLayout />
+			</s:layout>
+			<s:Button click="button2_clickHandler(event)" label="Summary view" />	
+			</s:SkinnableContainer>	-->	
+		</s:HGroup>
+		
+				
+				<mx:ViewStack id="id_VBViews" height="100%" width="100%" minWidth="500" resizeToContent="true"  backgroundAlpha="0" contentBackgroundAlpha="0">
+									
+					<s:NavigatorContent height="100%" width="100%" label="Summary" minWidth="500">
+						<s:layout>
+							<s:HorizontalLayout paddingTop="-24"  />
+						</s:layout>
+						
+							<vbTabSection:BackgroundTabView id="id_backgroundTabView" width="100%" minWidth="500" height="100%"  
+															visible="{model.securityProxyObject.PatientExam.ViewBackground.SummaryView.IsViewAllowed}" includeInLayout="{id_backgroundTabView.visible}"/>
+						
+					</s:NavigatorContent>
+					
+					<s:NavigatorContent height="100%" width="100%" label="{'Patient Encounter'+' ' + '('+ model.totalRecords_PE.toString()+')'}" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBBGSkin"  >
+						
+						<s:layout>
+							<s:HorizontalLayout paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="3"/>
+						</s:layout>
+						
+						<patientEncounter:PatientEncounterPanel id="id_PatientEncounterPanel" width="100%"  height="100%" maxHeight="330" 
+																QSViewStateChange="id_PatientEncounterPanel_QSViewStateChangeHandler(event)"
+																visible="{model.securityProxyObject.PatientExam.ViewBackground.Encounterlist.IsViewAllowed}" includeInLayout="{id_PatientEncounterPanel.visible}"
+																/>
+						
+					</s:NavigatorContent>
+					<s:NavigatorContent height="100%" width="100%" label="{'Patient Document'+' '+ '('+ model.totalRecords_DM.toString()+')'}" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBBGSkin" >
+						
+						<s:layout>
+							<s:HorizontalLayout paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="3"/>
+						</s:layout>
+						<viewBackground:documentSlideOutPanel id="id_DocumentGridView" width="100%"  height="100%" 
+															  visible="{model.securityProxyObject.PatientExam.ViewBackground.Documents.IsViewAllowed}" includeInLayout="{id_DocumentGridView.visible}"/>
+						
+						
+					</s:NavigatorContent>
+				</mx:ViewStack>
+		
+		
+	</s:SkinnableContainer>
+		
+	
+	
+</s:Group>

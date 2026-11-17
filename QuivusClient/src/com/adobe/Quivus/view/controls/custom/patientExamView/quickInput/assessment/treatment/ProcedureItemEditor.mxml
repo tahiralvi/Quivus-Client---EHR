@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<itemEditors:ComboBoxItemEditor xmlns:fx="http://ns.adobe.com/mxml/2009" 
+								xmlns:s="library://ns.adobe.com/flex/spark" 
+								xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:itemEditors="com.adobe.Quivus.view.controls.custom.itemEditors.*"
+								keyUp="procedureItemEditorKeyUpHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.staticData.recommendation.procedure.LoadCPTMedicalTypesEvent;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			
+			import mx.controls.dataGridClasses.DataGridListData;
+			
+			import valueObjects.CPTMedicalTypeDTO;
+			
+			private function procedureItemEditorKeyUpHandler(event:KeyboardEvent):void
+			{
+				if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+				{
+					var curTar:* = event.currentTarget;
+					
+					var searchString:String = curTar.textInput.text;
+					if(searchString.length > 2)
+					{
+						var cptEvent : LoadCPTMedicalTypesEvent = new LoadCPTMedicalTypesEvent(searchString);
+						CairngormEventDispatcher.getInstance().dispatchEvent( cptEvent );
+					}
+				}
+			}
+			
+			override public function set data(value:Object):void
+			{
+				if (value)
+				{
+					if (value.hasOwnProperty("CPTMedicalType"))
+					{
+						var searchString:String;
+						
+						var item:CPTMedicalTypeDTO = CPTMedicalTypeDTO(value.CPTMedicalType);
+						
+						if (listData && listData is DataGridListData)
+						{
+							var dtFld:String = DataGridListData(listData).dataField;
+							
+							if (dtFld == "CPTMedicalType.ProcedureCode")
+							{
+								searchString = item.ProcedureCode;
+							}
+							else if (dtFld == "CPTMedicalType.ProcedureDescription")
+							{
+								searchString = item.ProcedureDescription;
+							}
+							
+							if(searchString.length > 2)
+							{
+								var cptEvent : LoadCPTMedicalTypesEvent = new LoadCPTMedicalTypesEvent(searchString);
+								CairngormEventDispatcher.getInstance().dispatchEvent( cptEvent );
+							}
+						}
+					}
+				}
+				
+				super.data = value;
+			}
+		]]>
+	</fx:Script>
+</itemEditors:ComboBoxItemEditor>

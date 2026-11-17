@@ -1,0 +1,1377 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:components="com.zigron.controls.extended.components.*" 
+		 xmlns:commons="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.*" 
+		 xmlns:validators="com.adobe.Quivus.utils.validators.*" 
+		 xmlns:itemEditors="com.adobe.Quivus.view.controls.custom.itemEditors.*" 
+		 xmlns:diagnosis="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.*"
+		 creationComplete="cc()" xmlns:components1="com.gazuntite.controls.extended.components.*">
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YYYY" />
+		<s:RadioButtonGroup id="chronicGrp"/>
+		<validators:PastDateValidator id="onSetValidator" source="{id_Onset}" property="text"/>
+		<validators:ComboValidator id="comboValidator" property="selectedItem"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.customDTO.AssociatedVisit;
+			import com.adobe.Quivus.events.quickInput.diagnosis.LoadPatientAllChronicDiagnosisByPatientIdEvent;
+			import com.adobe.Quivus.events.quickInput.diagnosis.ManageCustomICDCodeEvent;
+			import com.adobe.Quivus.events.staticData.lab.LoadICDCodeEvent;
+			import com.adobe.Quivus.events.viewBackground.diagnosis.ManagePatientDiagnosisEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.DictationPopup;
+			import com.adobe.Quivus.view.controls.custom.itemEditors.ComboBoxItemEditor;
+			import com.adobe.Quivus.view.controls.custom.itemEditors.SparkComboBoxItemEditor;
+			import com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPanel;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.dictation.QIDictationManager;
+			import com.adobe.quivus.skins.chrome.containerSkins.dateToolTipBG;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.ImmunizationSpeakerBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.QIDictationBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.ImmunizationNotesFilledBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.ImmunizationWriteNotesBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.QIWriteNotes;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.QIWriteNotesSelected;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.quivus.skins.chrome.comboBoxSkins.requiredDropDownList;
+			import com.adobe.quivus.skins.chrome.textInputSkins.searchTextInput;
+			import com.adobe.quivus.skins.chrome.textInputSkins.textInput;
+			import com.gazuntite.patient.visit.view.itemrenderers.DeleteRecordRenderer;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Label;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.core.EventPriority;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.CollectionEvent;
+			import mx.events.CollectionEventKind;
+			import mx.events.DataGridEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ItemClickEvent;
+			import mx.events.ListEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.managers.PopUpManager;
+			import mx.utils.ObjectUtil;
+			import mx.utils.StringUtil;
+			
+			import spark.components.ComboBox;
+			import spark.components.Label;
+			import spark.components.RichEditableText;
+			import spark.components.TextArea;
+			import spark.events.IndexChangeEvent;
+			
+			import valueObjects.AssessmentDTO;
+			import valueObjects.ICDCodeDTO;
+			import valueObjects.ModuleDictationDTO;
+			import valueObjects.ModuleNoteDTO;
+			import valueObjects.PatientDiagnosisDTO;
+			
+			private var _isNotValid:Boolean = false;
+			
+			private var _includeInLayout:Boolean;
+			private var _includeInLayoutChanged:Boolean;
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var recordNotesDTO:ModuleNoteDTO;
+			public var recordNotesPanel:NotesPanel;
+			
+			private var _hasGridChanged:Boolean;
+			private var _hasViewChanged:Boolean;
+			private var serachTermDiagnosis:String;//Search term for the records
+			[Bindable]
+			private var selectedIcdCodeDTO:ICDCodeDTO;
+			[Bindable]
+			public var deleteColumnData:Object;
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			
+			public function get isNotValid():Boolean
+			{
+				return _isNotValid;
+			}
+			
+			public function set isNotValid(value:Boolean):void
+			{
+				_isNotValid = value;
+				id_AddRecord.enableAll = !_isNotValid;
+			}
+			
+			public function isInvalid():Boolean
+			{
+				var notValid:Boolean = false;
+				
+				/* if (!ValidationUtils.isValidDOB(id_Onset)) //commented due to date to string converion
+				notValid = true; 
+				
+				else*/ 
+				if (!ValidationUtils.isValidValueSelected(id_Diagnosis))
+					notValid = true;
+					
+				else if (!ValidationUtils.isValidValueSelected(id_ICDCode))
+					notValid = true;
+				
+				
+				return notValid;
+			}
+			
+			public function clearForm():void
+			{
+				resetFields();
+				
+				if (id_DiagnosisGrid)
+					id_DiagnosisGrid.dataProvider = null;
+				
+			}
+			
+			public function areRequiredFieldsProvidedAndValid():Boolean
+			{
+				var result:Boolean = false;
+				
+				if(id_Onset.text.length > 0 || id_Onset.selectedDate)
+				{
+					result = true;
+					
+					if( UtilityFunctions.IsNullOrEmpty( id_ICDCode.textInput.text ))// || UtilityFunctions.IsNullOrEmpty( id_ICDCode.selectedItem ) )
+					{
+						id_ICDCode.errorString = "invalid ICDCode value";
+						id_ICDCode.setFocus();
+						result = false;
+					}
+						
+					else if( UtilityFunctions.IsNullOrEmpty( id_Diagnosis.textInput.text ))// &&  UtilityFunctions.IsNullOrEmpty( id_Diagnosis.selectedItem ) )
+					{
+						id_Diagnosis.errorString = "invalid Diagnosis value";
+						id_Diagnosis.setFocus();
+						result = false;
+					}
+				}
+				else
+				{
+					id_Onset.errorString = "invalid Onset value";
+					//id_Onset.setFocus();
+					result = false;
+				}
+				
+				return result;
+			}
+			
+			private function isGetEdited():Boolean
+			{
+				var edited:Boolean = false;
+				//Only able to enter record when all mandatory records are enterd
+				if((id_Onset.text.length > 0 || id_Onset.selectedDate) && (id_ICDCode.textInput.text.length > 2) && (id_Diagnosis.textInput.text.length > 0))
+				{
+					edited = true; 
+					id_add.enabled	= true;
+				}
+				
+				//hasViewChanged = (_hasGridChanged)? _hasGridChanged : edited;
+				
+				return edited;
+			}
+			/* 
+			Changes by baber waqas for grid for displaying row number 
+			*/
+			/* public function displayRowNum(oItem:Object,iCol:int):String
+			{
+			var rowNumber:int = id_DiagnosisGrid.dataProvider.getItemIndex(oItem) + 1;
+			return String(rowNumber);
+			} */
+			
+			public function GridRowNumber(oItem:Object, iCol:int):String
+			{
+				var ret:String;
+				try
+				{
+					var rowNumber:int = id_DiagnosisGrid.dataProvider.getItemIndex(oItem) + 1; //Sort able column fails some how, don't know why?
+					ret = String(rowNumber);
+				}
+				catch(e:Error )
+				{
+					ret = "##";
+				}
+				return ret;
+			}
+			/*
+			Changes end by baber waqas
+			*/
+			
+			public function chronicLabelFunction(oItem:Object,iCol:int):String
+			{
+				var label:String = ""; 
+				if (oItem.hasOwnProperty("IsChronic"))
+				{
+					if (oItem.IsChronic)
+						label = "Yes";
+					else
+						label = "No";
+				}
+				
+				return label;
+			}
+			
+			public function showNotes(loc:Point):void
+			{
+				if (loc)
+				{
+					if( recordNotesPanel )
+						recordNotesPanel.removePopup();
+					
+					if (!recordNotesDTO)
+						recordNotesDTO = new ModuleNoteDTO();
+					
+					recordNotesPanel 					= new NotesPanel();
+					recordNotesPanel.width			= 550
+					recordNotesPanel.height			= 150
+					recordNotesPanel.HeadingLable 	= id_Diagnosis.textInput.text;
+					recordNotesPanel.VisitDateLable 	= new Date().toDateString();
+					recordNotesPanel.notesDTO	= recordNotesDTO;
+					recordNotesPanel.ShowPopup( this );
+					recordNotesPanel.move( loc.x, loc.y );
+					
+					recordNotesPanel.id_header.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						recordNotesPanel.SaveNotes();
+						recordNotesPanel.removePopup();
+						event.stopImmediatePropagation();
+						
+						if(recordNotesPanel.id_body.id_message.text.length > 0)
+						{
+							id_AddRecord.id_WriteNotes.setStyle("skinClass", ImmunizationNotesFilledBtn);
+							
+						}
+						else
+						{
+							id_AddRecord.id_WriteNotes.setStyle("skinClass", ImmunizationWriteNotesBtn);
+						}
+						
+					});
+				}
+			}
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			private function cc():void
+			{
+				addEventListener("writeDictationClick", writeDictationClickHandler, false, 0, true);
+				id_DiagnosisGrid.addEventListener(DataGridActionsEvent.ITEM_EDIT_KEY_UP, itemEditKeyUpHandler, false, 0, true);
+				id_DiagnosisGrid.addEventListener(DataGridActionsEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+				id_DiagnosisGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				
+				if(model.quickInputDTO.Assessment == null)
+					model.quickInputDTO.Assessment = new AssessmentDTO();
+				
+				if(model.quickInputDTO.Assessment.Diagnosis==null)
+					model.quickInputDTO.Assessment.Diagnosis = new ArrayCollection();
+				
+				BindingUtils.bindProperty(model, "signCosignBtnEnabled", model.quickInputDTO.Assessment.Diagnosis, "length");
+				
+				if (!deleteColumnData)
+					deleteColumnData = {};
+				
+				deleteColumnData["noteDataFields"] = {subject: "NoteSubject", note: "Note", header: "ICDCode.IcdCodeDescription"};
+				deleteColumnData["dictationDataField"] = "DictationID";
+				deleteColumnData["recordIDField"] = "PatientDiagnosisID";
+				deleteColumnData["section"] = QIPopUpManager.DIAGNOSIS;
+				
+				var checkAllChronicDiagnosisTemplateAvailable:Boolean = true;
+				var evt:LoadPatientAllChronicDiagnosisByPatientIdEvent = new LoadPatientAllChronicDiagnosisByPatientIdEvent(checkAllChronicDiagnosisTemplateAvailable);
+				CairngormEventDispatcher.getInstance().dispatchEvent( evt );
+			}
+			
+			private function itemEditKeyUpHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_DIAGNOSIS ) )//Tahir Alvi - implement security check 
+				{
+					if (event.searchString.length > 2)
+					{
+						var icdEvent : LoadICDCodeEvent = new LoadICDCodeEvent(event.searchString);
+						CairngormEventDispatcher.getInstance().dispatchEvent( icdEvent );
+					}
+				}
+			}
+			
+			private function editRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_DIAGNOSIS ) )//Tahir Alvi - implement security check 
+				{
+					id_DiagnosisGrid.editable = true;
+					
+					var rowIndex:int = LabelDataGrid(event.currentTarget).selectedIndex;
+					
+					var itemToSetInEditableMode:IListItemRenderer = id_DiagnosisGrid.indexToItemRenderer(rowIndex);
+					
+					var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+					ev.columnIndex = 2;
+					ev.rowIndex = rowIndex;
+					ev.itemRenderer = itemToSetInEditableMode;
+					ev.dataField = "OnSet";
+					
+					id_DiagnosisGrid.dispatchEvent(ev);
+				}
+			}
+			
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_DIAGNOSIS ) )
+				{
+					var selectedIdx:int = id_DiagnosisGrid.selectedIndex;
+					
+					var diagnosisID:int = PatientDiagnosisDTO(event.currentTarget.selectedItem).PatientDiagnosisID;
+					UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+					{
+						if (diagnosisID == 0)
+						{
+							model.quickInputDTO.Assessment.Diagnosis.removeItemAt(selectedIdx);
+							if (model.quickInputDTO.Assessment.Diagnosis.length <= 0)
+							{
+								_hasGridChanged = false;
+								hasViewChanged = isGetEdited();
+							}
+						}
+						else
+						{
+							
+							id_DiagnosisGrid.selectedItem.IsDeleted = true;
+							model.quickInputDTO.Assessment.Diagnosis.filterFunction = filterDeletedItems; 
+							model.quickInputDTO.Assessment.Diagnosis.refresh();
+							hasViewChanged = _hasGridChanged = true;
+						}
+					});
+				}
+			}
+			
+			private function addRecordClickHandler(event:Event):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_DIAGNOSIS ) )
+				{
+					id_add.enabled = areRequiredFieldsProvidedAndValid();
+					if( ! id_add.enabled )
+					{
+						return; // invalid data
+					}
+					
+					var patientDiagnosisDTO:PatientDiagnosisDTO = new PatientDiagnosisDTO();
+					//Not valid due to hide adding custom description feature.
+					/* if(id_ICDCodeCustom.selectedItem && id_CustomDiagnosis.text.length)
+					{
+					patientDiagnosisDTO.ICDCode 			= id_ICDCodeCustom.selectedItem;
+					patientDiagnosisDTO.OnSet 				= id_Onset.text;
+					patientDiagnosisDTO.ICDCodeDescription 	= id_CustomDiagnosis.text;
+					}//else if(id_ICDCode.selectedItem && id_Diagnosis.textInput.text)
+					else if(id_ICDCode.textInput.text && id_Diagnosis.textInput.text)
+					{
+					patientDiagnosisDTO.ICDCode 			= selectedIcdCodeDTO; //id_ICDCode.selectedItem;
+					patientDiagnosisDTO.OnSet 				= id_Onset.text;//new Date(Date.parse(id_Onset.text));
+					patientDiagnosisDTO.ICDCodeDescription 	= id_Diagnosis.textInput.text;
+					} */
+					if(id_ICDCode.textInput.text && id_Diagnosis.textInput.text)
+					{
+						patientDiagnosisDTO.ICDCode 			= selectedIcdCodeDTO; //id_ICDCode.selectedItem;
+						patientDiagnosisDTO.OnSet 				= id_Onset.text;//new Date(Date.parse(id_Onset.text));
+						patientDiagnosisDTO.ICDCodeDescription 	= id_Diagnosis.textInput.text;
+					}
+					
+					if (id_ChronicYes.selected)
+						patientDiagnosisDTO.IsChronic = true;
+					else
+						patientDiagnosisDTO.IsChronic = false;
+					
+					patientDiagnosisDTO.IsActive = true;
+					
+					patientDiagnosisDTO.CreatedAt = formatDateTime.format(new Date());//datetostring(Tahir)
+					patientDiagnosisDTO.CreatedBy = model.loggedInUserDTO.UserId;
+					
+					patientDiagnosisDTO.DictationID = Constants.GUID_FORMAT;
+					
+					patientDiagnosisDTO.ModifiedAt = Constants.NULL_DATE;
+					
+					/* if( model.visitDTO!=null)
+					{
+					patientDiagnosisDTO.VisitDate 	= model.visitDTO.VisitDate;				
+					patientDiagnosisDTO.VisitID 	= model.visitDTO.VisitId;
+					}
+					else if(model.quickInputDTO!= null && model.quickInputDTO.Visit!=null)
+					{
+					patientDiagnosisDTO.VisitDate 	= model.quickInputDTO.Visit.VisitDate;				
+					patientDiagnosisDTO.VisitID 	=  model.quickInputDTO.Visit.VisitId;
+					
+					} */
+					
+					patientDiagnosisDTO.PatientID = model.loadedPatientId;
+					
+					if (id_AddRecord.notesDTO)
+					{
+						patientDiagnosisDTO.Note = id_AddRecord.notesDTO.Note;
+						patientDiagnosisDTO.NoteSubject = id_AddRecord.notesDTO.NoteSubject;
+					}
+					//H		
+					if (id_AddRecord.dictationDTO && id_AddRecord.dictationDTO.DictationID!=null)
+						patientDiagnosisDTO.DictationID = id_AddRecord.dictationDTO.DictationID;
+					
+					model.signCosignBtnEnabled = true;
+					
+					if(model.quickInputDTO.Assessment==null)
+						model.quickInputDTO.Assessment = new AssessmentDTO();
+					
+					if(model.quickInputDTO.Assessment.Diagnosis==null)
+						model.quickInputDTO.Assessment.Diagnosis = new ArrayCollection();
+					
+					//Tahir Alvi - New Feature implemented of associate record with visit.
+					patientDiagnosisDTO.VisitDate 	= formatDateTime.format(model.DiagnosisAssociatedVisit.VisitDate);//datetostring(Tahir)				
+					patientDiagnosisDTO.VisitID 	= model.DiagnosisAssociatedVisit.ID;
+					
+					if((id_AssociateVisitzCombo.selectedIndex == 2) || (id_AssociateVisitzCombo.selectedIndex == 1 && id_VisitDatesCombo.selectedIndex != -1))
+					{
+						//if(model.patientDiagnosisDTOListByPatientId == null)
+						model.patientDiagnosisDTOListByPatientId = new ArrayCollection();
+						
+						patientDiagnosisDTO.IsDirty = true;
+						model.patientDiagnosisDTOListByPatientId.addItem(patientDiagnosisDTO);
+						Alert.show('Are you sure, you want to save this record.', 'Save Confirmation', Alert.YES | Alert.NO, FlexGlobals.topLevelApplication.mainContainer, alertSaveDBListener, null, Alert.OK)
+					}else
+					{
+						model.quickInputDTO.Assessment.Diagnosis.addItem(patientDiagnosisDTO);
+						//CombinedQIVBDiagnosisList = new ArrayCollection();
+					}
+					
+					
+					if (model.sessionDTO.IsProvider)
+						model.canSign = true;
+					
+					resetFields();
+					
+					hasViewChanged = _hasGridChanged = true;
+					
+					//id_AddRecord.id_WriteNotes.setStyle("skinClass", ImmunizationWriteNotesBtn);
+					//id_AddRecord.id_WriteDictation.setStyle("skinClass", ImmunizationDictationBtn);
+					id_AddRecord.id_WriteNotes.setStyle("skinClass", QIWriteNotes);
+					id_AddRecord.id_WriteDictation.setStyle("skinClass", QIDictationBtn);
+				}
+			}
+			//Tahir Alvi - Associated Visit
+			private function alertSaveDBListener(eventObj:CloseEvent):void 
+			{
+				if (eventObj.detail == Alert.YES) 
+				{
+					var mpdEvent : ManagePatientDiagnosisEvent = new ManagePatientDiagnosisEvent();
+					CairngormEventDispatcher.getInstance().dispatchEvent( mpdEvent );
+				}
+			}
+			
+			private var recordLevelDicPanel:DictationPopup;
+			private function writeDictationClickHandler(event:Event):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_DIAGNOSIS ) )
+				{
+					var addRecord:AddRecord = AddRecord(event.target);
+					
+					recordLevelDicPanel = QIDictationManager.show(addRecord, recordLevelDicPanel, addRecord.dictationDTO, addRecord.id_WriteDictation);
+					QIPopUpManager.addPopUp(recordLevelDicPanel, QIPopUpManager.DIAGNOSIS);
+					recordLevelDicPanel.move( recordLevelDicPanel.x - 81, recordLevelDicPanel.y);
+					
+					/* if(recordLevelDicPanel && recordLevelDicPanel.DictationID)
+					{
+					id_AddRecord.id_WriteDictation.setStyle("skinClass", ImmunizationSpeakerBtn);
+					} */
+					
+					
+					recordLevelDicPanel.addEventListener(MouseEvent.CLICK, function():void
+					{
+						QIPopUpManager.removePopUp(recordLevelDicPanel, QIPopUpManager.DIAGNOSIS);
+						
+						if(recordLevelDicPanel && recordLevelDicPanel.DictationID)
+						{
+							id_AddRecord.id_WriteDictation.setStyle("skinClass", ImmunizationSpeakerBtn);
+						}
+						
+					}, true, 0, false);
+				}
+			}
+			
+			private function validateOnset():void
+			{
+				//commented due to date to string converion
+				/* if (!id_Onset.text.length)
+				{
+				onSetValidator.error = "On Set date is not specified";
+				onSetValidator.validate(id_Onset.text);
+				}
+				else
+				{
+				onSetValidator.error = "Future date is not allowed";
+				onSetValidator.validate(id_Onset.text);
+				}
+				
+				isNotValid = isInvalid(); */
+				id_AddRecord.enabled = isGetEdited();
+			}
+			
+			/* private function validateICDCode():void
+			{
+			comboValidator.source = id_ICDCode;
+			comboValidator.error = "ICD Code is invalid. Select from list";
+			comboValidator.validate(id_ICDCode.selectedItem);
+			
+			isNotValid = isInvalid();
+			
+			if (!isNotValid)
+			id_AddRecord.enableAll = true;
+			
+			id_AddRecord.enabled = isGetEdited();
+			} */
+			
+			private function resetFields():void
+			{
+				id_Onset.selectedDate = null;
+				id_Onset.text = "";
+				id_Onset.prompt = "OnSet";
+				
+				id_Diagnosis.selectedIndex = -1;
+				id_ICDCode.selectedIndex = -1;
+				
+				//				id_CustomDiagnosis.text	= '';
+				//				id_LinkICD.selected		= false;
+				//				id_ICDCodeCustom.selectedIndex = -1;	
+				//				id_ICDCodeCustom.enabled = false;
+				
+				id_ChronicYes.selected = false;
+				id_ChronicNo.selected = false;
+				
+				id_AddRecord.enabled = false;
+				id_AddRecord.enableAll = false;
+				
+				id_add.enabled	= false;
+				
+				id_AddRecord.notesDTO = new ModuleNoteDTO();
+				id_AddRecord.dictationDTO = new ModuleDictationDTO();
+				
+				recordNotesDTO = new ModuleNoteDTO();
+				
+				if (recordNotesPanel)
+					recordNotesPanel.removePopup();
+				
+				id_form1.enabled = false;
+				id_ImportAllChronic.enabled = false;
+				id_AssociateVisitzCombo.selectedIndex =-1;
+				id_VisitDatesCombo.selectedIndex = -1;
+				id_VisitDatesCombo.visible = false;
+				serachTermDiagnosis	= '';
+				id_Diagnosis.textInput.text = '';
+				id_ICDCode.textInput.text = '';
+				selectedIcdCodeDTO = null;
+			}
+			
+			/* private function diagnosisKeyUpHandler(event:KeyboardEvent):void
+			{
+			if (event.keyCode != 9) //condition for TAB key
+			{
+			var searchString:String = id_Diagnosis.textInput.text;
+			if(searchString.length > 2)
+			{
+			var icdEvent : LoadICDCodeEvent = new LoadICDCodeEvent(searchString);
+			CairngormEventDispatcher.getInstance().dispatchEvent( icdEvent );
+			}
+			
+			id_AddRecord.enabled = isGetEdited();
+			} 
+			} */
+			
+			/* private function icdCodeKeyUpHandler(event:KeyboardEvent):void
+			{
+			if (event.keyCode != 9)//condition for TAB key
+			{
+			var searchString:String = id_ICDCode.textInput.text;
+			if(searchString.length > 2)
+			{
+			var icdEvent : LoadICDCodeEvent = new LoadICDCodeEvent(searchString);
+			CairngormEventDispatcher.getInstance().dispatchEvent( icdEvent );
+			}
+			
+			id_AddRecord.enabled = isGetEdited();
+			} 
+			} */
+			
+			/* private function diagnosisChangeHandler(event:IndexChangeEvent):void
+			{
+			if (id_Diagnosis.selectedItem)
+			{
+			var selectedItem:ICDCodeDTO = id_Diagnosis.selectedItem as ICDCodeDTO;
+			
+			if (selectedItem)
+			id_ICDCode.selectedItem = selectedItem;
+			}
+			
+			isNotValid = isInvalid();
+			
+			id_AddRecord.enabled = isGetEdited(); 
+			} */
+			
+			/* private function icdCodeChangeHandler(event:IndexChangeEvent):void
+			{
+			if (id_ICDCode.selectedItem)
+			{
+			var selectedItem:ICDCodeDTO = id_ICDCode.selectedItem as ICDCodeDTO;
+			
+			if (selectedItem)
+			id_Diagnosis.selectedItem = selectedItem;
+			}
+			
+			isNotValid = isInvalid();
+			
+			id_AddRecord.enabled = isGetEdited();
+			} */
+			
+			private function diagnosisCollectionChangeHandler(event:CollectionEvent):void
+			{
+				switch (event.kind)
+				{
+					case CollectionEventKind.ADD:
+						includeGridInLayout = true;
+						if (diagnosisCollection && diagnosisCollection.length > 1)
+							hasViewChanged = true;
+						break;
+					
+					case CollectionEventKind.REMOVE:
+						if (diagnosisCollection && diagnosisCollection.length < 1)
+							includeGridInLayout = false;
+						break;
+				}
+			}
+			
+			private var _diagnosisCollection:ArrayCollection;
+			[Bindable]
+			public function get diagnosisCollection():ArrayCollection
+			{
+				return _diagnosisCollection;	
+			}
+			
+			public function set diagnosisCollection(value:ArrayCollection):void
+			{
+				_diagnosisCollection = value;
+				
+				if (_diagnosisCollection)
+				{
+					_diagnosisCollection.addEventListener(CollectionEvent.COLLECTION_CHANGE, diagnosisCollectionChangeHandler, false, 0, true);
+					
+					if (_diagnosisCollection.length)
+						includeGridInLayout = true;
+						
+					else
+						includeGridInLayout = false;	
+				}
+				else
+					includeGridInLayout = false;
+				
+				if( value.length > 0 )
+				{
+					hasViewChanged = _hasGridChanged = true;
+				}
+			}
+			
+			[Bindable]
+			public function get includeGridInLayout():Boolean
+			{
+				return _includeInLayout;
+			}
+			
+			public function set includeGridInLayout(value:Boolean):void
+			{
+				_includeInLayout = value;
+				_includeInLayoutChanged = true;
+				
+				invalidateProperties();
+				invalidateSize();
+				invalidateDisplayList();
+			}
+			
+			private function diagnosisGridItemEditBeginHandler(event:DataGridEvent):void
+			{
+				id_DiagnosisGrid.createItemEditor(event.columnIndex, event.rowIndex);
+				
+				if (event.columnIndex == 5 || event.columnIndex == 6)
+				{
+					//id_DiagnosisGrid.createItemEditor(event.columnIndex, event.rowIndex);
+					
+					if (event.columnIndex == 5)
+						YesNoItemEditor(id_DiagnosisGrid.itemEditorInstance).property = "IsChronic";
+					else
+						YesNoItemEditor(id_DiagnosisGrid.itemEditorInstance).property = "IsActive";
+					
+					YesNoItemEditor(id_DiagnosisGrid.itemEditorInstance).data = event.itemRenderer.data;
+					
+				}
+			}
+			
+			private function diagnosisGridItemEditEndHandler(event:DataGridEvent):void
+			{
+				var validationRes:ValidationResultEvent;
+				var diagnosisID:int = PatientDiagnosisDTO(event.currentTarget.selectedItem).PatientDiagnosisID;
+				
+				if (event.dataField == "ICDCode.IcdCodeDescription" || event.dataField == "ICDCode.IcdCodeName")
+				{
+					var editor:LabelComboBox = SparkComboBoxItemEditor(id_DiagnosisGrid.itemEditorInstance).id_ComboEditor;
+					
+					comboValidator.source = editor;
+					
+					if (event.dataField == "ICDCode.IcdCodeDescription")
+					{
+						comboValidator.error = "Select diagnosis from list";
+					}
+					else
+					{
+						comboValidator.error = "Select ICD Code from list";
+					}
+					
+					validationRes = comboValidator.validate(editor.selectedItem);
+					
+					if (validationRes && !validationRes.results)
+					{
+						event.itemRenderer.data.ICDCode = editor.selectedItem;
+						
+						if (diagnosisID != 0)
+							event.itemRenderer.data.IsDirty = true;
+						
+						hasViewChanged = _hasGridChanged = true;
+					}
+					/*else
+					{
+					id_DiagnosisGrid.destroyItemEditor();
+					
+					event.stopImmediatePropagation();
+					event.preventDefault();
+					}*/
+					
+					id_DiagnosisGrid.destroyItemEditor();
+					
+					event.stopImmediatePropagation();
+					event.preventDefault();
+				}
+					
+				else if (event.dataField == "OnSet")
+				{
+					var dateEditor:* = id_DiagnosisGrid.itemEditorInstance;
+					
+					onSetValidator.source = dateEditor;
+					//	onSetValidator.error = "Invalid OnSet";
+					//	validationRes = onSetValidator.validate(dateEditor.text);
+					
+					//	if (validationRes && !validationRes.results)
+					//	{
+					if (dateEditor.text)
+					{
+						event.itemRenderer.data.OnSet = dateEditor.text;
+						
+						if (diagnosisID != 0)
+							event.itemRenderer.data.IsDirty = true;
+						
+						hasViewChanged = _hasGridChanged = true;
+					}
+					//	}
+					/*else
+					{
+					id_DiagnosisGrid.destroyItemEditor();
+					
+					event.stopImmediatePropagation();
+					event.preventDefault();
+					}*/
+					
+					id_DiagnosisGrid.destroyItemEditor();
+					
+					event.stopImmediatePropagation();
+					event.preventDefault();
+				}
+					
+				else if (event.dataField == "IsChronic")
+				{
+					hasViewChanged = _hasGridChanged = true;
+				}
+			}
+			
+			override protected function commitProperties():void
+			{
+				super.commitProperties();
+				
+				if (_includeInLayoutChanged)
+				{
+					_includeInLayoutChanged = false;
+					
+					id_DiagnosisGrid.includeInLayout = _includeInLayout;
+					id_DiagnosisGrid.visible = _includeInLayout;
+					
+					if (_includeInLayout)
+					{
+						id_DiagnosisGrid.horizontalScrollPolicy="on";
+						id_DiagnosisGrid.columns[0].width = 35;
+						id_DiagnosisGrid.columns[1].width = 60;
+						id_DiagnosisGrid.columns[2].width = 60;
+						id_DiagnosisGrid.columns[3].width = 60;
+						id_DiagnosisGrid.columns[4].width = 120;
+						id_DiagnosisGrid.columns[5].width = 50;
+						id_DiagnosisGrid.columns[6].width = 100;
+						id_DiagnosisGrid.horizontalScrollPolicy="off";
+					}
+				}
+			}
+			
+			private var recordGridNotesPopUp:NotesPanel;
+			private var section:String;
+			private function onWriteNotesClick(event:Event):void
+			{
+				if (!recordGridNotesPopUp)
+					recordGridNotesPopUp = new NotesPanel();
+				
+				if (!recordGridNotesPopUp.isPanelShown)
+				{
+					//gridNotesDTO = new ModuleNoteDTO();
+					var headingLabel:String = "";
+					
+					//extractDataForNotes();
+					
+					
+					var addRecord:AddRecord = AddRecord(event.target);
+					
+					//recordLevelDicPanel = QIDictationManager.show(addRecord, recordLevelDicPanel, addRecord.dictationDTO, addRecord.id_WriteDictation);
+					
+					//headingLabel = deriveComplexData(headerField);
+					recordGridNotesPopUp 				= new NotesPanel();
+					recordGridNotesPopUp.width			= 250;
+					recordGridNotesPopUp.height			= 110;
+					recordGridNotesPopUp.HeadingLable 	= id_Diagnosis.textInput.text;
+					recordGridNotesPopUp.VisitDateLable = model.FormatedVisitDate;//new Date().toDateString();
+					recordGridNotesPopUp.ShowPopup(this);
+					
+					recordGridNotesPopUp.notesDTO		=  addRecord.notesDTO; //gridNotesDTO;
+					//recordGridNotesPopUp.onNotesSaved = updateNotesData;
+					
+					QIPopUpManager.addPopUp(recordGridNotesPopUp, section);
+					
+					//var pt:Point = localToGlobal(new Point(recordGridNotesPopUp.x, recordGridNotesPopUp.y));
+					
+					var pt:Point = id_AddRecord.localToGlobal(new Point(id_AddRecord.id_WriteNotes.x ,id_AddRecord.id_WriteNotes.y));
+					
+					recordGridNotesPopUp.move(pt.x - 195, pt.y + 20);
+					
+					//recordGridNotesPopUp.move( recordGridNotesPopUp.x , recordGridNotesPopUp.y);
+					/*recordGridNotesPopUp.addEventListener("notesSaved", function(event:Event):void
+					{
+					updateNotesData();
+					
+					}, false, 0, true);*/
+					
+					recordGridNotesPopUp.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						//recordGridNotesPopUp.removePopup();
+						QIPopUpManager.removePopUp(recordGridNotesPopUp, section);
+						
+					}, false, 0, true);
+					
+					recordGridNotesPopUp.id_header.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						recordGridNotesPopUp.SaveNotes();
+						//if(recordNotesDTO)
+						if(recordGridNotesPopUp.id_body.id_message.text.length > 0)
+						{
+							id_AddRecord.id_WriteNotes.setStyle("skinClass", QIWriteNotesSelected);
+							
+						}
+						else
+						{
+							id_AddRecord.id_WriteNotes.setStyle("skinClass", QIWriteNotes);
+							
+						}
+						recordGridNotesPopUp.removeNotePanel();
+						QIPopUpManager.removePopUp(recordGridNotesPopUp, section);
+					});
+					
+					
+					recordGridNotesPopUp.addEventListener("notesSaved", function(event:Event):void
+					{
+						if(recordGridNotesPopUp.id_body.id_message.text.length > 0)
+						{
+							id_AddRecord.id_WriteNotes.setStyle("skinClass", QIWriteNotesSelected);								
+						}
+						else
+						{
+							id_AddRecord.id_WriteNotes.setStyle("skinClass", QIWriteNotes);
+						}
+					});
+				}
+			}
+			//@@@@@@@@@@ Code Section -  Additional Field of free text diagnosis and Diagnosis data linking and management work flow @@@@@@@@@@@@@@		
+			//import spark.events.TextOperationEvent;
+			/* protected function id_LinkICD_changeHandler(event:Event):void
+			{
+			if(id_LinkICD.selected)
+			id_ICDCodeCustom.enabled = true;
+			
+			if(!id_LinkICD.selected){
+			id_ICDCodeCustom.enabled = false;
+			id_ICDCodeCustom.selectedIndex = -1;
+			}
+			} */
+			
+			
+			/* private function icdCodeCustomKeyUpHandler(event:KeyboardEvent):void
+			{
+			if (event.keyCode != 9)//condition for TAB key
+			{
+			var searchString:String = id_ICDCodeCustom.textInput.text;
+			if(searchString.length > 2)
+			{
+			var icdEvent : LoadICDCodeEvent = new LoadICDCodeEvent(searchString);
+			CairngormEventDispatcher.getInstance().dispatchEvent( icdEvent );
+			}
+			
+			id_AddRecord.enabled = isGetEdited();
+			}
+			} */
+			/* private function icdCodeCustomChangeHandler(event:IndexChangeEvent):void
+			{
+			if (id_ICDCodeCustom.selectedItem)
+			{
+			var selectedItem:ICDCodeDTO = id_ICDCodeCustom.selectedItem as ICDCodeDTO;
+			} 
+			
+			isNotValid = isThatInvalid();
+			
+			id_AddRecord.enabled = isGetEdited();
+			} */
+			
+			/* protected function id_CustomDiagnosis_changeHandler(event:TextOperationEvent):void
+			{
+			StringUtil.trim(id_CustomDiagnosis.text);
+			
+			if(id_CustomDiagnosis.text.length > 3)
+			id_LinkICD.enabled = true;
+			else
+			id_LinkICD.enabled = false;
+			} */
+			
+			/* public function isThatInvalid():Boolean
+			{
+			var notValid:Boolean = false;
+			
+			if(!ValidationUtils.isValidValueSelected(id_ICDCodeCustom))	
+			{
+			notValid = true;
+			}
+			return notValid;
+			} */
+			
+			/* private function alertSaveListener(eventObj:CloseEvent):void 
+			{
+			if (eventObj.detail == Alert.YES) 
+			{
+			var selCode:ICDCodeDTO 		= id_ICDCodeCustom.selectedItem as ICDCodeDTO;
+			selCode.IcdCodeDescription 	= id_CustomDiagnosis.text;
+			
+			var eve:ManageCustomICDCodeEvent = new ManageCustomICDCodeEvent(selCode, model.loggedInUserDTO.UserId.toString(), model.sessionDTO.SessionID );
+			CairngormEventDispatcher.getInstance().dispatchEvent( eve );
+			}
+			} 
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+			Alert.show('Sure to save custom description & ICD Code', 'Save Confirmation', Alert.YES | Alert.NO, this, alertSaveListener, null, Alert.OK)
+			} */
+			
+			// Tahir Alvi - Add new feature of Saving Record direct to Database
+			
+			[Bindable]
+			private var arrAssociateTypes:ArrayCollection = new ArrayCollection(['This Visit', 'Previous Visit', 'N/A']);
+			
+			protected function id_AssociateVisitzCombo_changeHandler():void
+			{
+				resetForm();
+				if(model.DiagnosisAssociatedVisit == null)
+					model.DiagnosisAssociatedVisit = new AssociatedVisit();
+				
+				if(id_AssociateVisitzCombo.selectedIndex != -1)
+				{
+					id_ImportAllChronic.enabled = model.patientDiagnosisAllChronicTemplateAvailable && id_AssociateVisitzCombo.selectedItem == "This Visit";
+				}
+				
+				id_form1.enabled = true;	
+				
+				if(id_AssociateVisitzCombo.selectedIndex == 1)
+				{
+					id_form1.enabled = false;	
+					id_VisitDatesCombo.visible = true;
+					id_VisitDateContainer.visible = true;
+					id_VisitDatesCombo.selectedIndex = -1;
+					id_VisitDateContainer.includeInLayout = true;
+					id_DateContainer.text ="Please Select Visit Date";
+					id_VisitDateContainer.width = 128;
+					
+					if(id_add.enabled)
+						id_add.enabled = false;
+					
+				}else
+				{
+					id_VisitDatesCombo.visible = false;
+					if(id_AssociateVisitzCombo.selectedIndex == 0)
+					{						
+						id_VisitDateContainer.visible = false;
+						id_VisitDateContainer.includeInLayout = false;
+						if(model.visitDTO != null)
+						{
+							model.DiagnosisAssociatedVisit.VisitDate = model.visitDTO.VisitDate;
+							model.DiagnosisAssociatedVisit.ID   	 = model.visitDTO.VisitId;
+						}else
+						{
+							model.DiagnosisAssociatedVisit.VisitDate = model.quickInputDTO.Visit.VisitDate;
+							model.DiagnosisAssociatedVisit.ID        = model.quickInputDTO.Visit.VisitId;
+						}
+					}else if(id_AssociateVisitzCombo.selectedIndex == 2){
+						
+						id_VisitDateContainer.visible = false;
+						id_VisitDateContainer.includeInLayout = false;
+						model.DiagnosisAssociatedVisit.VisitDate = Constants.NULL_DATE;
+						model.DiagnosisAssociatedVisit.ID   	 = 0;
+					}
+				}
+			}
+			
+			protected function id_VisitDatesCombo_changeHandler():void
+			{
+				id_VisitDateContainer.visible   = false;
+				id_VisitDateContainer.includeInLayout = false;
+				if(id_VisitDatesCombo.selectedIndex != -1){
+					id_form1.enabled = true;	
+				}
+				
+				if(model.DiagnosisAssociatedVisit == null)
+					model.DiagnosisAssociatedVisit = new AssociatedVisit();
+				
+				if(model.DiagnosisAssociatedVisit != null)
+				{
+					model.DiagnosisAssociatedVisit.VisitDate = id_VisitDatesCombo.selectedItem.VisitDate;
+					model.DiagnosisAssociatedVisit.ID   = id_VisitDatesCombo.selectedItem.VisitId;
+				}
+				id_add.enabled = areRequiredFieldsProvidedAndValid();
+			}
+			
+			private function getVisitDate(item:Object):String 
+			{
+				var strDate:String ='';;
+				if(item != null)
+					strDate = formatDateTime.format(item.VisitDate);
+				
+				return strDate;
+			}
+			
+			private var dialog:ImportChronicDiagnosisDialog;
+			protected function addAllChronic_clickHandler(event:MouseEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable(QSSecurityUtil.QI_DIAGNOSIS ) )
+				{
+					if(null == dialog )
+						dialog = new ImportChronicDiagnosisDialog();
+					/* dialog.height = 550;
+					dialog.width  = 600; */
+					
+					dialog.ShowPopup( this );
+					dialog.move(dialog.x, dialog.y + 25); 
+				}
+			}
+			
+			//Tahir Alvi - Associate popup implementation
+			private function setVisitDate(oItem:Object, iCol:int):String
+			{
+				var strVisitDate:String = '';
+				
+				if (oItem && oItem.VisitDate)
+				{
+					var dateRecieved:Date = new Date(Date.parse(oItem.VisitDate));
+					strVisitDate = formatDateTime.format(dateRecieved);
+					var nullDate:Date = Constants.NULL_DATE;
+					
+					if (dateRecieved.getFullYear() <= nullDate.getFullYear() && dateRecieved.getMonth() <= nullDate.getMonth())
+						strVisitDate = "";
+					
+					if(oItem.IsNA)
+						strVisitDate = 'N/A';
+				}
+				return strVisitDate;
+			}
+			//Icdcode click handler
+			protected function Icdcode_clickHandler(event:MouseEvent, index:uint):void
+			{
+				if(event.target as RichEditableText || event.target as mx.controls.Label)
+				{
+					return;
+				}
+				else 
+				{
+					if(serachTermDiagnosis == null)
+						return
+					
+					if(serachTermDiagnosis.length > 2)
+					{
+						openDiagnosisPopup(index);
+					}
+				}
+			}
+			
+			private function openDiagnosisPopup(index:int):void
+			{
+				var addDiagnosisPopup:DiagnosisPopup = new DiagnosisPopup();
+				addDiagnosisPopup.ShowPopup( this )
+				addDiagnosisPopup.title  = "Add Diagnosis";
+				addDiagnosisPopup.height = 410;
+				addDiagnosisPopup.width  = 600;
+				addDiagnosisPopup.move(addDiagnosisPopup.x, addDiagnosisPopup.y - 20);
+				addDiagnosisPopup.searchAndLoadDiagnosis(serachTermDiagnosis, id_Onset.text, index);
+				resetFields();
+			}
+			
+			private function icdCodeChangeHandler():void
+			{
+				serachTermDiagnosis = '';
+				serachTermDiagnosis = id_ICDCode.textInput.text;
+				//if value exceeds 4 characters then search Icd Code and map the Icd Code.
+				if(serachTermDiagnosis.length >=5){
+					id_Diagnosis.textInput.text = '';
+					id_Diagnosis.selectedIndex = -1;
+					selectedIcdCodeDTO = null;
+					id_AddRecord.enabled 		= isGetEdited();
+					var icdEvent : LoadICDCodeEvent = new LoadICDCodeEvent(serachTermDiagnosis, loadData);
+					CairngormEventDispatcher.getInstance().dispatchEvent( icdEvent );
+					
+				}else{
+					id_Diagnosis.textInput.text = '';
+					id_Diagnosis.selectedIndex = -1;
+					selectedIcdCodeDTO = null;
+					id_AddRecord.enabled 		= isGetEdited();
+				}
+			}
+			
+			private function icdDescriptionChangeHandler():void
+			{
+				serachTermDiagnosis = '';
+				serachTermDiagnosis = id_Diagnosis.textInput.text;
+			}
+			
+			public  function loadData(val:* = null):void
+			{
+				if(model.icdCodeDTOList.length)
+				{
+					for(var i:uint=0; i < model.icdCodeDTOList.length; i++)
+					{
+						if(serachTermDiagnosis == model.icdCodeDTOList[i].IcdCodeName)
+						{
+							id_ICDCode.textInput.text 	= model.icdCodeDTOList[i].IcdCodeName;
+							id_Diagnosis.textInput.text = model.icdCodeDTOList[i].IcdCodeDescription;
+							selectedIcdCodeDTO			= model.icdCodeDTOList[i];
+							id_AddRecord.enabled 		= isGetEdited();
+							return;
+						}							
+					}
+				}
+			}
+			//reset All forms fields
+			private function resetForm():void
+			{
+				id_Onset.selectedDate 			= null;
+				id_Onset.text 					= '';
+				id_Onset.prompt					= 'OnSet';
+				id_Diagnosis.textInput.text		= '';
+				id_ICDCode.textInput.text 		= '';
+				//				id_LinkICD.selected				= false;
+				id_ChronicYes.selected 			= false;
+				id_ChronicNo.selected 			= false;
+				id_AddRecord.enabled 			= false;
+				id_AddRecord.enableAll 			= false;
+				id_add.enabled					= false;
+				id_AddRecord.notesDTO 			= new ModuleNoteDTO();
+				id_AddRecord.dictationDTO 		= new ModuleDictationDTO();
+				recordNotesDTO 					= new ModuleNoteDTO();
+				selectedIcdCodeDTO				= null;
+				
+				if (recordNotesPanel)
+					recordNotesPanel.removePopup();
+			}
+			
+			protected function id_ICDCode_keyDownHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode == 13 ){
+					serachTermDiagnosis = id_ICDCode.textInput.text;
+					if(serachTermDiagnosis.length >2)
+						openDiagnosisPopup(0);
+				}
+				
+			}
+			
+			protected function id_Diagnosis_keyDownHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode == Keyboard.ENTER )
+					serachTermDiagnosis = id_Diagnosis.textInput.text;
+				
+				serachTermDiagnosis = id_Diagnosis.textInput.text
+					
+				if(serachTermDiagnosis.length >2)
+					openDiagnosisPopup(1);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Binding source="model.quickInputDTO.Assessment.Diagnosis" destination="diagnosisCollection"/>
+	
+	<!--<fx:Binding source="model.patientDiagnosisDTOAcuteListByPatientId" destination="CombinedQIVBDiagnosisList"/>
+	<fx:Binding source="model.patientDiagnosisDTOChronicListByPatientId" destination="CombinedQIVBDiagnosisList"/>-->
+	<s:layout>
+		<s:VerticalLayout paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5" verticalAlign="middle"/>
+	</s:layout>
+	
+	<s:HGroup width="100%">
+		<s:DropDownList id="id_AssociateVisitzCombo"  focusEnabled="true" 
+						prompt="Associate With" 
+						dataProvider="{arrAssociateTypes}" change="id_AssociateVisitzCombo_changeHandler()"
+						width="205"  skinClass="com.adobe.quivus.skins.chrome.comboBoxSkins.requiredDropDownList"/>
+		<s:DropDownList id="id_VisitDatesCombo" prompt="Select Visit Date" focusEnabled="true"
+						dataProvider="{model.unSignedVisitDates}"  change="id_VisitDatesCombo_changeHandler()"
+						labelField="VisitDate" labelFunction="getVisitDate"  visible="false" width="150" 
+						skinClass="com.adobe.quivus.skins.chrome.comboBoxSkins.requiredDropDownList" includeInLayout="{id_VisitDatesCombo.visible}"/>
+		<!--<s:DropDownList id="id_VisitDatesCombo" prompt="Select Visit Date" fontFamily="Calibri" fontSize="12"
+		dataProvider="{model.patientEncounterResult.PatientEncounterList}" 
+		change="id_VisitDatesCombo_changeHandler()"
+		labelField="VisitDate" labelFunction="getVisitDate"
+		skinClass="com.adobe.quivus.skins.chrome.comboBoxSkins.requiredDropDownList"
+		visible="false" includeInLayout="{id_VisitDatesCombo.visible}" width="150" />-->
+		<s:SkinnableContainer  id="id_VisitDateContainer" skinClass="com.adobe.quivus.skins.chrome.containerSkins.dateToolTipBG" 
+							   >
+			<s:Label  id="id_DateContainer" text="Please Select Visit"  fontFamily="Calibri" fontSize="12"
+					  width="100%" paddingLeft="10" horizontalCenter="0"  verticalCenter="0"/>
+		</s:SkinnableContainer>
+		<s:Button id="id_ImportAllChronic" click="addAllChronic_clickHandler(event)" 
+				  enabled="false" skinClass="com.adobe.quivus.skins.chrome.buttonSkins.VitalsImportBtn_orange_mouseover" 
+				  buttonMode="true" useHandCursor="true" toolTip="Import Chronic Diagnosis" tabIndex="8"/>
+		
+		
+		
+	</s:HGroup>
+	
+	<s:HGroup id="id_form1" verticalAlign="middle" width="100%" tabIndex="1" enabled="false">
+		<components1:LabelDateField id="id_Onset" prompt="OnSet" width="100" change="validateOnset()"  textInputStyleName="mandatoryDateSkin"
+								   yearNavigationEnabled="true" editable="true" maxYear="{new Date().getFullYear()}" minYear="1901"
+								   selectableRange="{{rangeEnd : new Date()}}" tabIndex="2" />
+		<components1:LabelComboBox id="id_ICDCode" prompt="ICD Code" width="100" 
+								  keyUp="icdCodeChangeHandler()" keyDown="id_ICDCode_keyDownHandler(event)"
+								  click="Icdcode_clickHandler(event, 0)" useHandCursor="true" buttonMode="true"
+								  skinClass="com.adobe.quivus.skins.chrome.comboBoxSkins.comboBoxSearchSkin" tabIndex="3" />
+		<components1:LabelComboBox id="id_Diagnosis" prompt="Diagnosis" width="100%"
+								  keyUp="icdDescriptionChangeHandler()" keyDown="id_Diagnosis_keyDownHandler(event)"
+								  click="Icdcode_clickHandler(event, 1)" useHandCursor="true" buttonMode="true"
+								  skinClass="com.adobe.quivus.skins.chrome.comboBoxSkins.comboBoxSearchSkin" tabIndex="4"/>
+		<s:Label id="id_ChronicLbl" text="Chronic" fontFamily="Calibri" color="#ffffff"/>
+		<s:HGroup gap="0" verticalAlign="middle">
+			<s:RadioButton id="id_ChronicYes" groupName="chronicGrp" toolTip="Yes" skinClass="com.adobe.Quivus.view.controls.skins.radioButtonSkins.YRadioButton" buttonMode="true" tabIndex="4"/>
+			<s:RadioButton id="id_ChronicNo" groupName="chronicGrp" toolTip="No" skinClass="com.adobe.Quivus.view.controls.skins.radioButtonSkins.NRadioButton" buttonMode="true"/>
+		</s:HGroup>
+		<commons:AddRecord id="id_AddRecord" writeNotesClick="onWriteNotesClick(event)"  writeDictationClick="writeDictationClickHandler(event)" enabled="false" tabIndex="5"/>
+	</s:HGroup>
+	
+	<!-- Tahir Alvi 6 Dec 2012 - Additional Field of free text diagnosis and Diagnosis data linking and management work flow -->
+	<!--<s:HGroup width="100%" verticalAlign="middle" enabled="{id_form1.enabled}" visible="false" includeInLayout="false">
+	
+	<components:LabelTextInput id="id_CustomDiagnosis"  width="210" tabIndex="5"  maxChars="500" change="id_CustomDiagnosis_changeHandler(event)" toolTip="Write custom description here" prompt="Custom description"/>
+	<s:CheckBox id="id_LinkICD" 
+	label="Link with ICD" change="id_LinkICD_changeHandler(event)" color="0xFFFFFF" tabIndex="6" enabled="false"/>
+	<components:LabelComboBox id="id_ICDCodeCustom" prompt="ICD Code" width="100" dataProvider="{model.icdCodeDTOList}" 
+	keyUp="icdCodeCustomKeyUpHandler(event)" labelField="IcdCodeName" change="icdCodeCustomChangeHandler(event)"
+	skinClass="com.zigron.controls.extended.skins.comboBoxRegisterationRequiredSkin" tabIndex="7" enabled="false" toolTip="Select ICD Code for linking"/>
+	<s:Button label="Button" click="button1_clickHandler(event)" enabled="{id_ICDCodeCustom.selectedIndex > -1 ? true:false}"
+	skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.notesSaveBtn" toolTip="Click to save custom description"/>
+	</s:HGroup>-->
+	
+	<s:HGroup width="100%" gap="0">
+		<!--<s:Button id="id_add" click="addRecordClickHandler(event)" enabled="{id_AddRecord.enableAll}" buttonMode="true" useHandCursor="true" toolTip="Add Record"
+		skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.AddMoreTooltipBtn" tabIndex="7"/>-->
+		<s:Button id="id_add" click="addRecordClickHandler(event)" enabled="false" buttonMode="true" useHandCursor="true" toolTip="Add Record"
+				  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.AddMoreTooltipBtn" tabIndex="7" label="Add Diagnosis"/>
+		<s:SkinnableContainer skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.tooltipBG" visible="{!id_add.enabled}" width="100%" />
+		<mx:Spacer width="100%"/>
+		<s:Button id="id_nextBtn" label="Next" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QInextBtnSkin" toolTip="Next Section" buttonMode="true" />
+	</s:HGroup>
+	
+	
+	<s:HGroup width="100%">
+		<components1:LabelDataGrid id="id_DiagnosisGrid" includeInLayout="{includeGridInLayout}" visible="{includeGridInLayout}"
+								  rowCount="{id_DiagnosisGrid.dataProvider.length + 1}"
+								  width="100%" verticalScrollPolicy="on"
+								  itemEditBegin="diagnosisGridItemEditBeginHandler(event)"
+								  itemEditEnd="diagnosisGridItemEditEndHandler(event)"
+								  dataProvider="{diagnosisCollection}" draggableColumns="false" useRollOver="false"
+								  maxHeight="150" columnWidths="{[25, '13%', '15%', '15%', '25%', '12%', 100]}">
+			<components:columns>
+				
+				<!-- Changes by baber waqas for displaying serial number  -->	
+				<mx:DataGridColumn headerText="Sr.#" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editable="false" labelFunction="GridRowNumber" />
+				<mx:DataGridColumn headerText="Visit Date" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="VisitDate" editable="false" labelFunction="setVisitDate"/>
+				<mx:DataGridColumn headerText="On Set" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="OnSet" editorDataField="selectedDate" >
+					<!-- itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG">-->
+					<!--<mx:itemEditor>
+					<fx:Component>
+					<mx:DateField width="45" selectedDate="{outerDocument.id_Onset.selectedDate}" editable="true"
+					selectableRange="{{rangeEnd : new Date()}}"/>
+					</fx:Component>
+					</mx:itemEditor>-->
+				</mx:DataGridColumn>
+				<mx:DataGridColumn headerText="ICD Code"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="ICDCode.IcdCodeName" editorDataField="editorText">
+					<mx:itemEditor>
+						<fx:Component>
+							<itemEditors:SparkComboBoxItemEditor labelField="IcdCodeName" dataProvider="{outerDocument.model.icdCodeDTOList}"/>
+						</fx:Component>
+					</mx:itemEditor>
+				</mx:DataGridColumn>
+				<mx:DataGridColumn headerText="Diagnosis"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="ICDCode.IcdCodeDescription" editorDataField="editorText" >
+					<mx:itemEditor>
+						<fx:Component>
+							<itemEditors:SparkComboBoxItemEditor labelField="IcdCodeDescription" dataProvider="{outerDocument.model.icdCodeDTOList}"/>
+						</fx:Component>
+					</mx:itemEditor>
+				</mx:DataGridColumn>
+				<mx:DataGridColumn headerText="Chronic" dataField="IsChronic"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editorDataField="isYes" labelFunction="chronicLabelFunction">
+					<mx:itemEditor>
+						<fx:Component>
+							<diagnosis:YesNoItemEditor  height="100%"/>
+						</fx:Component>
+					</mx:itemEditor>
+				</mx:DataGridColumn>
+				<commons:DataGridColumnEx data="{deleteColumnData}" headerText="" itemRenderer="com.gazuntite.patient.visit.view.itemrenderers.DeleteRecordRenderer" editable="false"/>
+			</components:columns>
+		</components1:LabelDataGrid>
+	</s:HGroup>
+</s:Group>

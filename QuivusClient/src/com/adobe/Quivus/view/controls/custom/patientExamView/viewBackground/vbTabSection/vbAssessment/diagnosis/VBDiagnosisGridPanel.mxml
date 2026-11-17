@@ -1,0 +1,885 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:SlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*"
+					  xmlns:commons="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.*" 
+					  xmlns:validators="com.adobe.Quivus.utils.validators.*" 
+					  xmlns:itemEditors="com.adobe.Quivus.view.controls.custom.itemEditors.*" 
+					  xmlns:diagnosis="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.*"
+					  xmlns:viewBackground="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.*"
+					  xmlns:diagnosis1="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbAssessment.diagnosis.*" 
+					  xmlns:paging="com.adobe.Quivus.view.controls.custom.patientExamView.paging.*"
+					  
+					  creationComplete="slideoutpanel1_creationCompleteHandler()" 
+					  QSViewStateChange="slideoutpanel1_QSViewStateChangeHandler(event)" 
+					  focusIn="slideoutpanel1_focusInHandler(event)" xmlns:components1="com.gazuntite.controls.extended.components.*"
+					  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.staticData.lab.LoadICDCodeEvent;
+			import com.adobe.Quivus.events.viewBackground.diagnosis.LoadPatientDiagnosisAcuteByPatientIdEvent;
+			import com.adobe.Quivus.events.viewBackground.diagnosis.LoadPatientDiagnosisChronicByPatientIdEvent;
+			import com.adobe.Quivus.events.viewBackground.diagnosis.LoadPatientDiagnosisResolvedByPatientIdEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.itemEditors.SparkComboBoxItemEditor;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.VBSectionDictation;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.VBSectionNotes;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBInternalBarInactiveSkin;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.transparentGridPanelSkin;
+			import com.adobe.Quivus.view.controls.skins.VBinternalBarSkin;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBIconsButton;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.VBdictationBtnSelected;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.VBnotesBtnSelected;
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.VBIconsBlackButton;
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.VBIconsButtonFilled;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Label;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.events.DataGridEvent;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.events.ValidationResultEvent;
+			
+			import spark.components.ComboBox;
+			
+			import valueObjects.ImmunizationDTO;
+			import valueObjects.PageDTO;
+			import valueObjects.PatientDiagnosisDTO;
+			import valueObjects.VitalDTO;
+			
+			private var dictationGridPanel:VBSectionDictation;
+			
+			[Bindable]
+			public var deleteColumnData:Object;
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			public function GridRowNumber(item:Object, iCol:int):String
+			{
+				var strRowNum:String = "";
+				
+				if (id_DiagnosisGrid.dataProvider)
+				{
+					var rowNum:int = id_DiagnosisGrid.dataProvider.getItemIndex(item) + 1;
+					strRowNum = String(rowNum);
+				}
+				
+				return strRowNum;
+				
+			}
+			
+			private var moduleConstantName:String = Constants.DIAGNOSIS_MODULE_NAME;
+			
+			[Bindable]
+			private var vb_IsModelUpdated:Boolean;
+			
+			public function get IsModelUpdated():Boolean{
+				
+				return vb_IsModelUpdated;
+				
+			}
+			
+			public function set IsModelUpdated(value:Boolean):void{
+				
+				vb_IsModelUpdated = value;
+				
+				if(vb_IsModelUpdated )
+				{
+					var notesDTOList:ArrayCollection = QSUtilityFunctions.getModuleNoteListForViewBackGround
+						( moduleConstantName);
+					var dictationDTOList:ArrayCollection = QSUtilityFunctions.getModuleDictationListForViewBackGround
+						(moduleConstantName);
+					
+					/* if(notesDTOList && notesDTOList.length > 0) {
+					id_header.id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected); 
+					} else {
+					id_header.id_NotesBtn.setStyle("skinClass", VBnotesBtn);
+					}
+					
+					if( dictationDTOList && dictationDTOList.length > 0) {
+					id_header.id_Voice.setStyle("skinClass", VBdictationBtnSelected);
+					} else {
+					id_header.id_Voice.setStyle("skinClass", VBdictationBtn);
+					} */
+					
+					if(dictationDTOList && dictationDTOList.length > 0)
+					{
+						id_header.id_Voice.setStyle("skinClass", VBdictationBtnSelected);
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+					}
+					
+					if(notesDTOList && notesDTOList.length > 0)
+					{
+						id_header.id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected);
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+					}		
+					
+				}
+			}
+			private function diagnosisGridItemEditBeginHandler(event:DataGridEvent):void
+			{
+				id_DiagnosisGrid.createItemEditor(event.columnIndex, event.rowIndex);
+				
+				if (event.columnIndex == 5 || event.columnIndex == 6)
+				{
+					//id_DiagnosisGrid.createItemEditor(event.columnIndex, event.rowIndex);
+					
+					/* if (event.columnIndex == 5)
+					YesNoItemEditor(id_DiagnosisGrid.itemEditorInstance).property = "IsChronic";
+					else
+					YesNoItemEditor(id_DiagnosisGrid.itemEditorInstance).property = "IsActive";
+					
+					YesNoItemEditor(id_DiagnosisGrid.itemEditorInstance).data = event.itemRenderer.data; */
+					
+				}
+			}
+			
+			private function cc():void
+			{
+				//addEventListener("writeDictationClick", writeDictationClickHandler, false, 0, true);
+				
+				id_DiagnosisGrid.addEventListener(DataGridActionsEvent.ITEM_EDIT_KEY_UP, itemEditKeyUpHandler, false, 0, true);
+				id_DiagnosisGrid.addEventListener(DataGridActionsEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+				id_DiagnosisGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				id_DiagnosisGrid.addEventListener(DataGridActionsEvent.WRITE_NOTES_CLICK, writeNotesClickHandler, false,0, true);
+				
+				
+				
+				//BindingUtils.bindProperty(model, "signCosignBtnEnabled", model.quickInputDTO.Assessment.Diagnosis, "length");
+				
+				if (!deleteColumnData)
+					deleteColumnData = {};
+				
+				deleteColumnData["noteDataFields"] = {subject: "NoteSubject", note: "Note", header: "ICDCode.IcdCodeDescription"};
+				deleteColumnData["dictationDataField"] = "DictationID";
+				deleteColumnData["recordIDField"] = "PatientDiagnosisID";
+				deleteColumnData["section"] = QIPopUpManager.DIAGNOSIS;
+			}
+			
+			private function itemEditKeyUpHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_DIAGNOSIS ) )//Tahir Alvi - implement security check 
+				{
+					if (event.searchString.length > 2)
+					{
+						var icdEvent : LoadICDCodeEvent = new LoadICDCodeEvent(event.searchString);
+						CairngormEventDispatcher.getInstance().dispatchEvent( icdEvent );
+					}
+				}
+			}
+			
+			private function writeNotesClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_DIAGNOSIS ) )//Tahir Alvi - implement security check 
+				{
+					
+				}
+			}
+			
+			private function editRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_DIAGNOSIS ) )//Tahir Alvi - implement security check 
+				{
+					id_DiagnosisGrid.editable = true;
+					
+					var rowIndex:int = LabelDataGrid(event.currentTarget).selectedIndex;
+					
+					var itemToSetInEditableMode:IListItemRenderer = id_DiagnosisGrid.indexToItemRenderer(rowIndex);
+					
+					var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+					ev.columnIndex = 2;
+					ev.rowIndex = rowIndex;
+					ev.itemRenderer = itemToSetInEditableMode;
+					ev.dataField = "OnSet";
+					
+					id_DiagnosisGrid.dispatchEvent(ev);
+					
+				}
+			}
+			private var _hasGridChanged:Boolean;
+			private var _hasViewChanged:Boolean;
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_DIAGNOSIS ) )//Tahir Alvi - implement security check 
+				{
+					var selectedIdx:int = id_DiagnosisGrid.selectedIndex;
+					
+					var diagnosisID:int = PatientDiagnosisDTO(event.currentTarget.selectedItem).PatientDiagnosisID;
+					
+					if (diagnosisID == 0)
+					{
+						model.patientDiagnosisDTOListByPatientId.removeItemAt(selectedIdx);
+						if (model.patientDiagnosisDTOListByPatientId.length <= 0)
+						{
+							_hasGridChanged = false;
+							//hasViewChanged = isGetEdited();
+						}
+					}
+					else
+					{
+						event.currentTarget.selectedItem.IsDeleted = true;
+						model.patientDiagnosisDTOListByPatientId.filterFunction = filterDeletedItems; 
+						model.patientDiagnosisDTOListByPatientId.refresh();
+						
+						hasViewChanged = _hasGridChanged = true;
+					}
+					
+				}
+			}
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			public function chronicLabelFunction(oItem:Object,iCol:int):String
+			{
+				var label:String = ""; 
+				if (oItem.hasOwnProperty("IsChronic"))
+				{
+					if (oItem.IsChronic)
+						label = "Yes";
+					else
+						label = "No";
+				}
+				
+				return label;
+			}
+			
+			public function displayRowNum(oItem:Object,iCol:int):String
+			{
+				var rowNumber:int = id_DiagnosisGrid.dataProvider.getItemIndex(oItem) + 1;
+				return String(rowNumber);
+			}
+			
+			private function diagnosisGridItemEditEndHandler(event:DataGridEvent):void
+			{
+				var validationRes:ValidationResultEvent;
+				var diagnosisID:int = PatientDiagnosisDTO(event.currentTarget.selectedItem).PatientDiagnosisID;
+				
+				if (event.dataField == "ICDCode.IcdCodeDescription" || event.dataField == "ICDCode.IcdCodeName")
+				{
+					var editor:ComboBox = SparkComboBoxItemEditor(id_DiagnosisGrid.itemEditorInstance).id_ComboEditor;
+					
+					comboValidator.source = editor;
+					
+					if (event.dataField == "ICDCode.IcdCodeDescription")
+					{
+						comboValidator.error = "Select diagnosis from list";
+					}
+					else
+					{
+						comboValidator.error = "Select ICD Code from list";
+					}
+					
+					validationRes = comboValidator.validate(editor.selectedItem);
+					
+					if (validationRes && !validationRes.results)
+					{
+						event.itemRenderer.data.ICDCode = editor.selectedItem;
+						
+						if (diagnosisID != 0)
+							event.itemRenderer.data.IsDirty = true;
+						
+						hasViewChanged = _hasGridChanged = true;
+					}
+					else
+					{
+						id_DiagnosisGrid.destroyItemEditor();
+						
+						event.stopImmediatePropagation();
+						event.preventDefault();
+					}
+				}
+					
+				else if (event.dataField == "OnSet")
+				{
+					/* var dateEditor:* = id_DiagnosisGrid.itemEditorInstance;
+					
+					onSetValidator.source = dateEditor;
+					onSetValidator.error = "Invalid OnSet";
+					validationRes = onSetValidator.validate(dateEditor.text);
+					
+					if (validationRes && !validationRes.results)
+					{
+					if (dateEditor.selectedDate)
+					{
+					event.itemRenderer.data.OnSet = dateEditor.selectedDate;
+					
+					if (diagnosisID != 0)
+					event.itemRenderer.data.IsDirty = true;
+					
+					hasViewChanged = _hasGridChanged = true;
+					}
+					}
+					else
+					{
+					id_DiagnosisGrid.destroyItemEditor();
+					
+					event.stopImmediatePropagation();
+					event.preventDefault();
+					} */
+				}
+				else if (event.dataField == "IsChronic")
+				{
+					hasViewChanged = _hasGridChanged = true;
+				}
+			}
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				/* var mpiEvent : ManagePatientImmunizationEvent = new ManagePatientImmunizationEvent(  );
+				CairngormEventDispatcher.getInstance().dispatchEvent( mpiEvent ); */
+				if(model.patientDiagnosisDTOListByPatientId!=null){
+					model.patientDiagnosisDTOListByPatientId.filterFunction=myFilter;
+					model.patientDiagnosisDTOListByPatientId.refresh();
+				}
+				
+				if(model.patientDiagnosisDTOAcuteListByPatientId!=null)
+				{
+					model.patientDiagnosisDTOAcuteListByPatientId.filterFunction=myFilter;
+					model.patientDiagnosisDTOAcuteListByPatientId.refresh();
+				}
+				
+				if(model.patientDiagnosisDTOChronicListByPatientId!=null)
+				{
+					model.patientDiagnosisDTOChronicListByPatientId.filterFunction=myFilter;
+					model.patientDiagnosisDTOChronicListByPatientId.refresh();
+				}
+				
+				if(model.patientDiagnosisDTOResolvedListByPatientId!=null)
+				{
+					model.patientDiagnosisDTOResolvedListByPatientId.filterFunction=myFilter;
+					model.patientDiagnosisDTOResolvedListByPatientId.refresh();
+				}
+			}
+			
+			private function myFilter(obj:*):Boolean
+			{
+				
+				if(model.vbFilter == Constants.BY_VISIT)
+				{
+					if(model.vbVisitId == obj.VisitID)
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+				
+				return true;
+				
+			}
+			
+			private var notesGridPanel:VBSectionNotes;
+			private var m_oNotesDTOList:ArrayCollection;
+			
+			public function get notesDTOList():ArrayCollection
+			{
+				return m_oNotesDTOList;
+			}
+			
+			public function set notesDTOList(value:ArrayCollection):void
+			{
+				m_oNotesDTOList = value;
+			}
+			
+			protected function slideoutpanel1_creationCompleteHandler():void
+			{
+				if(this.ExpandedView)
+				{
+					id_header.HeadingLable = id_header.HeadingLable.toUpperCase();
+				}
+				else
+				{
+					id_header.HeadingLable = id_header.HeadingLable.toLowerCase();
+				}
+				id_header.id_OptionPopUp.displayPopUp = true;
+				id_header.id_slideoutBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					ToggleSlideOut();
+					event.stopImmediatePropagation();
+				});
+				//addEventListener("writeDictationClick", writeDictationClickHandler, false, 0, true);
+				
+				id_DiagnosisGrid.addEventListener(DataGridActionsEvent.ITEM_EDIT_KEY_UP, itemEditKeyUpHandler, false, 0, true);
+				id_DiagnosisGrid.addEventListener(DataGridActionsEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+				id_DiagnosisGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				id_DiagnosisGrid.addEventListener(DataGridActionsEvent.WRITE_NOTES_CLICK, writeNotesClickHandler, false,0, true);
+				
+				
+				
+				//BindingUtils.bindProperty(model, "signCosignBtnEnabled", model.quickInputDTO.Assessment.Diagnosis, "length");
+				
+				if (!deleteColumnData)
+					deleteColumnData = {};
+				
+				deleteColumnData["noteDataFields"] = {subject: "NoteSubject", note: "Note", header: "ICDCode.IcdCodeDescription"};
+				deleteColumnData["dictationDataField"] = "DictationID";
+				deleteColumnData["recordIDField"] = "PatientDiagnosisID";
+				deleteColumnData["section"] = QIPopUpManager.DIAGNOSIS;
+				
+				id_header.id_slideoutBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					ToggleSlideOut();
+					event.stopImmediatePropagation();
+				});
+				
+				/* var notesDTOList:ArrayCollection = UtilityFunctions.getModuleNoteListForViewBackGround( Constants.DIAGNOSIS_MODULE_NAME );
+				var dictationDTOList:ArrayCollection = UtilityFunctions.getModuleDictationListForViewBackGround(Constants.DIAGNOSIS_MODULE_NAME); */
+				
+				id_header.id_OptionPopUp.displayPopUp = true;
+				id_header.id_iconButtons.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					//if(id_Area.visible)
+					{
+						
+						if(id_header.id_OptionPopUp.displayPopUp)
+						{
+							id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						}
+						else
+						{
+							id_header.id_iconButtons.setStyle("skinClass", VBIconsButton);	
+						}
+					}
+					
+				});	
+				id_header.id_Voice.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					var notesDTOList:ArrayCollection = QSUtilityFunctions.getModuleNoteListForViewBackGround
+					( moduleConstantName);
+					var dictationDTOList:ArrayCollection = QSUtilityFunctions.getModuleDictationListForViewBackGround
+					(moduleConstantName);
+					
+					id_notesDictation.notesDTOList = notesDTOList;
+					id_notesDictation.DictationDTOList = dictationDTOList;
+					id_notesDictation.id_Area.visible 		= true;
+					id_notesDictation.id_Area.includeInLayout = true;
+					//id_notesDictation.id_VBViews.selectedIndex = 1;						
+					id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+					id_header.id_iconButtons.selected = false;
+					id_header.id_OptionPopUp.displayPopUp = false;
+					
+					if(this.ExpandedView)
+					{
+						event.stopImmediatePropagation();
+					}
+				});			
+				
+				id_header.id_slideoutBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					ToggleSlideOut();
+					event.stopImmediatePropagation();
+				});
+				
+				id_header.id_NotesBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					var notesDTOList:ArrayCollection = QSUtilityFunctions.getModuleNoteListForViewBackGround
+					( moduleConstantName);
+					var dictationDTOList:ArrayCollection = QSUtilityFunctions.getModuleDictationListForViewBackGround
+					(moduleConstantName);
+					
+					id_notesDictation.notesDTOList = notesDTOList;
+					id_notesDictation.DictationDTOList = dictationDTOList;
+					{
+						id_notesDictation.id_Area.visible 		= true;
+						id_notesDictation.id_Area.includeInLayout = true;						
+						//id_notesDictation.id_VBViews.selectedIndex = 0;
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						id_header.id_iconButtons.selected = false;
+						id_header.id_OptionPopUp.displayPopUp = false;
+						
+					}
+					
+					if(this.ExpandedView)
+					{
+						event.stopImmediatePropagation();
+					}
+				});
+				id_header.id_OptionPopUp.displayPopUp = false;
+				
+				if(this.ExpandedView)
+				{
+					//id_header.id_pmhHeader.setStyle("skinClass", VBinternalBarSkin);	
+				}
+				else
+				{
+					//	id_header.id_pmhHeader.setStyle("skinClass", VBInternalBarInactiveSkin);
+				}
+			}
+			
+			
+			
+			/* public function displayRowNumAcute(oItem:Object,iCol:int):String
+			{
+			var rowNumber:int = id_DiagnosisAcuteGrid.dataProvider.getItemIndex(oItem) + 1;
+			return String(rowNumber);
+			}
+			public function displayRowNumChronic(oItem:Object,iCol:int):String
+			{
+			var rowNumber:int = id_DiagnosisChronicGrid.dataProvider.getItemIndex(oItem) + 1;
+			return String(rowNumber);
+			}
+			public function displayRowNumResolved(oItem:Object,iCol:int):String
+			{
+			var rowNumber:int = id_DiagnosisResolvedGrid.dataProvider.getItemIndex(oItem) + 1;
+			return String(rowNumber);
+			}
+			*/
+			protected function slideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if(id_header && id_header.id_pmhHeader)
+				{
+					if(event.viewState == QSViewStateEvent.EXPANDED_VIEW)
+					{				
+						
+						//id_header.id_pmhHeader.setStyle("skinClass", VBinternalBarSkin);	
+						id_header.HeadingLable = id_header.HeadingLable.toUpperCase();
+						id_header.id_expandBtn.selected = true;
+					}
+					else
+					{
+						//id_header.id_pmhHeader.setStyle("skinClass", VBInternalBarInactiveSkin);
+						id_header.HeadingLable = AppUtils.TitleCase(id_header.HeadingLable);
+						id_header.id_expandBtn.selected = false;
+					}
+				}
+			}
+			
+			protected function id_VBViews_changeHandler(event:IndexChangedEvent):void
+			{
+				
+				var nav:NavigatorContent = id_VBViews2.getElementAt( event.oldIndex ) as NavigatorContent;
+				nav.label = AppUtils.TitleCase( nav.label );
+				
+				nav = id_VBViews2.getElementAt( event.newIndex ) as NavigatorContent;
+				nav.label =  nav.label.toUpperCase();
+			}
+			
+			private function setVisitDate(oItem:Object,iCol:int):String
+			{
+				var strVisitDate:String = '';
+				
+				if (oItem && oItem.VisitDate)
+				{
+					var dateRecieved:Date = new Date(Date.parse(oItem.VisitDate));
+					strVisitDate = formatDateTime.format(dateRecieved);
+					var nullDate:Date = Constants.NULL_DATE;
+					
+					if (dateRecieved.getFullYear() <= nullDate.getFullYear() && dateRecieved.getMonth() <= nullDate.getMonth())
+						strVisitDate = "";
+					
+					if(oItem.IsNA)
+						strVisitDate = 'N/A';
+				}
+				return strVisitDate;
+			}
+			
+			
+			//////
+			
+			private function switchPageForGridView4Acute( event:Event ):void
+			{
+				
+				if( UtilityFunctions.IsNullOrEmpty( model.DiagnosisAcuteCurrentPageByPatient ) )
+					model.DiagnosisAcuteCurrentPageByPatient = new PageDTO();
+				
+				var pvital:PageDTO 		= model.DiagnosisAcuteCurrentPageByPatient;
+				pvital.fromDate 		= model.defaultFilterAndPaging.fromDate;
+				pvital.toDate 			= model.defaultFilterAndPaging.toDate;
+				pvital.pageSize 		= model.defaultFilterAndPaging.pageSize;
+				pvital.LastVisitNumber 	= model.defaultFilterAndPaging.LastVisitNumber;
+				
+				var lpdbp:LoadPatientDiagnosisAcuteByPatientIdEvent = new LoadPatientDiagnosisAcuteByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpdbp );
+			}
+			
+			private function switchPageForGridView4Chronic( event:Event ):void
+			{
+				
+				if( UtilityFunctions.IsNullOrEmpty( model.DiagnosisChronicCurrentPageByPatient ) )
+					model.DiagnosisChronicCurrentPageByPatient = new PageDTO();
+				
+				var pvital:PageDTO 		= model.DiagnosisChronicCurrentPageByPatient;
+				pvital.fromDate 		= model.defaultFilterAndPaging.fromDate;
+				pvital.toDate 			= model.defaultFilterAndPaging.toDate;
+				pvital.pageSize 		= model.defaultFilterAndPaging.pageSize;
+				pvital.LastVisitNumber 	= model.defaultFilterAndPaging.LastVisitNumber;
+				
+				var lpdbp:LoadPatientDiagnosisChronicByPatientIdEvent = new LoadPatientDiagnosisChronicByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpdbp );
+			}
+			
+			private function switchPageForGridView4Resolved( event:Event ):void
+			{
+				
+				if( UtilityFunctions.IsNullOrEmpty( model.DiagnosisResolvedCurrentPageByPatient ) )
+					model.DiagnosisResolvedCurrentPageByPatient = new PageDTO();
+				
+				var pvital:PageDTO 		= model.DiagnosisResolvedCurrentPageByPatient;
+				pvital.fromDate 		= model.defaultFilterAndPaging.fromDate;
+				pvital.toDate 			= model.defaultFilterAndPaging.toDate;
+				pvital.pageSize 		= model.defaultFilterAndPaging.pageSize;
+				pvital.LastVisitNumber 	= model.defaultFilterAndPaging.LastVisitNumber;
+				
+				var lpdbp:LoadPatientDiagnosisResolvedByPatientIdEvent = new LoadPatientDiagnosisResolvedByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpdbp );
+			}
+			
+			
+			protected function id_PaginationFilterView4Acute_RefreshViewHandler(event:Event):void
+			{
+				var lpdbp:LoadPatientDiagnosisAcuteByPatientIdEvent = new LoadPatientDiagnosisAcuteByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpdbp );
+			}
+			
+			protected function id_PaginationFilterView4Chronic_RefreshViewHandler(event:Event):void
+			{
+				var lpdbp:LoadPatientDiagnosisChronicByPatientIdEvent = new LoadPatientDiagnosisChronicByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpdbp );
+			}
+			
+			protected function id_PaginationFilterView4Resolved_RefreshViewHandler(event:Event):void
+			{
+				var lpdbp:LoadPatientDiagnosisResolvedByPatientIdEvent = new LoadPatientDiagnosisResolvedByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpdbp );
+			}
+			
+			protected function slideoutpanel1_focusInHandler(event:FocusEvent):void
+			{
+				// TODO Auto-generated method stub
+				id_VBViews2.selectedIndex = 0;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Binding source="model.vbDataLoadedFlag" destination="IsModelUpdated" />
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YY" />
+		<validators:ComboValidator id="comboValidator" property="selectedItem"/>
+		<validators:PastDateValidator id="onSetValidator"   property="text"/>
+	</fx:Declarations>
+	
+	<custom:HeaderContents>
+		<s:Group id="id_mainHeader" width="100%" height="24" minWidth="{ChromeUtil.topLevelMainContainer.width - 70}">
+			<s:layout>
+				<s:VerticalLayout verticalAlign="bottom" horizontalAlign="center" />
+			</s:layout>
+			<viewBackground:VBSectionHeader id="id_header" width="{id_mainHeader.width - 8}" HeadingLable="{Constants.VB_SECTION_NAME_DIAGNOSIS}" 
+											Skin="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBDiagnosisPanelSkin" SectionNameID="{QSSecurityUtil.VB_DIAGNOSIS}"/>						   
+		</s:Group>
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		<viewBackground:VBSectionSlideoutHeader width="100%" label="{Constants.VB_SECTION_NAME_DIAGNOSIS}" />
+		
+	</custom:SlideHeaderContents>
+	<custom:Contents>
+		<s:SkinnableContainer id="id_contents" width="100%" height="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.transparentGridPanelSkin">
+			<s:layout>
+				<s:VerticalLayout horizontalAlign="left" verticalAlign="top" gap="-1" paddingLeft="4" paddingRight="4" paddingBottom="4" paddingTop="0" />
+			</s:layout>
+			<!--<s:HGroup id="id_NotesArea" width="100%" paddingTop="0" includeInLayout="false"  />-->
+			
+			<viewBackground:VBSectionLevelNotesDictation id="id_notesDictation" width="100%" />
+			
+			<s:Button label="Filter" click="button1_clickHandler(event)" visible="false" includeInLayout="false" id="id_applyFiler"/>
+			<!-- this grid is made visible to false -->
+			<components1:LabelDataGrid id="id_DiagnosisGrid" width="100%" includeInLayout="false" visible="false" useRollOver="false" height="100%"
+									  dataProvider="{model.patientDiagnosisDTOListByPatientId}" 
+									  rowCount="{id_DiagnosisGrid.dataProvider.length + 1}" verticalScrollPolicy="off"
+									  sortableColumns="false" 
+									  itemEditBegin="diagnosisGridItemEditBeginHandler(event)"
+									  itemEditEnd="diagnosisGridItemEditEndHandler(event)"
+									  columnWidths="{[25, '12%', '13%', '15%', '25%', '10%', 100]}">
+				<components1:columns>
+					
+					<mx:DataGridColumn headerText="Sr. #" editable="false" labelFunction="displayRowNum" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+					<mx:DataGridColumn headerText="Visit Date" dataField="VisitDate" editable="false" labelFunction="setVisitDate" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+					<mx:DataGridColumn headerText="On Set" dataField="OnSet" editorDataField="selectedDate" headerRenderer="mx.controls.Label" wordWrap="true"  itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG">
+						<mx:itemEditor>
+							<fx:Component>
+								<mx:DateField  editable="true"/>
+							</fx:Component>
+						</mx:itemEditor>
+					</mx:DataGridColumn>
+					<mx:DataGridColumn headerText="ICD Code" dataField="ICDCode.IcdCodeName" editorDataField="editorText" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true">
+						<mx:itemEditor>
+							<fx:Component>
+								<itemEditors:SparkComboBoxItemEditor labelField="IcdCodeName" width="60" dataProvider="{outerDocument.model.icdCodeDTOList}"/>
+							</fx:Component>
+						</mx:itemEditor>
+					</mx:DataGridColumn>
+					<mx:DataGridColumn headerText="Diagnosis" dataField="ICDCode.IcdCodeDescription" editorDataField="editorText" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true">
+						<mx:itemEditor>
+							<fx:Component>
+								<itemEditors:SparkComboBoxItemEditor labelField="IcdCodeDescription" width="100%" dataProvider="{outerDocument.model.icdCodeDTOList}"/>
+							</fx:Component>
+						</mx:itemEditor>
+					</mx:DataGridColumn>
+					<mx:DataGridColumn headerText="Chronic" dataField="IsChronic" editorDataField="isYes" labelFunction="chronicLabelFunction" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true">
+						<mx:itemEditor>
+							<fx:Component>
+								<diagnosis:YesNoItemEditor width="70" height="100%"/>
+							</fx:Component>
+						</mx:itemEditor>
+					</mx:DataGridColumn>
+					<commons:DataGridColumnEx data="{deleteColumnData}" headerText="" headerRenderer="mx.controls.Label" wordWrap="true" itemRenderer="com.gazuntite.patient.visit.view.itemrenderers.DeleteRecordRenderer" editable="false"/>
+				</components1:columns>					
+			</components1:LabelDataGrid>
+			
+			<s:VGroup width="100%" gap="-4" paddingTop="8">		
+				<s:TabBar id="id_TabBar2" dataProvider="{id_VBViews2}" skinClass="com.adobe.gazuntite.skins.chrome.tabBarSkins.VBrecordingsTabBar" />
+				<s:SkinnableContainer width="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBrecordingsSkin">
+					<s:layout>
+						<s:VerticalLayout paddingBottom="3" paddingLeft="3" paddingRight="3" paddingTop="3" />
+					</s:layout>
+					
+					<mx:ViewStack width="100%" minWidth="500" resizeToContent="true" selectedIndex="{id_VBViews2.selectedIndex}">
+						<s:NavigatorContent width="100%" label="Acute History Paging and Filtering" minWidth="500" >
+							<paging:PaginationFilterView id="id_PaginationFilterView4Acute" width="100%" Page="{model.DiagnosisAcuteCurrentPageByPatient}"
+														 ShowFilterControls="false"
+														 GoToFirstPage="switchPageForGridView4Acute(event)" GoToNextPage="switchPageForGridView4Acute(event)" 
+														 GoToPreviousPage="switchPageForGridView4Acute(event)" GoToLastPage="switchPageForGridView4Acute(event)"
+														 RefreshView="id_PaginationFilterView4Acute_RefreshViewHandler(event)"
+														 />
+						</s:NavigatorContent>
+						
+						<s:NavigatorContent width="100%" label="Chronic Paging and Filtering" >											
+							<paging:PaginationFilterView id="id_PaginationFilterView4Chronic" width="100%" Page="{model.DiagnosisChronicCurrentPageByPatient}"
+														 ShowFilterControls="false"
+														 GoToFirstPage="switchPageForGridView4Chronic(event)" GoToNextPage="switchPageForGridView4Chronic(event)" 
+														 GoToPreviousPage="switchPageForGridView4Chronic(event)" GoToLastPage="switchPageForGridView4Chronic(event)"
+														 RefreshView="id_PaginationFilterView4Chronic_RefreshViewHandler(event)"
+														 />
+						</s:NavigatorContent>
+						
+						<s:NavigatorContent width="100%" label="Resolved Paging and Filtering" >	
+							<paging:PaginationFilterView id="id_PaginationFilterView4Resolved" width="100%" Page="{model.DiagnosisResolvedCurrentPageByPatient}"
+														 ShowFilterControls="false"
+														 GoToFirstPage="switchPageForGridView4Resolved(event)" GoToNextPage="switchPageForGridView4Resolved(event)" 
+														 GoToPreviousPage="switchPageForGridView4Resolved(event)" GoToLastPage="switchPageForGridView4Resolved(event)"
+														 RefreshView="id_PaginationFilterView4Resolved_RefreshViewHandler(event)"
+														 />
+						</s:NavigatorContent>
+					</mx:ViewStack>
+					<!--<mx:ViewStack id="id_VBViews2" width="100%" minWidth="500" resizeToContent="true" creationPolicy="all" change="id_VBViews_changeHandler(event)" >
+					<s:NavigatorContent width="100%" label="Acute" minWidth="500" >
+					
+					<s:TabBar id="id_TabBar2" dataProvider="{id_VBViews2}" skinClass="com.adobe.Quivus.view.controls.skins.TabBarSkins.VBrecordingsTabBar" />
+					<s:SkinnableContainer width="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBrecordingsSkin">
+					<s:layout>
+					<s:VerticalLayout paddingBottom="3" paddingLeft="3" paddingRight="3" paddingTop="3" />
+					</s:layout>-->
+					
+					
+					<mx:ViewStack id="id_VBViews2" width="100%" minWidth="500" resizeToContent="true" creationPolicy="all" change="id_VBViews_changeHandler(event)" >
+						<s:NavigatorContent width="100%" label="Acute" minWidth="500" >
+							
+							<diagnosis1:vbAcuteGridView width="100%" height="100%" />
+							
+						</s:NavigatorContent>
+						
+						
+						<s:NavigatorContent width="100%" label="Chronic" >											
+							
+							<diagnosis1:vbChronicGridView width="100%" height="100%" />
+							
+						</s:NavigatorContent>
+						
+						<s:NavigatorContent width="100%" label="Resolved" >
+							
+							<diagnosis1:vbResolvedGridView width="100%" height="100%" />
+							
+						</s:NavigatorContent>
+						
+						
+						
+						
+						
+					</mx:ViewStack>
+					
+				</s:SkinnableContainer>
+			</s:VGroup>
+			<!--</s:VGroup>-->
+			
+			<!--<s:Group>	
+			<s:Rect height="33" radiusX="3" width="109" x="1" y="0">
+			<s:fill>
+			<s:LinearGradient rotation="90">
+			<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="0"/>
+			<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="0.41568627450980394"/>
+			<s:GradientEntry alpha="1.0" color="#EDEDED" ratio="0.6196078431372549"/>
+			</s:LinearGradient>
+			</s:fill>
+			<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="270" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			</s:filters>
+			</s:Rect>
+			<s:RichText color="#A32F58" fontFamily="Calibri Bold" fontSize="13" tabStops="S0 S50" text="Acute" x="8" y="5"/>
+			</s:Group>-->
+			
+			<mx:Spacer height="2" />
+			<!--<s:Group>	
+			<s:Rect height="33" radiusX="3" width="109" x="1" y="0">
+			<s:fill>
+			<s:LinearGradient rotation="90">
+			<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="0"/>
+			<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="0.41568627450980394"/>
+			<s:GradientEntry alpha="1.0" color="#EDEDED" ratio="0.6196078431372549"/>
+			</s:LinearGradient>
+			</s:fill>
+			<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="270" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			</s:filters>
+			</s:Rect>
+			<s:RichText color="#A32F58" fontFamily="Calibri Bold" fontSize="13" tabStops="S0 S50" text="Chronic" x="8" y="5"/>
+			</s:Group>-->
+			
+			<!--<s:Group>	
+			<s:Rect height="33" radiusX="3" width="109" x="1" y="0">
+			<s:fill>
+			<s:LinearGradient rotation="90">
+			<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="0"/>
+			<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="0.41568627450980394"/>
+			<s:GradientEntry alpha="1.0" color="#EDEDED" ratio="0.6196078431372549"/>
+			</s:LinearGradient>
+			</s:fill>
+			<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="270" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			</s:filters>
+			</s:Rect>
+			<s:RichText color="#A32F58" fontFamily="Calibri Bold" fontSize="13" tabStops="S0 S50" text="Resolved" x="8" y="5"/>
+			</s:Group>-->
+			
+		</s:SkinnableContainer>
+	</custom:Contents>
+</custom:SlideOutPanel>

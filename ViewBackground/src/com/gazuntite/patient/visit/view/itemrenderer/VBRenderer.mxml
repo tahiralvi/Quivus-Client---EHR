@@ -1,0 +1,435 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:MXDataGridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						  xmlns:s="library://ns.adobe.com/flex/spark" 
+						  xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.gridDictationButtonSelectedSkin;
+			import com.adobe.gazuntite.skins.chrome.gridButtonSkins.dictationBtn;
+			import com.adobe.gazuntite.skins.chrome.gridButtonSkins.notesBtn;
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.writeNotesButtonSelected;
+			import com.gazuntite.common.dto.dictation.ModuleDictationDTO;
+			import com.gazuntite.common.util.QSConstants;
+			import com.gazuntite.common.view.components.dictation.DictationPopup;
+			import com.gazuntite.common.view.components.grid.DataGridColumnEx;
+			import com.gazuntite.common.view.components.notes.NotesPanel;
+			import com.gazuntite.common.view.events.DataGridActionsEvent;
+			import com.gazuntite.controls.extended.components.LabelDataGrid;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			import com.gazuntite.patient.visit.view.common.VBDictationPopup;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.controls.DataGrid;
+			import mx.controls.dataGridClasses.DataGridListData;
+			import mx.controls.listClasses.BaseListData;
+			import mx.events.CloseEvent;
+			import mx.events.DataGridEvent;
+			
+			private var recordGridNotesPopUp:NotesPanel;
+			private var dictationPopUp:DictationPopup;
+			
+			private var gridNotesDTO:Object;//ModuleNoteDTO;
+			
+			private var notesField:String;
+			private var notesSubjectField:String;
+			private var headerField:String;
+			private var visitDateField:String;
+			private var dictationIDField:String;
+			private var statusFunction:Function;
+			private var section:String;
+			
+			private var _canOnlyEditAndDelete:Boolean;
+			
+			[Bindable]
+			private var model:VBModelLocator = VBModelLocator.getInstance();
+			
+			[Bindable]
+			override public function set data(value:Object):void
+			{
+				super.data = value;
+				
+				//For associated records in Diagnosis & immunization
+				 if( data.hasOwnProperty("IsNA") && data.IsNA )
+					id_ButtonGroup.enabled = false; 
+				
+				if( data.IsDirty )
+				{
+					/* id_SaveBtn.visible = true;
+					id_Edit.visible = false; */
+					setEditOrSaveIcon(false);
+				}
+				else
+				{
+					/* id_SaveBtn.visible = false;
+					id_Edit.visible = true; */
+					setEditOrSaveIcon(true);
+				}
+				
+				//Tahir Alvi
+				//Enable or disbale action button if IsRecordEditable is true or false
+				if (data.hasOwnProperty("IsRecordEditable"))
+				{
+					if (data.IsRecordEditable == false)
+					{
+						id_ButtonGroup.enabled = false;
+					}
+					else
+					{
+						id_ButtonGroup.enabled = true;						
+					}
+				}
+				
+				extractDataForNotes();
+				extractDataForDictation();
+				
+				setNotesIcon();
+				setDictationIcons();
+			}
+			
+			[Bindable]
+			public function get canOnlyEditAndDelete():Boolean
+			{
+				return _canOnlyEditAndDelete;
+			}
+			
+			public function set canOnlyEditAndDelete(value:Boolean):void
+			{
+				if (value != _canOnlyEditAndDelete)
+				{
+					_canOnlyEditAndDelete = value;
+				}
+			}
+			
+			private function setNotesIcon():void
+			{
+				if (gridNotesDTO)
+				{
+					if (gridNotesDTO.Note || gridNotesDTO.NoteSubject)
+					{
+						id_WriteNotes.setStyle("skinClass", writeNotesButtonSelected);
+					}
+					else
+					{
+						id_WriteNotes.setStyle("skinClass", notesBtn);
+					}
+				}
+				else
+				{
+					id_WriteNotes.setStyle("skinClass", notesBtn);
+				}
+			}
+			
+			private function setDictationIcons():void
+			{
+				var dicID:String = deriveComplexData(dictationIDField);
+				if (dicID && dicID != QSConstants.GUID_FORMAT)
+				{
+					id_WriteDictation.setStyle("skinClass", gridDictationButtonSelectedSkin);
+				}
+				else
+				{
+					id_WriteDictation.setStyle("skinClass", dictationBtn);
+				}
+			}
+			
+			private function onEmailClick(event:MouseEvent):void
+			{
+				dispatchEvent(new Event("emailRecordClick", true));
+				dispatchEvent(new DataGridActionsEvent(DataGridActionsEvent.EMAIL_RECORD_CLICK, true));
+			}
+			
+			private function onWriteNotesClick(event:MouseEvent):void
+			{
+				if (!recordGridNotesPopUp)
+					recordGridNotesPopUp = new NotesPanel();
+				
+				if (!recordGridNotesPopUp.isPanelShown)
+				{
+					gridNotesDTO = new Object();//ModuleNoteDTO();
+					var headingLabel:String = "";
+					var visitDateLabel:String = "";
+					
+					extractDataForNotes();
+					
+					headingLabel = deriveComplexData(headerField);
+					visitDateLabel = UtilityFunctions.FormatDate(deriveComplexData(visitDateField), "MM-DD-YYYY");
+					recordGridNotesPopUp = new NotesPanel();
+					recordGridNotesPopUp.width = 250;
+					recordGridNotesPopUp.height = 110;
+					recordGridNotesPopUp.HeadingLable = headingLabel;
+					recordGridNotesPopUp.VisitDateLable = visitDateLabel;//new Date().toString();
+					recordGridNotesPopUp.ShowPopup(this);
+					
+					var pt:Point = localToGlobal(new Point(id_WriteNotes.x - 196, id_WriteNotes.y + 15));
+					recordGridNotesPopUp.move(pt.x, pt.y);
+					recordGridNotesPopUp.notesDTO =  gridNotesDTO;
+					recordGridNotesPopUp.onNotesSaved = updateNotesData;
+					
+					//QIPopUpManager.addPopUp(recordGridNotesPopUp, section);
+					
+					/*recordGridNotesPopUp.addEventListener("notesSaved", function(event:Event):void
+					{
+					updateNotesData();
+					
+					}, false, 0, true);*/
+					
+					recordGridNotesPopUp.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						//recordGridNotesPopUp.removePopup();
+						//QIPopUpManager.removePopUp(recordGridNotesPopUp, section);
+						
+					}, false, 0, true);
+					
+					recordGridNotesPopUp.id_header.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						recordGridNotesPopUp.SaveNotes();
+						recordGridNotesPopUp.removeNotePanel();
+						//QIPopUpManager.removePopUp(recordGridNotesPopUp, section);
+					});
+				}
+			}
+			
+			private function deriveComplexData(field:String):*	
+			{
+				var currentObj:*;
+				
+				if (field)
+				{
+					var arr:Array = [field];
+					
+					if (field.indexOf(".") != -1)
+					{
+						arr = field.split(".");
+						field = arr[arr.length - 1];
+					}
+					
+					currentObj = data
+					
+					if (currentObj)
+					{
+						for (var i:int = 0; i < arr.length; i++)
+						{
+							currentObj = currentObj[arr[i]];
+						}
+					}
+				}
+				
+				return currentObj;
+			}
+			
+			private function updateNotesData():void
+			{
+				if (data)
+				{
+					var isDirty:Boolean = false;
+					
+					if (notesField && data.hasOwnProperty(notesField) && data[notesField] != gridNotesDTO.Note)
+					{
+						data[notesField] = gridNotesDTO.Note;
+						isDirty = true;
+					}
+					
+					if (notesSubjectField && data.hasOwnProperty(notesSubjectField) && data[notesSubjectField] != gridNotesDTO.NoteSubject)
+					{
+						data[notesSubjectField] = gridNotesDTO.NoteSubject;
+						isDirty = true;
+					}
+					
+					if (statusFunction)
+					{
+						var status:Boolean
+						
+						if(( gridNotesDTO.Note && gridNotesDTO.Note.length ) || ( gridNotesDTO.NoteSubject && gridNotesDTO.NoteSubject.length )) 
+							status = true;
+						else
+							status = false;
+						
+						statusFunction(status, data)
+					}
+					
+					if (isDirty)
+					{
+						setNotesIcon();
+						
+						if (data.hasOwnProperty("IsDirty"))
+						{
+							data["IsDirty"] = true;
+						}
+					}
+				}
+			}
+			
+			private function extractDataForNotes():void
+			{
+				if (listData && listData is DataGridListData)
+				{
+					var dataGrid:DataGrid = DataGrid(listData.owner);
+					
+					if (dataGrid.columns[listData.columnIndex] is DataGridColumnEx)
+					{
+						var gridCol:DataGridColumnEx = DataGridColumnEx(dataGrid.columns[listData.columnIndex]);
+						
+						if (gridCol.data)
+						{
+							if (gridCol.data.hasOwnProperty("noteDataFields") && gridCol.data.noteDataFields)
+							{
+								notesField = gridCol.data.noteDataFields.note;
+								notesSubjectField = gridCol.data.noteDataFields.subject;
+								
+								if (!gridNotesDTO)
+									gridNotesDTO = new Object();//ModuleNoteDTO();
+								
+								gridNotesDTO.Note = deriveComplexData(gridCol.data.noteDataFields.note);
+								gridNotesDTO.NoteSubject = deriveComplexData(gridCol.data.noteDataFields.subject);
+								
+								headerField = gridCol.data.noteDataFields.header;
+								
+								visitDateField = gridCol.data.noteDataFields.visitDate;
+								
+								statusFunction = gridCol.data.noteDataFields.statusFunction;
+							}
+							
+							if (gridCol.data.hasOwnProperty("section") && gridCol.data.section)
+							{
+								section = gridCol.data.section;
+							}
+						}
+					}
+				}
+			}
+			
+			private function extractDataForDictation():void
+			{
+				if (listData && listData is DataGridListData)
+				{
+					var dataGrid:DataGrid = DataGrid(listData.owner);
+					
+					if (dataGrid.columns[listData.columnIndex] is DataGridColumnEx)
+					{
+						var gridCol:DataGridColumnEx = DataGridColumnEx(dataGrid.columns[listData.columnIndex]);
+						if (gridCol.data)
+						{
+							if (gridCol.data.hasOwnProperty("dictationDataField"))
+							{
+								dictationIDField = gridCol.data.dictationDataField;
+							}
+							
+							if (gridCol.data.hasOwnProperty("section") && gridCol.data.section)
+							{
+								section = gridCol.data.section;
+							}
+						}
+					}
+				}
+			}
+			
+			private function onWriteDictationClick(event:MouseEvent):void
+			{
+				if (!dictationPopUp)
+				{
+					dictationPopUp = new DictationPopup();
+				}
+				
+				if (!dictationPopUp.isPopUpShown)
+				{
+					extractDataForDictation();
+					
+					dictationPopUp.width = 200;
+					dictationPopUp.height = 75;
+					dictationPopUp.HeadingLable = "Dictation";
+					dictationPopUp.model = model;
+					
+					dictationPopUp.ShowPopup(this);
+					dictationPopUp.DictationID = deriveComplexData(dictationIDField);
+					var pt:Point = localToGlobal(new Point(id_WriteDictation.x - 194, id_WriteDictation.y + 13));
+					
+					//dictationPopUp.move(pt.x - dictationPopUp.width/2, pt.y);
+					
+					dictationPopUp.move(pt.x , pt.y );
+					/* dictationPopUp.move(pt.x - (dictationPopUp.width/2)-95, pt.y + 10); */
+					
+					//QIPopUpManager.addPopUp(dictationPopUp, section);
+					
+					dictationPopUp.id_closeBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						dictationPopUp.removePopup();
+						//QIPopUpManager.removePopUp(dictationPopUp, section);
+						
+						if (data && dictationIDField )
+						{
+							if(dictationPopUp.DictationID)
+								data[dictationIDField] = dictationPopUp.DictationID;
+						}
+						
+						setDictationIcons();
+					});
+				}
+				
+				dispatchEvent(new DataGridActionsEvent(DataGridActionsEvent.WRITE_DICTATION_CLICK, true));
+			}
+			
+			private function onEditClick(event:MouseEvent):void
+			{
+				var ev:DataGridActionsEvent = new DataGridActionsEvent(DataGridActionsEvent.EDIT_RECORD_CLICK, true);
+				ev.data = data;
+				ev.callback = setEditOrSaveIcon;
+				
+				dispatchEvent(ev);
+			}
+			
+			private function onDeleteClick(event:MouseEvent):void	
+			{
+				var ev:DataGridActionsEvent = new DataGridActionsEvent(DataGridActionsEvent.DELETE_RECORD_CLICK, true);
+				ev.data = data;
+				
+				dispatchEvent(ev);
+			}
+			
+			private function notesPopUpCloseHandler(event:Event):void
+			{
+				trace();
+			}
+			
+			private function id_SaveBtn_clickHandler(event:MouseEvent):void
+			{
+				var ev:DataGridActionsEvent = new DataGridActionsEvent(DataGridActionsEvent.SAVE_RECORD_CLICK, true);
+				ev.data = data;
+				ev.callback = setEditOrSaveIcon;
+				
+				dispatchEvent(ev);
+			}
+			
+			public function setEditOrSaveIcon(canShowEditBtn:Boolean):void
+			{
+				id_Edit.visible = canShowEditBtn;
+				id_SaveBtn.visible = !canShowEditBtn;
+			}
+		]]>
+	</fx:Script>
+	<s:HGroup id="id_ButtonGroup" left="2" right="0" top="0" bottom="0">
+		<s:Button id="id_Email" width="12" height="12" click="onEmailClick(event)" 
+				  skinClass="com.adobe.gazuntite.skins.chrome.gridButtonSkins.emailBtn"
+				  buttonMode="true" toolTip="Email" visible="{!canOnlyEditAndDelete}" includeInLayout="{id_Email.visible}"/>
+		<s:Button id="id_WriteDictation" width="12" height="12" click="onWriteDictationClick(event)" 
+				  skinClass="com.adobe.gazuntite.skins.chrome.gridButtonSkins.dictationBtn" 
+				  buttonMode="true" toolTip="Record Dication" visible="{!canOnlyEditAndDelete}" includeInLayout="{id_WriteDictation.visible}"/>
+		<s:Button id="id_WriteNotes" width="12" height="12" click="onWriteNotesClick(event)" 
+				  skinClass="com.adobe.gazuntite.skins.chrome.gridButtonSkins.notesBtn" 
+				  buttonMode="true" toolTip="Write Notes" visible="{!canOnlyEditAndDelete}" includeInLayout="{id_WriteNotes.visible}"/>
+		
+		<s:Button id="id_Edit" width="12" height="12" click="onEditClick(event)" 
+				  skinClass="com.adobe.gazuntite.skins.chrome.gridButtonSkins.editButton"
+				  buttonMode="true" toolTip="Edit" includeInLayout="{id_Edit.visible}"/>
+		
+		<s:Button id="id_SaveBtn" width="12" height="12" click="id_SaveBtn_clickHandler(event)" 
+				  skinClass="com.adobe.gazuntite.skins.chrome.gridButtonSkins.saveButton" 
+				  buttonMode="true" useHandCursor="true" toolTip="Save" visible="false" includeInLayout="{id_SaveBtn.visible}"/>
+		
+		<s:Button id="id_Delete" width="12" height="12" click="onDeleteClick(event)"
+				  skinClass="com.adobe.gazuntite.skins.chrome.gridButtonSkins.removeBtn"
+				  buttonMode="true" toolTip="Delete"/>
+	</s:HGroup>
+</s:MXDataGridItemRenderer>

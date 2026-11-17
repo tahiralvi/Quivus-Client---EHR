@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+					  xmlns:components="com.gazuntite.controls.extended.components.*" 
+					  xmlns:buttonSeparators="com.adobe.Quivus.view.controls.skins.buttonSeparators.*"
+					  creationComplete="slideoutpanel1_creationCompleteHandler(event)"
+					  
+					  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			
+			import mx.events.FlexEvent;
+			import mx.managers.CursorManager;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			protected function slideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+			}
+			protected function id_htmlArea_completeHandler(event:Event):void
+			{
+				CursorManager.removeBusyCursor();
+			}
+
+		]]>
+		
+		
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	
+		<s:VGroup gap="-4" height="100%" width="100%" verticalAlign="top" horizontalAlign="center" >
+				
+				<s:BorderContainer height="100%" width="100%" cornerRadius="3" backgroundColor="#999AAA" 
+								   borderWeight="4" borderAlpha="1" borderColor="#999AAA" borderVisible="true" >
+					<s:layout>
+						<s:HorizontalLayout paddingTop="0" verticalAlign="middle" horizontalAlign="center" paddingBottom="5"  />
+					</s:layout>
+					
+					<mx:HTML complete="id_htmlArea_completeHandler(event)" id="id_htmlArea" width="100%" height="100%" location="{model.ePrescriptionURL}"  />
+					
+				</s:BorderContainer>
+				
+		</s:VGroup>
+</s:VGroup>
+		

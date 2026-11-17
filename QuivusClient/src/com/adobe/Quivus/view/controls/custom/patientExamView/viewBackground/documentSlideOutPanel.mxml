@@ -1,0 +1,367 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:SlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+					  xmlns:document="com.zigron.provider.live.services.documentMgmt.view.document.*" 
+					  xmlns:buttonSeparators="com.adobe.Quivus.view.controls.skins.buttonSeparators.*"
+					  creationComplete="slideoutpanel1_creationCompleteHandler(event)"
+					  QSViewStateChange="slideoutpanel1_QSViewStateChangeHandler(event)" xmlns:document1="com.gazuntite.provider.live.services.documentMgmt.view.document.*"
+					  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.viewBackground.document.LoadPatientDocumentByPatientIdEvent;
+			import com.adobe.Quivus.events.viewBackground.document.SearchPatientDocumentByPatientIdEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.utils.QuivusCombineEventDispatcher;
+			import com.adobe.Quivus.view.controls.custom.itemRenderer.ViewDeleteRenderer;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.dto.typeDTO.DocumentSectionTypeDTO;
+			import com.gazuntite.common.dto.typeDTO.SearchFieldTypeDTO;
+			import com.gazuntite.common.view.LiveGridView.FilterViewForGrid;
+			import com.gazuntite.common.view.LiveGridView.ListOnlyPopup;
+			import com.gazuntite.common.view.events.ListOnlySelectionEvent;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.provider.live.services.documentMgmt.event.ManagePatientDocumentEvent;
+			import com.gazuntite.provider.live.services.documentMgmt.event.SearchPatientDocumentEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			import valueObjects.PatientDocumentDTO;
+			
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var popup:ListOnlyPopup;
+			
+			
+			protected function id_DocumentGridView_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_DocumentGridView.removeAllEventListeners();
+				id_DocumentGridView.id_FilterGridView.id_btnSearch.addEventListener(MouseEvent.CLICK, OnSearchClick);
+				id_DocumentGridView.id_FilterGridView.addEventListener( FilterViewForGrid.LIST_ONLY , 			OnFilterView );
+				id_DocumentGridView.id_FilterGridView.addEventListener( FilterViewForGrid.GOTO_FIRST_PAGE , 	GoToPageHandler );
+				id_DocumentGridView.id_FilterGridView.addEventListener( FilterViewForGrid.GOTO_LAST_PAGE , 	GoToPageHandler );
+				id_DocumentGridView.id_FilterGridView.addEventListener( FilterViewForGrid.GOTO_NEXT_PAGE , 	GoToPageHandler );
+				id_DocumentGridView.id_FilterGridView.addEventListener( FilterViewForGrid.GOTO_PREVIOUS_PAGE , GoToPageHandler );
+				id_DocumentGridView.id_FilterGridView.addEventListener( FilterViewForGrid.REFRESH_VIEW , 		OnFilterView );
+				
+				id_DocumentGridView.addEventListener( DataGridActionsEvent.EDIT_RECORD_CLICK, onEditClick );
+				id_DocumentGridView.addEventListener( DataGridActionsEvent.DELETE_RECORD_CLICK, onDeleteDocumentClick );
+				
+				id_DocumentGridView.id_DocumentGrid.columns[ id_DocumentGridView.id_DocumentGrid.columns.length - 1 ].itemRenderer = new ClassFactory( ViewDeleteRenderer );
+			}
+			
+			private function onDeleteDocumentClick(event:Event):void
+			{
+				UtilityFunctions.AskMessage(  "Do you want to delete selected document", function():void
+				{
+					var docDto:PatientDocumentDTO = event.target.data as PatientDocumentDTO;
+					docDto.IsDeleted = true;
+					
+					
+					
+					var mpd:ManagePatientDocumentEvent = new ManagePatientDocumentEvent( ManagePatientDocumentEvent.convertDto( docDto ) );
+					CairngormEventDispatcher.getInstance().dispatchEvent( mpd );
+					
+					callLater( function():void
+					{
+						var lpdEvent : LoadPatientDocumentByPatientIdEvent = new LoadPatientDocumentByPatientIdEvent(model.patientDocRecPageNo);
+						CairngormEventDispatcher.getInstance().dispatchEvent( lpdEvent );
+					});
+				});
+				
+				/* var mpd:ManagePatientDocumentEvent = new ManagePatientDocumentEvent(docDto);
+				CairngormEventDispatcher.getInstance().dispatchEvent( mpd );  */
+				
+				//call is already sent, no need to filter here ( @client side ), 
+				/* if( null == model.patientDocumentDTOList.filterFunction )
+				{
+				model.patientDocumentDTOList.filterFunction = filterDeletedItems;
+				}
+				
+				model.patientDocumentDTOList.refresh(); */
+			}
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			private function onEditClick(event:Event):void
+			{
+				var docDto:PatientDocumentDTO = event.target.data as PatientDocumentDTO;
+				
+				/* id_AddNewDocument.LoadData( docDto );
+				id_AddNewDocument.visible = true; */
+			}
+			
+			
+			private function OnSearchClick(event:MouseEvent):void
+			{
+				var searchStr:String = id_DocumentGridView.id_FilterGridView.id_SearchTextInput.text;
+				if( id_DocumentGridView.id_FilterGridView.id_FieldsCmbo.selectedItem && searchStr && searchStr.length )
+				{
+					var sft:SearchFieldTypeDTO = id_DocumentGridView.id_FilterGridView.id_FieldsCmbo.selectedItem as SearchFieldTypeDTO;
+					
+					var e:SearchPatientDocumentByPatientIdEvent  = new SearchPatientDocumentByPatientIdEvent( sft.FieldID, searchStr, 1 );
+					cursorManager.setBusyCursor();
+					CairngormEventDispatcher.getInstance().dispatchEvent( e );
+				}
+				else
+				{
+					Alert.show("Plese select desired field from \"Fields List\" and enter some thing to serach", "Search Field Empty" );
+				}
+			}
+			
+			private function OnFilterView(event:Event):void
+			{
+				switch( event.type )
+				{
+					case FilterViewForGrid.LIST_ONLY:
+						ListOnlyHandler ( event );
+						break;
+					
+					case FilterViewForGrid.REFRESH_VIEW:
+						QuivusCombineEventDispatcher.LoadDocumentList( 1 );
+						break;
+					
+					
+				}
+			}
+			
+			protected function GoToPageHandler(event:Event):void
+			{
+				if( model.isPatientDocSearching )
+					switchPageForSearchView( event.type );
+				else							
+					switchPageForDocumentView( event.type );
+			}
+			
+			private function switchPageForDocumentView( page:String ):void
+			{
+				switch( page )
+				{
+					case FilterViewForGrid.GOTO_FIRST_PAGE:
+						QuivusCombineEventDispatcher.LoadDocumentList(1);
+						break;
+					case FilterViewForGrid.GOTO_NEXT_PAGE:
+						++model.patientDocSearchPageNo; 
+						QuivusCombineEventDispatcher.LoadDocumentList( model.patientDocSearchPageNo ); 
+						break;
+					case FilterViewForGrid.GOTO_PREVIOUS_PAGE:
+						--model.patientDocSearchPageNo;
+						QuivusCombineEventDispatcher.LoadDocumentList( model.patientDocSearchPageNo ); 
+						break;
+					case FilterViewForGrid.GOTO_LAST_PAGE:
+						QuivusCombineEventDispatcher.LoadDocumentList( model.patientDocumentTotalPageNo ); 
+						break;
+				}
+				
+				id_DocumentGridView.id_FilterGridView.EnableNavigationButtons( model.patientDocumentTotalPageNo, model.patientDocSearchPageNo );
+			}
+			
+			private function switchPageForSearchView( page:String ):void
+			{
+				if( id_DocumentGridView.id_FilterGridView.id_FieldsCmbo.selectedItem )
+				{
+					var sft:SearchFieldTypeDTO = id_DocumentGridView.id_FilterGridView.id_FieldsCmbo.selectedItem as SearchFieldTypeDTO;
+					var searchStr:String = id_DocumentGridView.id_FilterGridView.id_SearchTextInput.text;
+					
+					var e:SearchPatientDocumentByPatientIdEvent;
+					
+					switch( page )
+					{
+						case FilterViewForGrid.GOTO_FIRST_PAGE:
+							e = new SearchPatientDocumentByPatientIdEvent( sft.FieldID, searchStr, 1 );
+							break;
+						case FilterViewForGrid.GOTO_NEXT_PAGE:
+							e = new SearchPatientDocumentByPatientIdEvent( sft.FieldID, searchStr, ++model.patientDocSearchPageNo );
+							break;
+						case FilterViewForGrid.GOTO_PREVIOUS_PAGE:
+							e = new SearchPatientDocumentByPatientIdEvent( sft.FieldID, searchStr, ++model.patientDocSearchPageNo );
+							break;
+						case FilterViewForGrid.GOTO_LAST_PAGE:
+							e = new SearchPatientDocumentByPatientIdEvent( sft.FieldID, searchStr, model.totalPatientDocRec );
+							break;
+					}
+					
+					cursorManager.setBusyCursor();
+					CairngormEventDispatcher.getInstance().dispatchEvent( e );
+					
+					id_DocumentGridView.id_FilterGridView.EnableNavigationButtons( model.patientDocSearchPageNo, model.patientDocumentTotalPageNo );
+					
+				}
+			}
+			
+			protected function ListOnlyHandler(event:Event):void
+			{
+				if( popup && popup.isPopUp )
+				{
+					popup.removePopup();
+					//popup.removeEventListener( ListOnlySelectionEvent.LIST_ONLY_SELECTION, ListOnlySelectionEventHandler );
+					return;
+				}
+				
+				popup = new ListOnlyPopup();
+				popup.DataProvider = model.docSectionTypeDTOList;
+				popup.addEventListener( ListOnlySelectionEvent.LIST_ONLY_SELECTION, ListOnlySelectionEventHandler );
+				var pLoc:Point			= new Point( id_DocumentGridView.id_FilterGridView.x + id_DocumentGridView.id_FilterGridView.id_ListOnly.x - 110,
+					id_DocumentGridView.id_FilterGridView.y + id_DocumentGridView.id_FilterGridView.y + id_DocumentGridView.id_FilterGridView.height - 3 );
+				var loc:Point 			= id_DocumentGridView.localToGlobal( pLoc );
+				
+				popup.x 		= loc.x + 5; 
+				popup.y 		= loc.y + 3; 
+				
+				popup.ShowPopup( this );
+			}
+			
+			protected function ListOnlySelectionEventHandler(event:ListOnlySelectionEvent):void
+			{
+				var sel:DocumentSectionTypeDTO 	= event.selection as DocumentSectionTypeDTO;
+				var from:String					= event.from;
+				var to:String					= event.to;
+				
+				if( sel || ( from.length > 0 && to.length > 0 ) )
+				{
+					var searchStr:String = ",,";
+					if( sel != null)
+						searchStr = sel.SectionName + "," + from + "," + to ;
+					else 
+						searchStr ="," + from + "," + to ;
+					
+					var e:SearchPatientDocumentByPatientIdEvent = new SearchPatientDocumentByPatientIdEvent( 0 , searchStr, 1 );
+					CairngormEventDispatcher.getInstance().dispatchEvent( e );
+					
+				}
+				else
+				{
+					Alert.show( "Please Select Field / Date Range", "Invalid Data", 4, this);
+				}
+			}
+
+
+			protected function slideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.ExpandedView = true;
+				id_slideoutBtn.addEventListener(MouseEvent.CLICK, toggleSlideout);
+				id_DocumentGridView.id_TotalRecords.visible = false;
+			}
+			
+			protected function toggleSlideout(event:MouseEvent):void
+			{
+				this.ToggleSlideOut();
+				event.stopImmediatePropagation();
+			}
+
+
+			protected function slideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if(this.ExpandedView)
+				{
+					id_HeaderLable.text = id_HeaderLable.text.toUpperCase();
+					id_expandBtn.selected = true;
+					
+				}
+				else
+				{
+					if( popup && popup.isPopUp)
+					{
+						popup.removePopup();
+					}
+					id_HeaderLable.text = AppUtils.TitleCase( id_HeaderLable.text );
+					id_expandBtn.selected = false;
+					
+				}
+			}
+			
+			private var vb_DocSearchFieldTypes:ArrayCollection;
+			
+			public function get DocSearchFieldTypesUpdated():ArrayCollection
+			{
+				
+				return vb_DocSearchFieldTypes;
+				
+			}
+			public function set DocSearchFieldTypesUpdated(value:ArrayCollection):void
+			{
+				vb_DocSearchFieldTypes = value;
+				id_DocumentGridView.setSearchFieldTypes( vb_DocSearchFieldTypes );
+				
+			}  
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Binding source="model.searchFieldTypeDTOList" destination="DocSearchFieldTypesUpdated" />
+	
+	<custom:HeaderContents>
+		
+		<s:SkinnableContainer width="100%" height="22" skinClass="com.adobe.Quivus.view.controls.skins.VBInternalHeaderBarSkin">
+			
+			<!--<s:BorderContainer width="100%" height="22" backgroundAlpha="1" backgroundColor="#E0DFCB" borderVisible="false" >
+			-->	<s:layout>
+					<s:HorizontalLayout horizontalAlign="left" verticalAlign="middle" gap="0" />
+				</s:layout>
+			<s:HGroup paddingLeft="5">
+				
+				<s:Label id="id_HeaderLable" text="PATIENT SUPPORTING DOCUMENTS AND IMAGES" color="#333333" fontFamily="Calibri Bold"  />
+			</s:HGroup>
+			
+			<mx:Spacer width="100%" />
+			<buttonSeparators:buttonSeparator />
+			<s:HGroup paddingTop="0">
+				<s:ToggleButton id="id_expandBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.expandButton_grey" 
+								width="23" height="23"	buttonMode="true" useHandCursor="true" selected="true" />
+			</s:HGroup>					
+			
+			<buttonSeparators:buttonSeparator/>
+			<s:HGroup paddingTop="0" paddingRight="2">
+				<s:ToggleButton id="id_slideoutBtn" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.slideOutBtn"
+								buttonMode="true" useHandCursor="true" toolTip="{id_slideoutBtn.selected?'Slide-In':'Slide-Out'}" 
+								width="23" height="23"/>
+			</s:HGroup>
+			
+		</s:SkinnableContainer>
+		<!--</s:BorderContainer>-->
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		<s:SkinnableContainer width="100%" height="22" skinClass="com.adobe.Quivus.view.controls.skins.VBInternalHeaderBarSkin">
+			
+			<s:layout>
+				<s:HorizontalLayout horizontalAlign="left" verticalAlign="middle" />
+			</s:layout>
+			<s:HGroup paddingLeft="5">
+				
+				<s:Label text="Patient Supporting Documents and Images" color="#333333" fontFamily="Calibri Bold"  />
+			</s:HGroup>
+			
+			
+		</s:SkinnableContainer>
+		
+	</custom:SlideHeaderContents>
+	<custom:Contents>
+		<s:BorderContainer id="id_contents" width="100%" backgroundAlpha="1" backgroundColor="#E0DFCB" borderVisible="false" >
+			<s:layout>
+				<s:HorizontalLayout horizontalAlign="left" verticalAlign="middle" paddingBottom="2" />
+			</s:layout>
+			<s:Scroller id="id_Scroller" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off" >
+				<document1:DocumentGridView id="id_DocumentGridView" width="100%"  DataProvider="{model.PatientDocumentDTOList}"
+										   creationComplete="id_DocumentGridView_creationCompleteHandler(event)" minHeight="175" height="100%"
+										   />
+
+			</s:Scroller>
+		</s:BorderContainer>
+	</custom:Contents>
+</custom:SlideOutPanel>

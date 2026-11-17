@@ -1,0 +1,679 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   creationComplete="creationCompleteHandler()" xmlns:components1="com.gazuntite.controls.extended.components.*"   >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.CombineAllergyEvent;
+			import com.adobe.Quivus.events.search.SearchAllergyTypeByNameEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.Allergy.AddAllergyPopup;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.renderers.HealthSectionImmunizationRenderer;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.renderers.HeathSectionMedicationRenderer;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.addAllergyBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.popupCloseBtnSkin;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.dto.AllergDTO;
+			import com.gazuntite.common.event.SavePatientGaxenIdEvent;
+			import com.gazuntite.provider.eprescription.services.patient.event.UpdateGaxenIDEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CalendarLayoutChangeEvent;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.CursorManager;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			public var m_oAddAllergyPanel:AddAllergyPopup;
+			private var saveAllergyDTO:AllergDTO;
+			private var NKDARecord:com.gazuntite.common.dto.AllergDTO = null;
+			private var _allergyCollection:ArrayCollection;
+			
+			protected function creationCompleteHandler():void
+			{
+				id_addAllergy.visible =false;
+			}
+
+			protected function id_CloseBtn_clickHandler(event:MouseEvent):void
+			{
+				this.removePopup();
+			}
+			//--Tahir Alvi - Call Allergy Event
+			private function callQSAllergyEvent(param1:int, param2:*, param3:Function = null):void
+			{
+				var qSAllergyEvent : CombineAllergyEvent = new CombineAllergyEvent(param1, param2, param3);
+				CairngormEventDispatcher.getInstance().dispatchEvent( qSAllergyEvent );
+				CursorManager.setBusyCursor();
+			}
+			protected function addAllergy_clickHandler(event:MouseEvent):void
+			{
+				if(!id_addAllergy.visible)
+				{
+					if(model.QIAllergyDTOList && model.QIAllergyDTOList.length > 0)
+					{
+						if( (model.QIAllergyDTOList[0] as AllergDTO).isNKDA)
+						{
+							id_NKDA.selected 				= true;
+							id_OnsetDate.enabled 			= false;
+							id_AllergyNameList.enabled 		= false;
+							id_Reaction.enabled 			= false;						
+							id_Status.enabled 				= false;
+						}
+					}
+					
+					id_addAllergy.visible 				= true;
+					id_addAllergyHood.visible 			= true;
+					id_addAllergy.includeInLayout 		= true;
+					id_addAllergyHood.includeInLayout 	= true;
+					//id_OnsetDate.setFocus();
+				}
+				else
+				{
+					id_addAllergy.visible 				= false;
+					id_addAllergyHood.visible 			= false;
+					id_addAllergy.includeInLayout 		= false;
+					id_addAllergyHood.includeInLayout 	= false;
+				}
+			}
+			
+			protected function id_AllergyNameList_keyUpHandler(event:KeyboardEvent):void
+			{
+				if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+				{
+					var searchString:String = id_AllergyNameList.textInput.text;
+					if(searchString.length > 2)
+					{
+						callQSAllergyEvent(1, searchString, callbackList);
+					}		
+				}
+			}
+			private function callbackList(arr:ArrayCollection):void
+			{
+				if(model.AllergyList)
+					model.AllergyList.removeAll();
+				else
+					model.AllergyList = new ArrayCollection();
+				
+				model.AllergyList.addAll(arr);
+			}
+			
+			protected function Add_clickHandler(event:MouseEvent):void
+			{
+				saveAllergyDTO = null;
+				
+				if(id_NKDA.selected)
+				{
+					if(model.QIAllergyDTOList && model.QIAllergyDTOList.length == 1 &&  (model.QIAllergyDTOList[0] as AllergDTO).isNKDA )
+					{
+						Alert.show("The existing entry is already NKDA.", "Duplicate Entry", Alert.OK, FlexGlobals.topLevelApplication.mainContainer);
+						return;
+					}
+					else if(model.QIAllergyDTOList && model.QIAllergyDTOList.length >= 1 && ! (model.QIAllergyDTOList[0] as AllergDTO).isNKDA )
+					{
+						Alert.show("Are you sure, you want to remove all existing allergies?","Confirmation", Alert.YES|Alert.NO, this, function( event:CloseEvent):void
+						{
+							if( event.detail == Alert.YES )
+							{
+								var patientAllergyIDs:String = "";
+								for each (var ad:AllergDTO in model.QIAllergyDTOList) 
+								{
+									patientAllergyIDs += ",'" + ad.GaxenAllergyID + "'";
+								}								
+								
+								var IDsXml:XML = <DeleteAllergies  />
+								
+								IDsXml.@GaxenAllergyIDS = patientAllergyIDs.substring(1);
+								
+								callQSAllergyEvent(4, IDsXml, deleteStatus);
+							}
+							else if(event.detail == Alert.NO)
+							{
+								id_NKDA.selected 				= false;
+								id_OnsetDate.enabled 			= true;
+								id_AllergyNameList.enabled 		= true;
+								id_Reaction.enabled 			= true;
+								id_Status.enabled 				= true;
+								return;
+							}
+						});
+					}
+					else 
+					{
+						callQSAllergyEvent(3, NKDARecord.ToXML(),saveStatus);
+					}
+				}
+				else
+				{
+					if (!isInvalid())
+					{
+						if(id_AllergyNameList.selectedIndex < 0 )
+						{
+							id_AllergyNameList.setFocus();
+							Alert.show("Please select Allergy.", "Required field", Alert.OK, FlexGlobals.topLevelApplication.mainContainer);
+							return;
+						}
+						
+						if( ! ValidationUtils.isValidDateFormat(id_OnsetDate.text))
+						{
+							id_OnsetDate.setFocus();
+							Alert.show("Please enter OnSet date in valid format: [MM/DD/YYYY]", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+							return;						
+						}
+						
+						saveAllergyDTO  = new AllergDTO();				
+						
+						saveAllergyDTO.GaxenPatientID		= model.gaxenID;
+						saveAllergyDTO.modNotesID			= 0;
+						saveAllergyDTO.modDictationID		= 0;
+						saveAllergyDTO.AllergyName			= id_AllergyNameList.selectedItem.DISPLAY_NAME;
+						saveAllergyDTO.isNKDA				= false;
+						saveAllergyDTO.isActive				= id_Status.selected;
+						saveAllergyDTO.OnSet				= UtilityFunctions.FormatDate(id_OnsetDate.text);
+						saveAllergyDTO.DictationID			= 0;
+						saveAllergyDTO.Note					= "";
+						saveAllergyDTO.GaxenAllergyID		= "";
+						saveAllergyDTO.VisitDate			= formatDateTime.format(Constants.NULL_DATE);
+						saveAllergyDTO.Reaction				= id_Reaction.text;
+						
+						if(model.isNewPatientReg)
+						{
+							saveAllergyDTO.LastName 			= model.patientTempDTO.LastName;
+							saveAllergyDTO.FirstName 			= model.patientTempDTO.FirstName;
+							saveAllergyDTO.Gender 				= model.patientTempDTO.Gender;
+							saveAllergyDTO.DOB 					= model.patientTempDTO.DOB;
+							saveAllergyDTO.Phone 				= model.patientTempDTO.Phone;
+							saveAllergyDTO.Address 				= model.patientTempDTO.Address;
+							saveAllergyDTO.SSN 					= model.patientTempDTO.SSN;	
+						}
+						else
+						{
+							saveAllergyDTO.LastName 			= model.patientProfileDTO.UserDTO.LastName;
+							saveAllergyDTO.FirstName 			= model.patientProfileDTO.UserDTO.FirstName;
+							saveAllergyDTO.Gender 				= model.patientProfileDTO.UserDTO.Gender.GenderName.substring(0,1);
+							saveAllergyDTO.DOB 					=  UtilityFunctions.FormatDate(formatDateTime.format(model.patientDTO.DateOfBirth.toString()));
+							saveAllergyDTO.Phone 				= model.patientPrimaryPhoneDTO.PhoneNumber;
+							saveAllergyDTO.Address 				= model.patientDTO.Address;
+							saveAllergyDTO.SSN 					= model.patientProfileDTO.UserDTO.SSN;		
+						}
+						saveAllergyDTO.ClinicID ="sad";
+						saveAllergyDTO.UserName = "TESTUSER";
+						saveAllergyDTO.UserPassord = "TESTPASS";
+						
+						callQSAllergyEvent(3, saveAllergyDTO.ToXML(), saveStatus);
+						
+						resetAddAllergyForm();
+						id_addAllergy.visible =false;
+						id_addAllergy.includeInLayout =false;
+						
+						id_addAllergyHood.visible =false;
+						id_addAllergyHood.includeInLayout =false;
+					}
+				}
+			}
+			//delete call back function
+			private function deleteStatus(response:XML):void
+			{
+				var msg:String = response.@Description;
+				var status:String = response.@status;
+				
+				if(status == "false" || status == "0" )
+				{
+					var alert:Alert = Alert.show(msg, "Allergy Status", 4, FlexGlobals.topLevelApplication.mainContainer);	
+					return;
+				}
+				else
+				{
+					callQSAllergyEvent(3, NKDARecord.ToXML(), saveStatus);
+				}
+				
+				cursorManager.removeBusyCursor();
+			}
+			// save call back method
+			private function saveStatus(response:XML):void
+			{
+				var msg:String     = response.@Description;
+				var status:String  = response.@status;
+				var gaxenID:String = response.@GaxenPatientID;
+				model.gaxenID      = gaxenID;
+				
+				if(status == "false" || status == "0" )
+				{
+					var alert:Alert = Alert.show(msg, "Allergy Status", 4, FlexGlobals.topLevelApplication.mainContainer);	
+					return;
+				}
+				else
+				{
+					//if patient has no gaxenID then save Gaxen id for patient
+					if((gaxenID && gaxenID != "0") && (model.patientDTO.UserId.toString() != '' && model.patientDTO.UserId.toString() != '0') && !model.gaxenIDSaved)
+					{
+						var gEvent : SavePatientGaxenIdEvent = new SavePatientGaxenIdEvent(model.patientDTO.UserId.toString(), gaxenID ,callback );					
+						CairngormEventDispatcher.getInstance().dispatchEvent( gEvent );
+					}
+					
+					if(UtilityFunctions.IsNotNullOrEmpty(model.gaxenID))
+					{
+						callQSAllergyEvent(2, model.gaxenID, callBackAllergy);
+					}
+				}
+				
+				cursorManager.removeBusyCursor();
+				resetAddAllergyForm();// Clear all form 
+			}
+			//--cal back of SavePatientGaxenIdEvent
+			private function callback(val:Boolean):void
+			{
+				model.isAtRegGaxenID = true;
+				if(model.isAtRegGaxenID)
+				{
+					model.gaxenIDSaved 			= false;
+					model.newRegGaxenID 		= '';
+				}
+			}
+			// call back allergy 
+			private function callBackAllergy(arrAllergy:ArrayCollection):void
+			{
+				model.ThirdSectionLabel = '';
+				if(model.QIAllergyDTOList)
+					model.QIAllergyDTOList.removeAll();
+				else
+					model.QIAllergyDTOList = new ArrayCollection();
+				
+				model.QIAllergyDTOList.addAll(arrAllergy);
+				
+				if(model.QIAllergyDTOList.length > 0)
+				{					
+					var allergyDto:AllergDTO = new AllergDTO();
+					allergyDto			= model.QIAllergyDTOList.getItemAt(0) as AllergDTO;
+					//Tahir Alvi - Set Third Section data && NKDA LAbel Flag
+					
+					if(!allergyDto.isNKDA)
+					{
+						model.ThirdSectionLabel = allergyDto.AllergyName;
+						model.AllergyNKDAFlag 	= false;
+					}
+					else if(allergyDto.isNKDA)
+					{
+						model.ThirdSectionLabel = 'No Known Drug Allergies';
+						model.AllergyNKDAFlag 	= true;
+					}
+				}		
+				loadAllergiesData();
+			}
+			private function loadAllergiesData(response:XML = null):void
+			{
+				if( model.QIAllergyDTOList && model.QIAllergyDTOList.length > 0 )
+				{
+					id_AllergyList.dataProvider = model.QIAllergyDTOList;
+				}
+			}
+			
+			private function isInvalid():Boolean 
+			{
+				var isNotValid:Boolean = false;
+				var errorStr:String = "";
+				var toSetFocus:*;
+				ValidationUtils.Trim( id_Reaction );
+				
+				if(id_AllergyNameList.selectedIndex != -1)
+				{
+					if (!ValidationUtils.isValidValueSelected(id_AllergyNameList))
+					{
+						isNotValid = true;
+						errorStr += "Select valid allergy.\n";
+						
+						if (!toSetFocus)
+							toSetFocus = id_AllergyNameList;
+					}
+					//if allergy is selected then must enetr the reaction
+					/* if(id_Reaction.text.length <= 0 || id_Reaction.text.length > 500)
+					{
+					isNotValid = true;
+					errorStr += "Allergy Reaction is invalid.\n";
+					
+					if (!toSetFocus)
+					toSetFocus = id_Reaction;
+					} */
+				}
+				
+				if (isNotValid && errorStr.length)
+				{
+					Alert.show(errorStr,"Patient Registeration Required Fields", 4, FlexGlobals.topLevelApplication.mainContainer, function(event:Event):void{
+						if (toSetFocus)
+							toSetFocus.setFocus();
+					});
+				}
+				return isNotValid;
+			} 
+			
+			private function id_AllergyNameListClickHandler(e:MouseEvent):void
+			{
+				e.currentTarget.setFocus();
+			}
+			
+			private function id_ReactionClickHandler(e:MouseEvent):void
+			{
+				e.currentTarget.setFocus();
+			}
+			
+			protected function id_OnsetDate_changeHandler(event:CalendarLayoutChangeEvent):void
+			{
+				id_OnsetDate.setFocus();
+			}
+			
+			protected function id_upBtn_clickHandler(event:MouseEvent):void
+			{
+				
+				id_AllergyScroller.viewport.verticalScrollPosition= id_AllergyScroller.viewport.verticalScrollPosition-10;
+			}
+			
+			protected function id_downBtn_clickHandler(event:MouseEvent):void
+			{
+				
+				id_AllergyScroller.viewport.verticalScrollPosition= id_AllergyScroller.viewport.verticalScrollPosition+10;
+			}
+			
+			protected function resetAddAllergyForm():void
+			{
+				id_OnsetDate.text = "";
+				id_AllergyNameList.selectedIndex = -1;
+				id_Reaction.text = "";
+				id_Status.selected = false;
+			}
+			
+			[Bindable]
+			public function get allergyCollection():ArrayCollection
+			{
+				return _allergyCollection;
+			}
+			
+			public function set allergyCollection(value:ArrayCollection):void
+			{
+				_allergyCollection = value;
+			}
+			public function enableFields(value:Boolean):void
+			{
+				if(value == true)
+				{
+					id_OnsetDate.enabled 		= true;
+					id_Reaction.enabled 		= true;
+					id_AddBtn.enabled 			= true;					
+					id_Status.enabled 			= true;
+					id_AllergyNameList.enabled 	= true;
+				}
+				else
+				{
+					id_OnsetDate.enabled 		= false;
+					id_Reaction.enabled 		= false;
+					id_Status.enabled 			= false;
+					id_AllergyNameList.enabled 	= false;
+					id_AddBtn.enabled 			= true;		
+				}
+			}
+			
+			
+			protected function id_NKDA_changeHandler(event:Event):void
+			{
+				NKDARecord = null;
+				
+				if(id_NKDA.selected)
+				{
+					if(model.QIAllergyDTOList && model.QIAllergyDTOList.length)
+					{
+						Alert.show("Do you want to delete all Allergies ?",	"Are you sure?", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, function( event:CloseEvent):void
+						{
+							if( event.detail == Alert.YES )
+							{
+								NKDARecord 					= new AllergDTO();
+								
+								NKDARecord.AllergyName 		= "N/A";
+								NKDARecord.DictationID 		= 0;
+								NKDARecord.GaxenAllergyID 	= "";
+								NKDARecord.GaxenPatientID 	= model.gaxenID;
+								NKDARecord.isActive 		= true;
+								NKDARecord.isNKDA 			= true;
+								NKDARecord.OnSet 			= "1900-01-01";					
+								NKDARecord.NKDA 			= "No Known Drug Allergies";
+								NKDARecord.VisitDate		= formatDateTime.format(Constants.NULL_DATE);
+								
+								if(model.isNewPatientReg)
+								{
+									NKDARecord.LastName 			= model.patientTempDTO.LastName;
+									NKDARecord.FirstName 			= model.patientTempDTO.FirstName;
+									NKDARecord.Gender 				= model.patientTempDTO.Gender;
+									NKDARecord.DOB 					= model.patientTempDTO.DOB;
+									NKDARecord.Phone 				= model.patientTempDTO.Phone;
+									NKDARecord.Address 				= model.patientTempDTO.Address;
+									NKDARecord.SSN 					= model.patientTempDTO.SSN;	
+								}
+								else
+								{
+									NKDARecord.LastName 			= model.patientProfileDTO.UserDTO.LastName;
+									NKDARecord.FirstName 			= model.patientProfileDTO.UserDTO.FirstName;
+									NKDARecord.Gender 				= model.patientProfileDTO.UserDTO.Gender.GenderName.substring(0,1);
+									NKDARecord.DOB 					= formatDateTime.format(model.patientDTO.DateOfBirth.toString());
+									NKDARecord.Phone 				= model.patientPrimaryPhoneDTO.PhoneNumber;
+									NKDARecord.Address 				= model.patientDTO.Address;
+									NKDARecord.SSN 					= model.patientProfileDTO.UserDTO.SSN;		
+								}
+								NKDARecord.ClinicID 		="sad";
+								NKDARecord.UserName 		= "TESTUSER";
+								NKDARecord.UserPassord 		= "TESTPASS";
+							}
+							else if( event.detail == Alert.NO )
+							{
+								id_NKDA.selected = false;
+								enableFields(true);
+								return;
+							}
+						});
+					}
+					else
+					{
+						NKDARecord 					= new AllergDTO();
+						
+						NKDARecord.AllergyName 		= "N/A";
+						NKDARecord.DictationID 		= 0;
+						NKDARecord.GaxenAllergyID 	= "";
+						NKDARecord.GaxenPatientID 	= model.gaxenID;
+						NKDARecord.isActive 		= true;
+						NKDARecord.isNKDA 			= true;
+						NKDARecord.OnSet 			= "1900-01-01";					
+						NKDARecord.NKDA 			= "No Known Drug Allergies";	
+						NKDARecord.VisitDate		= formatDateTime.format(Constants.NULL_DATE);
+						
+						if(model.isNewPatientReg)
+						{
+							NKDARecord.LastName 			= model.patientTempDTO.LastName;
+							NKDARecord.FirstName 			= model.patientTempDTO.FirstName;
+							NKDARecord.Gender 				= model.patientTempDTO.Gender;
+							NKDARecord.DOB 					= model.patientTempDTO.DOB;
+							NKDARecord.Phone 				= model.patientTempDTO.Phone;
+							NKDARecord.Address 				= model.patientTempDTO.Address;
+							NKDARecord.SSN 					= model.patientTempDTO.SSN;	
+						}
+						else
+						{
+							NKDARecord.LastName 			= model.patientProfileDTO.UserDTO.LastName;
+							NKDARecord.FirstName 			= model.patientProfileDTO.UserDTO.FirstName;
+							NKDARecord.Gender 				= model.patientProfileDTO.UserDTO.Gender.GenderName.substring(0,1);
+							NKDARecord.DOB 					= formatDateTime.format(model.patientDTO.DateOfBirth.toString());
+							NKDARecord.Phone 				= model.patientPrimaryPhoneDTO.PhoneNumber;
+							NKDARecord.Address 				= model.patientDTO.Address;
+							NKDARecord.SSN 					= model.patientProfileDTO.UserDTO.SSN;		
+						}
+						NKDARecord.ClinicID 		="sad";
+						NKDARecord.UserName 		= "TESTUSER";
+						NKDARecord.UserPassord 		= "TESTPASS";
+					}
+				}
+				if(id_NKDA.selected)
+					enableFields(false);
+				else
+					enableFields(true);
+			}
+			
+		]]>
+	</fx:Script>
+	<components1:layout>
+		<s:HorizontalLayout paddingBottom="0" paddingLeft="5" paddingRight="0" paddingTop="5" />
+	</components1:layout>
+	<fx:Declarations>
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YYYY" />
+	</fx:Declarations>
+	<fx:Binding source="model.QIAllergyDTOList" destination="allergyCollection" />
+	
+	<s:Group>
+		<s:filters>
+			<s:DropShadowFilter blurX="4.0" blurY="4.0" distance="4.0" hideObject="false" inner="false" color="0x000000" strength="1" alpha="0.5" quality="2" knockout="false" angle="90"/>
+		</s:filters>
+		<s:Rect minHeight="170" height="100%" radiusX="3" width="227" x="16" y="27">
+			<s:fill>
+				<s:LinearGradient rotation="270">
+					<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="0"/>
+					<s:GradientEntry alpha="1" color="#FFFFFF" ratio="0.25882352941176473"/>
+					<s:GradientEntry alpha="1.0" color="#E4E4E4" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+			<s:filters>
+				<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			</s:filters>
+		</s:Rect>
+		
+		<s:Group id="id_BodyArea" y="10" x="15">
+			<s:Group x="2.5" y="19">
+				<s:Rect height="19" radiusX="9" width="187" x="0.5" y="0.5">
+					<s:fill>
+						<s:LinearGradient rotation="90">
+							<s:GradientEntry alpha="1.0" color="#89A0BE" ratio="0"/>
+							<s:GradientEntry alpha="1.0" color="#5877A2" ratio="0.47058823529411764"/>
+							<s:GradientEntry alpha="1.0" color="#486A9A" ratio="0.47058823529411764"/>
+							<s:GradientEntry alpha="1.0" color="#4A6C9B" ratio="1"/>
+						</s:LinearGradient>
+					</s:fill>
+					<s:stroke>
+						<s:SolidColorStroke caps="none" color="#375075" joints="miter" miterLimit="4" weight="1"/>
+					</s:stroke>
+					<s:filters>
+						<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+						<s:DropShadowFilter alpha="0.25" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+					</s:filters>
+				</s:Rect>
+				<s:RichText id="id_HeaderLabel" width="180" textAlign="center" color="#FFFFFF" fontFamily="Calibri" fontSize="13" tabStops="S0" text="Allergies" x="10" y="4">
+					<s:filters>
+						<s:DropShadowFilter alpha="0.5" angle="90" blurX="0" blurY="0" color="#000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+					</s:filters>
+				</s:RichText>
+				<s:Button buttonMode="true" id="id_CloseBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.popupCloseBtnSkin" click="id_CloseBtn_clickHandler(event)" x="210"
+						  toolTip="Close" y="1" height="16" width="16"/>
+			</s:Group>
+			
+			<s:Group x="2.5" y="19">
+				
+				<s:Path data="M 220.017 8.339 L 91.036 8.339 C 91.029 8.339 91.023 8.34 91.016 8.34 L 9.017 8.34 C 9.01 8.34 9.004 8.339 8.997 8.339 L 8.516 8.339 L 8.463 8.312 C 3.971 8.038 0.376 4.478 0.05 0 C -0.038 1.203 0.017 4.488 0.017 11.339 L 0.017 121.339 C 0.017 122.996 1.359 124.339 3.017 124.339 L 173.017 124.339 L 173.017 141.839 C 173.017 144.325 174.36 146.339 176.017 146.339 L 220.017 146.339 C 221.673 146.339 223.017 144.325 223.017 141.839 L 223.017 121.339 L 223.017 120.839 L 223.017 11.339 C 223.017 9.683 221.674 8.339 220.017 8.339 Z" winding="nonZero" x="0" y="11">
+					<s:fill>
+						<s:LinearGradient rotation="90">
+							<s:GradientEntry alpha="1.0" color="#CEE4F0" ratio="0"/>
+							<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="0.5333333333333333"/>
+							<s:GradientEntry alpha="1.0" color="#CEE4F0" ratio="1"/>
+						</s:LinearGradient>
+					</s:fill>
+					<s:filters>
+						<s:DropShadowFilter alpha="0.75" angle="90" blurX="3" blurY="3" color="0x000000" distance="0" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+					</s:filters>
+				</s:Path>
+			</s:Group>
+			
+			<s:Path id="id_addAllergyHood" includeInLayout="{id_addAllergyHood.visible}" visible="false" data="M 215 22.25 L 125 22.25 L 125 3 C 125 1.343 123.656 0 122 0 L 3 0 C 1.343 0 0 1.343 0 3 L 0 25.25 L 0 27 L 0 123.25 C 0 124.907 1.343 126.25 3 126.25 L 215 126.25 C 216.657 126.25 218 124.907 218 123.25 L 218 25.25 C 218 23.594 216.657 22.25 215 22.25 Z" x="4" y="157">
+				<s:fill>
+					<s:LinearGradient rotation="90">
+						<s:GradientEntry alpha="1.0" color="#E9EBDD" ratio="0"/>
+						<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="0.5058823529411764"/>
+						<s:GradientEntry alpha="1.0" color="#E9EBDD" ratio="1"/>
+					</s:LinearGradient>
+				</s:fill>
+				<s:filters>
+					<s:DropShadowFilter alpha="0.75" angle="90" blurX="3" blurY="3" color="0x000000" distance="0" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+				</s:filters>
+			</s:Path>
+			
+			<mx:ViewStack  id="id_ListViews" y="20" backgroundAlpha="0" width="100%" minWidth="200" resizeToContent="true" height="160">
+				<s:NavigatorContent id="id0" width="100%" label="Allergies" backgroundAlpha="0"  >
+					
+					<s:layout>
+						<s:VerticalLayout paddingTop="26" paddingLeft="4" />
+					</s:layout>
+					
+					<s:Label id="id_recordstatus" 
+							 width="100%" textAlign="center" fontFamily="Calibri" text="No Record Found" 
+							 visible="{allergyCollection.length > 0 ? false : true}"  />
+					
+					<s:Scroller id="id_AllergyScroller" height="88" width="100%" verticalScrollPolicy="off" >
+						
+						<s:Group width="100%" height="100%" >
+							
+							<s:List id="id_AllergyList" focusAlpha="0" 
+									dataProvider="{allergyCollection}" 
+									itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.renderers.HeathSectionAllergyRenderer" 
+									skinClass="com.adobe.gazuntite.skins.chrome.listBoxSkins.allergyListSkin" 
+									right="5" height="{id_AllergyList.dataProvider.length * 30}" width="100%"/>
+						</s:Group>
+					</s:Scroller>
+					<s:HGroup id="id_btnArea" width="219" horizontalAlign="left" paddingLeft="2" paddingRight="0" paddingTop="-3" paddingBottom="5">
+						
+						<s:ToggleButton id="id_addAllergyBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.addAllergyBtn" 
+										click="addAllergy_clickHandler(event)" useHandCursor="true" buttonMode="true" toolTip="Add New Allergy" 	/>
+						
+						<s:HGroup width="100%" gap="0" horizontalAlign="right">
+							
+							<s:Button id="id_upBtn" click="id_upBtn_clickHandler(event)" toolTip="Scroll Up" 
+									  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.scrollbarUpButton_small" 									  
+									  buttonMode="true" useHandCursor="true" />
+							
+							<s:Button id="id_downBtn" click="id_downBtn_clickHandler(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.scrollbarDownButton_small" 						  
+									  buttonMode="true" useHandCursor="true" toolTip="Scroll Down"/>
+						</s:HGroup>
+					</s:HGroup> 
+					
+				</s:NavigatorContent>
+				
+			</mx:ViewStack>
+			
+			<s:Group id="id_addAllergy" includeInLayout="{id_addAllergy.visible}" visible="true" y="180">			
+				
+				<s:VGroup width="100%" gap="2" y="2" x="12">
+					<components1:LabelComboBox id="id_AllergyNameList" prompt="Allergy Name" labelField="DISPLAY_NAME"  dataProvider="{model.AllergyList}"
+											  width="202" enabled="true" keyUp="id_AllergyNameList_keyUpHandler(event)" required="true"  />
+					<components1:LabelDateField id="id_OnsetDate" prompt="OnSet" width="202" 
+											   change="id_OnsetDate_changeHandler(event)" textInputStyleName="mandatoryDateSkin"
+											   toolTip="Onset Date" yearNavigationEnabled="true" editable="false" selectableRange="{{rangeEnd : new Date()}}" minYear="1901"/>
+					<components1:LabelTextInput id="id_Reaction" prompt="Reaction" height="22" width="202" 
+											   click="id_ReactionClickHandler(event)" />
+					
+					<s:HGroup width="100%" verticalAlign="middle" paddingTop="5">
+						<s:Label text="Active" fontSize="12" fontFamily="Calibri"  />
+						<s:CheckBox id="id_Status" />
+						
+						<s:Label text="NKDA" fontSize="12" fontFamily="Calibri"  />
+						<s:CheckBox id="id_NKDA" 
+									change="id_NKDA_changeHandler(event)" toolTip="Select for NKDA"/>
+						
+						<s:HGroup width="100%" horizontalAlign="right" verticalAlign="top" paddingBottom="5" paddingRight="1" paddingTop="-7">
+							
+							<s:Button id="id_AddBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.addAllergyPopupAddBtn" label="Add" 
+									  click="Add_clickHandler(event)" buttonMode="true" useHandCursor="true" toolTip="Add Allergy"  />
+						</s:HGroup>
+					</s:HGroup>	
+					<mx:Spacer height="2" />
+				</s:VGroup>
+			</s:Group>
+		</s:Group>
+	</s:Group>
+</components1:PopupGroup>

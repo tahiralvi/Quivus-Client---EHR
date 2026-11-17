@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:CollapsiblePanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							 xmlns:s="library://ns.adobe.com/flex/spark" 
+							 title="Immunization" skinClass="com.adobe.quivus.skins.chrome.containerSkins.checkboxCollapsiblePanelSkin" 
+							 xmlns:mx="library://ns.adobe.com/flex/mx" 
+							 xmlns:components="com.zigron.controls.extended.components.*" xmlns:components1="com.gazuntite.controls.extended.components.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			
+			import mx.collections.ArrayCollection;
+
+			[Bindable]
+			private var model:AppModelLocator = AppModelLocator.getInstance();
+			
+			[Bindable]
+			override public function set isSelected(value:Boolean):void
+			{
+				super.isSelected = value;
+				
+				model.reviewHistroy.IsImmunizationReviewed= value;
+			}
+			
+			
+		]]>
+	</fx:Script>
+	
+	<components:layout>
+		<s:VerticalLayout paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5"/>
+	</components:layout>
+	<components1:LabelDataGrid id="id_Immunization" horizontalScrollPolicy="off" verticalScrollPolicy="auto" width="100%" dataProvider="{model.ImmunizationsReviewHistory}"
+							  rowCount="{id_Immunization.dataProvider.length ? id_Immunization.dataProvider.length : 1}" verticalGridLines="false"
+							  >
+		<components:columns>
+			<mx:DataGridColumn  headerText="Immunization" dataField="ImmunizationType.ImmunizationTypeName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn  headerText="Dose" dataField="Dose" itemRenderer="mx.controls.Label"   headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn  headerText="Lot#" dataField="LotNumber" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn  headerText="Admin Date" itemRenderer="mx.controls.Label"  headerRenderer="mx.controls.Label" dataField="DateAdmin"/>
+			<mx:DataGridColumn  headerText="Next Due"  dataField="NextDoseDue" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+		</components:columns>
+	</components1:LabelDataGrid>
+</components1:CollapsiblePanel>
+

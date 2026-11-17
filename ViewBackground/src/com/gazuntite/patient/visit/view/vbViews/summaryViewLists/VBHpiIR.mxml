@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true"
+				creationComplete="cc()" width="100%" xmlns:components="com.gazuntite.controls.extended.components.*">
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.common.util.validators.FreeTextValidator;
+			import com.gazuntite.common.view.components.dictation.DictationPopup;
+			import com.gazuntite.common.view.components.notes.NotesPanel;
+			import com.gazuntite.common.view.events.HPIEvent;
+			import com.gazuntite.common.view.events.HPIFieldsVO;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.controls.DataGrid;
+			import mx.controls.DateField;
+			import mx.core.mx_internal;
+			import mx.states.OverrideBase;
+			
+			private var _data:Object;
+			private var _dataChanged:Boolean;
+			private var _hpiFieldsOrder:Array;
+			
+			private var originalDataRecieved:Object;
+			
+			//private var rendererInEditingMode:CCItemRendererMxml;
+			
+			[Bindable]
+			public var model:VBModelLocator = VBModelLocator.getInstance();
+			
+			private function cc():void
+			{
+				this.addEventListener(HPIEvent.LIST_SINGLE_ITEM_EDIT_END, listSingleItemEditEndHandler, false, 0, true);
+			}
+			
+			private function listSingleItemEditEndHandler(event:HPIEvent):void
+			{
+				if (originalDataRecieved)
+				{
+					var hpiFieldVO:HPIFieldsVO = HPIFieldsVO(event.data);
+					
+					if (hpiFieldVO && _data && _data.hasOwnProperty("HPIFields"))
+					{
+						for (var prop:String in _data["HPIFields"])
+						{
+							if (_data["HPIFields"][prop] == hpiFieldVO)
+							{
+								if (prop == "Symptom")
+								{
+									if (hpiFieldVO.value || complaintFreeTextArea.text)
+									{
+										originalDataRecieved["HPIFields"][prop] = hpiFieldVO.value;
+									}
+									else
+									{
+										hpiFieldVO.value = originalDataRecieved["HPIFields"][prop];
+										//hpiItemRenderer.makeDataToRendererEditable(hpiFieldVO);
+									}
+								}
+								else
+								{
+									originalDataRecieved["HPIFields"][prop] = hpiFieldVO.value;
+								}
+							}
+						}
+					}
+					
+					var ev:HPIEvent = new HPIEvent(HPIEvent.LIST_EDIT_END, true);
+					ev.isEditedValueValid = event.isEditedValueValid;
+					ev.data = originalDataRecieved;
+					
+					dispatchEvent(ev);
+				}
+			}
+			
+		
+			
+			private var notesPanel:NotesPanel;
+			private var notesDTO:Object;//ModuleNoteDTO;
+			
+			private function updateNotesData():void
+			{
+				if (originalDataRecieved && notesDTO)
+				{
+					originalDataRecieved.Note = notesDTO.Note;
+					originalDataRecieved.NoteSubject = notesDTO.NoteSubject;
+					
+					var ev:HPIEvent = new HPIEvent(HPIEvent.LIST_EDIT_END, true);
+					ev.isEditedValueValid = true;
+					ev.data = originalDataRecieved;
+					
+					dispatchEvent(ev);
+				}
+			}
+			
+			private var dictationPanel:DictationPopup;
+			private var dictationDTO:Object;//ModuleDictationDTO;
+			
+			
+			private function complaintFreeTextAreaClickHandler(event:MouseEvent):void
+			{
+				complaintFreeTextArea.addEventListener(FocusEvent.FOCUS_OUT, complaintFreeTextAreaEditorFocusOutHandler, false, 0, true);
+			}
+			
+			private function complaintFreeTextAreaEditorFocusOutHandler(event:FocusEvent):void
+			{
+				if (originalDataRecieved)
+				{
+					var symptoms:String = "";
+					if (originalDataRecieved.hasOwnProperty("HPIFields") && originalDataRecieved.HPIFields)
+					{
+						if (originalDataRecieved.HPIFields.hasOwnProperty("Symptom"))
+							symptoms = originalDataRecieved.HPIFields.Symptom;
+					}
+					
+					if (complaintFreeTextArea.text || symptoms)
+					{
+						originalDataRecieved["ChiefComplaint"] = complaintFreeTextArea.text;
+						
+						var ev:HPIEvent = new HPIEvent(HPIEvent.LIST_EDIT_END, true);
+						ev.isEditedValueValid = true;
+						ev.data = originalDataRecieved;
+						
+						dispatchEvent(ev);
+					}
+					else
+					{
+						complaintFreeTextArea.text = originalDataRecieved["ChiefComplaint"];
+					}
+				}
+				
+			}
+			
+			[Bindable]
+			override public function get data():Object
+			{
+				return _data;
+			}
+			
+			override public function set data(value:Object):void
+			{
+				originalDataRecieved = value;
+				
+				if (originalDataRecieved)
+				{
+					_data = {ChiefComplaint: "", HPIFields:{}};
+					
+					if (originalDataRecieved.hasOwnProperty("ChiefComplaint"))
+					{
+						_data["ChiefComplaint"] = originalDataRecieved["ChiefComplaint"];
+					}
+					
+					if (originalDataRecieved.hasOwnProperty("HPIFields"))
+					{
+						var hpiDetails:Object/*HPIDetailsDTO*/ = originalDataRecieved["HPIFields"];
+						/* var date1:HPI_CCDTO = new HPI_CCDTO();
+						date1.VisitDate */
+						
+						if (hpiDetails)
+						{
+							_data["HPIFields"]["Symptom"] = new HPIFieldsVO("Symptom", hpiDetails.Symptom, spark.components.ComboBox, new FreeTextValidator("Invalid Symptom", 0, 200), model.symptom);
+							_data["HPIFields"]["Context"] = new HPIFieldsVO("Context", hpiDetails.Context, spark.components.ComboBox, new FreeTextValidator("Invalid Context", 0, 200), model.context);
+							_data["HPIFields"]["Location"] = new HPIFieldsVO("Location", hpiDetails.Location, spark.components.ComboBox, new FreeTextValidator("Invalid Location", 0, 200), model.location);
+							_data["HPIFields"]["Severity"] = new HPIFieldsVO("Severity", hpiDetails.Severity, spark.components.ComboBox, new FreeTextValidator("Invalid Severity", 0, 200), model.severity);
+							_data["HPIFields"]["ModifyingFactors"] = new HPIFieldsVO("Modifying Factors", hpiDetails.ModifyingFactors, spark.components.ComboBox, new FreeTextValidator("Invalid Modyfying factors", 0, 200), model.modifyingFactors);
+							_data["HPIFields"]["Progression"] = new HPIFieldsVO("Progression", hpiDetails.Progression, spark.components.ComboBox, new FreeTextValidator("Invalid Progression", 0, 200), model.progression);
+							_data["HPIFields"]["Onset"] =  new HPIFieldsVO("On Set", hpiDetails.Onset, mx.controls.DateField, new FreeTextValidator("Invalid onset date"));
+							_data["HPIFields"]["Duration"] = new HPIFieldsVO("Duration", hpiDetails.Duration, spark.components.ComboBox, new FreeTextValidator("Invalid Duration", 0, 200), model.duration);
+							_data["HPIFields"]["Quality"] = new HPIFieldsVO("Quality", hpiDetails.Quality, spark.components.ComboBox, new FreeTextValidator("Invalid Quality", 0, 200), model.quality);
+							_data["HPIFields"]["Exacerbating"] = new HPIFieldsVO("Exacerbating", hpiDetails.Exacerbating, spark.components.ComboBox, new FreeTextValidator("Invalid Exacerbating", 0, 200), model.exacerbating);
+							_data["HPIFields"]["Radiation"] = new HPIFieldsVO("Radiation", hpiDetails.Radiation, spark.components.ComboBox, new FreeTextValidator("Invalid Radiation", 0, 200), model.radiation);
+							
+							_dataChanged = true;
+							
+							_hpiFieldsOrder = ["Symptom", "Onset", "Duration", "Location", "Quality",
+								"Severity", "Context", "ModifyingFactors", "Exacerbating", "Progression", "Radiation"];
+							
+							invalidateProperties();
+						}
+					}
+				}
+				else
+					_data = null;
+			}
+			
+			override protected function commitProperties():void
+			{
+				super.commitProperties();
+				
+				if (_dataChanged)
+				{
+					_dataChanged = false;
+					
+					if (_data)
+					{
+						complaintFreeTextArea.text = _data.hasOwnProperty("ChiefComplaint") ? _data["ChiefComplaint"] : "";
+						//hpiItemRenderer.fieldOrder = _hpiFieldsOrder;
+						//hpiItemRenderer.data = _data.hasOwnProperty("HPIFields") ? _data["HPIFields"] : null;
+						//hpiItemRenderer.disableEditableMode = true;
+					}
+				}
+			}
+			
+			protected function skinnablecontainer1_clickHandler(event:MouseEvent):void
+			{
+				if(id_hpiContent.visible)
+				{
+					id_hpiContent.visible = false;
+					id_hpiContent.includeInLayout = false;
+					complaintFreeTextArea.height = 38;
+				}
+				else
+				{
+					complaintFreeTextArea.height = 19;
+					id_hpiContent.visible = true;
+					id_hpiContent.includeInLayout = true;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:VGroup width="100%" verticalAlign="top" paddingLeft="3" paddingRight="3" paddingTop="0" paddingBottom="0" gap="0">
+		
+		
+	
+		
+		
+		<s:Label id="id_complaintLbl" color="#333333" text="{data.VisitDate}" fontFamily="Calibri" fontSize="11" width="145" textAlign="left" verticalAlign="middle"/>
+		<components:LabelTextArea id="complaintFreeTextArea" borderVisible="false" editable="false" color="#333333" fontFamily="Calibri" 
+								  fontSize="11" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off" minHeight="30"
+								  skinClass="com.adobe.gazuntite.skins.chrome.textInputSkins.LabeltextAreaSkin"  />
+		
+		<s:VGroup id="id_hpiContent" width="100%">				
+			<!--<itemRenderers1:HPIItemRenderer id="hpiItemRenderer" width="100%" horizontalAlign="left"/>-->
+		</s:VGroup>
+	</s:VGroup>
+
+</s:ItemRenderer>

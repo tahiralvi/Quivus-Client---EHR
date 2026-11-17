@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 
+		>
+	<fx:Metadata>[HostComponent("spark.components.VScrollBar")]</fx:Metadata>
+	<s:states>
+		<s:State name="normal"/><s:State name="normalWithPrompt"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+		<s:State name="inactive"/>
+	</s:states>
+	<s:Button skinClass="com.adobe.Quivus.view.controls.skins.ScrollBarSkins.trackLarge" y="5" id="track" x="0"/>
+	<s:Button toolTip="Scroll" skinClass="com.adobe.Quivus.view.controls.skins.ScrollBarSkins.thumbBtn" id="thumb" x="1" y="8" y.normal="12" buttonMode.normal="true"/>
+	<s:Button skinClass="com.adobe.Quivus.view.controls.skins.ScrollBarSkins.button1" y="0" id="decrementButton" x="1" buttonMode.normal="true"/>
+	<s:Button skinClass="com.adobe.Quivus.view.controls.skins.ScrollBarSkins.downBtn" y="{track.height + 10}" id="incrementButton" x="1" buttonMode.normal="true"/>
+	
+	
+	
+	
+
+	<!--<s:Button id="track" top="16" bottom="15" height="54"
+			  focusEnabled="false" />
+
+
+	<s:Button id="thumb" 
+			  focusEnabled="false" visible.inactive="false"  />
+
+	
+
+	<s:Button id="decrementButton" top="0" enabled.inactive="false"
+			  focusEnabled="false" />
+
+	<s:Button id="incrementButton" bottom="0" enabled.inactive="false"
+			  focusEnabled="false" />
+	-->
+	
+</s:Skin>

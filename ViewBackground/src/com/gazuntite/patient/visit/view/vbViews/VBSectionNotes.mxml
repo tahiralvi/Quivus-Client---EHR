@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components:PopupGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:components="com.gazuntite.controls.extended.components.*"
+					   >
+	
+	
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			
+			import mx.controls.Label;
+			
+			private var m_oNotesDTOList:ArrayCollection;
+			
+			public function displayRowNum(oItem:Object,iCol:int):String
+			{
+				var rowNumber:int = id_SectionNotes.dataProvider.getItemIndex(oItem) + 1;
+				return String(rowNumber);
+			}
+			[Bindable]
+			public function get notesDTOList():ArrayCollection
+			{
+				return m_oNotesDTOList;
+			}
+			
+			public function set notesDTOList(value:ArrayCollection):void
+			{
+				m_oNotesDTOList = value;
+			}
+			
+		]]>
+		
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<!--<components:layout>
+		<s:VerticalLayout gap="0" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" />
+	</components:layout>-->
+	
+	
+	<!--<notes:NotesHeader id="id_header" width="100%" height="25" HeadingLable="Vitals" CenterLable="IMPORT" HideSaveButton="true"/>-->
+	
+
+		
+		<s:SkinnableContainer height="100" minWidth="450" width="100%" skinClass="com.adobe.gazuntite.skins.notesBodyOrangeLargeSkin">
+			
+			<s:layout>
+				<s:VerticalLayout gap="-1" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" />
+			</s:layout>	
+			<mx:DataGrid id="id_SectionNotes" width="100%" height="100%" minHeight="90" dataProvider="{notesDTOList}"				 					
+						  variableRowHeight="true" maxHeight="150" verticalScrollPolicy="off"
+						  verticalScrollBarStyleName="VScrollBar">
+				<mx:columns>					
+					<mx:DataGridColumn headerText="Visit Date" dataField="VisitDate" headerRenderer="mx.controls.Label" wordWrap="true"
+									   itemRenderer="com.gazuntite.common.view.renderers.DateRenderer4DG"/>
+					<mx:DataGridColumn headerText="Subject" dataField="NoteSubject" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+					<mx:DataGridColumn headerText="Notes" dataField="Note"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>					
+				</mx:columns>
+			</mx:DataGrid>
+		</s:SkinnableContainer>
+
+	
+</components:PopupGroup>

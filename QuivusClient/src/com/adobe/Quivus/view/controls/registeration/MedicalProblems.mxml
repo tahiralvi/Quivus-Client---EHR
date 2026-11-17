@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 creationComplete="cc()" xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 >
+	<s:layout>
+		<s:VerticalLayout verticalAlign="middle" paddingBottom="3" paddingLeft="3" paddingRight="3" paddingTop="3"/>
+	</s:layout>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.search.SearchAllergyTypeByNameEvent;
+			import com.adobe.Quivus.events.search.SearchICDCodeByCodeEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.DTOInitializationUtility;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.AddMoreTooltipBtn;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import flashx.textLayout.container.ScrollPolicy;
+			
+			import mx.controls.Alert;
+			import mx.controls.Label;
+			import mx.core.FlexGlobals;
+			import mx.core.INavigatorContent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			
+			import valueObjects.AllergySearchDTO;
+			import valueObjects.AllergyTypeDTO;
+			import valueObjects.ICDCodeDTO;
+			import valueObjects.ICDCodeSearchDTO;
+			import valueObjects.PatientAllergyDTO;
+			import valueObjects.PatientMedicalHistoryDTO;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var isNotValid:Boolean = false;
+			
+			//Start - Tahir Alvi ----- 
+			private function cc():void
+			{
+				id_MedicalHistoryGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_ONLY_CLICK, deleteRecordClickHandler, false, 0, true);
+				
+				
+				if(id_MedicalProblem.text.length > 0 )
+				{
+					id_medicanAddBtn.enabled 	= true;
+					id_Yes.enabled 				= true;
+					id_No.enabled 				= true;
+				}
+				else
+				{
+					id_medicanAddBtn.enabled 	= false;
+					id_Yes.enabled 				= false;
+					id_No.enabled 				= false;
+				}
+				
+			}
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+				
+				if (curTar.selectedItem)
+				{
+					var patientHistoryMedicalId:int = PatientMedicalHistoryDTO(curTar.selectedItem).PatientHistoryMedicalId;
+					
+					UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+					{
+						if (patientHistoryMedicalId == 0)
+						{
+							model.healthHX.PatientMedicalHistoryDTOList.removeItemAt(curTar.selectedIndex);
+						}else
+						{
+							curTar.selectedItem.IsDeleted = true;
+							model.healthHX.PatientMedicalHistoryDTOList.filterFunction = filterDeletedItems;
+							model.healthHX.PatientMedicalHistoryDTOList.refresh();
+						}
+					});
+					if(model.healthHX.PatientMedicalHistoryDTOList.length <0)
+						id_MedicalHistoryGrid.visible = false;
+				}
+			}
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			//End - Tahir Alvi ----- 
+			private function addMedical():void
+			{
+				isNotValid = false;
+				isInvalid();
+				if(!isNotValid)
+					addRecordMedical();
+			}
+			protected function addRecordMedical():void
+			{
+				if(id_MedicalProblem.text.length >2)
+				{
+					if(model.healthHX == null)
+						DTOInitializationUtility.InitializeHealthInfoDTO();
+					
+					var patientMedicalHistoryDTO:PatientMedicalHistoryDTO = new PatientMedicalHistoryDTO();								
+					patientMedicalHistoryDTO.Description = id_MedicalProblem.text;
+					
+					if (activeYesNo.selectedValue == "yes")
+						patientMedicalHistoryDTO.IsActive = Constants.STRING_TRUE;
+						
+					else if (activeYesNo.selectedValue == "no")
+						patientMedicalHistoryDTO.IsActive = Constants.STRING_FALSE;
+					
+					model.healthHX.PatientMedicalHistoryDTOList.addItem(patientMedicalHistoryDTO);
+					id_MedicalHistoryGrid.dataProvider = model.healthHX.PatientMedicalHistoryDTOList;
+					id_MedicalHistoryGrid.visible = true;
+					resetFields();
+					id_MedicalProblem.setFocus(); // //Alvi - Focus on first field after adding a record
+				}
+				else
+				{
+					id_MedicalProblem.setFocus();
+				}
+			}
+			
+			private function isInvalid():void 
+			{
+				var errorStr:String = "";
+				var toSetFocus:*;
+				ValidationUtils.Trim(id_MedicalProblem);
+				
+				if(id_MedicalProblem.text.length < 2)
+				{
+					isNotValid = true;
+					errorStr += "The data in medical history problem is invalid.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_MedicalProblem;
+				}
+				if (isNotValid && errorStr.length)
+				{
+					Alert.show(errorStr,"Patient Registeration Required Fields", 4, FlexGlobals.topLevelApplication.mainContainer, function(event:Event):void{
+						if (toSetFocus)
+							toSetFocus.setFocus();
+					});
+				}
+			} 
+			
+			public function resetFields():void
+			{
+				id_MedicalProblem.text = '';
+				activeYesNo.selectedValue = null;
+				id_Yes.selected = false;
+				id_No.selected = false;
+			}
+			
+			public function loadMedicalProblemData():void
+			{
+				clearForm();
+				if(model.healthHX.PatientMedicalHistoryDTOList && model.healthHX.PatientMedicalHistoryDTOList.length > 0)
+				{
+					id_MedicalHistoryGrid.dataProvider = model.healthHX.PatientMedicalHistoryDTOList;
+					id_MedicalHistoryGrid.visible = true;
+				} 
+			}
+			
+			public function clearForm():void
+			{
+				resetFields();
+				
+				if (id_MedicalHistoryGrid)
+				{
+					id_MedicalHistoryGrid.dataProvider = null;
+				}
+				if(id_MedicalHistoryGrid.visible)
+					id_MedicalHistoryGrid.visible = false;
+				id_MedicalHistoryGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_ONLY_CLICK, deleteRecordClickHandler, false, 0, true); 
+			}
+			
+			public function activeYesNoLabelFunction(item:Object, iCol:int):String
+			{
+				var label:String = "";
+				
+				if (item.IsActive)//hasOwnProperty("IsActive"))
+				{
+					if (item.IsActive == 'True' || item.IsActive == 'true')//Constants.STRING_TRUE)
+						label = "Yes";
+						
+					else if (item.IsActive == 'False' || item.IsActive == 'false')//Constants.STRING_FALSE)
+						label = "No";
+				}
+				
+				return label;
+			}
+			
+			protected function id_MedicalProblem_changeHandler(event:TextOperationEvent):void
+			{
+				// TODO Auto-generated method stub
+				if(id_MedicalProblem.text.length > 0 )
+				{
+					id_medicanAddBtn.enabled 	= true;
+					id_Yes.enabled 				= true;
+					id_No.enabled 				= true;
+				}
+				else
+				{
+					id_medicanAddBtn.enabled 	= false;
+					id_Yes.enabled 				= false;
+					id_No.enabled 				= false;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:RadioButtonGroup id="activeYesNo"/>
+	</fx:Declarations>
+	
+	<s:BorderContainer borderVisible="false" width="100%" height="18" backgroundColor="#C8DDEE" >
+		<s:layout>
+			<s:VerticalLayout verticalAlign="middle"/>
+		</s:layout>
+		<s:Label verticalAlign="middle" paddingLeft="8" text="Medical Problems" width="100%" fontFamily="Calibri Bold" />
+	</s:BorderContainer>
+	<s:VGroup width="100%">
+		
+		<s:HGroup width="100%" verticalAlign="middle">
+			<components1:LabelTextInput id="id_MedicalProblem" prompt="Medical problem..." tabIndex="6" width="100%" maxChars="500" toolTip="Enter medical problem"
+									    change="id_MedicalProblem_changeHandler(event)"/>
+			<s:HGroup gap="0" width="65">
+				<s:RichText color="#4c4c4c" fontFamily="Calibri" fontSize="11" height="12" kerning="off" 
+							lineHeight="120%" trackingRight="2.5%" whiteSpaceCollapse="preserve" width="32" x="361.9" y="282.9">
+					<s:content><s:p><s:span>Active</s:span></s:p></s:content>
+				</s:RichText>
+				<s:RadioButton id="id_Yes" buttonMode="true" value="yes" groupName="activeYesNo" 
+							   skinClass="com.adobe.Quivus.view.controls.skins.radioButtonSkins.YRadioButton" toolTip="Active" tabIndex="7"/>
+				<s:RadioButton id="id_No" buttonMode="true" value="no" groupName="activeYesNo" 
+							   skinClass="com.adobe.Quivus.view.controls.skins.radioButtonSkins.NRadioButton" toolTip="Active"/>
+			</s:HGroup>
+			
+			<s:Button id="id_medicanAddBtn"  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.AddMoreTooltipBtn" label="Add Medical Problems" 
+					   buttonMode="true" click="addMedical()" tabIndex="8" width="135" toolTip="Add Medical Problems" height="{id_MedicalProblem.height}"/>
+		</s:HGroup>
+		
+		<components1:LabelDataGrid id="id_MedicalHistoryGrid" width="100%" minHeight="20" 
+								  includeInLayout="{id_MedicalHistoryGrid.visible}"	  visible="false" 
+								  rowCount="{id_MedicalHistoryGrid.dataProvider.length+1}" 
+								  columnWidths="{['70%', '20%',15]}">
+			<components1:columns>
+				<mx:DataGridColumn dataField="Description" headerText="Medical Problem" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn headerText="Active" labelFunction="activeYesNoLabelFunction" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn itemRenderer="com.adobe.Quivus.view.controls.registeration.DeleteRecordRendererOnly" />
+			</components1:columns>
+		</components1:LabelDataGrid>
+	</s:VGroup>
+</s:Group>

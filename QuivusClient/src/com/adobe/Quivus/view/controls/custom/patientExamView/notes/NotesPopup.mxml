@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   xmlns:components="com.zigron.controls.extended.components.*" xmlns:components1="com.gazuntite.controls.extended.components.*" 
+					   
+					   >
+	<fx:Script>
+		<![CDATA[
+			
+			private var m_sLable:String;
+
+			[Bindable]
+			public function get HeaderLabel():String
+			{
+				return m_sLable;
+			}
+
+			public function set HeaderLabel(value:String):void
+			{
+				
+				m_sLable = value;
+			}
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				this.removePopup();
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<components:layout>
+		<s:VerticalLayout gap="-2" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" />
+	</components:layout>
+	
+	
+		<s:SkinnableContainer width="100%" skinClass="com.adobe.Quivus.view.controls.skins.notesHeaderSkin">
+			
+			
+			<s:layout>
+				<s:HorizontalLayout horizontalAlign="center" verticalAlign="middle" />
+			</s:layout>
+			
+			<s:HGroup width="30" horizontalAlign="left" verticalAlign="middle" paddingLeft="27">
+				<!--<s:Label id="id_HeadingLbl" text="{HeaderLabel}" fontFamily="Calibri" color="#ffffff" alpha="0.6" />-->
+			</s:HGroup>
+			<s:HGroup width="100%" horizontalAlign="center" verticalAlign="bottom" paddingTop="2" paddingBottom="-1">
+				
+				<s:SkinnableContainer width="100%" skinClass="com.adobe.Quivus.view.controls.skins.notesHeaderLabelSkin">
+					<s:layout>
+						<s:HorizontalLayout horizontalAlign="center" verticalAlign="middle" />
+					</s:layout>
+					<s:Label text="{HeaderLabel}" fontFamily="Calibri"  />
+				</s:SkinnableContainer>
+			</s:HGroup>
+			
+			<s:HGroup width="30" horizontalAlign="right" verticalAlign="middle" paddingRight="5" >
+				
+				<s:Button id="id_CloseBtn" width="16" height="16" click="button1_clickHandler(event)" skinClass="com.adobe.quivus.skins.chrome.buttonSkins.notesCrossBtn"
+						  buttonMode="true" useHandCursor="true" toolTip="Close Notes"/>
+			</s:HGroup>
+			
+			
+		</s:SkinnableContainer>
+	<!--</s:SkinnableContainer>-->
+	
+	<!--<s:SkinnableContainer width="100%" height="100%" skinClass="com.adobe.Quivus.view.controls.skins.notesBodyOuterSkin">
+		<s:layout>
+			<s:VerticalLayout gap="-2" paddingBottom="4" paddingLeft="4" paddingRight="4" paddingTop="-3" />
+		</s:layout>-->
+		<s:SkinnableContainer height="50" width="190" skinClass="com.adobe.Quivus.view.controls.skins.notesBodySkin">
+			
+			<s:layout>
+				<s:VerticalLayout gap="-1" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="0" />
+			</s:layout>
+			
+				
+				<s:TextArea id="id_message" width="100%" height="50" editable="false" />
+			
+		</s:SkinnableContainer>
+		
+	<!--</s:SkinnableContainer>-->
+	
+</components1:PopupGroup>

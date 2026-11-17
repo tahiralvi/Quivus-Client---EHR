@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+	</s:states>
+	<s:Path includeIn="up, down, disabled" data="M 2.442 0.5 C 1.37 0.5 0.5 1.396 0.5 2.5 L 0.5 8.5 C 0.5 9.604 1.37 10.5 2.442 10.5 L 45.5 10.5 L 45.5 0.5 L 2.442 0.5 Z" id="path1" winding="nonZero" x="0" y="0">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#666666" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#666666" ratio="0.7215686274509804"/>
+				<s:GradientEntry alpha="1.0" color="#999999" ratio="1"/>
+			</s:LinearGradient>
+			
+		</s:fill>
+	</s:Path>
+	
+	
+	<s:Path includeIn="over" alpha="0.8" data="M 2.442 0.5 C 1.37 0.5 0.5 1.396 0.5 2.5 L 0.5 8.5 C 0.5 9.604 1.37 10.5 2.442 10.5 L 45.5 10.5 L 45.5 0.5 L 2.442 0.5 Z" winding="nonZero" x="0" y="0">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#666666" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<!--<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#ff6600" ratio="0.7215686274509804"/>
+				<s:GradientEntry alpha="1.0" color="#ff6600" ratio="1"/>
+			</s:LinearGradient>-->
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#FF7200" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#FF7800" ratio="0.00784313725490196"/>
+				<s:GradientEntry alpha="1.0" color="#FF7800" ratio="0.19215686274509805"/>
+				<s:GradientEntry alpha="1.0" color="#FF4B13" ratio="0.47058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#FFBB5A" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Path>
+	
+	<s:Path data="M 11.10 9.60 L 0.00 9.60 5.55 -0.00 Z " height="3.6" width="5" x="20" y="4">
+		<s:fill>
+			<s:SolidColor color="#CCCCCC" color.over="#000000"/>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="1" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Path>
+
+	
+</s:Skin>

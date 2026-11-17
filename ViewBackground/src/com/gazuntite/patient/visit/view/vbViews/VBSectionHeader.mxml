@@ -1,0 +1,515 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:skins="com.adobe.gazuntite.view.controls.skins.*" 
+		 xmlns:buttonSeparators="com.adobe.gazuntite.skins.chrome.buttonSeparators.*"
+		 xmlns:components="com.gazuntite.controls.extended.components.*" 
+		 creationComplete="init()" 
+		 focusEnabled="true" 
+		 >
+	<fx:Metadata>
+		[DefaultProperty("Content")] 
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.whiteCloseButton;
+			import com.gazuntite.common.util.QSAppUtils;
+			import com.gazuntite.common.util.QSConstants;
+			import com.gazuntite.controls.extended.components.PopupGroup;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			
+			import mx.core.FlexGlobals;
+			import mx.rpc.events.HeaderEvent;
+			
+			
+			private var m_sHeadingLable:String;
+			
+			private var _Skin:Class;
+			
+			private var m_aContent:Array;
+			[Bindable]
+			public function get Skin():Class
+			{
+				return _Skin;
+			}
+			
+			public function set Skin(value:Class):void
+			{
+				_Skin = value;
+			}
+			
+			private function init():void 
+			{
+				if( m_aContent == null ) return;
+				for(var i:int=0; i < m_aContent.length; i++) 
+				{
+					commons.addElementAt( m_aContent[i], i );
+				}
+				
+				
+				id_Voice.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					event.stopImmediatePropagation();
+				});
+				
+				id_NotesBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					event.stopImmediatePropagation();
+				});
+				
+				
+				/*  FlexGlobals.topLevelApplication.addEventListener(MouseEvent.MOUSE_DOWN, function(event:MouseEvent):void
+				{
+				id_OptionPopUp.displayPopUp = false;
+				}, true);   */
+				
+				/* ChromeUtil.topLevelWindow.addEventListener(MouseEvent.MOUSE_DOWN, function(event:MouseEvent):void
+				{
+				id_OptionPopUp.displayPopUp = false;
+				}, true);   */
+				
+				/* ChromeUtil.topLevelQuivusClient.addEventListener(MouseEvent.MOUSE_DOWN, function(event:MouseEvent):void
+				{
+				id_OptionPopUp.displayPopUp = false;
+				}, true);  */
+				
+				/* ChromeUtil.topLevelMainContainer.addEventListener(MouseEvent.MOUSE_DOWN, function(event:MouseEvent):void
+				{
+				id_OptionPopUp.displayPopUp = false;
+				id_iconButtons.selected = false;
+				}, true); 
+				
+				id_OptionPopUp.addEventListener(FocusEvent.FOCUS_OUT, function(event:MouseEvent):void
+				{
+				id_OptionPopUp.displayPopUp = false;
+				id_iconButtons.selected = false;
+				}, true);  */
+			}
+			
+			public function set Content(a:Array):void 
+			{
+				m_aContent = a;
+			}        
+			
+			public function get Content():Array 
+			{
+				return m_aContent;
+			}
+			
+			[Bindable]
+			private var model:VBModelLocator = VBModelLocator.getInstance();
+			
+			[Bindable]
+			public function get HeadingLable():String
+			{
+				return m_sHeadingLable;
+			}
+			
+			public function set HeadingLable(value:String):void
+			{
+				m_sHeadingLable = value;
+			}
+			
+			
+			protected function id_Save_clickHandler(event:MouseEvent):void
+			{
+				
+				if (HeadingLable.toLowerCase() == QSConstants.VB_SECTION_NAME_IMMUNIZATION.toLowerCase())
+				{
+					model.immunizationDTOList.filterFunction = null;
+					model.immunizationDTOList.refresh();
+					
+					if (model.immunizationDTOList != null && model.immunizationDTOList.length > 0)
+					{
+						/*var mpiEvent : ManagePatientImmunizationEvent = new ManagePatientImmunizationEvent(  );
+						CairngormEventDispatcher.getInstance().dispatchEvent( mpiEvent );*/
+					}
+				}
+					
+				else if (HeadingLable.toLowerCase() == QSConstants.VB_SECTION_NAME_VITALS.toLowerCase() || HeadingLable.toLowerCase() == "vitals")
+				{
+					model.vitalDTOListByPatient.filterFunction = null;
+					model.vitalDTOListByPatient.refresh();
+					
+					if (model.vitalDTOListByPatient != null && model.vitalDTOListByPatient.length > 0)
+					{
+						
+						/*var mpvEvent : ManagePatientVitalsEvent = new ManagePatientVitalsEvent(  );
+						CairngormEventDispatcher.getInstance().dispatchEvent( mpvEvent );*/
+					}
+				}
+					
+				else if (HeadingLable.toLowerCase() == QSConstants.VB_SECTION_NAME_LABS.toLowerCase())
+				{
+					model.inHouseLabDTOListByPatient.filterFunction = null;
+					model.inHouseLabDTOListByPatient.refresh();
+					
+					if (model.inHouseLabDTOListByPatient != null && model.inHouseLabDTOListByPatient.length > 0)
+					{
+						
+						/*var mpihlEvent : ManagePatientInHouseLabsEvent = new ManagePatientInHouseLabsEvent();
+						CairngormEventDispatcher.getInstance().dispatchEvent( mpihlEvent );*/
+					}
+					
+					model.labDTOListByPatient.filterFunction = null;
+					model.labDTOListByPatient.refresh();
+					
+					if (model.labDTOListByPatient != null && model.labDTOListByPatient.length > 0)
+					{
+						/*var mploEvent : ManagePatientLabsEvent = new ManagePatientLabsEvent();
+						CairngormEventDispatcher.getInstance().dispatchEvent( mploEvent );*/
+					}
+				}
+					
+				else if (HeadingLable.toLowerCase() == QSConstants.VB_SECTION_NAME_CC_HPI.toLowerCase())
+				{
+					model.HPI_CCDTOListByPatient.filterFunction = null;
+					model.HPI_CCDTOListByPatient.refresh();
+					
+					if (model.HPI_CCDTOListByPatient != null && model.HPI_CCDTOListByPatient.length > 0)
+					{
+						/*var mphpiEvent : ManagePatientHPIEvent = new ManagePatientHPIEvent(  );
+						CairngormEventDispatcher.getInstance().dispatchEvent( mphpiEvent );*/
+					}
+				}
+					
+				else if (HeadingLable.toLowerCase() == QSConstants.VB_SECTION_NAME_PLAN.toLowerCase())
+				{
+					
+					/* if(model.patientFollowupDTOListByPatientId!=null && model.patientFollowupDTOListByPatientId.length>0)
+					{
+					var mpfEvent : ManagePatientFollowUpEvent = new ManagePatientFollowUpEvent(  );
+					CairngormEventDispatcher.getInstance().dispatchEvent( mpfEvent );
+					} */
+					model.followUpInstructionDTOListByPatient.filterFunction = null;
+					model.followUpInstructionDTOListByPatient.refresh();
+					
+					if (model.followUpInstructionDTOListByPatient != null && model.followUpInstructionDTOListByPatient.length > 0)
+					{
+						/*var mpfiEvent:ManagePatientFollowUpInstructionEvent = new ManagePatientFollowUpInstructionEvent(  );
+						CairngormEventDispatcher.getInstance().dispatchEvent( mpfiEvent );*/
+					}
+					
+					model.recommendationDTOListByPatientId.filterFunction = null;
+					model.recommendationDTOListByPatientId.refresh();
+					
+					if (model.recommendationDTOListByPatientId != null && model.recommendationDTOListByPatientId.length > 0)
+					{
+						/*var mprEvent : ManagePatientRecommendationEvent = new ManagePatientRecommendationEvent(  );
+						CairngormEventDispatcher.getInstance().dispatchEvent( mprEvent );*/
+					}
+					
+					/* if(model.labDTOListByPatient!=null && model.labDTOListByPatient.length>0)
+					{
+					var mploEvent : ManagePatientLabsEvent = new ManagePatientLabsEvent(  );
+					CairngormEventDispatcher.getInstance().dispatchEvent( mploEvent );
+					} */
+				}
+				else if (HeadingLable.toLowerCase() == "follow up")
+				{
+					
+					/* if(model.patientFollowupDTOListByPatientId!=null && model.patientFollowupDTOListByPatientId.length>0)
+					{
+					var mpfEvent : ManagePatientFollowUpEvent = new ManagePatientFollowUpEvent(  );
+					CairngormEventDispatcher.getInstance().dispatchEvent( mpfEvent );
+					} */
+					model.followUpInstructionDTOListByPatient.filterFunction = null;
+					model.followUpInstructionDTOListByPatient.refresh();
+					
+					if (model.followUpInstructionDTOListByPatient != null && model.followUpInstructionDTOListByPatient.length > 0)
+					{
+						/*var mpfiEvent : ManagePatientFollowUpInstructionEvent = new ManagePatientFollowUpInstructionEvent(  );
+						CairngormEventDispatcher.getInstance().dispatchEvent( mpfiEvent );*/
+					}
+					
+				}
+					
+				else if (HeadingLable.toLowerCase() == "recommendation")
+				{
+					model.recommendationDTOListByPatientId.filterFunction = null;
+					model.recommendationDTOListByPatientId.refresh();
+					
+					if(model.recommendationDTOListByPatientId!=null && model.recommendationDTOListByPatientId.length>0)
+					{
+						/*var mprEvent : ManagePatientRecommendationEvent = new ManagePatientRecommendationEvent(  );
+						CairngormEventDispatcher.getInstance().dispatchEvent( mprEvent );*/
+					}
+					
+					/* if(model.labDTOListByPatient!=null && model.labDTOListByPatient.length>0)
+					{
+					var mploEvent : ManagePatientLabsEvent = new ManagePatientLabsEvent(  );
+					CairngormEventDispatcher.getInstance().dispatchEvent( mploEvent );
+					} */
+				}
+					
+				else if(HeadingLable.toLowerCase() == QSConstants.VB_SECTION_NAME_TREATMENT.toLowerCase())
+				{
+					model.procedureDTOListByPatient.filterFunction = null;
+					model.procedureDTOListByPatient.refresh();
+					
+					if (model.procedureDTOListByPatient != null && model.procedureDTOListByPatient.length > 0)
+					{
+						/*var mpproEvent : ManagePatientProcedureEvent = new ManagePatientProcedureEvent(  );
+						CairngormEventDispatcher.getInstance().dispatchEvent( mpproEvent );*/
+					}
+					
+				}
+					
+				else if (HeadingLable.toLowerCase() == "procedure")
+				{
+					model.procedureDTOListByPatient.filterFunction = null;
+					model.procedureDTOListByPatient.refresh();
+					
+					if (model.procedureDTOListByPatient!=null && model.procedureDTOListByPatient.length>0)
+					{
+						/*var mpproEvent : ManagePatientProcedureEvent = new ManagePatientProcedureEvent(  );
+						CairngormEventDispatcher.getInstance().dispatchEvent( mpproEvent );*/
+					}
+					
+				}
+					
+				else if(HeadingLable.toLowerCase() == QSConstants.VB_SECTION_NAME_DIAGNOSIS.toLowerCase())
+				{
+					/* if(model.patientDiagnosisDTOListByPatientId!=null && model.patientDiagnosisDTOListByPatientId.length>0)
+					{
+					var mpdEvent : ManagePatientDiagnosisEvent = new ManagePatientDiagnosisEvent(  );
+					CairngormEventDispatcher.getInstance().dispatchEvent( mpdEvent );
+					} */
+					
+					if (( model.diagnosisDTOAcuteListByPatientId && model.diagnosisDTOAcuteListByPatientId.length ) ||
+						( model.diagnosisDTOChronicListByPatientId && model.diagnosisDTOChronicListByPatientId.length ) ||
+						( model.diagnosisDTOResolvedListByPatientId && model.diagnosisDTOResolvedListByPatientId.length ))
+					{
+						/*var mpdEvent : ManagePatientDiagnosisEvent = new ManagePatientDiagnosisEvent(  );
+						CairngormEventDispatcher.getInstance().dispatchEvent( mpdEvent );*/
+					}
+				} 
+				
+				else if(HeadingLable.toLowerCase() == QSConstants.VB_SECTION_NAME_ROS.toLowerCase())
+				{
+					model.rosDTOList.filterFunction = null;
+					model.rosDTOList.refresh();
+					
+					if(model.rosDTOList!=null && model.rosDTOList.length>0)
+					{
+						/*var mprosEvent : ManagePatientROSEvent = new ManagePatientROSEvent(  );
+						CairngormEventDispatcher.getInstance().dispatchEvent( mprosEvent );*/
+					}
+					
+				}
+					//				
+				else if(HeadingLable.toLowerCase() == QSConstants.VB_SECTION_NAME_PHYSICAL.toLowerCase())
+				{
+					model.physicalDTOList.filterFunction = null;
+					model.physicalDTOList.refresh();
+					
+					if(model.physicalDTOList != null && model.physicalDTOList.length>0)
+					{
+						/* var mpphEvent : ManagePatientPhysicalEvent = new ManagePatientPhysicalEvent(  );
+						CairngormEventDispatcher.getInstance().dispatchEvent( mpphEvent ); */
+					}
+					
+				}
+					
+				else if(HeadingLable.toLowerCase() == QSConstants.VB_SECTION_NAME_COMPREHENSIVE_HISTORY.toLowerCase() || HeadingLable.toLowerCase() == 'medical hx' || HeadingLable.toLowerCase() == "social history")
+				{
+					model.familyHistoryDTOListByPatient.filterFunction = null;
+					model.familyHistoryDTOListByPatient.refresh();
+					
+					if(model.familyHistoryDTOListByPatient!=null && model.familyHistoryDTOListByPatient.length>0)
+					{
+						/* var mpfhEvent : ManagePatientFamilyHistoryEvent = new ManagePatientFamilyHistoryEvent(  );
+						CairngormEventDispatcher.getInstance().dispatchEvent( mpfhEvent ); */
+					}
+					
+					model.socialHistoryDTOListByPatient.filterFunction = null;
+					model.socialHistoryDTOListByPatient.refresh();
+					
+					if(model.socialHistoryDTOListByPatient!=null && model.socialHistoryDTOListByPatient.length>0)
+					{
+						//M current it is uneditable
+						/* var mpshEvent : ManagePatientSocialHistoryEvent = new ManagePatientSocialHistoryEvent(  );
+						CairngormEventDispatcher.getInstance().dispatchEvent( mpshEvent );  */
+					}
+					
+					model.medicalHistoryDTOListByPatient.filterFunction = null;
+					model.medicalHistoryDTOListByPatient.refresh();
+					
+					if(model.medicalHistoryDTOListByPatient!=null && model.medicalHistoryDTOListByPatient.length>0)
+					{
+						/* var mpmhEvent : ManagePatientMedicalHistoryEvent = new ManagePatientMedicalHistoryEvent(  );
+						CairngormEventDispatcher.getInstance().dispatchEvent( mpmhEvent ); */
+					}
+				}
+				
+				
+				/* else if(HeadingLable.toLowerCase() == "social history")
+				{
+				/* model.familyHistoryDTOListByPatient.filterFunction = null;
+				model.familyHistoryDTOListByPatient.refresh();
+				
+				if(model.familyHistoryDTOListByPatient!=null && model.familyHistoryDTOListByPatient.length>0)
+				{
+				var mpfhEvent : ManagePatientFamilyHistoryEvent = new ManagePatientFamilyHistoryEvent(  );
+				CairngormEventDispatcher.getInstance().dispatchEvent( mpfhEvent );
+				} */
+				
+				//	model.socialHistoryDTOListByPatient.filterFunction = null;
+				//	model.socialHistoryDTOListByPatient.refresh();
+				
+				//	if(model.socialHistoryDTOListByPatient!=null && model.socialHistoryDTOListByPatient.length>0)
+				//	{
+				//M current it is uneditable
+				//		var mpshEvent : ManagePatientSocialHistoryEvent = new ManagePatientSocialHistoryEvent(  );
+				//		CairngormEventDispatcher.getInstance().dispatchEvent( mpshEvent ); 
+				//	}
+				
+				/* model.medicalHistoryDTOListByPatient.filterFunction = null;
+				model.medicalHistoryDTOListByPatient.refresh();
+				
+				if(model.medicalHistoryDTOListByPatient!=null && model.medicalHistoryDTOListByPatient.length>0)
+				{
+				var mpmhEvent : ManagePatientMedicalHistoryEvent = new ManagePatientMedicalHistoryEvent(  );
+				CairngormEventDispatcher.getInstance().dispatchEvent( mpmhEvent );
+				} */
+				//	} */
+				
+				
+				event.stopImmediatePropagation();
+			}
+			
+			public function setHeaderCapitalCase(value:Boolean):void
+			{
+				if( value )
+				{
+					HeadingLable = HeadingLable.toUpperCase();
+				}
+				else
+				{
+					HeadingLable = QSAppUtils.TitleCase( HeadingLable );
+				}
+			}
+			
+			
+			protected function id_iconButtons_clickHandler(event:MouseEvent):void
+			{
+				//if( QSSecurityUtil.Security.IsModuleViewable( SectionNameID ))//Tahir Alvi - implement security check
+			 //{
+					id_OptionPopUp.displayPopUp = !id_OptionPopUp.displayPopUp; 
+					event.stopImmediatePropagation(); 
+			//	} 
+				
+				/* 	var popup:PopupGroup = new PopupGroup(); */
+			}
+			
+			
+			protected function id_OptionPopUp_focusOutHandler(event:FocusEvent):void
+			{
+				id_OptionPopUp.displayPopUp = false;
+				id_iconButtons.selected = false;
+			}
+			
+			protected function id_CloseButtonn_clickHandler(event:MouseEvent):void
+			{
+				
+				id_OptionPopUp.displayPopUp = false;
+				id_iconButtons.selected = false;
+			}
+			
+			[Bindable]
+			public function get SectionNameID():String
+			{
+				return sSectionNameID;
+			}
+			
+			public function set SectionNameID(value:String):void
+			{
+				sSectionNameID = value;
+			}
+			
+			private var sSectionNameID:String;
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:SkinnableContainer id="id_pmhHeader" width="100%" height="23" 						  					 
+						  skinClass="{Skin}">
+		<s:layout>
+			<s:HorizontalLayout verticalAlign="middle" />
+		</s:layout>
+		
+		<s:HGroup verticalAlign="middle" horizontalAlign="left" width="100%" paddingLeft="1">
+			
+			<s:HGroup gap="0" horizontalAlign="left" verticalAlign="middle" width="25">
+				
+				<s:HGroup verticalAlign="top" paddingTop="-2">				
+					<s:Button id="id_CloseBtn" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.whiteCloseButton" toolTip="Close" useHandCursor="true" buttonMode="true"  />
+				</s:HGroup>
+				
+				<buttonSeparators:buttonSeparator />
+			</s:HGroup>
+			
+			<s:HGroup verticalAlign="middle" horizontalAlign="left" width="100%">
+				<s:Label id="id_headingLbl" color="#ffffff" fontFamily="Calibri" text="{HeadingLable}"/>	
+			</s:HGroup>
+			
+			<s:HGroup id="commons" horizontalAlign="right" verticalAlign="middle" width="100%" paddingRight="2" gap="0">
+				<s:ToggleButton id="id_ChangeIndicator" skinClass="com.adobe.gazuntite.skins.QuickInput.changeIndicator"
+								includeInLayout="false" visible="false"/>
+				<s:HGroup paddingTop="2" paddingRight="1">
+					<s:VGroup width="100%"  horizontalAlign="right" paddingTop="1" gap="-2">
+						<s:HGroup gap="0">
+							<buttonSeparators:buttonSeparator />
+							<s:Button id="id_Save" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.QIHeaderSaveBtn" width="21" height="21" 
+									  toolTip="Save" buttonMode="true" useHandCursor="true" click="id_Save_clickHandler(event)"/>
+							<buttonSeparators:buttonSeparator />
+							
+							<s:ToggleButton id="id_iconButtons" height="26"  styleName="whiteIconsToggleButtonSkin" buttonMode="true" useHandCursor="true" 
+											click="id_iconButtons_clickHandler(event)" toolTip="Other Options"	/>
+							<!--click="id_OptionPopUp.displayPopUp = !id_OptionPopUp.displayPopUp; event.stopImmediatePropagation();"-->
+							
+						</s:HGroup>
+						
+						<s:PopUpAnchor id="id_OptionPopUp" width="138"
+									   popUpPosition="below"								   
+									   displayPopUp="false"								   
+									   styleName="popUpBox" 
+									   focusOut="id_OptionPopUp_focusOutHandler(event)"
+									   focusEnabled="true">
+							<s:SkinnableContainer skinClass="com.adobe.gazuntite.skins.chrome.containerSkins.communicationIconsBG" width="100%">
+								<s:layout>
+									<s:VerticalLayout gap="2" verticalAlign="bottom" horizontalAlign="left" paddingBottom="5" paddingLeft="7" paddingTop="4" />
+								</s:layout>
+								<s:HGroup width="100%" paddingRight="5" >
+									<s:RichText color="#000000" fontSize="12" height="12" kerning="off" text="Other Options" whiteSpaceCollapse="preserve"
+												fontFamily="Calibri Bold"/>
+									<s:Spacer width="100%"/>
+									<s:Button buttonMode="true" id="id_CloseButtonn" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.popupCloseBtnSkin" 
+											  toolTip="Close" height="16" width="16"
+											  click="id_CloseButtonn_clickHandler(event)"/>
+								</s:HGroup>
+								
+								<s:Button id="id_Voice" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.VBdictationBtnSelected" 
+										  buttonMode="true" useHandCursor="true" toolTip="Record Dictation"/>
+								<s:Button id="id_NotesBtn" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.VBnotesBtnSelected" 
+										  buttonMode="true" useHandCursor="true" toolTip="Record Dictation"/>						
+							</s:SkinnableContainer>
+						</s:PopUpAnchor>
+					</s:VGroup>
+				</s:HGroup>
+				
+				<buttonSeparators:buttonSeparator />
+				<s:HGroup paddingTop="0">
+					<s:ToggleButton id="id_expandBtn" styleName="whiteExpandButtonSkin"    
+									buttonMode="true" useHandCursor="true" toolTip="{id_expandBtn.selected?'Collapse':'Expand'}"
+									width="23" height="23" selected="true"/>
+				</s:HGroup>
+			</s:HGroup>
+		</s:HGroup>
+	</s:SkinnableContainer>	
+</s:Group>

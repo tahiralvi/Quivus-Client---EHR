@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 	
+		 xmlns:components="com.gazuntite.controls.extended.components.*"
+		 xmlns:claimManagement="com.gazuntite.provider.live.services.billing.view.views.claimManagement.*" 
+		 xmlns:toolbar="com.gazuntite.provider.live.services.billing.view.views.toolbar.*"
+		 skinClass="com.adobe.gazuntite.skins.chrome.containerSkins.PopUpWindow"
+		 creationComplete="vgroup1_creationCompleteHandler(event)"
+		 close="popupwindow1_closeHandler(event)" xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 >
+         
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.util.xml.XmlUtils;
+			import com.gazuntite.provider.live.services.billing.event.ClaimManagement.ManageClaimCarrierEvent;
+			import com.gazuntite.provider.live.services.billing.event.LoadAllClaimbyProviderIdEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.util.BillingConstants;
+			import com.gazuntite.provider.live.services.billing.util.BillingPopUpManager;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			[Bindable]
+			private var m_sClaimId:String
+			[Bindable]
+			private var m_sClaimCreated:String
+			[Bindable]
+			private var m_sPatientName:String
+						
+			public function set EditClaimId(value:String):void
+			{
+				id_claimEditTopBar.EditClaimId = value;
+				m_sClaimId = value;
+			}
+			public function set DateCreated(value:String):void
+			{
+				m_sClaimCreated = value;
+			}
+			public function set PatientName(value:String):void
+			{				
+				m_sPatientName = value.toUpperCase();
+			}
+			
+
+			protected function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+			}
+
+
+			protected function claimeditbuttonbar1_CancelHandler(event:Event):void
+			{
+				BillingPopUpManager.removePopUp(this,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+				removePopup();
+				//dispatchEvent( new CloseEvent( CloseEvent.CLOSE, true ) );
+			}
+
+			protected function claimeditbuttonbar1_SaveHandler(event:Event):void
+			{
+				var isUpdated:Boolean = false;
+				var claimCarriers:XML = null;	
+				var sendClaimNote:Boolean = false;
+				var claimNotesString:String = "0";
+				var saveCarriers:String = "false";
+				
+				claimCarriers = XmlUtils.getNodeByTagName("Carriers");	
+				
+				if(model.ClaimCarrier1.InsOrganizationID != "0" && model.ClaimCarrier1.isAddedToClaim)
+				{
+					if(model.ClaimCarrier1.StatusTypeID != "3" || UtilityFunctions.IsNullOrEmpty(model.ClaimCarrier1.BillDate) == true 
+						|| model.ClaimCarrier1.BillDate.indexOf("1900") > -1 )
+						model.ClaimCarrier1.BillDate = "1900-01-01";
+					else
+						model.ClaimCarrier1.BillDate = UtilityFunctions.FormatDate(model.ClaimCarrier1.BillDate);
+					
+					claimCarriers.appendChild(model.ClaimCarrier1.ToXML());
+					isUpdated = true;
+				}
+				if(model.ClaimCarrier2.InsOrganizationID != "0" && model.ClaimCarrier2.isAddedToClaim)
+				{
+					if(model.ClaimCarrier2.StatusTypeID != "3" || UtilityFunctions.IsNullOrEmpty(model.ClaimCarrier2.BillDate) == true
+						|| model.ClaimCarrier2.BillDate.indexOf("1900") > -1 )
+						model.ClaimCarrier2.BillDate = "1900-01-01";
+					else
+						model.ClaimCarrier2.BillDate = UtilityFunctions.FormatDate(model.ClaimCarrier2.BillDate);
+					
+					claimCarriers.appendChild(model.ClaimCarrier2.ToXML());
+					isUpdated = true;
+				}
+				if(model.ClaimCarrier3.InsOrganizationID != "0" && model.ClaimCarrier3.isAddedToClaim)
+				{
+					if(model.ClaimCarrier3.StatusTypeID != "3" || UtilityFunctions.IsNullOrEmpty(model.ClaimCarrier3.BillDate) == true
+						|| model.ClaimCarrier3.BillDate.indexOf("1900") > -1 )
+						model.ClaimCarrier3.BillDate = "1900-01-01";
+					else
+						model.ClaimCarrier3.BillDate = UtilityFunctions.FormatDate(model.ClaimCarrier3.BillDate);
+					
+					claimCarriers.appendChild(model.ClaimCarrier3.ToXML());
+					isUpdated = true;
+				}
+				
+				if(model.ClaimPatientBilling.isAddedToClaim)
+				{
+					if(model.ClaimPatientBilling.StatusTypeID != "3" || UtilityFunctions.IsNullOrEmpty(model.ClaimPatientBilling.BillDate) == true
+						|| model.ClaimPatientBilling.BillDate.indexOf("1900") > -1 )
+						model.ClaimPatientBilling.BillDate = "1900-01-01";
+					else
+						model.ClaimPatientBilling.BillDate = UtilityFunctions.FormatDate(model.ClaimPatientBilling.BillDate);
+					
+					claimCarriers.appendChild(model.ClaimPatientBilling.ToXML());
+					isUpdated = true;
+				}
+				
+				if(model.ClaimNote != model.ClaimNewNote)
+				{
+					claimNotesString = model.ClaimCarrier1.ClaimID + "^" + model.ClaimNewNote;
+					sendClaimNote = true;
+				}
+				
+				if(isUpdated == false && sendClaimNote == false)
+				{
+					Alert.show("No change found","No Update",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				else if(isUpdated == true)	
+					saveCarriers = "true";
+				
+				UtilityFunctions.AskMessage("Are you sure, you want to save carriers with given detail",function(): void
+				{										
+					var ccEvent:ManageClaimCarrierEvent = new ManageClaimCarrierEvent(claimCarriers,claimNotesString,saveCarriers,SaveStatus);
+					CairngormEventDispatcher.getInstance().dispatchEvent(ccEvent);
+				
+				});
+			}
+			
+			protected function SaveStatus():void
+			{
+				if(model.Result == true)
+				{					
+					//Alert.show("Carrier(s) saved successfully","Info",4,FlexGlobals.topLevelApplication.mainContainer);
+					
+					model.Result = false;
+					
+					//var claimEvent:LoadAllClaimbyProviderIdEvent = new LoadAllClaimbyProviderIdEvent(model.LoggedInUserProviderId,model.LoggedInUserSelectedBranchId,ClaimManagementSearchPageNo);
+					var claimEvent:LoadAllClaimbyProviderIdEvent = new LoadAllClaimbyProviderIdEvent(model.LoggedInUserProviderId,model.LoggedInUserSelectedBranchId,BillingConstants.FIRST_PAGE_NUMBER);
+					CairngormEventDispatcher.getInstance().dispatchEvent(claimEvent);
+					BillingPopUpManager.removePopUp(this,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+					//dispatchEvent( new CloseEvent( CloseEvent.CLOSE, true ) );
+					removePopup();
+					
+				}
+				else
+					Alert.show("Carrier(s) not saved successfully","Info",4,FlexGlobals.topLevelApplication.mainContainer);
+				
+			} 
+			
+			protected function popupwindow1_closeHandler(event:CloseEvent):void
+			{
+				BillingPopUpManager.removePopUp(this,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+			}
+			
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>	
+	
+		<components:layout>		
+			<s:VerticalLayout paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" gap="5"	/>
+		</components:layout>
+	
+	
+		<toolbar:ClaimEditInnerTopBar id="id_claimEditTopBar" width="100%"  />
+		<mx:HRule width="100%"/>
+		<toolbar:ClaimEditInnerMiddleBar id="id_claimEditMiddleBar" width="100%" />
+		<claimManagement:ClaimEditTabView id="id_claimEditTab" width="100%" tabIndex="1" />	
+		<mx:HRule width="100%"/>
+		<toolbar:ClaimEditButtonBar width="100%" Cancel="claimeditbuttonbar1_CancelHandler(event)" Save="claimeditbuttonbar1_SaveHandler(event)" tabIndex="7"/>	
+</components1:PopupWindow>

@@ -1,0 +1,841 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:components="com.zigron.controls.extended.components.*" 
+		 xmlns:commons="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.*"
+		 xmlns:itemEditors="com.adobe.Quivus.view.controls.custom.itemEditors.*" 
+		 xmlns:treatment="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.treatment.*"
+		 creationComplete="cc()" xmlns:components1="com.gazuntite.controls.extended.components.*" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.staticData.recommendation.procedure.LoadCPTMedicalTypesEvent;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.Quivus.utils.validators.ComboValidator;
+			import com.adobe.Quivus.view.controls.custom.DictationPopup;
+			import com.adobe.Quivus.view.controls.custom.itemEditors.SparkComboBoxItemEditor;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPanel;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.comboBoxSearchSkin;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.dictation.QIDictationManager;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.ImmunizationSpeakerBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.QIDictationBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.ImmunizationNotesFilledBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.ImmunizationWriteNotesBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.QIWriteNotes;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.QIWriteNotesSelected;
+			import com.adobe.Quivus.view.events.SelectSection;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.patient.visit.view.itemrenderers.DeleteRecordRenderer;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Label;
+			import mx.controls.dataGridClasses.DataGridItemRenderer;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.events.CloseEvent;
+			import mx.events.CollectionEvent;
+			import mx.events.CollectionEventKind;
+			import mx.events.DataGridEvent;
+			import mx.events.ValidationResultEvent;
+			
+			import spark.components.ComboBox;
+			import spark.components.RichEditableText;
+			
+			import valueObjects.AssessmentDTO;
+			import valueObjects.CPTMedicalTypeDTO;
+			import valueObjects.ModuleDictationDTO;
+			import valueObjects.ModuleNoteDTO;
+			import valueObjects.ProcedureDTO;
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var _includeInLayout:Boolean;
+			private var _includeInLayoutChanged:Boolean;
+			
+			private var _previouslySelectedItem:CPTMedicalTypeDTO;
+			
+			private var recordNotesDTO:ModuleNoteDTO;
+			public var recordNotesPanel:NotesPanel;
+			
+			private var _hasGridChanged:Boolean;
+			private var _hasViewChanged:Boolean;
+			
+			[Bindable]
+			public var deleteColumnData:Object;
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			
+			public function isGetEdited():Boolean
+			{
+				var edited:Boolean = false;
+				
+				if((id_CPTCode.textInput.text.length > 3 ) && (id_Procedure.textInput.text.length > 2)){
+					id_add.enabled = true;
+					edited = true;
+				}
+				/* if (id_CPTCode.textInput.text || id_CPTCode.selectedItem  || 
+				id_Procedure.textInput.text || id_Procedure.selectedItem)
+				
+				edited = true; */
+				
+				//hasViewChanged = (_hasGridChanged)? _hasGridChanged : edited;
+				
+				return edited;
+			}
+			
+			public function isInvalid():Boolean
+			{
+				/* calling isGetEdited() to check whether is there any change in view or not
+				just to set hasViewChanged boolean
+				*/
+				isGetEdited();
+				
+				var notValid:Boolean = false;
+				
+				if (!ValidationUtils.isValidValueSelected(id_CPTCode))
+					notValid = true;
+					
+				else if (!ValidationUtils.isValidValueSelected(id_Procedure))
+					notValid = true;
+				
+				return notValid;
+			}
+			
+			public function showNotes(loc:Point):void
+			{
+				if (loc)
+				{
+					if( recordNotesPanel )
+						recordNotesPanel.removePopup();
+					
+					if (!recordNotesDTO)
+						recordNotesDTO = new ModuleNoteDTO();
+					
+					recordNotesPanel 					= new NotesPanel();
+					recordNotesPanel.width			= 550
+					recordNotesPanel.height			= 150
+					recordNotesPanel.HeadingLable 	= id_Procedure.textInput.text;
+					recordNotesPanel.VisitDateLable = model.FormatedVisitDate;
+					recordNotesPanel.notesDTO	= recordNotesDTO;
+					recordNotesPanel.ShowPopup( this );
+					recordNotesPanel.move( loc.x, loc.y );
+					
+					recordNotesPanel.id_header.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						recordNotesPanel.SaveNotes();
+						recordNotesPanel.removePopup();
+						event.stopImmediatePropagation();
+						
+						
+						if(recordNotesPanel.id_body.id_message.text.length > 0)
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", ImmunizationNotesFilledBtn);
+							
+						}
+						else
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", ImmunizationWriteNotesBtn);
+						}
+					});
+				}
+			}
+			
+			private function resetFields():void
+			{
+				id_Procedure.selectedIndex = -1;
+				id_Procedure.textInput.text = "";
+				
+				id_CPTCode.selectedIndex = -1;
+				id_CPTCode.textInput.text = "";
+				
+				id_Add.enabled = false;
+				id_Add.enableAll = false;
+				
+				recordNotesDTO = new ModuleNoteDTO();
+				
+				id_Add.notesDTO = new ModuleNoteDTO();
+				id_Add.dictationDTO = new ModuleDictationDTO();
+				
+				if (recordNotesPanel)
+					recordNotesPanel.removePopup();
+				
+				serachTerm	= '';
+				selectedDTO = null;
+				id_add.enabled = false;
+			}
+			
+			private function cc():void
+			{ 
+				
+				addEventListener("writeDictationClick", writeDictationClickHandler, false, 0, true);
+				
+				id_ProcedureGrid.addEventListener(DataGridActionsEvent.ITEM_EDIT_KEY_UP, itemEditKeyUpHandler, false, 0, true);
+				id_ProcedureGrid.addEventListener(DataGridActionsEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+				id_ProcedureGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				id_ProcedureGrid.addEventListener(DataGridActionsEvent.WRITE_NOTES_CLICK, writeNotesClickHandler, false,0, true);
+				
+				id_ProcedureGrid.addEventListener("widthChanged", dataGridWidthChangedHandler, false, 0, true);
+				
+				if (!deleteColumnData)
+					deleteColumnData = {};
+				
+				deleteColumnData["noteDataFields"] = {subject: "NoteSubject", note: "Notes", header: "CPTMedicalType.ProcedureDescription"};
+				deleteColumnData["dictationDataField"] = "DictationID";
+				deleteColumnData["recordIDField"] = "PatientProcedureID";
+				deleteColumnData["section"] = QIPopUpManager.PROCEDURE;
+			}
+			
+			private function dataGridWidthChangedHandler(event:Event):void
+			{
+				id_ProcedureGrid.invalidateProperties();
+				id_ProcedureGrid.invalidateSize();
+				id_ProcedureGrid.invalidateDisplayList();
+			}
+			
+			private function itemEditKeyUpHandler(event:DataGridActionsEvent):void	
+			{
+				if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+				{
+					var searchString:String = event.searchString;
+					if(searchString.length > 2)
+					{
+						var cptEvent : LoadCPTMedicalTypesEvent = new LoadCPTMedicalTypesEvent(searchString);
+						CairngormEventDispatcher.getInstance().dispatchEvent( cptEvent );
+					}
+				}
+			}
+			
+			private function writeNotesClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_PROCEDURES ) )//Tahir Alvi - implement security check 
+				{
+					
+				}
+			}
+			
+			private function editRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				id_ProcedureGrid.editable = true;
+				
+				var rowIndex:int = LabelDataGrid(event.currentTarget).selectedIndex;
+				
+				var itemToSetInEditableMode:IListItemRenderer = id_ProcedureGrid.indexToItemRenderer(rowIndex);
+				
+				var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+				ev.columnIndex = 2;
+				ev.rowIndex = rowIndex;
+				ev.itemRenderer = itemToSetInEditableMode;
+				ev.dataField = "CPTMedicalType.ProcedureCode";
+				id_ProcedureGrid.dispatchEvent(ev);
+			}
+			
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_PROCEDURES ) )//Tahir Alvi - implement security check 
+				{
+					var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+					
+					var procedureID:int = ProcedureDTO(event.currentTarget.selectedItem).PatientProcedureID;
+					
+					UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+					{
+						if (procedureID == 0)
+						{
+							model.quickInputDTO.Assessment.Procedure.removeItemAt(curTar.selectedIndex);
+							if (model.quickInputDTO.Assessment.Procedure.length <= 0)
+							{
+								_hasGridChanged = false;
+								hasViewChanged = isGetEdited();
+							}
+						}
+						else
+						{
+							id_ProcedureGrid.selectedItem.IsDeleted = true;
+							model.quickInputDTO.Assessment.Procedure.filterFunction = filterDeletedItems;
+							model.quickInputDTO.Assessment.Procedure.refresh();
+							
+							hasViewChanged = _hasGridChanged = true;
+						}	
+					});
+				}
+			}
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			private function cptKeyUpHandler(event:KeyboardEvent):void
+			{
+				if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+				{
+					var searchString:String = id_CPTCode.textInput.text;
+					if(searchString.length > 2)
+					{
+						var cptEvent : LoadCPTMedicalTypesEvent = new LoadCPTMedicalTypesEvent(searchString);
+						CairngormEventDispatcher.getInstance().dispatchEvent( cptEvent );
+					}
+					
+					id_Add.enableAll = false;
+					id_Add.enabled = isGetEdited();
+				}
+			}
+			
+			private function procedureKeyUpHandler(event:KeyboardEvent):void
+			{
+				if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+				{
+					var searchString:String = id_Procedure.textInput.text;
+					if(searchString.length > 2)
+					{
+						var cptEvent : LoadCPTMedicalTypesEvent = new LoadCPTMedicalTypesEvent(searchString);
+						CairngormEventDispatcher.getInstance().dispatchEvent( cptEvent );
+					}
+					
+					id_Add.enableAll = false;
+					id_Add.enabled = isGetEdited();
+				}
+			}
+			
+			private function validateCPTCode():void
+			{
+				if (id_CPTCode.selectedItem)
+				{
+					var selectedItem:CPTMedicalTypeDTO = id_CPTCode.selectedItem as CPTMedicalTypeDTO;
+					
+					if (selectedItem)
+					{
+						id_Procedure.selectedItem = selectedItem;
+						_previouslySelectedItem = id_Procedure.selectedItem;
+					}
+					else
+					{
+						id_CPTCode.selectedItem = _previouslySelectedItem;
+						id_Procedure.selectedItem = _previouslySelectedItem;
+					}
+				}
+				
+				id_Add.enableAll = !isInvalid();
+			}
+			
+			private function validateProcedure():void
+			{
+				if (id_Procedure.selectedItem)
+				{
+					var selectedItem:CPTMedicalTypeDTO = id_Procedure.selectedItem as CPTMedicalTypeDTO;
+					
+					if (selectedItem)
+					{
+						id_CPTCode.selectedItem = selectedItem;
+						_previouslySelectedItem = selectedItem;
+					}
+					else
+					{
+						id_CPTCode.selectedItem = _previouslySelectedItem;
+						id_Procedure.selectedItem = _previouslySelectedItem;
+					}
+				}
+				
+				id_Add.enableAll = !isInvalid();
+			}
+			
+			private function addRecordClickHandler():void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_PROCEDURES ) )//Tahir Alvi - implement security check 
+				{
+					id_Add.enableAll = !isInvalid();
+					if( ! id_add.enabled )
+					{
+						return; // invalid data
+					}
+					
+					var procedureDTO:ProcedureDTO 	= new ProcedureDTO();
+					//	procedureDTO.CPTMedicalType 	= id_CPTCode.selectedItem as CPTMedicalTypeDTO;
+					procedureDTO.CPTMedicalType 	= selectedDTO;
+					procedureDTO.CreatedAt 			= new Date();
+					procedureDTO.CreatedBy 			= model.loggedInUserDTO.UserId;
+					procedureDTO.DictationID 		= Constants.GUID_FORMAT;
+					procedureDTO.ModifiedAt 		= Constants.NULL_DATE;
+					if( model.visitDTO!=null)
+					{
+						procedureDTO.VisitID 		= model.visitDTO.VisitId;
+						procedureDTO.VisitDate 		= model.visitDTO.VisitDate;
+					}
+					else if(model.quickInputDTO		!= null && model.quickInputDTO.Visit!=null)
+					{
+						procedureDTO.VisitID 		= model.quickInputDTO.Visit.VisitId;
+						procedureDTO.VisitDate 		= model.quickInputDTO.Visit.VisitDate;
+					}
+					procedureDTO.PatientID 			= model.loadedPatientId;
+					
+					if (id_Add.notesDTO)
+					{
+						procedureDTO.Notes 			= id_Add.notesDTO.Note;
+						procedureDTO.NoteSubject 	= id_Add.notesDTO.NoteSubject;
+					}
+					
+					//H
+					if (id_Add.dictationDTO 		&& id_Add.dictationDTO.DictationID != null)
+					{
+						procedureDTO.DictationID 	= id_Add.dictationDTO.DictationID;
+					}
+					
+					if(model.quickInputDTO.Assessment	==	null)
+						model.quickInputDTO.Assessment	= new AssessmentDTO();
+					
+					if(model.quickInputDTO.Assessment.Procedure	==	null)
+						model.quickInputDTO.Assessment.Procedure = new ArrayCollection();
+					
+					model.quickInputDTO.Assessment.Procedure.addItem(procedureDTO);
+					
+					
+					if(hasViewChanged)
+						hasViewChanged = false;
+					
+					hasViewChanged = true;
+					_hasGridChanged = true;
+					
+					resetFields();
+					id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotes);
+					id_Add.id_WriteDictation.setStyle("skinClass", QIDictationBtn);
+				}
+			}
+			
+			private var recordLevelDicPanel:DictationPopup;
+			private function writeDictationClickHandler(event:Event):void
+			{
+				var addRecord:AddRecord = AddRecord(event.target);
+				
+				recordLevelDicPanel = QIDictationManager.show(addRecord, recordLevelDicPanel, addRecord.dictationDTO, addRecord.id_WriteDictation);
+				
+				QIPopUpManager.addPopUp(recordLevelDicPanel, QIPopUpManager.PROCEDURE);
+				recordLevelDicPanel.move( recordLevelDicPanel.x - 81, recordLevelDicPanel.y);
+				recordLevelDicPanel.addEventListener(MouseEvent.CLICK, function():void
+				{
+					QIPopUpManager.removePopUp(recordLevelDicPanel, QIPopUpManager.PROCEDURE);
+					
+					if(recordLevelDicPanel && recordLevelDicPanel.DictationID)
+					{
+						id_Add.id_WriteDictation.setStyle("skinClass", ImmunizationSpeakerBtn);
+					}
+					
+				}, true, 0, false);
+				
+			}
+			
+			private function procedureCollectionChangeHandler(event:CollectionEvent):void
+			{
+				switch(event.kind)
+				{
+					case CollectionEventKind.ADD:
+						includeGridInLayout = true;
+						break;
+					
+					case CollectionEventKind.REMOVE:
+						if (procedureCollection && procedureCollection.length < 1)
+							includeGridInLayout = false;
+						break;
+				}
+				
+				if(procedureCollection)
+				{
+					if(procedureCollection.length > 1)
+						hasViewChanged = true;
+					else if(procedureCollection.length < 1)
+						hasViewChanged = false;
+				}
+			}
+			
+			private var _procedureCollection:ArrayCollection;
+			
+			[Bindable]
+			public function get procedureCollection():ArrayCollection
+			{
+				return _procedureCollection;
+			}
+			
+			public function set procedureCollection(value:ArrayCollection):void
+			{
+				_procedureCollection = value;
+				
+				if (_procedureCollection)
+				{
+					_procedureCollection.addEventListener(CollectionEvent.COLLECTION_CHANGE, procedureCollectionChangeHandler, false, 0, true);
+					
+					if (_procedureCollection.length)
+						includeGridInLayout = true;
+						
+					else
+						includeGridInLayout = false;		
+				}
+				else
+					includeGridInLayout = false;
+			}
+			
+			[Bindable]
+			public function get includeGridInLayout():Boolean
+			{
+				return _includeInLayout;
+			}
+			
+			public function set includeGridInLayout(value:Boolean):void
+			{
+				if (_includeInLayout != value)
+				{
+					_includeInLayout = value;
+					_includeInLayoutChanged = true;
+					
+					invalidateProperties();
+					invalidateSize();
+					invalidateDisplayList();
+				}
+			}
+			
+			private function procedureItemEditBeginHandler(event:DataGridEvent):void
+			{
+				var searchString:String = event.itemRenderer.data.CPTMedicalType.ProcedureCode;
+				
+				var cptEvent : LoadCPTMedicalTypesEvent = new LoadCPTMedicalTypesEvent(searchString);
+				CairngormEventDispatcher.getInstance().dispatchEvent( cptEvent );
+			}
+			
+			private var comboValidator:ComboValidator;
+			private function procedureItemEditHandler(event:DataGridEvent):void
+			{
+				var editor:LabelComboBox = SparkComboBoxItemEditor(id_ProcedureGrid.itemEditorInstance).id_ComboEditor;
+				var validationRes:ValidationResultEvent;
+				
+				var procedureID:int = ProcedureDTO(event.currentTarget.selectedItem).PatientProcedureID;
+				
+				if (!comboValidator)
+					comboValidator = new ComboValidator();
+				
+				comboValidator.source = editor;
+				comboValidator.property = "selectedItem";
+				comboValidator.error = "Invalid CPT Code";
+				
+				if (event.dataField == "CPTMedicalType.ProcedureCode")
+				{
+					validationRes = comboValidator.validate(editor.selectedItem);
+				}
+				else if (event.dataField == "CPTMedicalType.ProcedureDescription")
+				{
+					validationRes = comboValidator.validate(editor.selectedItem);
+				}
+				
+				if (validationRes && !validationRes.results)
+				{
+					event.itemRenderer.data.CPTMedicalType = editor.selectedItem;
+					
+					if (procedureID != 0)
+						event.itemRenderer.data.IsDirty = true;
+					
+					hasViewChanged = _hasGridChanged = true;
+				}
+				
+				id_ProcedureGrid.destroyItemEditor();
+				event.stopImmediatePropagation();
+				event.preventDefault();
+			}
+			
+			override protected function commitProperties():void
+			{
+				super.commitProperties();
+				
+				if (_includeInLayoutChanged)
+				{
+					_includeInLayoutChanged = false;
+					
+					/*id_ProcedureGrid.columns[0].width = 50;
+					id_ProcedureGrid.columns[1].width = 50;
+					id_ProcedureGrid.columns[2].width = 50;
+					id_ProcedureGrid.columns[3].width = 200;
+					id_ProcedureGrid.columns[4].width = 85;*/
+				}
+			}
+			
+			/* public function gridRowNumber(item:Object, iCol:int):String
+			{
+			var strRowNum:String = "";
+			
+			if (id_ProcedureGrid.dataProvider)
+			{
+			var rowNum:int = id_ProcedureGrid.dataProvider.getItemIndex(item) + 1;
+			strRowNum = String(rowNum);
+			}
+			
+			return strRowNum;
+			} */
+			
+			public function GridRowNumber(oItem:Object, iCol:int):String
+			{
+				var ret:String;
+				try
+				{
+					var rowNumber:int = id_ProcedureGrid.dataProvider.getItemIndex(oItem) + 1; 
+					ret = String(rowNumber);
+				}
+				catch(e:Error )
+				{
+					ret = "##"; //Sort able column fails some how, don't know why?
+				}
+				return ret;
+			}
+			
+			private var recordGridNotesPopUp:NotesPanel;
+			private var section:String;
+			private function onWriteNotesClick(event:Event):void
+			{
+				if (!recordGridNotesPopUp)
+					recordGridNotesPopUp = new NotesPanel();
+				
+				if (!recordGridNotesPopUp.isPanelShown)
+				{
+					//gridNotesDTO = new ModuleNoteDTO();
+					var headingLabel:String = "";
+					
+					//extractDataForNotes();
+					
+					
+					var addRecord:AddRecord = AddRecord(event.target);
+					
+					//recordLevelDicPanel = QIDictationManager.show(addRecord, recordLevelDicPanel, addRecord.dictationDTO, addRecord.id_WriteDictation);
+					
+					//headingLabel = deriveComplexData(headerField);
+					recordGridNotesPopUp 				= new NotesPanel();
+					recordGridNotesPopUp.width			= 250;
+					recordGridNotesPopUp.height			= 110;
+					recordGridNotesPopUp.HeadingLable 	= id_Procedure.textInput.text;
+					recordGridNotesPopUp.VisitDateLable = model.FormatedVisitDate;//new Date().toDateString();
+					recordGridNotesPopUp.ShowPopup(this);
+					
+					
+					
+					recordGridNotesPopUp.notesDTO		=  addRecord.notesDTO; //gridNotesDTO;
+					//recordGridNotesPopUp.onNotesSaved = updateNotesData;
+					
+					QIPopUpManager.addPopUp(recordGridNotesPopUp, section);
+					
+					//var pt:Point = localToGlobal(new Point(recordGridNotesPopUp.x, recordGridNotesPopUp.y));
+					
+					var pt:Point = id_Add.localToGlobal(new Point(id_Add.id_WriteNotes.x ,id_Add.id_WriteNotes.y));
+					
+					recordGridNotesPopUp.move(pt.x - 195, pt.y + 20);
+					
+					//recordGridNotesPopUp.move( recordGridNotesPopUp.x , recordGridNotesPopUp.y);
+					/*recordGridNotesPopUp.addEventListener("notesSaved", function(event:Event):void
+					{
+					updateNotesData();
+					
+					}, false, 0, true);*/
+					
+					recordGridNotesPopUp.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						//recordGridNotesPopUp.removePopup();
+						QIPopUpManager.removePopUp(recordGridNotesPopUp, section);
+						
+					}, false, 0, true);
+					
+					recordGridNotesPopUp.id_header.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						recordGridNotesPopUp.SaveNotes();
+						//if(recordNotesDTO)
+						if(recordGridNotesPopUp.id_body.id_message.text.length > 0)
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotesSelected);
+							
+						}
+						else
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotes);
+							
+						}
+						recordGridNotesPopUp.removeNotePanel();
+						QIPopUpManager.removePopUp(recordGridNotesPopUp, section);
+					});
+					
+					
+					recordGridNotesPopUp.addEventListener("notesSaved", function(event:Event):void
+					{
+						if(recordGridNotesPopUp.id_body.id_message.text.length > 0)
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotesSelected);								
+						}
+						else
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotes);
+						}
+					});
+				}
+			}
+			
+			//Tahir Alvi - Additional Popup Implementation
+			private var serachTerm:String;//Search term for the records
+			[Bindable]public var selectedDTO:CPTMedicalTypeDTO;
+			
+			protected function id_CPTCode_clickHandler(event:MouseEvent, index:uint):void
+			{
+				if(event.target as RichEditableText || event.target as mx.controls.Label)
+				{
+					return;
+				}
+				else 
+				{
+					if(serachTerm == null)
+						return
+					
+					if(serachTerm.length > 2)
+					{
+						openProcedurePopup(index);
+					}
+				}
+			}
+			
+			private function openProcedurePopup(index:int):void
+			{
+				var procedurePopup:ProcedurePopup = new ProcedurePopup();
+				procedurePopup.ShowPopup( this )
+				procedurePopup.title  = "Add Procedure";
+				procedurePopup.height = 410;
+				procedurePopup.width  = 600;
+				//procedurePopup.move(procedurePopup.x-90, procedurePopup.y - 37);
+				procedurePopup.addEventListener(CloseEvent.CLOSE, function (event:CloseEvent):void
+				{
+					isGetEdited();
+				});
+				procedurePopup.move((Capabilities.screenResolutionX/4)-(procedurePopup.width/2), procedurePopup.y - 37);
+				
+				procedurePopup.searchAndLoadLabIn(serachTerm, index);
+				resetFields();
+			}
+			
+			private function testCodeKeyUpHandler():void
+			{
+				serachTerm = '';
+				serachTerm = id_CPTCode.textInput.text;
+				//if value exceeds 4 characters then search Icd Code and map the Icd Code.
+				if(serachTerm.length >= 4)
+				{
+					id_Procedure.textInput.text 	= '';
+					id_Procedure.selectedIndex 		= -1;
+					selectedDTO 					= null;
+					id_Add.enabled 					= isGetEdited();
+					var cptEvent : LoadCPTMedicalTypesEvent = new LoadCPTMedicalTypesEvent(serachTerm, loadData);
+					CairngormEventDispatcher.getInstance().dispatchEvent( cptEvent );
+					
+				}else{
+					id_Procedure.textInput.text 	= '';
+					id_Procedure.selectedIndex 		= -1;
+					selectedDTO 					= null;
+					id_Add.enabled 					= isGetEdited();
+				}
+			}
+			
+			private function testNameChangeHandler():void
+			{
+				serachTerm = '';
+				serachTerm = id_Procedure.textInput.text;
+			}
+			
+			public  function loadData(val:* = null):void
+			{
+				if(model.cptMedicalTypesDTOList.length)
+				{
+					for(var i:uint=0; i < model.cptMedicalTypesDTOList.length; i++)
+					{
+						if(serachTerm == model.cptMedicalTypesDTOList[i].ProcedureCode)
+						{
+							id_CPTCode.textInput.text 	= model.cptMedicalTypesDTOList[i].ProcedureCode;
+							id_Procedure.textInput.text = model.cptMedicalTypesDTOList[i].ProcedureDescription;
+							selectedDTO					= model.cptMedicalTypesDTOList[i];
+							id_Add.enabled 				= isGetEdited();
+							return;
+						}							
+					}
+				}
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Binding source="model.quickInputDTO.Assessment.Procedure" destination="procedureCollection"/>
+	<s:layout>
+		<s:VerticalLayout gap="2" paddingTop="5" paddingLeft="3" paddingRight="3" paddingBottom="0"/>
+	</s:layout>
+	
+	
+	
+	<s:HGroup width="100%" verticalAlign="middle">
+		<components1:LabelComboBox id="id_CPTCode" 
+								  prompt="CPT Code" width="150"
+								  useHandCursor="true" buttonMode="true"
+								  keyUp="testCodeKeyUpHandler()" 
+								  click="id_CPTCode_clickHandler(event, 0)"
+								  skinClass="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.comboBoxSearchSkin" tabIndex="1"/>
+		<components1:LabelComboBox id="id_Procedure" 
+								  prompt="Procedure" width="100%"
+								  useHandCursor="true" buttonMode="true"
+								  keyUp="testNameChangeHandler()" 
+								  click="id_CPTCode_clickHandler(event, 1)"
+								  skinClass="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.comboBoxSearchSkin" tabIndex="2"/>
+		<commons:AddRecord id="id_Add" writeNotesClick="onWriteNotesClick(event)"  writeDictationClick="writeDictationClickHandler(event)" tabIndex="3"
+						   enabled="false" enableAll="false"/>
+	</s:HGroup>
+	<s:HGroup width="100%" gap="1" horizontalAlign="left">
+		<s:Button id="id_add" click="addRecordClickHandler()" enabled="false" buttonMode="true" useHandCursor="true" toolTip="Add Record"
+				  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.AddMoreTooltipBtn" label="Add Procedure" tabIndex="5"/>
+		
+		<s:SkinnableContainer skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.tooltipBG" visible="{!id_add.enabled}" width="100%"/>
+		<mx:Spacer width="100%"/>
+		<s:Button label="Next" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QInextBtnSkin" toolTip="Next Section" buttonMode="true" 
+				  click="dispatchEvent( new SelectSection('SelectSection', 'id_TreatmentPanel', true, true) )"/>
+		
+	</s:HGroup>
+	
+	
+	<components1:LabelDataGrid id="id_ProcedureGrid" width="100%" editable="false" rowCount="{id_ProcedureGrid.dataProvider.length + 1}" useRollOver="false"
+							  dataProvider="{procedureCollection}" includeInLayout="{includeGridInLayout}" visible="{includeGridInLayout}"
+							  itemEditBegin="procedureItemEditBeginHandler(event)" itemEditEnd="procedureItemEditHandler(event)"
+							  verticalScrollPolicy="on" 
+							  maxHeight="150" columnWidths="{[25,'20%','30%','25%',100]}">
+		<components:columns>
+			
+			<mx:DataGridColumn headerText="Sr.#"  labelFunction="GridRowNumber" editable="false" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Visit Date" editable="false" labelFunction="{ValidationUtils.displayVisitDateForGrid}" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="CPT" headerStyleName="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="CPTMedicalType.ProcedureCode" editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.cptMedicalTypesDTOList}" labelField="ProcedureCode" width="50"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Procedure" dataField="CPTMedicalType.ProcedureDescription" editorDataField="editorText" itemRenderer="mx.controls.Label" headerWordWrap="true" wordWrap="true">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.cptMedicalTypesDTOList}" labelField="ProcedureDescription"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<commons:DataGridColumnEx data="{deleteColumnData}" headerText="" editable="false" itemRenderer="com.gazuntite.patient.visit.view.itemrenderers.DeleteRecordRenderer"/>
+		</components:columns>
+	</components1:LabelDataGrid>
+</s:Group>

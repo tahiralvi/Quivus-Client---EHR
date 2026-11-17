@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   xmlns:components="com.zigron.controls.extended.components.*"
+					   creationComplete="CreationCompleteHandler()" xmlns:components1="com.gazuntite.controls.extended.components.*"
+					   >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.common.util.ValidationUtils;
+			import com.gazuntite.common.view.events.ListOnlySelectionEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.util.BillingPopUpManager;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.formatters.DateFormatter;				
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			public function hide():void
+			{
+				removePopup();
+			}
+			
+			protected function OK_clickHandler(event:MouseEvent):void
+			{
+				if( id_FromDate.text.length == 0 && id_ToDate.text.length == 0 )
+				{								
+					Alert.show( "Please Select Date Range", "Invalid Data", 4, this);
+					return;
+				}
+				
+				var df:DateFormatter 			= new DateFormatter();
+				df.formatString 				= "MM/DD/YYYY";				
+				
+				var e:ListOnlySelectionEvent	= new ListOnlySelectionEvent(); 
+				
+				e.selection 					= null;
+				e.from 							= "";
+				e.to							= "";
+				if(id_FromDate.text.length > 0 && ValidationUtils.isValidDateFormat(id_FromDate.text))
+				{
+					e.from 							= df.format( id_FromDate.text );
+				}
+				else if(id_FromDate.text.length > 0 )
+				{
+					Alert.show( "Please enter From date in valid format: [MM/DD/YYYY]", "Invalid Data", 4, this);
+					return;
+				}
+				
+				if(id_ToDate.text.length > 0 && ValidationUtils.isValidDateFormat(id_ToDate.text))
+				{
+					e.to 							= df.format( id_ToDate.text );
+				}
+				else if(id_ToDate.text.length > 0 )
+				{
+					Alert.show( "Please enter To date in valid format: [MM/DD/YYYY]", "Invalid Data", 4, this);
+					return;
+				}
+				if( ! isValidRange())
+				{
+					Alert.show( "From date should be equal or less than To date", "Invalid Data", 4, this);
+					return;
+				}		
+				
+				dispatchEvent( e );
+				BillingPopUpManager.removePopUp(this,BillingPopUpManager.PENDING_BILLS_POPUPS);
+				removePopup();
+			}
+			
+			protected function Cancel_clickHandler(event:MouseEvent):void
+			{
+				if(model.VisitDateRange.length > 0)
+				Alert.show("Do you want to cancel already saved range?", "Confirmation", Alert.YES | Alert.NO, null, alertListener, null, Alert.NO);
+				
+				function alertListener(eventObj:CloseEvent):void 
+				{					
+					if (eventObj.detail==Alert.YES) 
+					{
+						model.VisitDateRange = "";
+					}
+				}
+				BillingPopUpManager.removePopUp(this,BillingPopUpManager.PENDING_BILLS_POPUPS);
+				removePopup();
+			}
+			
+			protected function isValidRange():Boolean
+			{
+				var isValid:Boolean = true;
+				var date1:Date;
+				var date2:Date;
+				if(id_FromDate.text.length > 0 && id_ToDate.text.length > 0 )
+				{
+					var arrdate1:Array = new Array();
+					var arrdate2:Array = new Array();
+					arrdate1 = id_FromDate.text.split('/', id_FromDate.text.length);
+					date1 = new Date(arrdate1[2], arrdate1[0] - 1, arrdate1[1]);					
+					
+					arrdate2 = id_ToDate.text.split('/', id_ToDate.text.length);
+					date2 = new Date(arrdate2[2], arrdate2[0] - 1, arrdate2[1]);
+					
+					isValid = ValidationUtils.isValidDateRange(date1,date2);					
+				}
+				
+				return isValid;
+			}
+			
+			protected function CreationCompleteHandler():void
+			{
+
+				if( ! UtilityFunctions.IsNullOrEmpty(model.VisitDateRange))
+				{
+					var from:String = model.VisitDateRange.split('^')[1].toString().split(',')[0];
+					var to:String = model.VisitDateRange.split('^')[1].toString().split(',')[1];
+					if(from.length > 0)
+						id_FromDate.text = UtilityFunctions.FormatDate(from,"MM/DD/YYYY");
+					
+					if(to.length > 0)
+						id_ToDate.text = UtilityFunctions.FormatDate(to,"MM/DD/YYYY");
+				}
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:SkinnableContainer skinClass="com.adobe.gazuntite.skins.chrome.popUpSkins.listonlyPopupSkin" width="100%"
+						  maxWidth="296">
+		
+		<s:layout>
+			<s:VerticalLayout paddingLeft="12" paddingRight="12"  paddingBottom="10"  paddingTop="3"  gap="15"/>
+		</s:layout>
+		<s:HGroup horizontalAlign="right" verticalAlign="middle"  width="100%">
+			
+			<s:Button buttonMode="true" id="id_CloseBtn" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.whiteCloseButton"  
+					  click="Cancel_clickHandler(event)"
+					  toolTip="Close"  height="16" width="16"/>
+			
+			
+		</s:HGroup>
+		
+		<s:HGroup width="100%"  textAlign="left" verticalAlign="middle" paddingLeft="5">
+			<s:Label text="Range     " width="55" verticalAlign="middle" textAlign="left" fontFamily="Calibri" fontSize="11" height="20"  />
+			<components1:LabelDateField id="id_FromDate" width="100" prompt="From" fontFamily="calibri" fontSize="11" yearNavigationEnabled="true"
+									   minYear="1901" maxYear="{new Date().getFullYear()}" selectableRange="{{rangeEnd:new Date()}}" 
+									   tabIndex="1"
+									   />
+			<components1:LabelDateField id="id_ToDate"  width="100" prompt="To"  selectableRange="{{rangeEnd:new Date()}}"	 fontFamily="calibri" fontSize="11"	
+									   yearNavigationEnabled="true" minYear="1901" maxYear="{new Date().getFullYear()}" 
+									   tabIndex="2"
+									   />
+			
+		</s:HGroup>	
+		
+		<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="right" paddingRight="6">
+			
+			<s:Button label="Apply" click="OK_clickHandler(event)" width="50" toolTip="Apply"   skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.ListBtn" buttonMode="true" tabIndex="3" />
+			<s:Button label="Cancel" click="Cancel_clickHandler(event)" width="70" toolTip="Cancel"  skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.ListBtn" buttonMode="true" tabIndex="4" />
+			
+		</s:HGroup>
+	</s:SkinnableContainer>
+	
+</components1:PopupGroup>

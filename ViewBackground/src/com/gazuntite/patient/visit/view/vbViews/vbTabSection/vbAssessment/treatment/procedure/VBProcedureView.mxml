@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="cc()" xmlns:paging="com.gazuntite.patient.visit.view.vbViews.paging.*" xmlns:components="com.gazuntite.controls.extended.components.*" xmlns:itemEditors="com.gazuntite.common.view.itemEditors.*" xmlns:grid="com.gazuntite.common.view.components.grid.*" xmlns:validators="com.gazuntite.common.util.validators.*" 
+		 >
+	
+	<fx:Declarations>
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YY" />
+		<validators:ComboValidator id="comboValidator"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.util.QSConstants;
+			import com.gazuntite.common.util.validators.ComboValidator;
+			import com.gazuntite.common.view.events.DataGridActionsEvent;
+			import com.gazuntite.common.view.itemEditors.SparkComboBoxItemEditor;
+			import com.gazuntite.controls.extended.components.LabelComboBox;
+			import com.gazuntite.patient.visit.dto.PageDTO;
+			import com.gazuntite.patient.visit.event.LoadProcedureByPatientIdPagedEvent;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			import com.gazuntite.patient.visit.utlis.VBGridController;
+			import com.gazuntite.patient.visit.utlis.VBUtilityFunctions;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.controls.Label;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.events.DataGridEvent;
+			import mx.events.ValidationResultEvent;
+			
+			import spark.components.ComboBox;
+			
+			[Bindable]
+			public var model:VBModelLocator = VBModelLocator.getInstance();
+			
+			[Bindable]
+			public var dataGridActionsData:Object;
+			
+			private var vbGridController:VBGridController;
+			
+			private function procedureItemEditBeginHandler(event:DataGridEvent):void
+			{
+				var searchString:String = event.itemRenderer.data.CPTMedicalType.ProcedureCode;
+				
+				/* var cptEvent : LoadCPTMedicalTypesEvent = new LoadCPTMedicalTypesEvent(searchString);
+				CairngormEventDispatcher.getInstance().dispatchEvent( cptEvent ); */
+			}
+			
+			private function cc():void
+			{
+				vbGridController = new VBGridController();
+				vbGridController.dataGrid = id_ProcedureGrid;
+				
+				vbGridController.firstEditableColIdx = 2;
+				vbGridController.firstEditablePropertyName = "cptmedicalDTO.ProcedureCode";
+				
+				vbGridController.sectionName = QSConstants.PROCEDURE_MODULE_NAME;
+				vbGridController.recordValidationCallBack = doValidateRecord;
+				
+				 if (!dataGridActionsData)
+					dataGridActionsData = {};
+				
+				dataGridActionsData["noteDataFields"] = {subject: "NoteSubject", note: "Note", header: "cptmedicalDTO.ProcedureDescription", visitDate: "VisitDate"};
+				dataGridActionsData["dictationDataField"] = "DictationID";
+			}
+			
+			
+			public function doValidateRecord(event:DataGridEvent):void
+			{
+				var validationRes:ValidationResultEvent;
+				var comboEditor:LabelComboBox;
+				
+				switch (event.dataField)
+				{
+					case "cptmedicalDTO.ProcedureCode":
+					case "cptmedicalDTO.ProcedureDescription":
+						
+						comboEditor = SparkComboBoxItemEditor(id_ProcedureGrid.itemEditorInstance).id_ComboEditor;
+						
+						comboValidator.error = "Invalid Procedure";
+						comboValidator.source = comboEditor;
+						comboValidator.property = "selectedItem";
+						
+						validationRes = comboValidator.validate(comboEditor.selectedItem);
+						
+						if (validationRes && !validationRes.results)
+						{
+							event.itemRenderer.data.cptmedicalDTO = comboEditor.selectedItem;
+							
+							event.itemRenderer.data.IsDirty = true;
+						}
+						
+						break;
+				}
+			}
+			
+			private function itemEditKeyUpHandler(event:DataGridActionsEvent):void	
+			{
+				/* if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_PROCEDURES ) )//Tahir Alvi - implement security check 
+				{
+					if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+					{
+						var searchString:String = event.searchString;
+						if(searchString.length > 2)
+						{
+							var cptEvent : LoadCPTMedicalTypesEvent = new LoadCPTMedicalTypesEvent(searchString);
+							CairngormEventDispatcher.getInstance().dispatchEvent( cptEvent );
+						}
+					}
+				} */
+			}
+			
+			private function writeNotesClickHandler(event:DataGridActionsEvent):void
+			{
+				/* if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_PROCEDURES ) )//Tahir Alvi - implement security check 
+				{
+					
+				} */
+			}
+			
+			private function editRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				/* if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_PROCEDURES ) )//Tahir Alvi - implement security check 
+				{
+					id_ProcedureGrid.editable = true;
+					
+					var rowIndex:int = LabelDataGrid(event.currentTarget).selectedIndex;
+					
+					var itemToSetInEditableMode:IListItemRenderer = id_ProcedureGrid.indexToItemRenderer(rowIndex);
+					
+					var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+					ev.columnIndex = 2;
+					ev.rowIndex = rowIndex;
+					ev.itemRenderer = itemToSetInEditableMode;
+					ev.dataField = "CPTMedicalType.ProcedureCode";
+					id_ProcedureGrid.dispatchEvent(ev);
+					
+				} */
+			}
+			
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				/* if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_PROCEDURES ) )//Tahir Alvi - implement security check 
+				{
+					var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+					
+					var procedureID:int = ProcedureDTO(event.currentTarget.selectedItem).PatientProcedureID;
+					
+					if (procedureID == 0)
+					{
+						model.patientProcedureDTOListByPatient.removeItemAt(curTar.selectedIndex);
+						if (model.patientProcedureDTOListByPatient.length <= 0)
+						{
+							_hasGridChanged = false;
+							//hasViewChanged = isGetEdited();
+						}
+					}
+					else
+					{
+						UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+						{
+							id_ProcedureGrid.selectedItem.IsDeleted = true;
+							model.patientProcedureDTOListByPatient.filterFunction = filterDeletedItems;
+							model.patientProcedureDTOListByPatient.refresh();
+							
+							hasViewChanged = _hasGridChanged = true;
+						});
+					}
+				} */
+			}
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			private function procedureItemEditHandler(event:DataGridEvent):void
+			{
+				/* var editor:ComboBox = SparkComboBoxItemEditor(id_ProcedureGrid.itemEditorInstance).id_ComboEditor;
+				var validationRes:ValidationResultEvent;
+				
+				var procedureID:int = ProcedureDTO(event.currentTarget.selectedItem).PatientProcedureID;
+				
+				if (!comboValidator)
+					comboValidator = new ComboValidator();
+				
+				comboValidator.source = editor;
+				comboValidator.property = "selectedItem";
+				comboValidator.error = "Invalid CPT Code";
+				
+				if (event.dataField == "CPTMedicalType.ProcedureCode")
+				{
+					validationRes = comboValidator.validate(editor.selectedItem);
+				}
+				else if (event.dataField == "CPTMedicalType.ProcedureDescription")
+				{
+					validationRes = comboValidator.validate(editor.selectedItem);
+				}
+				
+				if (validationRes && !validationRes.results)
+				{
+					event.itemRenderer.data.CPTMedicalType = editor.selectedItem;
+					
+					if (procedureID != 0)
+						event.itemRenderer.data.IsDirty = true;
+					
+					hasViewChanged = _hasGridChanged = true;
+				}
+				
+				id_ProcedureGrid.destroyItemEditor();
+				event.stopImmediatePropagation();
+				event.preventDefault(); */
+			}
+			
+			private function myFilter(obj:*):Boolean
+			{
+				if(model.vbFilter == QSConstants.BY_VISIT)
+				{
+					if(model.vbVisitId == obj.VisitID)
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+				
+				return true;
+			}
+			
+			public function displayRowNum(oItem:Object,iCol:int):String
+			{
+				var rowNumber:int = id_ProcedureGrid.dataProvider.getItemIndex(oItem) + 1;
+				return String(rowNumber);
+			}
+			
+			public function displayVisitDate(item:Object, iCol:int):String
+			{
+				var strVisitDate:String = '';
+				
+				if (item && item.VisitDate)
+				{
+					var dateRecieved:Date = new Date(Date.parse(item.VisitDate));
+					strVisitDate = formatDateTime.format(dateRecieved);
+					var nullDate:Date = QSConstants.NULL_DATE;
+					
+					if (dateRecieved.getFullYear() <= nullDate.getFullYear() && dateRecieved.getMonth() <= nullDate.getMonth())
+						strVisitDate = "";
+				}
+				
+				return strVisitDate;
+			}
+			
+			private function switchPageForGridView(event:*):void
+			{
+				if (UtilityFunctions.IsNullOrEmpty( model.procedureCurrentPageByPatient))
+					model.procedureCurrentPageByPatient = VBUtilityFunctions.getNewPageDTOWithDefaultValues();
+				
+				 var lpEvent:LoadProcedureByPatientIdPagedEvent = new LoadProcedureByPatientIdPagedEvent(); 
+				CairngormEventDispatcher.getInstance().dispatchEvent(lpEvent); 
+			}
+			
+			private function id_PaginationFilterView_RefreshViewHandler(event:Event):void
+			{
+				if (!VBUtilityFunctions.isNullOrEmptyPage(id_PaginationFilterView.page))
+					model.procedureCurrentPageByPatient = id_PaginationFilterView.page;
+				
+				var lpEvent: LoadProcedureByPatientIdPagedEvent = new LoadProcedureByPatientIdPagedEvent(); 
+				CairngormEventDispatcher.getInstance().dispatchEvent(lpEvent); 
+			}
+			
+			private function button1_clickHandler(event:MouseEvent):void
+			{
+				if(model.procedureDTOListByPatient!=null){
+					model.procedureDTOListByPatient.filterFunction=myFilter;
+					model.procedureDTOListByPatient.refresh();
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+		<s:VerticalLayout gap="0" />
+	</s:layout>
+	
+	<s:Button label="Filter" click="button1_clickHandler(event)" visible="false" includeInLayout="false" id="id_applyFiler"/>
+	<paging:PaginationFilterView id="id_PaginationFilterView" width="100%" page="{model.procedureCurrentPageByPatient}"
+								 GoToFirstPage="switchPageForGridView(event)" GoToNextPage="switchPageForGridView(event)" 
+								 GoToPreviousPage="switchPageForGridView(event)" GoToLastPage="switchPageForGridView(event)"
+								 RefreshView="id_PaginationFilterView_RefreshViewHandler(event)"
+								 />
+	<components:LabelDataGrid id="id_ProcedureGrid"
+							  rowCount="{id_ProcedureGrid.dataProvider.length + 1}" rowHeight="24"
+							  width="100%" useRollOver="false" maxHeight="150" verticalScrollPolicy="on" horizontalScrollPolicy="off"
+							  dataProvider="{model.procedureDTOListByPatient}"
+							  columnWidths="{[35,'20%', '20%', '40%',85]}">
+		<components:columns>
+			
+			<mx:DataGridColumn headerText="Sr. #" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" 
+							   editable="false" labelFunction="displayRowNum"/>
+			<mx:DataGridColumn headerText="Visit Date" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" 
+							   editable="false" labelFunction="displayVisitDate"/>
+			<mx:DataGridColumn headerText="CPT" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" 
+							   dataField="cptmedicalDTO.ProcedureCode" editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor labelField="ProcedureCode" dataProvider="{outerDocument.model.cptMedicalTypeDTOList}"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Procedure" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" 
+							   dataField="cptmedicalDTO.ProcedureDescription" editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor labelField="ProcedureDescription" dataProvider="{outerDocument.model.cptMedicalTypeDTOList}"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<grid:DataGridColumnEx headerText="" itemRenderer="com.gazuntite.patient.visit.view.itemrenderer.VBRenderer" 
+								   data="{dataGridActionsData}"  editable="false" />
+		</components:columns>
+	</components:LabelDataGrid>
+</s:Group>

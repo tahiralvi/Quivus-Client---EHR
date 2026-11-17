@@ -1,0 +1,365 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+@namespace zig "com.adobe.Quivus.view.controls.extended.components.*";
+
+global 
+{
+	modal-transparency: 0;
+	modal-transparency-blur: 1;
+}
+
+mx|Alert 
+{
+	fontFamily: VerdanaEmbedded;
+	creationCompleteEffect: alertCreationCompleteEffect;
+}
+.lockPopup {
+	modalTransparencyBlur: 0;
+	modalTransparency: 0.8;
+	modalTransparencyColor: black;
+	modalTransparencyDuration: 500;
+}
+
+mx|ToolTip
+{
+	backgroundColor : #272727;
+	color			: #FFFFFF;
+	borderColor		: #FFFFFF;
+	borderVisible   : true;
+	textAlign	    : center;
+/*	borderSkin:ClassReference("assets.Skins.ToolTipSkin");*/
+}
+
+s|DropDownList 
+{
+	focusRect : true ;
+}
+
+s|DropDownList:open,s|ComboBox:open ,s|TextInput
+{             
+	font-size  : 12;            
+	fontFamily : "Calibri";
+} 
+
+s|TextInput:normalWithPrompt 
+{
+	color: #CCCCFF;
+}
+
+
+
+@font-face
+{
+	fontFamily: "Calibri Bold";
+	src: url("../fonts/CALIBRIB.TTF");
+	embedAsCFF: true;
+}
+
+@font-face
+{
+	fontFamily: "Calibri Bold";
+	src: url("../fonts/CALIBRIB.TTF");
+	embedAsCFF: true;
+} 
+
+@font-face
+{
+	fontFamily: "Myriad Pro";
+	src: url("../fonts/MYRIADPRO-REGULAR.OTF");
+	embedAsCFF: true;
+}
+@font-face
+{
+	fontFamily: "Calibri";
+	src: url("../fonts/CALIBRI.TTF");
+	embedAsCFF: true;
+}
+
+@font-face
+{
+	fontFamily: "GridCalibriBold";
+	src: url("../fonts/CALIBRIB.TTF");
+	embedAsCFF: false;
+}
+
+@font-face
+{
+	fontFamily: "GridCalibri";
+	src: url("../fonts/CALIBRI.TTF");
+	embedAsCFF: false;
+}
+
+@font-face
+{
+	src 		:	url("..\fonts\CALIBRI.TTF") ;
+	fontFamily 	: 	CalibriCFFDateField ;
+	embedAsCFF	: 	 false ;
+	
+}
+
+
+mx|DateField
+{
+	font-family  :CalibriCFFDateField;
+	font-size 	 : 11;
+}
+
+mx|DataGrid,
+{
+	verticalScrollBarStyleName: "VScrollBar";
+}
+
+
+/*@font-face{
+
+fontFamily 	: Verdana;
+src			:url("../fonts/Verdana.TTF");
+embeddAsCFF	:true;
+}*/
+/*CursorManager
+{
+busyCursor: ClassReference("mx.skins.halo.BusyCursor");
+busyCursorBackground: Embed(source='../icons/loader.swf');
+}*/
+CursorManager
+{
+/*	busyCursor: ClassReference("com.adobe.Quivus.view.controls.skins.loaderanim");*/
+}
+
+s|VScrollBar 
+{
+	/*skinClass: ClassReference("com.adobe.Quivus.view.controls.skins.VerticalScrollerSkin");*/
+}
+
+/*mx|Tree
+{
+fontFamily: "Calibri Bold";
+fontSize: 11;
+
+}*/
+s|PopUpAnchor
+{
+	backgroundColor : #F9D234; 
+	borderStyle : "solid";
+	paddingTop : 2;
+	paddingBottom : 2; 
+	paddingLeft : 2; 
+	paddingRight : 2;
+}
+
+.dataGrid {
+	headerColors: #cccccc, #cccccc;
+	dropShadowEnabled: false;
+	headerStyleName: "mydataGridHeaderStyle";
+}
+mx|TextInput, s|TextInput
+{
+	
+	focusColor: #ff0000;
+}
+.mydataGridHeaderStyle {
+	color: #0b333c;
+}
+
+.dataGridReport { 
+	headerColors: #B2B3A3, #B2B3A3; 
+	backgroundAlpha: 1; 
+	backgroundColor: #B2B3A3; 
+	alternatingItemColors: #ffffff, #ffffff; 
+	horizontalGridLines: true;
+	verticalGridLines: true;
+	letterSpacing: 0; 
+	horizontalGridLineColor: #cccccc; 
+	
+	headerBackgroundColor: #B2B3A3;
+	
+	verticalGridLineColor: #ffffff;
+	rollOverColor: #ffffff; 
+	selectionColor: #ffffff;
+	textSelectedColor: #444444; 
+	
+	borderThickness: 0; 
+	border-style:solid; 
+	
+	color: #444444; 
+	
+	fontSize: 10; 
+	text-align:left; 
+	padding-left:11; 
+	fontWeight: normal;  
+} 
+/*zig|LabelTextInput
+{
+borderStyle: none;
+borderColor: #993300;
+fontFamily: Courier;
+fontSize: 20;
+fontWeight: bold;
+dropShadowEnabled: true;
+shadowDirection: right;
+shadowDistance: 11;
+dropShadowColor: #cc99ff;
+}*/
+
+s|TextInput, s|ComboBox, s|NumericStepper, mx|DateField, s|TextArea ,s|Button , s|Panel ,s|TabBar ,s|ToggleButton ,s|BorderContainer,s|ButtonBar
+s|ButtonBarButton ,s|CheckBox,s|ComboBox,s|DropDownList,s|PopUpAnchor,s|RadioButton ,s|SparkSkin, mx|DateField
+{
+	focus-color: #ff0000;
+	focus-thickness : 4 ;
+}
+
+
+s|ComboBox,s|DropDownList
+{
+	verticalScrollBarStyleName: "VScrollBar";
+}
+
+.PatProfileGridHeaderStyle {
+	src			: url("../fonts/CALIBRI.TTF");
+	fontSize 	: 	12;
+	text-align  :  left;
+	fontFamily	:	Verdana;
+	fontWeight	:	normal;
+}
+
+.PatProfileGridStyle {
+	
+	borderAlpha			: 0;
+	borderVisible		: false;
+	fontSize			: 12;
+	fontWeight			: normal;
+	color				: #333333;			
+	verticalGridLines	: false;
+	headerStyleName		:"PatProfileGridHeaderStyle";
+}
+.VBScrollBarStyle {
+	verticalScrollBarStyleName: "VScrollBar";
+}
+
+
+
+.LSGridStyle {  
+	backgroundColor: #E8DED7; 
+	alternatingItemColors: #E8DED7, #E8DED7; 
+	horizontalGridLines: true;
+	verticalGridLines: false;
+	letterSpacing: 0; 
+	horizontalGridLineColor: #cccccc; 					
+	rollOverColor: #eeeeee; 
+	fontFamily: Verdana;
+	
+	borderThickness: 0; 
+	border-style:solid; 
+	selectionColor: #999999; 
+	color: #222222; 
+	textSelectedColor: #222222;  
+	fontSize: 11; 
+	text-align:left; 
+	padding-left:11;  
+	headerStyleName: "LSGridStyleHeader";  
+	verticalScrollBarStyleName: "VScrollBar";
+}
+
+.LSGridStyleHeader { 
+	color: #444444;		
+	fontSize: 11; 
+	text-align:left;  		
+	fontFamily: Verdana;
+	fontWeight: bold;
+}
+
+
+.VBdataGridStyle {  
+	alternatingItemColors: #f7f7f7, #cbd0d5; 
+	horizontal-grid-lines: true;
+	horizontal-grid-line-color: #a5a5a5; 
+	vertical-grid-lines : true;
+	vertical-grid-line-color :#a5a5a5;
+	rollOverColor: #eeeeee; 
+	borderThickness: 0; 
+	border-style:solid; 
+	selectionColor: #999999; 
+	color: #444444; 
+	textSelectedColor: #ffffff;  
+	fontSize: 12; 
+	text-align:left; 
+	padding-left:11; 
+	fontWeight: normal;  
+	headerStyleName: "QIGridHeader"; 
+	verticalScrollBarStyleName: "VScrollBar";
+} 
+
+.VBDataGridStyleHeader { 
+	fontSize: 12;  
+	text-align:left;   
+	textDecoration: none; 
+	font-family :"GridCalibriBold";	
+	color :#222222 ;
+}
+
+.QIGrid { 
+	
+	alternatingItemColors: #f7f7f7, #cbd0d5; 
+	horizontal-grid-lines: true;
+	horizontal-grid-line-color: #a5a5a5; 
+	vertical-grid-lines : true;
+	vertical-grid-line-color :#a5a5a5;
+	rollOverColor: #eeeeee; 
+	borderThickness: 0; 
+	border-style:solid; 
+	selectionColor: #999999; 
+	color: #444444; 
+	textSelectedColor: #ffffff;  
+	fontSize: 12; 
+	text-align:left; 
+	padding-left:11; 
+	fontWeight: normal; 
+	fontFamily: "GridCalibri";
+	headerStyleName: "QIGridHeader"; 
+	verticalScrollBarStyleName: "VScrollBar";
+	
+} 
+
+.VScrollBar {
+/*	up-arrow-skin: ClassReference("com.adobe.Quivus.view.controls.skins.ScrollBarSkins.button1");
+	down-arrow-skin: ClassReference("com.adobe.Quivus.view.controls.skins.ScrollBarSkins.downBtn");
+	/* trackSkin: Embed(source="skins/ScrollBarTrack.png", scaleGridLeft="1", scaleGridTop="4", scaleGridRight="5", scaleGridBottom="16");
+	thumbUpSkin: Embed(source="skins/ScrollBarThumb_up.png", scaleGridLeft="1", scaleGridTop="4", scaleGridRight="5", scaleGridBottom="16");
+	thumbOverSkin: Embed(source="skins/ScrollBarThumb_over.png", scaleGridLeft="1", scaleGridTop="4", scaleGridRight="5", scaleGridBottom="16");
+	thumbDownSkin: Embed(source="skins/ScrollBarThumb_down.png", scaleGridLeft="1", scaleGridTop="4", scaleGridRight="5", scaleGridBottom="16"); 
+	trackSkin: ClassReference("com.adobe.Quivus.view.controls.skins.ScrollBarSkins.track");
+	thumbUpSkin: ClassReference("com.adobe.Quivus.view.controls.skins.ScrollBarSkins.thumbBtn");
+	thumbOverSkin: ClassReference("com.adobe.Quivus.view.controls.skins.ScrollBarSkins.thumbBtn");
+	thumbDownSkin: ClassReference("com.adobe.Quivus.view.controls.skins.ScrollBarSkins.thumbBtn"); */
+}
+
+.QIGridHeader { 
+	fontSize: 12;  
+	text-align:left;   
+	textDecoration: none; 
+	font-family :"GridCalibriBold";	
+	color : #222222 ;
+}  
+
+
+.ScheduleGridHeaderStyle {
+	
+	fontSize 	: 	12;
+	text-aligh 	:	left;
+	fontFamily	:	Verdana;
+	fontWeight	:	normal;
+}
+
+.ScheduleGridStyle {
+	
+	
+	borderAlpha			: 0;
+	borderVisible		: false;
+	fontSize			: 12;
+	fontWeight			: normal;
+	color				: #333333;			
+	verticalGridLines	: false;
+	headerStyleName		:"ScheduleGridHeaderStyle";
+	verticalScrollBarStyleName: "VScrollBar";
+}

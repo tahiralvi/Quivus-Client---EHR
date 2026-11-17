@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%"
+		 creationComplete="LoadSentEmail()" xmlns:buttonSkins="com.adobe.gazuntite.skins.chrome.buttonSkins.*" xmlns:components="com.gazuntite.controls.extended.components.*"
+		 xmlns:CheckBoxGrid="com.zigron.controls.extended.components.CheckBoxGrid.*" 
+		 xmlns:itemEditors="com.adobe.Quivus.view.controls.custom.itemEditors.*" xmlns:CheckBoxGrid1="com.gazuntite.controls.extended.components.CheckBoxGrid.*" 		 
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEvent;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.provider.services.sms.event.GetSentSMSEvent;
+			import com.gazuntite.provider.services.sms.model.SMSModelLocator;
+			
+			import mx.collections.ListCollectionView;
+			import mx.controls.Alert;
+			import mx.controls.Label;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.CursorManager;
+			
+			[Bindable]
+			public var model: SMSModelLocator = SMSModelLocator.getInstance();
+			private var smsID:String;
+			
+			private var _userID:int;
+			private var _clinicBranchID:String;
+			[Bindable]
+			public function get userID():int
+			{
+				return _userID;
+			}
+			
+			public function set userID(value:int):void
+			{
+				_userID = value;
+			}
+			
+			[Bindable]
+			public function get clinicBranchID():String
+			{
+				return _clinicBranchID;
+			}
+			
+			public function set clinicBranchID(value:String):void
+			{
+				_clinicBranchID = value;
+			}
+			
+			private function LoadSentEmail():void
+			{
+				//var smsSentEvent:GetSentSMSEvent =new GetSentSMSEvent(model.loggedInUserSelectedBranchId,model.loggedInUserId,model.currentPage,callBack);
+				var smsSentEvent:GetSentSMSEvent =new GetSentSMSEvent(parseInt(clinicBranchID),userID,model.currentPage,callBack);
+				CairngormEventDispatcher.getInstance().dispatchEvent(smsSentEvent);
+			}
+			
+			private function callBack():void
+			{
+				
+			}
+			
+			private function CheckUncheckAll():void
+			{
+				/* var allRows:int =	 model.smsResultList.ALLSentSMS.length;
+				
+				for (var i:int = 0; i < allRows; i++)
+				{
+					if (chkHeader.selected == true)
+					{
+						trace ("Checked is true");
+						ListCollectionView(dgSentSMS.dataProvider).getItemAt(i)["isSelected"]=true;
+					}
+					else
+					{
+						trace ("Checked is false");
+						ListCollectionView(dgSentSMS.dataProvider).getItemAt(i)["isSelected"]=false;
+					}
+				}
+				dgSentSMS.dataProvider = model.smsResultList.ALLSentSMS; */
+				
+				
+			}
+			
+
+
+
+			protected function dgSentSMS_itemClickHandler(event:ListEvent):void
+			{
+				/*
+				// Get the target of this event (Datagrid)
+				var dataGrid:DataGrid = event.target as DataGrid;
+				
+				
+				
+				var allRows:int =	 model.smsResultList.ALLSentSMS.length;
+				var smsID:String = "";
+				
+				for (var i:int = 0; i < allRows; i++)
+				{
+					if(ListCollectionView(dgSentSMS.dataProvider).getItemAt(i)["isSelected"]==true)
+				//		if(dgSentSMS.columns[0][i] == true)
+						smsID	+=ListCollectionView(dgSentSMS.dataProvider).getItemAt(i)["smsID"]+"^";
+					
+				}
+				if(smsID.length > 0)
+				{
+					smsID=smsID.substring(0,smsID.length-1);
+					model.smsIDs = smsID;
+					
+					///////////// Change USer ID later On
+				//	var emailDeleteEvent : DeleteEmailEvent = new DeleteEmailEvent(emailID,470,GetEmailValuesCallBack);
+				//	CairngormEventDispatcher.getInstance().dispatchEvent(emailDeleteEvent);
+				}
+				/*
+				if(ListCollectionView(dgSentSMS.dataProvider).getItemAt(i)["isSelected"]==true)
+					var newValue:String = dataGrid.selectedItem["userID"];//[col.dataField];
+				*/
+			}
+
+
+			protected function btnGotoFirst_clickHandler(event:MouseEvent):void
+			{
+				CallServer(model.currentPage=1);
+				//var smsView:SentSMSView=new SentSMSView();
+				
+			}
+			
+			protected function btnGotoLast_clickHandler(event:MouseEvent):void
+			{
+				CallServer(model.currentPage=model.totalPage);
+			}
+			
+			protected function btnPrevious_clickHandler(event:MouseEvent):void
+			{
+				CallServer(model.currentPage -=1);
+			}
+			
+			
+			protected function btnNext_clickHandler(event:MouseEvent):void
+			{
+				CallServer(model.currentPage +=1);
+			}
+
+			protected function btnRefresh_clickHandler(event:MouseEvent):void
+			{
+				CallServer(model.currentPage=1);
+			}
+			
+			private function CallServer(currentPage:int):void
+			{
+				//var smsSentEvent:GetSentSMSEvent =new GetSentSMSEvent(model.loggedInUserSelectedBranchId,model.loggedInUserId,model.currentPage,GetSMSValuesCallBack);
+				var smsSentEvent:GetSentSMSEvent =new GetSentSMSEvent(parseInt(clinicBranchID),userID,model.currentPage,GetSMSValuesCallBack);
+				CairngormEventDispatcher.getInstance().dispatchEvent(smsSentEvent);
+			}
+			
+			public  function GetSMSValuesCallBack(val:* = null):void
+			{
+				EnableNavigationButtons(model.currentPage,model.totalPage);
+			}
+			
+			public function  EnableNavigationButtons(currentPage:int, totalPages:int ):void //currentPage:int, totalPages:int ):void
+			{
+				
+				//currentPage =model.currentPage;
+				//totalPages = model.totalPage;
+				
+				btnGotoFirst.enabled = currentPage != 1;
+				btnGotoLast.enabled 		= currentPage != totalPages;
+				btnNext.enabled 		=  currentPage != totalPages;
+				btnPrevious.enabled 	=  currentPage != 1;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+		
+	<!--	<s:layout>
+			<s:VerticalLayout paddingBottom="5" paddingLeft="5" paddingTop="5" paddingRight="5" />
+		</s:layout>
+	-->
+	<CheckBoxGrid1:CheckBoxDataGrid id="dgSentSMS"
+		rowCount="{dgSentSMS.dataProvider.length + 1}"
+		width="100%" 
+		dataProvider="{model.smsResultList.ALLSentSMS}" 
+		draggableColumns="false" 
+		useRollOver="false"
+		columnWidths="{['10%' ,'30%','60%']}"
+		allowMultipleSelection="true"
+		minHeight="150"
+		verticalScrollPolicy="off"
+		maxHeight="250" 
+		>
+		<CheckBoxGrid1:columns>
+			<mx:DataGridColumn id="chkHeader" dataField="isSelected" 
+							   headerText="" 
+							   rendererIsEditor="true"
+							   sortable="false" 
+							   itemRenderer="com.gazuntite.controls.extended.components.CheckBoxGrid.CheckBoxRenderer" 
+							   headerRenderer="com.gazuntite.controls.extended.components.CheckBoxGrid.CheckBoxHeaderRenderer" 
+							   editorDataField="selected"
+							   />
+			<mx:DataGridColumn headerText="To" dataField="userID" editable="false"  
+							   itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/> <!--editorDataField="editorText"-->
+			<mx:DataGridColumn headerText="Text"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="Message" editable="false" />  <!--editorDataField="editorText"-->
+			
+			
+		</CheckBoxGrid1:columns>
+	</CheckBoxGrid1:CheckBoxDataGrid>
+	
+	<!--<components:LabelDataGrid id="dgSentSMS" width="100%" top="3"  columnWidths="{['10%','30%','60%']}"
+							  editable="true" mouseEnabled="true" dataProvider="{model.smsResultList.ALLSentSMS}"
+							  itemClick="dgSentSMS_itemClickHandler(event)" styleName="gridStyle" >
+		<components:columns>
+			<mx:DataGridColumn headerText="" sortable="false" dataField="isSelected"  
+							   itemRenderer="com.zigron.provider.services.sms.view.ItemRenderer.CheckBoxItemRenderer"
+							   rendererIsEditor="true" editorDataField="selected" editable="true"/>
+			
+			<mx:DataGridColumn headerText="To" sortable="false" editable="false"  dataField="userID"/>
+			<mx:DataGridColumn headerText="Text" sortable="false" editable="false" dataField="Message" />
+		</components:columns> 
+	</components:LabelDataGrid>-->
+	<s:HGroup  width="100%" horizontalAlign="right" top="5">
+		<s:SkinnableContainer  styleName="miniWhiteNGreyBGContainerSkin" >
+			<s:layout>
+				<s:HorizontalLayout paddingTop="1" paddingBottom="1"/>
+			</s:layout>
+			<s:Button id="btnGotoFirst" label="GotoFirst" click="btnGotoFirst_clickHandler(event)" buttonMode="true"
+					  toolTip="First"  styleName="blackFirstLastButtonSkin"/>
+			<buttonSkins:navSeparator/>
+			<s:Button id="btnPrevious" label="Previous" click="btnPrevious_clickHandler(event)" buttonMode="true" 
+					  toolTip="Previous"  styleName="blackPreviousNextButtonSkin"/>
+			<buttonSkins:navSeparator/>
+			<s:Button id="btnNext" label="Next" click="btnNext_clickHandler(event)" buttonMode="true" 
+					  toolTip="Next"   styleName="blackPreviousNextButtonSkin" rotation="180"/>
+			<buttonSkins:navSeparator/>
+			<s:Button id="btnGotoLast" label="GotoLast" click="btnGotoLast_clickHandler(event)" buttonMode="true"
+					  toolTip="Last" styleName="blackFirstLastButtonSkin" rotation="180"/>
+			
+		</s:SkinnableContainer>
+		<s:Button id="btnRefresh"  label="Refresh" click="btnRefresh_clickHandler(event)" buttonMode="true" 
+				  toolTip="Refresh"  styleName="refreshButtonSkin"/>
+	</s:HGroup>
+	<!--<s:CheckBox id="chkHeader" click="CheckUncheckAll()" selected="false" left="10" top="8"  styleName="lightGreyCheckBoxSkin" />-->
+	
+</s:Group>

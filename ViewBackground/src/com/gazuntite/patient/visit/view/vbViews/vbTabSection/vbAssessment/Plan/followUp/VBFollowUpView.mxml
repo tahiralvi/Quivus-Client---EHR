@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 creationComplete="cc(event)" 
+		 xmlns:paging="com.gazuntite.patient.visit.view.vbViews.paging.*" xmlns:itemEditors="com.gazuntite.common.view.itemEditors.*" xmlns:grid="com.gazuntite.common.view.components.grid.*" xmlns:components="com.gazuntite.controls.extended.components.*" xmlns:validators="com.gazuntite.common.util.validators.*" 
+		 >
+	
+	<fx:Declarations>	
+		<validators:ComboValidator id="comboValidator"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.dto.assessment.followUp.FollowUpDTO;
+			import com.gazuntite.common.dto.assessment.followUp.FollowUpServiceTypeDTO;
+			import com.gazuntite.common.util.QSConstants;
+			import com.gazuntite.common.view.events.DataGridActionsEvent;
+			import com.gazuntite.common.view.itemEditors.SparkComboBoxItemEditor;
+			import com.gazuntite.controls.extended.components.LabelComboBox;
+			import com.gazuntite.patient.visit.dto.PageDTO;
+			import com.gazuntite.patient.visit.event.LoadFollowUpByPatientIdPagedEvent;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			import com.gazuntite.patient.visit.utlis.VBGridController;
+			import com.gazuntite.patient.visit.utlis.VBUtilityFunctions;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Label;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.events.DataGridEvent;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.formatters.DateFormatter;
+			
+			[Bindable]
+			public var model:VBModelLocator = VBModelLocator.getInstance();
+			
+			[Bindable]
+			public var dataGridActionsData:Object;
+			
+			[Bindable]
+			public var followUpNatureDp:ArrayCollection;
+			
+			private var vbGridController:VBGridController;
+			
+			private function cc(event:FlexEvent):void
+			{
+				followUpNatureDp = new ArrayCollection();
+				followUpNatureDp.source = ["Acute", "Chronic", "Preventive"];
+				
+				vbGridController = new VBGridController();
+				vbGridController.dataGrid = id_DataGrid;
+				
+				vbGridController.firstEditableColIdx = 2;
+				vbGridController.firstEditablePropertyName = "followupMethodType.Name";
+				
+				vbGridController.sectionName = QSConstants.FOLLOW_UP_MODULE_NAME;
+				vbGridController.recordValidationCallBack = doValidateRecord;
+				
+				if (!dataGridActionsData)
+					dataGridActionsData = {};
+				
+				dataGridActionsData["noteDataFields"] = {subject: "NoteSubject", note: "Note", header: "followupMethodType.Name", visitDate: "VisitDate"};
+				dataGridActionsData["dictationDataField"] = "DictationID";
+			}
+			
+			private function switchPageForGridView(event:*):void
+			{	
+				if (UtilityFunctions.IsNullOrEmpty(model.followUpCurrentPageByPatient))
+					model.followUpCurrentPageByPatient =VBUtilityFunctions.getNewPageDTOWithDefaultValues();
+				
+				var lfuEvent:LoadFollowUpByPatientIdPagedEvent = new LoadFollowUpByPatientIdPagedEvent(); 
+				CairngormEventDispatcher.getInstance().dispatchEvent(lfuEvent); 
+			}
+			
+			private function id_PaginationFilterView_RefreshViewHandler(event:Event):void
+			{
+				if (!VBUtilityFunctions.isNullOrEmptyPage(id_PaginationFilterView.page))
+					model.followUpCurrentPageByPatient = id_PaginationFilterView.page;
+				
+				var lfuEvent:LoadFollowUpByPatientIdPagedEvent = new LoadFollowUpByPatientIdPagedEvent(); 
+				CairngormEventDispatcher.getInstance().dispatchEvent(lfuEvent);
+			}
+			
+			public function doValidateRecord(event:DataGridEvent):void
+			{
+				var validationRes:ValidationResultEvent;
+				
+				var comboEditor:LabelComboBox;
+				
+				if (event.dataField == "followupMethodType.Name")
+				{
+					comboEditor = SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor;
+					
+					comboValidator.error = "Invalid follow up method";
+					comboValidator.source = comboEditor;
+					comboValidator.property = "selectedItem";
+					
+					validationRes = comboValidator.validate(comboEditor.selectedItem);
+					
+					if (validationRes && !validationRes.results)
+					{
+						event.itemRenderer.data.followupMethodType = comboEditor.selectedItem;//followUpMethodTypeNameToDTO(editor.selectedItem);
+						
+						event.itemRenderer.data.IsDirty = true;
+					}
+				}
+				
+				else if (event.dataField == "objServiceTypeDTO.followUpService")
+				{
+					
+					comboEditor = SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor;
+					
+					if (comboEditor.selectedIndex > -1)
+					{
+						if (comboEditor.selectedItem)
+							event.itemRenderer.data.objServiceTypeDTO = comboEditor.selectedItem as FollowUpServiceTypeDTO;
+							
+						else
+							event.itemRenderer.data.objServiceTypeDTO = new FollowUpServiceTypeDTO();
+					}
+					else
+					{
+						var followUpServiceTypeDTO:FollowUpServiceTypeDTO = new FollowUpServiceTypeDTO();
+						followUpServiceTypeDTO.followUpService = comboEditor.textInput.text;
+						
+						event.itemRenderer.data.objServiceTypeDTO = followUpServiceTypeDTO;
+					}
+					
+					event.itemRenderer.data.IsDirty = true;
+				}
+				
+				else if (event.columnIndex == 5)
+				{
+					comboEditor = SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor;
+					
+					event.itemRenderer.data.IsAcute = false;
+					event.itemRenderer.data.IsChronic = false;
+					event.itemRenderer.data.IsPreventive = false;
+					
+					if (comboEditor.selectedItem)
+					{
+						
+						switch(comboEditor.selectedItem)
+						{
+							case "Acute":
+								
+								event.itemRenderer.data.IsAcute = true;
+								break;
+							
+							case "Chronic":
+								
+								event.itemRenderer.data.IsChronic = true;
+								break;
+							
+							case "Preventive":
+								
+								event.itemRenderer.data.IsPreventive = true;
+								break;
+						}
+						
+						event.itemRenderer.data.IsDirty = true;
+					}
+				}
+			}
+			
+			public function displayRowNum(item:Object, iCol:int):String
+			{
+				var strRowNum:String = "";
+				
+				if (id_DataGrid.dataProvider)
+				{
+					var rowNum:int = id_DataGrid.dataProvider.getItemIndex(item) + 1;
+					strRowNum = String(rowNum);
+				}
+				
+				return strRowNum;
+			}
+			
+			public function natureLabelFunction(item:FollowUpDTO, iCol:int):String
+			{
+				if (item.IsAcute)
+					return "Acute";
+				
+				if (item.IsChronic)
+					return "Chronic";
+				
+				if (item.IsPreventive)
+					return "Preventive";
+				
+				return "";
+			}
+			
+			public function frequencyLabelFunction(item:Object, iCol:int):String
+			{
+				var label:String = "";
+				
+				if (item is FollowUpDTO)
+				{
+					var freq:FollowUpDTO = item as FollowUpDTO;
+					
+					if (freq.IsAgeSelected)
+					{
+						if (freq.AgeType && freq.AgeType.Name)
+							label += freq.AgeType.Name + " " ;
+						
+						if (freq.AgeValueType && freq.AgeValueType.Name)
+							label += freq.AgeValueType.Name;
+					}
+						
+					else if (freq.IsDurationSelected)
+					{
+						if (!isNaN(freq.AfterDurationValue))
+							label += "After " + freq.AfterDurationValue + " ";
+						
+						if (freq.AfterInstructionDurationTypeDTO && freq.AfterInstructionDurationTypeDTO.Name)
+							label += freq.AfterInstructionDurationTypeDTO.Name + " ";
+						
+						if (!isNaN(freq.ForDurationValue))
+							label += "for " + freq.ForDurationValue + " ";
+						
+						if (freq.ForInstructionDurationTypeDTO && freq.ForInstructionDurationTypeDTO.Name)
+							label += freq.ForInstructionDurationTypeDTO.Name;
+					} 
+				}
+				return label;
+			}
+			
+			public function typeLabelFunction(item:Object, iCol:int) : String
+			{		
+				if (item.IsByDate)
+					return item.FollowUpDate;
+					
+				else if (item.IsOnCompletion)
+				{
+					if (item.IsDrugselected)
+						return item.DrugName.toString();
+						
+					else if (item.IsLabTestSelected)
+						return "";
+				}
+				
+				return "";
+			}
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+		<s:VerticalLayout gap="0" horizontalAlign="left" />
+	</s:layout>
+	
+	<paging:PaginationFilterView id="id_PaginationFilterView" width="100%" page="{model.followUpCurrentPageByPatient}"
+								 GoToFirstPage="switchPageForGridView(event)" GoToNextPage="switchPageForGridView(event)" 
+								 GoToPreviousPage="switchPageForGridView(event)" GoToLastPage="switchPageForGridView(event)"
+								 RefreshView="id_PaginationFilterView_RefreshViewHandler(event)"/>
+	<components:LabelDataGrid id="id_DataGrid"
+							  rowCount="{id_DataGrid.dataProvider.length + 1}" rowHeight="24"
+							  width="100%" useRollOver="false" sortableColumns="false" maxHeight="150" verticalScrollPolicy="on" horizontalScrollPolicy="off"
+							  dataProvider="{model.followUpDTOListByPatientId}"
+							  columnWidths="{[30, '15%', '20%', '20%', '20%', '15%', 100]}">
+		<components:columns>
+			<mx:DataGridColumn headerText="Sr.#" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" 
+							   editable="false" labelFunction="displayRowNum"/>
+			<mx:DataGridColumn headerText="Follow up" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"
+							   labelFunction="typeLabelFunction" editable="false"/>
+			<mx:DataGridColumn headerText="Method" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"
+							   dataField="followupMethodType.Name" editable="false">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor label="Name" dataProvider="{outerDocument.model.generalTypeDTOListForFollowUpMethod}"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Service" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"
+							   dataField="objServiceTypeDTO.followUpService" editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor labelField="followUpService" dataProvider="{outerDocument.model.followUpServiceTypeDTOList}"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Frequency" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" 
+							   labelFunction="frequencyLabelFunction" editable="false"/>
+			<mx:DataGridColumn headerText="Nature" headerWordWrap="true" wordWrap="true" width="60" labelFunction="natureLabelFunction">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.followUpNatureDp}"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<grid:DataGridColumnEx headerText="" itemRenderer="com.gazuntite.patient.visit.view.itemrenderer.VBRenderer" 
+								   data="{dataGridActionsData}" editable="false"/>
+		</components:columns>
+	</components:LabelDataGrid>
+</s:Group>

@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 
+		 
+		 
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.search.searchEngine.ManageUserSearchEnginesEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			import valueObjects.SearchEngineDTO;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			
+			protected function RestoreDefaults_clickHandler(event:MouseEvent):void
+			{
+				var ect:ManageUserSearchEnginesEvent = new ManageUserSearchEnginesEvent( new ArrayCollection() );
+				CairngormEventDispatcher.getInstance().dispatchEvent( ect );
+				dispatchCloseEvent();
+			}
+			
+			
+			protected function Cancel_clickHandler(event:MouseEvent):void
+			{
+				dispatchCloseEvent();//close dialog
+			}
+			
+			protected function OK_clickHandler(event:MouseEvent):void
+			{
+				var col:ArrayCollection = new ArrayCollection();
+				for( var i:int = 0; i < model.allSearchEngineDTOList.length; i++ )
+				{
+					var seDTO:SearchEngineDTO = model.allSearchEngineDTOList.getItemAt( i ) as SearchEngineDTO;
+					if(seDTO.IsActive)
+					{
+						col.addItem( seDTO.SearchEngineTypeID )
+					}
+				}
+				var ect:ManageUserSearchEnginesEvent = new ManageUserSearchEnginesEvent(col);
+				CairngormEventDispatcher.getInstance().dispatchEvent( ect );
+				dispatchCloseEvent();
+			}
+			
+			private function dispatchCloseEvent():void
+			{
+				dispatchEvent( new CloseEvent( CloseEvent.CLOSE ) );
+			}
+			
+			
+			protected function id_linkBtn_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_linkBtn.setStyle("color", "#FF9900");
+			}
+			
+			
+			protected function id_upBtn_clickHandler(event:MouseEvent):void
+			{
+				id_SearchEngineList.scroller.viewport.verticalScrollPosition-= 4;	
+			}
+			
+			
+			protected function id_downBtn_clickHandler(event:MouseEvent):void
+			{
+				id_SearchEngineList.scroller.viewport.verticalScrollPosition+=4;
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<!--<s:layout>
+	<s:VerticalLayout paddingBottom="10" paddingLeft="5" paddingRight="5" paddingTop="5" />
+	</s:layout>-->
+	<fx:DesignLayer>
+		
+		<s:Rect height="171" id="rect3" radiusX="3" width="185" x="0" y="0">
+			<s:fill>
+				<s:LinearGradient rotation="270">
+					<s:GradientEntry alpha="1.0" color="#BFBFBF" ratio="0"/>
+					<s:GradientEntry alpha="1" color="#FFFFFF" ratio="0.19215686274509805"/>
+					<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+			<s:filters>
+				<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			</s:filters>
+		</s:Rect>
+		
+		<s:Rect height="143" radiusX="3" width="175" x="5" y="2">
+			<s:fill>
+				<s:LinearGradient rotation="90">
+					<s:GradientEntry alpha="1.0" color="#E9EBDD" ratio="0"/>
+					<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="0.5058823529411764"/>
+					<s:GradientEntry alpha="1.0" color="#E9EBDD" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+			<s:filters>
+				<s:DropShadowFilter alpha="0.75" angle="90" blurX="3" blurY="3" color="0x000000" distance="0" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+			</s:filters>
+		</s:Rect>
+		
+		<s:Path x="11" y="17" data="M 0.5 0.5 L 0.5 85.5 L 107.5 85.5 L 107.5 110.485 L 162.5 110.485 L 162.5 85.5 L 162.5 85.483 L 162.5 0.5 L 0.5 0.5 Z"  height="119.985">
+			<s:stroke>
+				<s:SolidColorStroke caps="none" color="#666666" joints="miter" miterLimit="4" weight="1"/>
+			</s:stroke>
+			<s:fill>
+				<s:LinearGradient rotation="90">
+					<s:GradientEntry alpha="1" color="#FFFFFF" ratio="0"/>
+					<s:GradientEntry alpha="1.0" color="#BFC7CB" ratio="0.5176470588235295"/>
+					<s:GradientEntry alpha="1.0" color="#E0E8EB" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+			<s:filters>
+				<s:DropShadowFilter alpha="1" angle="90" blurX="10" blurY="10" color="0x000000" distance="0" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+				<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="0" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			</s:filters>
+		</s:Path>
+		
+		
+		<!--<s:Button buttonMode="true" id="id_CloseBtn" click="Cancel_clickHandler(event)" toolTip="Close" 
+		skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.popupCloseBtnSkin" tabIndex="0" x="162" y="2"
+		height="16" width="16"/>-->
+	</fx:DesignLayer>
+	<s:Group y="5" x="5" height="100%" minHeight="140" maxHeight="150">
+		<s:layout>
+			<s:VerticalLayout paddingBottom="2" paddingLeft="5" paddingRight="5" paddingTop="10" gap="0" />
+		</s:layout>
+		
+		<s:List id="id_SearchEngineList" dataProvider="{ model.allSearchEngineDTOList }" 
+				itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.AddSearchEnginesListRenderer"
+				skinClass="com.adobe.Quivus.view.controls.skins.ListSkins.addSearchEngineListSkin"
+				width ="162" height="99" 
+				/>
+		<mx:Spacer height="5" />
+		<s:HGroup width="100%" height="100%" verticalAlign="middle" paddingBottom="5" gap="30" paddingTop="0" paddingLeft="8">
+			
+			<s:Button id="id_linkBtn" top="5" 
+					  label="RESTORE DEFAULTS" click="RestoreDefaults_clickHandler(event)" creationComplete="id_linkBtn_creationCompleteHandler(event)" 
+					  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.setAsDefaultBtn" />
+			
+			
+			<s:HGroup gap="0">
+				<s:Button id="id_upBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.scrollbarUpButton_small" 					  
+						  buttonMode="true" useHandCursor="true" toolTip="Scroll Up" click="id_upBtn_clickHandler(event)"/>
+				<s:Button id="id_downBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.scrollbarDownButton_small" 						  
+						  buttonMode="true" useHandCursor="true" toolTip="Scroll Down" click="id_downBtn_clickHandler(event)"/>
+			</s:HGroup>
+			
+			
+		</s:HGroup>
+		<s:HGroup width="100%" horizontalAlign="right" paddingTop="7">
+			
+			<s:Button click="OK_clickHandler(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.addmoreSE_saveBtn" 
+					  buttonMode="true" useHandCursor="true" toolTip="Save"/>
+		</s:HGroup>
+		
+	</s:Group>
+	
+	
+</s:Group>
+
+

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:flm="http://ns.adobe.com/flame/2008">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/>
+	</s:states>
+	<s:Group id="group2" x="0" y="0">
+		<s:Rect height="26" radiusX="5" includeIn="up, down" radiusY="5" width="78" x="0" y="0">
+			<s:fill>
+				<s:LinearGradient rotation="270" scaleX="26" x="36" y="26">
+					<s:GradientEntry color="#3C3E40" ratio="0.4"/>
+					<s:GradientEntry color="#8F9193" ratio="0.7"/>
+				</s:LinearGradient>
+			</s:fill>
+		</s:Rect>
+		<s:Rect height="26" includeIn="over" radiusX="5" radiusY="5" width="78">
+			<s:fill>
+				
+				<s:LinearGradient rotation="270" scaleX="24">
+					<s:GradientEntry alpha="1.0" color="#6FC9FF" ratio="0"/>
+					<s:GradientEntry alpha="1.0" color="#009CFF" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+			
+		</s:Rect>
+		<s:RichText color.over="#000000" color="#FFFFFF" columnCount="1" fontFamily="Calibri" fontSize="15" kerning="on" text="REGISTER" whiteSpaceCollapse="preserve" x="10" y="6"/>
+	</s:Group>
+</s:Skin>

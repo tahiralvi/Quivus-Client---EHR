@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:components="com.zigron.controls.extended.components.*" 
+		 xmlns:validators="com.adobe.Quivus.utils.validators.*" xmlns:components1="com.gazuntite.controls.extended.components.*" 
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			//import com.adobe.Quivus.utils.UtilityFunctions;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.events.ItemClickEvent;
+			import mx.events.ValidationResultEvent;
+			
+			import valueObjects.AssessmentDTO;
+			import valueObjects.FollowUpMethodTypeDTO;
+			import valueObjects.PatientFollowUpDTO;
+			import valueObjects.QuickInputDTO;
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+			
+
+			protected function rbGroup_itemClickHandler(event:ItemClickEvent):void
+			{
+				trace( event.item );
+				
+				bindData();
+				
+			}
+			
+			private function bindData()
+			{
+				if(model.quickInputDTO.Assessment.PatientFollowUp ==  null)
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp = new PatientFollowUpDTO();
+				}
+				
+				//M
+				if(id_Office.selected)
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp.FollowUpMethodType = (QSUtilityFunctions.getFollowupMethodTypeDTOByName(Constants.OFFICE_FOLLOWUP_METHOD_NAME) as FollowUpMethodTypeDTO) ;
+				}
+				else if(id_Phone.selected)
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp.FollowUpMethodType = (QSUtilityFunctions.getFollowupMethodTypeDTOByName(Constants.PHONE_FOLLOWUP_METHOD_NAME) as FollowUpMethodTypeDTO) ;
+				}
+				else if(id_Email.selected)
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp.FollowUpMethodType = (QSUtilityFunctions.getFollowupMethodTypeDTOByName(Constants.EMAIL_FOLLOWUP_METHOD_NAME) as FollowUpMethodTypeDTO) ;
+				}
+				else if(id_Chat.selected)
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp.FollowUpMethodType = (QSUtilityFunctions.getFollowupMethodTypeDTOByName(Constants.CHAT_FOLLOWUP_METHOD_NAME) as FollowUpMethodTypeDTO) ;
+				}
+				else if(id_Video.selected)
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp.FollowUpMethodType = (QSUtilityFunctions.getFollowupMethodTypeDTOByName(Constants.VIDEO_FOLLOWUP_METHOD_NAME) as FollowUpMethodTypeDTO) ;
+				}
+				
+				if(id_FollowUpDate != null)
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp.FollowUpDate = id_FollowUpDate.text;//.selectedDate;
+				}
+				model.quickInputDTO.Assessment.PatientFollowUp.IsByDate = true;				
+				model.quickInputDTO.Assessment.PatientFollowUp.IsOnCompletion =  false;
+				
+				if(model.quickInputDTO.Assessment.PatientFollowUp.PatientFollowUpID == 0)
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp.CreatedBy = model.loggedInUserDTO.UserId;
+					model.quickInputDTO.Assessment.PatientFollowUp.CreatedAt = new Date();
+					
+					model.quickInputDTO.Assessment.PatientFollowUp.ModifiedAt = Constants.NULL_DATE;
+				}
+				else
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp.ModifiedBy = model.loggedInUserDTO.UserId;
+					model.quickInputDTO.Assessment.PatientFollowUp.ModifiedAt = new Date();
+					
+					model.quickInputDTO.Assessment.PatientFollowUp.CreatedAt = Constants.NULL_DATE;
+				}
+				
+				model.quickInputDTO.Assessment.PatientFollowUp.VisitDate = model.visitDTO.VisitDate;
+				model.quickInputDTO.Assessment.PatientFollowUp.VisitID = model.visitDTO.VisitId;
+				model.quickInputDTO.Assessment.PatientFollowUp.PatientID = model.visitDTO.PatientId;
+			}
+
+			private function dateChangeHandler():void
+			{
+				//commented due to date to string converion
+				/* var validationRes:ValidationResultEvent;
+				validationRes = futureDateValidator.validate(id_FollowUpDate.selectedDate);
+				
+				if (validationRes && !validationRes.results) */
+					bindData();
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<s:RadioButtonGroup id="rbGroup" itemClick="rbGroup_itemClickHandler(event)" 
+							/>
+		<!--<validators:FutureDateValidator id="futureDateValidator" property="selectedDate" source="{id_FollowUpDate}" error="Follow up date should be future date"/>-->
+	</fx:Declarations>
+	
+	
+	
+	<s:HGroup width="100%" gap="1" paddingLeft="5" paddingRight="5">
+		
+		<components1:LabelDateField id="id_FollowUpDate" prompt="Date" width="150"  textInputStyleName="mandatoryDateSkin"  yearNavigationEnabled="true" editable="true"  minYear="1901"
+								   change="dateChangeHandler()" selectableRange="{{rangeStart : new Date()}}" fontFamily="calibri" fontSize="11" tabIndex="1" />
+
+		<!--<s:Label text="Office" fontFamily="Calibri" fontSize="11" color="#000000" />-->
+		<s:RadioButton id="id_Office" label="Office" groupName="rbGroup" value="Office" visible="true" fontFamily="Calibri" fontSize="11" selected="true"
+					   buttonMode="true" useHandCursor="true" tabIndex="2" color="#ffffff"/>
+		<!--<s:Label text="Phone" fontFamily="Calibri" fontSize="11" color="#000000" />-->
+		<s:RadioButton id="id_Phone" label="Phone" groupName="rbGroup" value="Phone" visible="true" fontFamily="Calibri" fontSize="11"
+					   buttonMode="true" useHandCursor="true" color="#ffffff"/>
+		<!--<s:Label text="Email" fontFamily="Calibri" fontSize="11" color="#000000" />-->
+		<s:RadioButton id="id_Email" label="Email" groupName="rbGroup" value="Email" visible="true" fontFamily="Calibri" fontSize="11"
+					   buttonMode="true" useHandCursor="true" color="#ffffff"/>
+		<!--<s:Label text="Chat" fontFamily="Calibri" fontSize="11" color="#000000" />-->
+		<s:RadioButton id="id_Chat" label="Chat" groupName="rbGroup" value="Chat" visible="true" fontFamily="Calibri" fontSize="11"
+					   buttonMode="true" useHandCursor="true" color="#ffffff"/>
+		<!--<s:Label text="Video" fontFamily="Calibri" fontSize="11" color="#000000" />-->
+		<s:RadioButton id="id_Video" label="Video" groupName="rbGroup" value="Video" visible="true" fontFamily="Calibri" fontSize="11"
+					   buttonMode="true" useHandCursor="true" color="#ffffff"/>
+		
+	</s:HGroup>
+	
+	
+</s:Group>

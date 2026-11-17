@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.utils.ChromeUtil;
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:Group id="id_slideBG">	
+		<s:BitmapImage smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/slideout_hud.png')" y="0" alpha="0.8" 
+					   />
+		<!--<s:Rect id="id_bg" x="10" y="0" width="{(Capabilities.screenResolutionX / 2)-20}" height="{Capabilities.screenResolutionY - 200}" minWidth="200" minHeight="200" >-->
+		<s:Rect id="id_bg" x="10" y="0" width="{(Capabilities.screenResolutionX / 2) - 30}" height="100%" minWidth="200" minHeight="200" alpha="0.8" >
+			<s:fill>
+				<s:SolidColor color="0x1D1D1D"/>
+			</s:fill>
+			<s:filters>
+				<s:DropShadowFilter blurX="4.0" blurY="4.0" distance="4.0" hideObject="false" color="0x000000" inner="false" strength="1" alpha="0.5" quality="3" knockout="false" angle="90"/>
+			</s:filters>
+		</s:Rect>
+	</s:Group>
+	
+	
+</s:Group>

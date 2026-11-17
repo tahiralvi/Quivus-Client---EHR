@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:MXDataGridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						  xmlns:s="library://ns.adobe.com/flex/spark" 
+						  xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.utils.Constants;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.controls.DataGrid;
+			import mx.controls.dataGridClasses.DataGridListData;
+			import mx.controls.listClasses.BaseListData;
+			import mx.events.CloseEvent;
+			import mx.events.DataGridEvent;
+			
+		
+			import valueObjects.PrescriptionDTO;
+			
+			
+			
+			[Bindable]
+			override public function set data(value:Object):void
+			{
+				super.data = value;
+				
+				var alg:PrescriptionDTO = data as PrescriptionDTO
+					
+				
+				if( alg && ! UtilityFunctions.IsNullOrEmpty( alg.RCOPIAID ) )
+				{
+					id_ButtonGroup.visible = false;
+				}
+				
+				
+			}
+			
+			private function onDeleteClick(event:MouseEvent):void	
+			{
+				dispatchEvent(new DataGridActionsEvent(DataGridActionsEvent.DELETE_RECORD_CLICK, true));
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<s:HGroup id="id_ButtonGroup" paddingLeft="0" paddingRight="0" paddingTop="0" paddingBottom="0" horizontalAlign="center" verticalAlign="middle">
+
+		<s:Button id="id_Delete" width="12" height="12" click="onDeleteClick(event)"
+				  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.gridButtons.removeBtn"
+				  buttonMode="true" toolTip="Delete"/>
+	</s:HGroup>
+</s:MXDataGridItemRenderer>

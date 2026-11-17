@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:itemEditors="com.adobe.Quivus.view.controls.custom.itemEditors.*" 
+		 xmlns:commons="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.*" 
+		 xmlns:validators="com.adobe.Quivus.utils.validators.*"
+		 creationComplete="cc()" 
+		 xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.itemEditors.SparkComboBoxItemEditor;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.controls.Label;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.events.DataGridEvent;
+			import mx.events.ValidationResultEvent;
+			
+			import spark.components.ComboBox;
+			import spark.components.TextInput;
+			
+			import valueObjects.InHouseLabDTO;
+			import valueObjects.LabDTO;
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			public function GridRowNumber(item:Object, iCol:int):String
+			{
+				var strRowNum:String = "";
+				
+				if (id_DataGrid.dataProvider)
+				{
+					var rowNum:int = id_DataGrid.dataProvider.getItemIndex(item) + 1;
+					strRowNum = String(rowNum);
+				}
+				
+				return strRowNum;
+				
+			}
+			
+			private var _hasGridChanged:Boolean;
+			private var _hasViewChanged:Boolean;
+			
+			[Bindable]
+			public var deleteColumnData:Object;
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			
+			private function cc():void
+			{
+				//addEventListener("writeDictationClick", writeDictationClickHandler, false, 0, true);
+				
+				id_DataGrid.addEventListener(DataGridActionsEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+				id_DataGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				//id_DataGrid.addEventListener(DataGridActionsEvent.WRITE_NOTES_CLICK, writeNotesClickHandler, false,0, true);
+				
+				if (!deleteColumnData)
+					deleteColumnData = {};
+				
+				deleteColumnData["noteDataFields"] = {subject: "NoteSubject", note: "Notes", header: "InHouseLabTestType.TestName"};
+				deleteColumnData["dictationDataField"] = "DictationID";
+				deleteColumnData["recordIDField"] = "PatientInHouseLabTestID";
+				deleteColumnData["section"] = QIPopUpManager.IN_HOUSE_LAB;
+			}
+			
+			private function editRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_LAB_IN ) )//Tahir Alvi - implement security check 
+				{
+					id_DataGrid.editable = true;
+					
+					var rowIndex:int = LabelDataGrid(event.currentTarget).selectedIndex;
+					
+					var itemToSetInEditableMode:IListItemRenderer = id_DataGrid.indexToItemRenderer(rowIndex);
+					
+					var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+					ev.columnIndex = 2;
+					ev.rowIndex = rowIndex;
+					ev.itemRenderer = itemToSetInEditableMode;
+					ev.dataField = "InHouseLabTestType.TestCode";
+					id_DataGrid.dispatchEvent(ev);
+				}
+			}
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_LAB_OUT ))//Tahir Alvi - implement security check
+				{
+					var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+					
+					var inHouseLabID:int = InHouseLabDTO(event.currentTarget.selectedItem).PatientInHouseLabTestID;
+					
+					if (inHouseLabID == 0)
+					{
+						model.inHouseLabDTOListByPatient.removeItemAt(curTar.selectedIndex);
+						if (model.inHouseLabDTOListByPatient.length <= 0)
+						{
+							_hasGridChanged = false;
+							//hasViewChanged = isGetEdited();
+						}
+					}
+					else
+					{
+						UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+						{
+							id_DataGrid.selectedItem.IsDeleted = true;
+							model.inHouseLabDTOListByPatient.filterFunction = filterDeletedItems;
+							model.inHouseLabDTOListByPatient.refresh();
+							hasViewChanged = _hasGridChanged = true;
+						});
+					}
+					
+					/* if (model.quickInputDTO.Physical.InHouseLabs.length <= 0)
+					{
+					_includeGridInLayout = false;
+					_includeGridInLayoutChanged = false;
+					} */
+					
+				}
+			}
+			private var _includeGridInLayout:Boolean;
+			private var _includeGridInLayoutChanged:Boolean = true;
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			
+			private function labsGridItemEditEndHandler(event:DataGridEvent):void
+			{
+				var inHouseLabID:int = InHouseLabDTO(event.currentTarget.selectedItem).PatientInHouseLabTestID;
+				
+				if (event.dataField == "InHouseLabTestType.TestCode" || event.dataField == "InHouseLabTestType.TestName")
+				{
+					var res:ValidationResultEvent;
+					var editor:ComboBox = SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor;
+					
+					if( editor.selectedItem )
+						
+						if (event.dataField == "InHouseLabTestType.TestCode")
+						{
+							comboValidator.error = "Invalid Test code";
+							res = comboValidator.validate(editor.selectedItem);		
+						}
+						else
+						{
+							comboValidator.error = "Invalid Test name";
+							res = comboValidator.validate(editor.selectedItem);
+						}
+					
+					if (res && !res.results)
+					{
+						event.itemRenderer.data.InHouseLabTestType = editor.selectedItem;
+						
+						if (inHouseLabID != 0)
+							event.itemRenderer.data.IsDirty = true;
+						
+						hasViewChanged = _hasGridChanged = true;
+					}
+					else
+					{
+						//event.itemRenderer.data.InHouseLabTestType = editor.previouslySelectedItem;
+						id_DataGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+					}
+				}
+					
+				else if (event.dataField == "TestResult")
+				{
+					//var editor:TextInput = TextInput(id_DataGrid.itemEditorInstance);
+					
+					if (inHouseLabID != 0)
+						event.itemRenderer.data.IsDirty = true;
+					
+					event.itemRenderer.data.TestResult = (id_DataGrid.itemEditorInstance as TextInput).text;
+					
+					
+					hasViewChanged = _hasGridChanged = true;
+				}
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				/* var mpiEvent : ManagePatientImmunizationEvent = new ManagePatientImmunizationEvent(  );
+				CairngormEventDispatcher.getInstance().dispatchEvent( mpiEvent ); */
+				if(model.inHouseLabDTOListByPatient!=null){	
+					model.inHouseLabDTOListByPatient.filterFunction=myFilter;
+					model.inHouseLabDTOListByPatient.refresh();
+				}
+			}
+			
+			private function myFilter(obj:*):Boolean
+			{
+				
+				if(model.vbFilter == Constants.BY_VISIT)
+				{
+					if(model.vbVisitId == obj.VisitID)
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+				
+				return true;
+				
+			}
+			
+			protected function id_DataGrid_clickHandler(event:MouseEvent):void
+			{
+				if(id_DataGrid.selectedItem && !id_DataGrid.selectedItem["IsRecordEditable"])
+				{
+					id_DataGrid.editable = false;
+					return;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<validators:ComboValidator id="comboValidator"   property="selectedItem"/>
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout />
+	</s:layout>
+	
+	
+	<s:Button label="Filter" click="button1_clickHandler(event)" visible="false" includeInLayout="false" id="id_applyFiler"/>
+	<components1:LabelDataGrid id="id_DataGrid" width="100%" useRollOver="false" height="100%"
+							  itemEditEnd="labsGridItemEditEndHandler(event);"
+							  dataProvider="{model.inHouseLabDTOListByPatient}" 
+							  rowCount="{id_DataGrid.dataProvider.length + 1}" verticalScrollPolicy="on"
+							  click="id_DataGrid_clickHandler(event)"
+							  maxHeight="150" >
+		<components1:columns>
+			<mx:DataGridColumn headerText="Sr.#" width="55" labelFunction="GridRowNumber" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Visit Date" headerRenderer="mx.controls.Label" wordWrap="true" dataField="VisitDate"  width="100" itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG" editable="false"/>
+			<mx:DataGridColumn headerText="Test Code" width="110" dataField="InHouseLabTestType.TestCode" editorDataField="editorText" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true">
+				<mx:itemEditor>
+					<fx:Component>	
+						<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.inHouseLabTestTypeDTOList}" labelField="TestCode" width="80"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Test Name" width="80" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="InHouseLabTestType.TestName" editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.inHouseLabTestTypeDTOList}" labelField="TestName" width="100%"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Result" dataField="TestResult" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" width="90" editable="true" editorDataField="text"/>
+			<mx:DataGridColumn headerText="Normal Range" width="130" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="InHouseLabTestType.TestRange" editable="false"/>
+			<!--<mx:DataGridColumn headerText="Attachment" width="80" dataField="ResultAttachment" editable="false" itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.physical.labs.AttachmentViewRenderer"/>-->
+			<commons:DataGridColumnEx width="85" headerText="" data="{deleteColumnData}" itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.VBRenderer" editable="false"/>
+		</components1:columns>
+	</components1:LabelDataGrid>
+	
+	
+</s:Group>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true">
+	
+	<fx:Declarations>
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YY" />
+	</fx:Declarations>
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="center" gap="1" paddingBottom="2" />
+	</s:layout>
+	<s:SkinnableContainer width="100%" skinClass="com.adobe.gazuntite.skins.viewBackground.skinnableContainers.VB_VisitDate_BG">
+		<s:layout>
+			<s:HorizontalLayout horizontalAlign="center" verticalAlign="middle" />
+		</s:layout>		
+		<s:Label text="{data.@Date}" textAlign="center" fontFamily="Calibri" fontSize="10" color="#ffffff"/>
+	</s:SkinnableContainer>	
+		
+		<s:VGroup width="100%">	
+			<s:HGroup width="100%">
+				<s:Label id="id_Name" text="Height: {data.@Name}" maxDisplayedLines="1" toolTip="Height" width="50%" fontFamily="Calibri" fontSize="11" color="#333333" />
+				<s:Label id="id_Status" text="Weight: {data.@Status}" textAlign="left" toolTip="Weight" width="50%" fontFamily="Calibri" fontSize="11" color="#333333"/>
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<s:Label id="id_Temp" text="Temp: {data.@Temperature}" textAlign="left" toolTip="Temprature" width="50%" fontFamily="Calibri" fontSize="11" color="#333333"/>
+				<s:Label id="id_Pulse" text="Pulse: {data.@Pulse}" textAlign="left" toolTip="Pulse" width="50%" fontFamily="Calibri" fontSize="11" color="#333333"/>
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<s:Label id="id_Respiration" text="Resp: {data.@Respiration}" textAlign="left" toolTip="Respiration" width="50%" fontFamily="Calibri" fontSize="11" color="#333333"/>
+				<s:Label id="id_Oxygen" text="Oxygen: {data.@Oxygen}" textAlign="left" toolTip="Oxygen" width="50%" fontFamily="Calibri" fontSize="11" color="#333333"/>
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<s:Label id="id_BPSys" text="BPSys: {data.@BPSys}" textAlign="left" toolTip="Systolic BP" width="50%" fontFamily="Calibri" fontSize="11" color="#333333"/>
+				<s:Label id="id_BPDys" text="BPDys: {data.@BPDys}" textAlign="left" toolTip="Diastolic BP" width="50%" fontFamily="Calibri" fontSize="11" color="#333333"/>
+			</s:HGroup>
+		</s:VGroup>
+		
+		
+		
+	<s:Line x="1" xTo="{this.width-20}">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#CCCCCC" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+	</s:Line>
+	
+	
+	
+</s:ItemRenderer>

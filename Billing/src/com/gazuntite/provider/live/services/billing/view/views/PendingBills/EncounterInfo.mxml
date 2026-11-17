@@ -1,0 +1,373 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:CollapsiblePanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:components="com.gazuntite.controls.extended.components.*"
+		 creationComplete="CC()"
+		 title="Encounter Info"
+		 width="100%"
+		 skinClass="com.gazuntite.controls.extended.skins.popUpCollapsiblePanelSkin" xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 >
+
+	<fx:Script>
+		<![CDATA[			
+			import com.gazuntite.common.dto.PlaceOfServiceTypeDTO;
+			import com.gazuntite.controls.extended.skins.popUpCollapsiblePanelSkin;
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.EncounterTypeDTO;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable]
+			public var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			/* [Bindable]
+			private var m_bIsSavedSuperBill:Boolean
+			
+			[Bindable]
+			public function get IsSavedSuperBill():Boolean
+			{
+				return m_bIsSavedSuperBill;
+			}			
+			
+			public function set IsSavedSuperBill(value:Boolean):void
+			{
+				m_bIsSavedSuperBill = value;
+			} */
+			
+			[Bindable]
+			private var m_sCheckNo:String
+			
+			[Bindable]
+			public function get CheckNo():String
+			{
+				return m_sCheckNo;
+			}			
+			
+			public function set CheckNo(value:String):void
+			{
+				m_sCheckNo = value;
+			}
+			
+			[Bindable]
+			private var m_sPaymentTypeId:String
+			
+			[Bindable]
+			public function get PaymentTypeId():String
+			{
+				return m_sPaymentTypeId;
+			}			
+			
+			public function set PaymentTypeId(value:String):void
+			{
+				m_sPaymentTypeId = value;
+			}
+			
+			[Bindable]
+			private var m_sPlaceOfServiceTypeId:String
+			
+			[Bindable]
+			public function get PlaceOfServiceTypeId():String
+			{
+				return m_sPlaceOfServiceTypeId;
+			}			
+			
+			public function set PlaceOfServiceTypeId(value:String):void
+			{
+				m_sPlaceOfServiceTypeId = value;
+			}
+			
+			[Bindable]
+			private var m_sTypeOfServiceTypeId:String
+			
+			[Bindable]
+			public function get TypeOfServiceTypeId():String
+			{
+				return m_sTypeOfServiceTypeId;
+			}			
+			
+			public function set TypeOfServiceTypeId(value:String):void
+			{
+				m_sTypeOfServiceTypeId = value;
+			}
+			
+			[Bindable]
+			private var m_sServiceDate:String
+			
+			[Bindable]
+			public function get ServiceDate():String
+			{
+				return m_sServiceDate;
+			}			
+			
+			public function set ServiceDate(value:String):void
+			{
+				m_sServiceDate = value;
+			}
+			
+			[Bindable]
+			private var m_sTotalAmount:String
+			
+			[Bindable]
+			public function get TotalAmount():String
+			{
+				return m_sTotalAmount;
+			}			
+			
+			public function set TotalAmount(value:String):void
+			{
+				m_sTotalAmount = value;
+			}
+			
+			[Bindable]
+			private var m_sPrimaryProvider:String
+			
+			[Bindable]
+			public function get PrimaryProvider():String
+			{
+				return m_sPrimaryProvider;
+			}			
+			
+			public function set PrimaryProvider(value:String):void
+			{
+				m_sPrimaryProvider = value;
+			}
+			
+			[Bindable]
+			private var m_sBillingProvider:String
+			
+			[Bindable]
+			public function get BillingProvider():String
+			{
+				return m_sBillingProvider;
+			}			
+			
+			public function set BillingProvider(value:String):void
+			{
+				m_sBillingProvider = value;
+			}
+			
+
+			protected function rdoPaymentMode_changeHandler(event:MouseEvent):void
+			{
+				var rdo:RadioButton = event.currentTarget as RadioButton
+				model.ModeOfPayment = rdo.label;				
+				if(rdo.id == "id_cash")
+					model.CurrentPaymentTypeId = "2";
+				else if(rdo.id == "id_check")
+					model.CurrentPaymentTypeId = "1";
+				else if(rdo.id == "id_CC")
+					model.CurrentPaymentTypeId = "3";				
+					
+			}
+
+
+			protected function id_Copay_focusOutHandler(event:FocusEvent):void
+			{
+				
+				if(UtilityFunctions.IsNullOrEmpty(id_Copay.text) == true )
+				{ 
+					id_Copay.text = model.ReceivedCopay.toString(); 
+					
+				}
+				
+				if(id_Copay.text.indexOf("%") > -1)
+				{
+					model.IsPercentCopay = true;
+					model.Copay = parseInt(id_Copay.text.replace("%",""));					
+					model.DisplayCopay = id_Copay.text;
+				}
+				else
+				{
+					model.IsPercentCopay = false;
+					model.Copay = parseInt(id_Copay.text);					
+					model.DisplayCopay = id_Copay.text;
+				}				
+				
+				model.CalculateSuperBill();
+			}
+			
+			private function id_POSTypes_KeyUpHandler(event:KeyboardEvent):void
+			{
+				/*if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+				{
+					var searchString:String = id_POSTypes.textInput.text;
+					if(searchString.length > 0)
+					{
+						var posEvent : LoadPlaceOfServiceTypesEvent= new LoadPlaceOfServiceTypesEvent(searchString);
+						CairngormEventDispatcher.getInstance().dispatchEvent( posEvent );
+					}					
+				}*/
+			}
+			private function SetService(event:IndexChangeEvent):void
+			{
+				var cmb:LabelComboBox = event.currentTarget as LabelComboBox;
+				if(cmb.id == "id_POSTypes" && id_POSTypes.selectedIndex > -1)
+				{
+					model.CurrentPOSCode = (id_POSTypes.selectedItem as PlaceOfServiceTypeDTO).POSCode;
+					model.CurrentPOSTypeID = (id_POSTypes.selectedItem as PlaceOfServiceTypeDTO).ServiceTypeID;
+				}
+				
+				if(cmb.id == "id_TOSTypes" && id_TOSTypes.selectedIndex > -1)
+					model.CurrentTOSID = (id_TOSTypes.selectedItem as EncounterTypeDTO).EncounterTypeID;
+			}	
+
+			protected function SetFocus(event:FocusEvent):void
+			{
+				var cmb:LabelComboBox = event.currentTarget as LabelComboBox;
+				if(cmb.id == "id_POSTypes" && id_POSTypes.selectedIndex > -1)
+				{
+					model.CurrentPOSCode = (id_POSTypes.selectedItem as PlaceOfServiceTypeDTO).POSCode;
+					model.CurrentPOSTypeID = (id_POSTypes.selectedItem as PlaceOfServiceTypeDTO).ServiceTypeID;
+				}
+				
+				if(cmb.id == "id_TOSTypes" && id_TOSTypes.selectedIndex > -1)
+					model.CurrentTOSID = (id_TOSTypes.selectedItem as EncounterTypeDTO).EncounterTypeID;
+			}
+
+			public var LastChildTabIndex:int = 0; 
+			private function SetTabIndexes():void
+			{
+				var incrementer:int = 0;
+				id_POSTypes.tabIndex = tabIndex + (++incrementer);
+				id_TOSTypes.tabIndex = tabIndex + (++incrementer);
+				id_Copay.tabIndex = tabIndex + (++incrementer);
+				id_cash.tabIndex = tabIndex + (++incrementer);
+				id_check.tabIndex = tabIndex + (++incrementer);
+				id_CheckNo.tabIndex = tabIndex + (++incrementer);
+				id_CC.tabIndex = tabIndex + (++incrementer);
+				
+				LastChildTabIndex = ++incrementer;
+			}	
+			protected function CC():void
+			{
+				
+				SetTabIndexes();
+				model.CheckNo = CheckNo;
+				model.CurrentPaymentTypeId = PaymentTypeId;
+				
+				if(model.CurrentPaymentTypeId == "1")
+				{
+					id_CheckNo.text = CheckNo;
+					id_check.selected = true;
+					model.ModeOfPayment = id_check.label;
+				}
+				else if(model.CurrentPaymentTypeId == "2")
+				{
+					id_cash.selected = true;
+					model.ModeOfPayment = id_cash.label;
+				}
+				else if(model.CurrentPaymentTypeId == "3")
+				{
+					id_CC.selected = true;
+					model.ModeOfPayment = id_CC.label;
+				}				
+				
+				if(TypeOfServiceTypeId != "0")
+				{
+					for(var i:int = 0;i < model.TypeOfServiceList.length; i++)
+					{
+						var tosDTO:EncounterTypeDTO = model.TypeOfServiceList[i] as EncounterTypeDTO;
+						
+						if(tosDTO.EncounterTypeID == TypeOfServiceTypeId)
+						{
+							model.CurrentTOSID = TypeOfServiceTypeId
+							id_TOSTypes.selectedItem = tosDTO;
+							break;
+						}
+					}
+				}
+				
+				if(PlaceOfServiceTypeId != "0")
+				{
+					model.CurrentPOSTypeID = PlaceOfServiceTypeId;					
+					if(model.PlaceOfServiceTypeList != null && model.PlaceOfServiceTypeList.length > 0)
+					{						
+						for(var j:int = 0;j < model.PlaceOfServiceTypeList.length; j++)
+						{
+							var posDTO:PlaceOfServiceTypeDTO = model.PlaceOfServiceTypeList[j] as PlaceOfServiceTypeDTO;
+							
+							if(posDTO.ServiceTypeID == PlaceOfServiceTypeId)
+							{								
+								id_POSTypes.selectedItem = posDTO;
+								break;
+							}
+						}
+					}
+				}				
+			}			
+
+
+			protected function id_CheckNo_focusOutHandler(event:FocusEvent):void
+			{
+				if(id_check.selected == true && UtilityFunctions.IsNullOrEmpty(id_CheckNo.text) == false)
+				{
+					model.CheckNo = id_CheckNo.text;
+				}
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<!--<s:TileGroup width="100%" >
+	<s:Label text="Encounter Info" fontWeight="bold"/>
+	</s:TileGroup>-->
+	<components:layout>
+		<s:VerticalLayout paddingLeft="8" paddingRight="8" paddingTop="5" paddingBottom="5" />
+	</components:layout>
+	<!--<s:HGroup paddingTop="5" paddingLeft="5">		
+	<s:Label text="Encounter Info" fontFamily="Calibri Bold" />
+	</s:HGroup>-->
+	<s:HGroup width="100%" >	
+		<s:VGroup width="80%" gap="2" >
+			<s:HGroup width="100%" verticalAlign="middle" >
+				<s:Label text="Service Date:"  color="#666666" fontFamily="Calibri"  fontSize="11" width="100"/>
+				<s:Label text="{ServiceDate}" width="75"  fontFamily="Calibri"  fontSize="11" color="#333333"/>
+				<components1:LabelComboBox id="id_POSTypes"  labelField="POSDescription" width="125" dataProvider="{model.PlaceOfServiceTypeList}"
+										  keyUp="id_POSTypes_KeyUpHandler(event)"  change="SetService(event)" focusOut="SetFocus(event)" 
+										  prompt="Place of Service" 									  
+										  />
+				<components1:LabelComboBox id="id_TOSTypes"  labelField="EncounterTypeName" width="125" dataProvider="{model.TypeOfServiceList}"	
+										  change="SetService(event)" focusOut="SetFocus(event)"
+										  prompt="Type of Service" 
+										  />
+			</s:HGroup>
+			<s:HGroup width="100%" verticalAlign="middle">		
+				<s:Label text="Copay:" color="#666666" fontFamily="Calibri"  fontSize="11"  width="100"/>
+				<components1:LabelTextInput id="id_Copay" restrict="[0-9]\." text="{model.DisplayCopay}" width="75" focusOut="id_Copay_focusOutHandler(event)"  color="#333333" fontFamily="Calibri"  fontSize="11"
+							 toolTip="{ model.ReceivedCopay}"
+							  />
+				
+				<s:Label text="Mode of Payment" color="#666666" fontFamily="Calibri"  fontSize="11" width="85"/>
+				<s:HGroup verticalAlign="middle" width="100%">
+					<s:RadioButton id="id_cash" label="Cash"  click="rdoPaymentMode_changeHandler(event)" color="#666666" fontFamily="Calibri"  fontSize="11" />
+					<s:RadioButton id="id_check" label="Check"  click="rdoPaymentMode_changeHandler(event)" color="#666666" fontFamily="Calibri"  fontSize="11" />
+					<s:RadioButton id="id_CC" label="Credit Card"  click="rdoPaymentMode_changeHandler(event)" color="#666666" fontFamily="Calibri"  fontSize="11" />
+				</s:HGroup>
+			</s:HGroup>
+			<s:HGroup width="100%" verticalAlign="middle">
+				
+				<s:Label text="Primary Provider:"  color="#666666" fontFamily="Calibri"  fontSize="11" width="100"/>
+				<s:Label text="{PrimaryProvider}" width="75" color="#333333" fontFamily="Calibri"  fontSize="11"/>
+				<s:Label text="Billing Provider:" width="85" color="#666666" fontFamily="Calibri"  fontSize="11"/>
+				<s:Label text="{BillingProvider}" width="85" color="#333333" fontFamily="Calibri"  fontSize="11"/>
+				<s:HGroup width="100%">
+					
+					<components1:LabelTextInput  height="19" id="id_CheckNo" prompt="Check #" width="85" visible="{id_check.selected}" 
+												focusOut="id_CheckNo_focusOutHandler(event)" includeInLayout="{id_CheckNo.visible}" 
+												maxChars="50"												
+												/>
+					
+				</s:HGroup>
+			</s:HGroup>
+		</s:VGroup> 
+		<s:VGroup width="20%" height="100%" verticalAlign="middle">
+			<s:Label width="100%" text="{model.TotalCharges}" color="#111111" fontFamily="Calibri Bold"  fontSize="17" textAlign="center"/>
+			<s:Label width="100%" text="Total Amount"  textAlign="center" fontFamily="Calibri Bold" fontSize="17" color="#666666"/>
+		</s:VGroup>
+	</s:HGroup>
+</components1:CollapsiblePanel>

@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   xmlns:notes="com.adobe.Quivus.view.controls.custom.patientExamView.notes.*"
+					   xmlns:components="com.zigron.controls.extended.components.*" 
+					   
+					   creationComplete="popupgroup1_creationCompleteHandler(event)" xmlns:components1="com.gazuntite.controls.extended.components.*"
+					   >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.quivus.skins.notesBodyOrangeLargeSkin;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.events.MoveEvent;
+			import mx.managers.PopUpManager;
+			
+			import valueObjects.ModuleNoteDTO;
+			import valueObjects.RecentVitalDTO;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			public var selectedItem:RecentVitalDTO;
+			//M
+			private var vitalId:int;
+			
+			///Author Mansoor
+			///Date 18 Mar 2011
+			///get Weight			
+			public function get VitalId():int
+			{
+				return vitalId;
+			}
+			
+			///Author Mansoor
+			///Date 18 Mar 2011			
+			public function set VitalId(value:int):void
+			{
+				vitalId = value;
+			} 
+			
+			protected function popupgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				/* id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					removePopup();
+					event.stopImmediatePropagation();
+				}); */
+				
+				id_header.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					event.stopImmediatePropagation();
+				});
+				
+				id_importVitalsGrid.dataProvider = model.patientPreviousVitalsList;
+				//id_importVitalsGrid.dataProvider = model.vitalDTOListByPatient;
+				
+//				/id_importVitalsGrid.addEventListener("importVitalRecordClick", importVitalRecordClickHandler, false, 0, true);
+			}
+
+			/*private function importVitalRecordClickHandler(event:Event):void
+			{
+				var grid:DataGrid = DataGrid(event.currentTarget);
+				
+				selectedItem = RecentVitalDTO(grid.selectedItem);
+			}*/
+			
+			public function displayRowNum(oItem:Object,iCol:int):String
+			{
+				var rowNumber:int = id_importVitalsGrid.dataProvider.getItemIndex(oItem) + 1;
+				return String(rowNumber);
+			}
+
+
+
+			protected function id_header_creationCompleteHandler(event:FlexEvent):void
+			{
+				/* id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					this.removePopup();
+				
+				}); */
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace extended "com.adobe.Quivus.view.controls.extended.*";
+		@namespace components "com.zigron.controls.extended.components.*";
+		
+		.dataGridStyleAllergies { 
+			headerColors: #B2B3A3, #B2B3A3; 
+			backgroundAlpha: 1; 
+			backgroundColor: #B2B3A3; 
+			alternatingItemColors: #ffffff, #E8EDF1; 
+			horizontalGridLines: true;
+			verticalGridLines: true;
+			letterSpacing: 0; 
+			horizontalGridLineColor: #cccccc; 
+			verticalGridLineColor: #666666;
+			headerBackgroundColor: #B2B3A3;
+			
+			rollOverColor: #eeeeee; 
+			
+			borderThickness: 0; 
+			border-style:solid; 
+			selectionColor: #333333; 
+			color: #333333;  
+			fontSize: 11; 
+			text-align:left; 
+			padding-left:11; 
+			/* fontWeight: normal;   */
+			headerStyleName: "MyDataGridStyleAllergiesHeader";  
+		} 
+		
+		.MyDataGridStyleAllergiesHeader { 
+			headerColors: #B2B3A3, #B2B3A3; 
+			color: #333333;
+			fontSize: 12;  		
+			fontFamily: Verdana;	
+			fontWeight: bold; 
+		}  
+	
+	</fx:Style>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<components:layout>
+		<s:VerticalLayout gap="0" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" verticalAlign="middle" />
+	</components:layout>
+
+	
+	<notes:ImportVitalsHeader id="id_header" width="100%" height="25" HeadingLable="Import Previous Vitals"  
+							  CenterLable="IMPORT" HideSaveButton="true"  creationComplete="id_header_creationCompleteHandler(event)"/>
+	
+	
+	<s:Group width="100%">
+		<s:layout>
+			<s:VerticalLayout gap="-2" paddingBottom="5" paddingLeft="0" paddingRight="0" paddingTop="-4" />
+		</s:layout>
+		
+		<s:SkinnableContainer height="100" width="100%" skinClass="com.adobe.quivus.skins.notesBodyOrangeLargeSkin">
+			
+			<s:layout>
+				<s:VerticalLayout gap="-1" paddingBottom="5" paddingLeft="0" paddingRight="0" paddingTop="0" />
+			</s:layout>	
+			<mx:DataGrid id="id_importVitalsGrid" width="100%"  height="95"
+						 dataProvider="{model.patientPreviousVitalsList}"
+						 visible="{(id_importVitalsGrid.dataProvider.length > 0)}"  includeInLayout="{id_importVitalsGrid.visible}"
+						 styleName="dataGridStyle" rowHeight="22"				  
+						 headerStyleName="MyDataGridStyleHeader"
+						 verticalGridLines="false"
+						 verticalScrollBarStyleName="VScrollBar"
+						 horizontalScrollPolicy="off"						 
+						 >
+				<mx:columns>
+					<mx:DataGridColumn headerText="Sr.#" labelFunction="displayRowNum"/>
+					<mx:DataGridColumn headerText="Visit Date" dataField="VisitDate" itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG"/>
+					<mx:DataGridColumn headerText="Visit Type" dataField="VisitEncounterTypeName"/>
+					<mx:DataGridColumn>
+						<mx:itemRenderer>
+							<fx:Component>
+								<s:MXItemRenderer>
+									<s:Button label="Load" click="{dispatchEvent(new Event('importVitalRecordClick', true));}" buttonMode="true" useHandCursor="true"
+											  skinClass="com.adobe.quivus.skins.chrome.buttonSkins.ImportVisitLoadBtn" verticalCenter="0" horizontalCenter="0"/>
+								</s:MXItemRenderer>							
+							</fx:Component>
+						</mx:itemRenderer>
+					</mx:DataGridColumn>
+				</mx:columns>
+			</mx:DataGrid>
+			
+			<s:HGroup width="100%" horizontalAlign="center" paddingBottom="5">		
+				<s:Label id="id_lbl" text="No Records Found" color="#FFFFFF" visible="{(!id_importVitalsGrid.dataProvider.length)}"  includeInLayout="{id_lbl.visible}" fontFamily="Calibri" fontSize="14" width="100%" textAlign="center"/>
+			</s:HGroup>
+			
+		</s:SkinnableContainer>
+		
+	</s:Group>
+	
+</components1:PopupGroup>

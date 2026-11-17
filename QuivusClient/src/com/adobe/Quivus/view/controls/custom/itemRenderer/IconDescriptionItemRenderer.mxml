@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true" 
+				creationComplete="itemrenderer1_creationCompleteHandler(event)"
+				width="100%" >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.utils.AppUtils;
+			import mx.binding.utils.BindingUtils;
+			import mx.controls.Image;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			import mx.graphics.codec.PNGEncoder;
+			import mx.utils.Base64Decoder;
+			
+			[Bindable]
+			private var IconContent:DisplayObject;
+			
+			protected function itemrenderer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				try
+				{
+					 var loader:Loader = new Loader();  
+					 
+					 loader.contentLoaderInfo.addEventListener(Event.COMPLETE, function(event:Event):void  
+					 {  
+					       event.currentTarget.removeEventListener(event.type, arguments.callee);  
+						   IconContent = loader.content;  
+					 });  
+					 loader.loadBytes( AppUtils.getByteArray(data.icon) );
+					
+				}
+				catch(e:Error)
+				{
+					trace( "Error loading icon in item renderer ", e.message );
+				}
+			}
+			
+			protected function label1_mouseOverHandler(event:MouseEvent):void
+			{
+				id_lbl.setStyle("color", 0x111111);
+				id_des.setStyle("color", 0x333333);
+				id_bgRectOver.visible = true;
+				//id_bgRectOver.width = 168;
+				id_bgRect.visible = false;
+			}
+
+			protected function id_lbl_mouseOutHandler(event:MouseEvent):void
+			{
+				id_lbl.setStyle("color", 0xffffff);
+				id_des.setStyle("color", 0xCCCCCC);
+				id_bgRect.visible = true;
+				id_bgRectOver.visible = false;
+			}
+
+		]]>
+	</fx:Script>
+<!--	<s:Rect id="id_bgRect" visible="false" height="100%" width = "148">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#FFD220" ratio="0"/>				
+				<s:GradientEntry alpha="1.0" color="#FFA207" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>-->
+		<s:Rect id="id_bgRectOver" visible="false" height="30" width = "168">
+			<s:fill>
+				<s:LinearGradient rotation="270">
+					<s:GradientEntry alpha="1.0" color="#6E84A1" ratio="0"/>
+					<s:GradientEntry alpha="1.0" color="#7F94B0" ratio="0.45098039215686275"/>
+					<s:GradientEntry alpha="1.0" color="#899BB2" ratio="0.45098039215686275"/>
+					<s:GradientEntry alpha="1.0" color="#B4BFCD" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+			<s:filters>
+				<s:DropShadowFilter alpha="1" blurX="0" blurY="0" color="#676767" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1" angle="90"/>				
+			</s:filters>
+		</s:Rect>
+	
+	<s:Rect id="id_bgRect" visible="true" height="30" width = "168">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#000000" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#000000" ratio="0.47058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#262626" ratio="0.47058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#474747" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="1" angle="90" blurX="0" blurY="0" color="#676767" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+
+	<s:Group width="100%" toolTip="{data.description}" buttonMode="true" useHandCursor="true" 
+			 mouseOut="id_lbl_mouseOutHandler(event)" mouseOver="label1_mouseOverHandler(event)">
+		
+		<s:layout>
+			<s:VerticalLayout horizontalAlign="center" 
+							  paddingTop="2" paddingBottom="0" paddingLeft="5" paddingRight="5" />
+		</s:layout>
+	<!--<s:SkinnableContainer skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.QLItemRendererSkin" width="100%">
+		<s:layout>
+			<s:HorizontalLayout />
+		</s:layout>-->
+	<s:HGroup width="100%" >
+		
+		<mx:Image id="imgLogo" width="22" height="22" source="{IconContent}" />
+		<s:VGroup gap="1" verticalAlign="middle" paddingTop="1">
+			<s:Label id="id_lbl" fontFamily="Calibri Bold" fontSize="11" text="{data.label}"/>
+			<s:Label id="id_des" color="#CCCCCC" fontFamily="Calibri" fontSize="10" text="{data.description}"/>
+		</s:VGroup>
+
+	</s:HGroup>
+	<!--</s:SkinnableContainer>-->
+		
+	<!--<mx:HRule width="99%" strokeWidth="1" strokeColor="0xbbbbbb" />-->
+	
+	</s:Group>
+</s:ItemRenderer>

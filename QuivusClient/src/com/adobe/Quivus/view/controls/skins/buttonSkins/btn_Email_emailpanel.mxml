@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:flm="http://ns.adobe.com/flame/2008">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+	</s:states>
+	<s:Rect height="52" radiusX="2.99979" radiusY="2.99979" width="48" x="0" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="270" scaleX="52" x="24" y="52">
+				<s:GradientEntry color="#494C69" ratio="0" color.over="#5A64AD" alpha.over="1.0"/>
+				<s:GradientEntry color="#0C112D" ratio="0.25"/>
+				<s:GradientEntry color="#494C69" ratio="1" color.over="#5A64AD" alpha.over="1.0"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<s:RichText ai:aa="2" color="#FFFFFF" columnCount="1" fontSize="10" d:id="6" kerning="on" tabStops="S36" text="SEND" whiteSpaceCollapse="preserve" x="13" y="22" fontFamily="Calibri Bold" />
+</s:Skin>

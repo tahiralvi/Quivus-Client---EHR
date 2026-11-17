@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:notes="com.adobe.Quivus.view.controls.custom.patientExamView.notes.*" xmlns:components="com.zigron.controls.extended.components.*" xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.view.controls.custom.DictationPopup;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.dictation.QIDictationManager;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.QIInnerSpeakerBtn;
+			
+			import spark.events.TextOperationEvent;
+			
+			import valueObjects.MedicalHistoryDTO;
+			import valueObjects.ModuleDictationDTO;
+			
+			private var m_oNotesDTO:MedicalHistoryDTO;
+			private var m_sNotesText:String = "";
+			
+			private var m_bHasChange:Boolean;
+			
+			//Ayesha: May 12 2011
+			private var dictationID:String;
+			[Bindable]
+			public function get hasChange():Boolean
+			{
+				return m_bHasChange;
+			}
+			
+			public function set hasChange(value:Boolean):void
+			{
+				m_bHasChange = value;
+			}
+			
+			[Bindable]
+			public function get NotesText():String
+			{
+				return m_sNotesText;
+			}
+
+			public function set NotesText(value:String):void
+			{
+				m_sNotesText = value;
+			}
+
+			[Bindable]
+			public function get medicalHistoryDto():MedicalHistoryDTO
+			{
+				return m_oNotesDTO;
+			}
+
+			public function set medicalHistoryDto(value:MedicalHistoryDTO):void
+			{
+				m_oNotesDTO = value;
+				if( value )
+					id_TextArea.text = value.MedicalHistoryNote;
+			}
+
+
+			/**
+			 * Ayesha: 12 May 2011
+			 * */
+			public function registerVoiceHandler():void
+			{
+				//id_BoxHeader.id_VoiceBtn.addEventListener(MouseEvent.CLICK, voiceBtnClickHandler, false, 0, true);
+			}
+			private function cc():void
+			{
+				registerVoiceHandler();
+				
+				//to change icon, if dictation exists..
+				if (medicalHistoryDto && medicalHistoryDto.DictationID && medicalHistoryDto.DictationID != "00000000-0000-0000-0000-000000000000")
+				{
+					id_BoxHeader.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+				}
+				
+				
+			}
+			
+			protected function textarea1_changeHandler(event:TextOperationEvent):void
+			{
+				if( medicalHistoryDto )
+					medicalHistoryDto.MedicalHistoryNote = id_TextArea.text;
+				
+					NotesText = id_TextArea.text;
+					
+					hasChange = true;
+					
+					if( NotesText.length > 0 )
+						dispatchEvent( new Event("ICD_Change", true, true ) );
+			}
+
+
+			protected function id_ClearBtn_clickHandler(event:MouseEvent):void
+			{
+				id_TextArea.text = "";
+				id_TextArea.setFocus();
+				if( medicalHistoryDto )
+					medicalHistoryDto.MedicalHistoryNote = "";
+				dispatchEvent(new Event('clearNotesEvent', true, true));
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<!--<s:layout>
+		<s:VerticalLayout gap="0" />
+	</s:layout>-->
+	<!--<s:BorderContainer id="id_notesBorder" borderColor="#666666" backgroundColor="#666666" borderWeight="4" borderAlpha="1" backgroundAlpha="1" width="100%" height="125">-->
+ 
+	
+	<s:SkinnableContainer id="id_notesBorder" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.QInotesBG" width="100%" height="117">
+		
+	
+		<s:layout>
+			<s:VerticalLayout gap="1" paddingTop="-1" paddingLeft="1" paddingRight="1" paddingBottom="2" />
+		</s:layout>
+	
+	<notes:NotesBoxHeader id="id_BoxHeader" width="100%" height="23" />
+		<s:SkinnableContainer width="100%" height="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.QInotesBG" >
+			<s:layout>
+				<s:VerticalLayout gap="-1" horizontalAlign="right" paddingLeft="2" paddingRight="2" paddingBottom="2" paddingTop="2"  />
+			</s:layout>
+			
+		<components1:LabelTextArea id="id_TextArea" width="100%" height="79" fontFamily="Calibri" change="textarea1_changeHandler(event)" text="{NotesText}" maxChars="1000"/>
+			
+			<s:HGroup width="100%" horizontalAlign="right" paddingTop="0">				
+			<s:Button id="id_ClearBtn" label="C" click="id_ClearBtn_clickHandler(event)" right="2" bottom="2" 
+					  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.ClearBtn" buttonMode="true" useHandCursor="true" toolTip="Clear"  />
+			</s:HGroup>
+		</s:SkinnableContainer>
+	</s:SkinnableContainer>
+ 
+	
+</s:Group>

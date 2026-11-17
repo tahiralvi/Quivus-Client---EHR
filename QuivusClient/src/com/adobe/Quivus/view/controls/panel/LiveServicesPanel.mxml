@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:SlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+					  xmlns:components="com.adobe.Quivus.view.controls.extended.components.*" 
+					  xmlns:panels="com.zigron.provider.services.view.panels.*"		
+					  xmlns:components1="com.gazuntite.controls.extended.components.*"
+					  QSViewStateChange="slideoutpanel1_QSViewStateChangeHandler(event)"
+					  creationComplete="Init(event)" xmlns:panels1="com.gazuntite.provider.services.view.panels.*" 
+					  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.provider.live.services.billing.view.Billing;
+			import com.gazuntite.provider.live.services.documentMgmt.view.document.DocumentView;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Text;
+			import mx.events.FlexEvent;
+			
+			import spark.resize.ResizeManager;
+			import spark.resize.verticalResizeHandle;
+			
+			import valueObjects.UserTypeDTO;
+			
+			private var _userID:int;
+			private var _clinicBranchID:int;
+			[Bindable]
+			public function get clinicBranchID():int
+			{
+				return _clinicBranchID;
+			}
+			
+			public function set clinicBranchID(value:int):void
+			{
+				_clinicBranchID = value;
+			}
+			
+			[Bindable]
+			public function get userID():int
+			{
+				return _userID;
+			}
+			
+			public function set userID(value:int):void
+			{
+				_userID = value;
+			}
+			
+			
+			
+			protected function Init(event:FlexEvent):void
+			{
+				id_headerControls.id_slideoutBtn.addEventListener(MouseEvent.CLICK, ToggleSlideOut_clickHandler);
+				
+				
+				var usertype_dto:UserTypeDTO = new UserTypeDTO();
+				
+				
+				var userTypeDTO:XML = <OwnerUserType />
+				userTypeDTO.IsClinicUser 	= usertype_dto.IsClinicUser?"true":"false";
+				userTypeDTO.IsProvider 		= usertype_dto.IsProvider?"true":"false";
+				userTypeDTO.UserTypeId 		= usertype_dto.UserTypeId;
+				userTypeDTO.UserTypeName 	= usertype_dto.UserTypeName;
+				
+				id_LiveServicesView.userTypeDTO = userTypeDTO;
+				
+			}
+
+			public function ClearUIOnLogout():void
+			{
+				ExpandedView = false;
+				id_LiveServicesView.RemoveCurrentOpenView();
+			}
+			
+			protected function ToggleSlideOut_clickHandler(event:MouseEvent):void
+			{
+				this.ToggleSlideOut();
+				event.stopImmediatePropagation();
+			}
+			
+			protected function slideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if (id_headerControls)
+					
+					if(this.ExpandedView)
+					{
+						id_headerControls.id_expandBtn.selected = true;
+						id_headerControls.id_HeaderLabel.text = id_headerControls.id_HeaderLabel.text.toUpperCase();
+						
+					}
+						
+					else
+					{
+						if(id_LiveServicesView.currentOpenView is DocumentView)
+						{    
+							(id_LiveServicesView.currentOpenView as DocumentView).removeAllPopUp();
+							id_headerControls.id_expandBtn.selected = false;
+							id_headerControls.id_HeaderLabel.text = UtilityFunctions.TitleCase(id_headerControls.id_HeaderLabel.text);
+						}
+						
+						if(id_LiveServicesView.currentOpenView is Billing)
+						{
+							(id_LiveServicesView.currentOpenView as Billing).removePopUp();
+						}
+					}
+				
+				
+				
+			}
+
+		]]>
+	</fx:Script>
+					  
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+		
+	<custom:HeaderContents>
+		<!--<s:BorderContainer id="id_header" width="{ChromeUtil.topLevelMainContainer.width - 13}" height="26"  cornerRadius="4" backgroundColor="#F46702" borderAlpha="0" backgroundAlpha="1">-->
+		<s:SkinnableContainer id="id_header" width="100%" height="26" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.LiveServicesHeaderSkin">
+	
+			<s:layout>
+				<s:HorizontalLayout horizontalAlign="left" paddingLeft="0" verticalAlign="middle" />
+			</s:layout>
+			
+			
+			
+			<custom:liveServicesControls id="id_headerControls" width="100%" sectionLabel="{id_LiveServicesView.sectionLabel}"  />
+		</s:SkinnableContainer>			
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		<s:BorderContainer id="id_headerslide" width="{ChromeUtil.topLevelMainContainer.width - 13}" height="26"  cornerRadius="4" backgroundColor="#F46702" borderAlpha="0" backgroundAlpha="1">
+			
+			<s:layout>
+				<s:HorizontalLayout horizontalAlign="left" paddingLeft="10" verticalAlign="middle" />
+			</s:layout>	
+			<s:Label textAlign="left" color="#000000" fontFamily="Calibri Bold" fontSize="12" text="GAZUNTITE LIVE PROVIDER SERVICE" />		
+		</s:BorderContainer>
+		
+	</custom:SlideHeaderContents>
+	<custom:Contents>
+		<s:HGroup width="100%" paddingTop="-5">
+			
+		
+		<panels1:LiveServicesView id="id_LiveServicesView" width="100%" height="100%"  userID="{userID}" clinicBranchID="{clinicBranchID}"  />
+		</s:HGroup>
+	
+	</custom:Contents>
+	
+	
+	
+</custom:SlideOutPanel>

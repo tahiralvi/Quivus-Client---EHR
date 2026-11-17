@@ -1,0 +1,478 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  xmlns:common="com.gazuntite.provider.live.services.billing.view.common.*" 
+		  xmlns:components="com.gazuntite.controls.extended.components.*" 
+		  xmlns:components1="com.gazuntite.provider.live.services.billing.view.views.report.components.*"
+		  creationComplete="CC(event)"
+		  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.dto.InsOrganizationDTO;
+			import com.gazuntite.common.util.ValidationUtils;
+			import com.gazuntite.common.util.xml.XmlUtils;
+			import com.gazuntite.controls.extended.components.LabelComboBox;
+			import com.gazuntite.provider.live.services.billing.dto.report.PaymentTransactionDTO;
+			import com.gazuntite.provider.live.services.billing.dto.report.PaymentTransactionSearchCriteriaDTO;
+			import com.gazuntite.provider.live.services.billing.event.BillingEventString;
+			import com.gazuntite.provider.live.services.billing.event.report.ERAReportSetupEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.util.BillingConstants;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			
+			[Bindable] 
+			private var SearchTypes:ArrayCollection = new ArrayCollection(["Insurance","Provider Name","Payee NPI","Payee Tax ID","Payee CMS Plan ID","Import Date","Check/EFT Issue Date",
+				"Check/EFT Number","Check/EFT Amount","Check/EFT Type","Claim Number","Patient","ICN","VisitDate"]);
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			protected function CC(event:FlexEvent):void
+			{
+				addEventListeners();
+				id_FilterBar_RefreshViewHandler(null);
+			}
+			
+			public function addEventListeners():void
+			{
+				id_FilterBar.id_FieldsCmbo.addEventListener(ListEvent.CHANGE,searchTypeChanged);
+				id_FilterBar.id_btnSearch.addEventListener(MouseEvent.CLICK, OnSearchClick);
+				//id_FilterBar.id_SearchTextInput.addEventListener(KeyboardEvent.KEY_UP, OnSearchKeyUp);
+				id_FilterBar.id_SearchTextInput.addEventListener(KeyboardEvent.KEY_DOWN, OnSearchKeyDown);				
+				id_FilterBar.addEventListener( BillingEventString.GOTO_FIRST_PAGE , 	switchPageForPendingBills );
+				id_FilterBar.addEventListener( BillingEventString.GOTO_LAST_PAGE , 		switchPageForPendingBills );
+				id_FilterBar.addEventListener( BillingEventString.GOTO_NEXT_PAGE , 		switchPageForPendingBills );
+				id_FilterBar.addEventListener( BillingEventString.GOTO_PREVIOUS_PAGE ,  switchPageForPendingBills );
+				id_FilterBar.addEventListener( BillingEventString.REFRESH_VIEW , 		id_FilterBar_RefreshViewHandler);
+			}
+			
+			protected function OnSearchClick(MouseEvent:Event):void
+			{
+				searchType = 0;
+				searchDTO = null;
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == -1)
+				{
+					Alert.show("Please select search type", "Search Type Not Selected",4,FlexGlobals.topLevelApplication.mainContainer);					
+					return;
+					id_FilterBar.id_FieldsCmbo.setFocus();
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex < 0 && id_FilterBar.id_FieldsCmbo.textInput.text.length > 0)
+				{
+					Alert.show("Please select proper search type from list", "Search Type Not Selected",4,FlexGlobals.topLevelApplication.mainContainer);					
+					return;
+					id_FilterBar.id_FieldsCmbo.setFocus();
+				}
+				if(id_FilterBar.id_SearchTextInput.visible == true && UtilityFunctions.IsNullOrEmpty(id_FilterBar.id_SearchTextInput.text))	
+				{
+					Alert.show("Please enter something to search ", "Search Field Empty",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+					id_FilterBar.id_SearchTextInput.setFocus();
+				}
+				
+				id_FilterBar.id_SearchTextInput.text = UtilityFunctions.TrimString(id_FilterBar.id_SearchTextInput.text);				
+				
+				var searchName:String = "";
+				var searchFirstName:String = "";
+				var searchLastName:String = "";
+				
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == 1 ||  id_FilterBar.id_FieldsCmbo.selectedIndex == 11)
+				{
+					var name:String = id_FilterBar.id_FieldsCmbo.selectedIndex == 1 ? "Provider" : "Patient";
+					searchName = id_FilterBar.id_SearchTextInput.text;
+					if(searchName.indexOf(' ') > -1)
+					{
+						searchFirstName = UtilityFunctions.TrimString(searchName.split(' ')[0]);
+						searchLastName = UtilityFunctions.TrimString(searchName.split(' ')[1]);
+					}
+					else if(searchName.indexOf(',') > -1)
+					{
+						searchLastName = UtilityFunctions.TrimString(searchName.split(',')[0]);
+						searchFirstName = UtilityFunctions.TrimString(searchName.split(',')[1]);
+					}
+					else 
+						searchFirstName = searchName;	
+					
+					if (searchFirstName.length >= 1 && searchFirstName.length <= 50)
+					{
+						if (!isValidAlphaNumericWithSpaces(searchFirstName))
+						{
+							Alert.show("Please enter valid " + name + " first name", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);							
+							return;							
+							id_FilterBar.id_SearchTextInput.setFocus();
+						}
+					}
+					else if (searchFirstName.length > 0 && searchFirstName.length > 50)
+					{						
+						Alert.show(name + " first name is too long", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);						
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					}
+					
+					if (searchLastName.length >= 1 && searchLastName.length <= 50)
+					{
+						if (!isValidAlphaNumericWithSpaces(searchLastName))
+						{
+							Alert.show("Please enter valid " + name + " last name", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);							
+							return;
+							id_FilterBar.id_SearchTextInput.setFocus();
+						}
+					}
+					else if (searchLastName.length > 0 && searchLastName.length > 50)
+					{						
+						Alert.show(name + " last name is too long", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);						
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					}
+					
+					searchDTO = GetInitialCriteriaDTO();
+					
+					if(id_FilterBar.id_FieldsCmbo.selectedIndex == 1)
+						searchDTO.PayeeName = searchName;
+					else
+					{
+						searchDTO.PatientFirstName = searchFirstName;
+						searchDTO.PatientLastName = searchLastName;
+					}
+				}							
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 5 || id_FilterBar.id_FieldsCmbo.selectedIndex == 6 || id_FilterBar.id_FieldsCmbo.selectedIndex == 13 )
+				{
+					if( !  ValidationUtils.isValidDateFormat(id_FilterBar.id_SearchTextInput.text) || !  ValidationUtils.isValidDateString(id_FilterBar.id_SearchTextInput.text))
+					{
+						Alert.show("Please enter valid " + id_FilterBar.id_FieldsCmbo.textInput.text + " in valid format [MM/DD/YYYY]", "Invalid Data/format",4,FlexGlobals.topLevelApplication.mainContainer);						
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					}
+					
+					
+					searchDTO = GetInitialCriteriaDTO();
+					
+					if(id_FilterBar.id_FieldsCmbo.selectedIndex == 5)
+						searchDTO.ImportDate = UtilityFunctions.FormatDate(id_FilterBar.id_SearchTextInput.text);
+					else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 6)
+						searchDTO.CheckEFTIssueDate = UtilityFunctions.FormatDate(id_FilterBar.id_SearchTextInput.text);
+					else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 13)
+						searchDTO.VisitDate = UtilityFunctions.FormatDate(id_FilterBar.id_SearchTextInput.text);
+				}
+				else if(id_FilterBar.id_SearchTextInput.visible == false)
+				{
+					if(id_typeList.selectedIndex < 0)
+					{
+						Alert.show("Please select any type from list", "Invalid Data/format",4,FlexGlobals.topLevelApplication.mainContainer);						
+						return;
+						id_typeList.setFocus();
+					}	
+					
+					searchDTO = GetInitialCriteriaDTO();
+					
+					if(id_FilterBar.id_FieldsCmbo.selectedIndex == 0)
+						searchDTO.InsOrganizationID = (id_typeList.selectedItem as InsOrganizationDTO).InsOrganizationID;
+					else
+						searchDTO.PaymentMethodCodeTypeID = String(id_typeList.selectedIndex);
+						
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 2)
+				{
+					searchDTO = GetInitialCriteriaDTO();
+					searchDTO.PayeeID = id_FilterBar.id_SearchTextInput.text;
+					searchDTO.PayeeIDQualifier = "XX";
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 3)
+				{
+					searchDTO = GetInitialCriteriaDTO();
+					searchDTO.PayeeID = id_FilterBar.id_SearchTextInput.text;
+					searchDTO.PayeeIDQualifier = "FI";
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 4)
+				{
+					searchDTO = GetInitialCriteriaDTO();
+					searchDTO.PayeeID = id_FilterBar.id_SearchTextInput.text;
+					searchDTO.PayeeIDQualifier = "XV";
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 7)
+				{
+					searchDTO = GetInitialCriteriaDTO();
+					searchDTO.CheckEFTNumber = id_FilterBar.id_SearchTextInput.text;
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 8)
+				{
+					searchDTO = GetInitialCriteriaDTO();
+					searchDTO.CheckAmount = id_FilterBar.id_SearchTextInput.text;
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 10)
+				{
+					searchDTO = GetInitialCriteriaDTO();
+					searchDTO.ClaimID = id_FilterBar.id_SearchTextInput.text;
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 12)
+				{
+					searchDTO = GetInitialCriteriaDTO();
+					searchDTO.ICN = id_FilterBar.id_SearchTextInput.text;
+				}
+				
+				searchType = id_FilterBar.id_FieldsCmbo.selectedIndex + 1;
+					
+				if(searchDTO != null)
+				{
+					searchDTO.PageNo = String(model.ERASearchPageNo);
+					searchDTO.SearchType = String(searchType);
+				}
+				
+				var ce:ERAReportSetupEvent = new ERAReportSetupEvent(searchDTO.ToXML(),RecordStatus);
+				CairngormEventDispatcher.getInstance().dispatchEvent(ce);
+			}
+			
+			private function GetInitialCriteriaDTO():PaymentTransactionSearchCriteriaDTO
+			{
+				var dto:PaymentTransactionSearchCriteriaDTO = new PaymentTransactionSearchCriteriaDTO();
+				
+				dto.CheckAmount = "0";
+				dto.CheckEFTIssueDate = "";
+				dto.CheckEFTNumber = "";
+				dto.ClaimID = "0";
+				dto.ICN = "";
+				dto.ImportDate = "";
+				dto.InsOrganizationID = "0";
+				dto.PageNo= "1";
+				dto.PatientFirstName = "";
+				dto.PatientLastName = "";
+				dto.PayeeID = "";
+				dto.PayeeIDQualifier = "";
+				dto.PayeeName = "";
+				dto.PaymentMethodCodeTypeID = "0";
+				dto.ProviderUserID = "0";
+				dto.VisitDate = "";
+				dto.ClinicBranchId = String(model.LoggedInUserSelectedBranchId);
+				
+				
+				return dto;
+			}
+			
+			private function isValidAlphaNumericWithSpaces(str:String = ""):Boolean
+			{
+				var isValid:Boolean = true;
+				
+				var reg:RegExp = /[a-zA-Z0-9,.'()\/\s]{1,200}/ig;
+				var result:Object;
+				
+				do
+				{
+					result = reg.exec(str);
+					
+					if ((result == null) || (result && result.index !=0))
+					{
+						isValid = false;
+						break;
+					}
+					
+				}while (reg.lastIndex < str.length)
+				
+				return isValid;
+			}
+			
+			private var searchType:int = 0;			
+			private var id_typeList: LabelComboBox = null;	
+			
+			private var PaymentMethodTypes:ArrayCollection = new ArrayCollection(["ALL","ACH - Automated Clearing House (ACH)","BOP - Financial Institution Option","CHK - Check","FWT - Federal Reserve Funds/Wire Transfer - Nonrepetitive","NON - Non-Payment Data"])
+			private var PayeeIDTypes:ArrayCollection = new ArrayCollection(["Taxpayer’s Identification Number","CMS PlanID","National Provider Identifier"])
+			
+			private function searchTypeChanged( event:Event ):void
+			{
+				id_FilterBar.id_SearchTextInput.visible = true;
+				
+				if(id_typeList)
+				{
+					id_FilterBar.removeElement(id_typeList);
+					id_typeList = null;
+				}
+				
+				id_FilterBar.id_SearchTextInput.text = "";
+				id_FilterBar.id_SearchTextInput.restrict = null;
+				id_FilterBar.id_SearchTextInput.maxChars = 80;
+				
+				var cmbIndexes:String = "*0*9*";
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == 10 || id_FilterBar.id_FieldsCmbo.selectedIndex == 2)
+				{
+					id_FilterBar.id_SearchTextInput.restrict = "[0-9]";
+					id_FilterBar.id_SearchTextInput.maxChars = 10;
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 3)
+				{
+					id_FilterBar.id_SearchTextInput.restrict = "[0-9]";
+					id_FilterBar.id_SearchTextInput.maxChars = 9;
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 5 || id_FilterBar.id_FieldsCmbo.selectedIndex == 6 || id_FilterBar.id_FieldsCmbo.selectedIndex == 13 )
+				{
+					id_FilterBar.id_SearchTextInput.restrict = "[0-9]\/";
+					id_FilterBar.id_SearchTextInput.maxChars = 10;
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 8 )
+				{
+					id_FilterBar.id_SearchTextInput.restrict = "[0-9]\.";					
+				}				
+				else if(cmbIndexes.indexOf("*" + id_FilterBar.id_FieldsCmbo.selectedIndex.toString() + "*") > -1)
+				{	
+					id_typeList  = new LabelComboBox();
+					
+					if(id_FilterBar.id_FieldsCmbo.selectedIndex == 0)
+					{
+						id_typeList.dataProvider = model.InsuranceListfoClaimListOnly;
+						id_typeList.labelField = "InsuranceName";
+					}					
+					else 
+					{
+						id_typeList.dataProvider = PaymentMethodTypes;
+					}
+					
+					id_FilterBar.addElementAt(id_typeList,1);
+					
+					id_typeList.left =id_FilterBar.left + 105;
+					id_typeList.top =id_FilterBar.top;	
+					
+					id_typeList.width = 100;;
+					id_typeList.visible = true;					
+					id_typeList.selectedIndex = 0;
+					
+					id_FilterBar.id_SearchTextInput.visible = false;
+					
+				}
+				
+			}
+			
+			
+			private var searchDTO:PaymentTransactionSearchCriteriaDTO = null;
+			public function id_FilterBar_RefreshViewHandler(event:Event):void
+			{
+				if(searchDTO == null)
+				{
+					searchDTO = GetInitialCriteriaDTO();
+					searchDTO.PageNo = String(model.ERASearchPageNo);
+					searchDTO.SearchType = "0";
+				}				
+				
+				var ce:ERAReportSetupEvent = new ERAReportSetupEvent(searchDTO.ToXML(),RecordStatus);
+				CairngormEventDispatcher.getInstance().dispatchEvent(ce);
+			}
+			
+			private function switchPageForPendingBills( event:Event ):void
+			{				
+				switch( event.type ) 
+				{
+					case BillingEventString.GOTO_FIRST_PAGE:
+						model.ERASearchPageNo = 1;							
+						break;
+					case BillingEventString.GOTO_NEXT_PAGE:
+						model.ERASearchPageNo += 1; 						
+						break;
+					case BillingEventString.GOTO_PREVIOUS_PAGE:
+						model.ERASearchPageNo -= 1;						
+						break;
+					case BillingEventString.GOTO_LAST_PAGE:
+						model.ERASearchPageNo = model.ERATotalPageNo;						
+						break;
+				}	
+				
+				if(searchDTO == null)
+				{
+					searchDTO = GetInitialCriteriaDTO();
+					searchDTO.PageNo = String(model.ERASearchPageNo);
+					searchDTO.SearchType = "0";
+				}
+				
+				var ce:ERAReportSetupEvent = new ERAReportSetupEvent(searchDTO.ToXML(),RecordStatus);
+				CairngormEventDispatcher.getInstance().dispatchEvent(ce);				
+			}
+			
+			private function RecordStatus():void
+			{
+				if(model.totalrecords_ERA < BillingConstants.PAGE_SIZE)
+				{
+					id_FilterBar.id_GoToFirstPage.enabled = false;
+					id_FilterBar.id_GoToLastPage.enabled = false;
+					id_FilterBar.id_GoToNextPage.enabled = false;
+					id_FilterBar.id_GoToPreviousPage.enabled = false;
+				}
+				else
+				{
+					if(model.ERASearchPageNo == 1)
+					{
+						id_FilterBar.id_GoToFirstPage.enabled = false;
+						id_FilterBar.id_GoToPreviousPage.enabled = false;
+					}
+					else
+					{
+						id_FilterBar.id_GoToFirstPage.enabled = true;
+						id_FilterBar.id_GoToPreviousPage.enabled = true;
+					}
+					if(model.ERASearchPageNo == model.ERATotalPageNo)
+					{
+						id_FilterBar.id_GoToNextPage.enabled = false;
+						id_FilterBar.id_GoToLastPage.enabled = false;
+					}
+					else
+					{
+						id_FilterBar.id_GoToNextPage.enabled = true;
+						id_FilterBar.id_GoToLastPage.enabled = true;
+					}				
+				}
+			}
+			
+			private function OnSearchKeyUp(event:KeyboardEvent): void
+			{				
+				
+				// if(id_FilterBar.id_FieldsCmbo.selectedIndex == 3 && id_FilterBar.id_SearchTextInput.text.length < 3 )
+				//	id_FilterBar.id_SearchTextInput.text = "Ga-"; 
+			}	
+			
+			private function OnSearchKeyDown(event:KeyboardEvent): void
+			{
+				if(event.keyCode == 13)
+					OnSearchClick(null);		
+			}
+						
+			protected function id_pmtTransactionGrid_clickHandler(event:MouseEvent):void
+			{
+				if( ! id_pmtTransactionGrid.selectedItem) return;
+				
+				model.PaymentClaimList = (id_pmtTransactionGrid.selectedItem as PaymentTransactionDTO).ClaimList;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<common:BillingGridFilterView width="100%" id="id_FilterBar"									
+								  PagingMessage="{ 'Page ' + model.ERASearchPageNo + '/' + model.ERATotalPageNo}" 
+								  MessageVisible="{ (model.PaymentTransactionList != null &amp;&amp;  model.PaymentTransactionList.length > 0 ) ? true : false}"
+								  RecordMessage="{model.totalRecordMessage_ERA}" EnableChangeStausButton="false"
+								  DataProvider="{SearchTypes}" tabIndex="1" />
+	<components:LabelDataGrid id="id_pmtTransactionGrid" width="100%" dataProvider="{model.PaymentTransactionList}" 
+							  height="100" useRollOver="false" editable="false" allowMultipleSelection="true" 
+							  verticalScrollPolicy="on" click="id_pmtTransactionGrid_clickHandler(event)" 
+							  verticalScrollBarStyleName="VScrollBar" horizontalScrollPolicy="auto"
+							  maxHeight="150" variableRowHeight="true" tabIndex="12" horizontalScrollBarStyleName="VScrollBar"
+							  columnWidths="{['3%'],['7%'],['10%'],['20%'],['10%'],['10%'],['10%'],['10%'],['5%'],['10%'],['10%']}"
+							  >
+		<components:columns>
+			<mx:DataGridColumn headerText="Sr.#" dataField="SNo" />			
+			<mx:DataGridColumn headerText="Insurance" dataField="InsuranceName" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Provider Name" dataField="PayeeName" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Import Date" dataField="ImportDate" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Check/EFT Issue Date" dataField="CheckEFTIssueDate" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Check/EFT Number" dataField="CheckEFTNumber" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Check/EFT Amount" dataField="CheckAmount" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Check/EFT Type" dataField="PaymentMethodCode" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>										
+		</components:columns>
+	</components:LabelDataGrid>
+	<components1:ERADetailView width="100%" height="100%" />
+</s:VGroup>

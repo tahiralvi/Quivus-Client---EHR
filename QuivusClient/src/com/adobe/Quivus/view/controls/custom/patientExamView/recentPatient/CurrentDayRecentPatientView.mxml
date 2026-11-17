@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:SlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+					  xmlns:skins="com.adobe.Quivus.view.controls.skins.*" 
+					  xmlns:components="com.gazuntite.controls.extended.components.*" 
+					  xmlns:buttonSeparators="com.adobe.Quivus.view.controls.skins.buttonSeparators.*" 
+					   creationComplete="slideoutpanel1_creationCompleteHandler(event)"
+					    QSViewStateChange="slideoutpanel1_QSViewStateChangeHandler(event)"
+					  >
+<!--	<s:layout>
+		<s:VerticalLayout paddingBottom="0" paddingLeft="0" paddingRight="0" paddingTop="0" />
+	</s:layout>-->
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppEventStrings;
+			import com.adobe.Quivus.view.controls.skins.dataGridSkins.DatagridHeaderSeparatorSkin;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			
+			import mx.charts.chartClasses.DateRangeUtilities;
+			import mx.collections.IList;
+			import mx.controls.Label;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			public var headerLabel:String;
+			[Bindable]
+			public var toolTipLabel:String = "Close ";
+			
+			
+			[Bindable] private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			public function getFullName(item:Object,column:DataGridColumn):String
+			{
+				var fName:String = item.FirstName + ' '+ item.MiddleName + ' '+ item.LastName;
+				
+				return fName;
+			}
+			public function getDOB(item:Object,column:DataGridColumn):String
+			{
+				var dob:String = item.DOB;
+				dob            = dob.substr(0,10);
+            dob            = df.format(dob).toString();
+				//2012-04-05T00:00:00
+				return dob;
+			}
+			public function getCreationTime(item:Object,column:DataGridColumn):String
+			{
+				var ca:String = item.CreatedAt;
+            ca            = ca.substr(0,10);
+            ca            = df.format(ca).toString();
+				//2012-04-05T00:00:00
+				return ca;
+			}
+			
+			protected function CloseHandler(event:MouseEvent):void
+			{
+				//chUtil.removeWindowsCount();
+				dispatchEvent( new CloseEvent("close") );
+			}
+			
+			
+			
+
+			protected function id_slideoutBtn_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				this.ToggleSlideOut();
+				event.stopImmediatePropagation();
+			
+			}
+
+
+			protected function slideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				id_expandBtn.selected = true;
+				id_headerLabel.text = id_headerLabel.text.toUpperCase(); 
+			}			
+
+
+			protected function slideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if(id_expandBtn)
+				{
+				if(this.ExpandedView)
+				{
+					id_expandBtn.selected = true;
+					id_headerLabel.text = id_headerLabel.text.toUpperCase();
+				}
+				else
+				{
+					id_expandBtn.selected = false;
+					id_headerLabel.text = id_headerLabel.text.toLowerCase();
+				}
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Metadata>
+		[Event(name="close", type="mx.events.CloseEvent")]
+	</fx:Metadata>
+	<fx:Declarations>
+		<mx:DateFormatter id="df" formatString="MM/DD/YY" />
+	</fx:Declarations>
+	
+	<custom:HeaderContents>
+		<s:Group width="100%" id="id_header" height="22">
+			<s:layout>
+				<s:VerticalLayout paddingLeft="{isSlideOut? 5:0}"  horizontalAlign="center" />
+			</s:layout>
+			<s:SkinnableContainer width="100%" minWidth="550" skinClass="com.adobe.Quivus.view.controls.skins.PatientRegHeaderSkin">
+				<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="left" >
+					<s:Label id="id_headerLabel"  paddingLeft="12" color="#111111" paddingTop="6" fontFamily="Calibri Bold" text="{headerLabel}" />
+					<mx:Spacer width="100%" />
+					
+				</s:HGroup>
+				<s:HGroup horizontalAlign="right" width="100%" paddingRight="1" paddingTop="0" gap="0">
+					<buttonSeparators:buttonSeparatorGrey />
+					<s:HGroup paddingTop="0">
+						
+						<s:Button skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QICrossButtonSkin" 
+								  buttonMode="true" useHandCursor="true" toolTip="Close Current Day Panel" click="CloseHandler(event)"/>
+					</s:HGroup>
+					<buttonSeparators:buttonSeparatorGrey />
+					<s:HGroup paddingTop="0">
+						
+						<s:ToggleButton id="id_expandBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.expandButton_grey" 
+										buttonMode="true" useHandCursor="true" toolTip="{id_expandBtn.selected?'Collapse':'Expand'}"/>
+					</s:HGroup>
+					<buttonSeparators:buttonSeparatorGrey />
+					<s:HGroup paddingTop="0" paddingRight="0">
+						<s:ToggleButton id="id_slideoutBtn" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.slideOutBtn"
+										buttonMode="true" useHandCursor="true" toolTip="{id_slideoutBtn.selected?'Slide-In':'Slide-Out'}" 
+										width="18" height="18"  click="id_slideoutBtn_clickHandler(event)" />
+					</s:HGroup>
+				</s:HGroup>
+			</s:SkinnableContainer>
+		</s:Group>
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		
+		<s:SkinnableContainer height="22" width="100%" minWidth="550" skinClass="com.adobe.Quivus.view.controls.skins.PatientRegHeaderSkin">
+			<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="center" >
+				<s:Label  paddingLeft="12" color="#ffffff" paddingTop="6" fontFamily="Calibri Bold" text="{headerLabel}" />				
+				
+			</s:HGroup>
+			
+		</s:SkinnableContainer>
+		
+	</custom:SlideHeaderContents>
+	
+	
+	<custom:Contents>
+		
+		<s:VGroup paddingTop="-5" gap="0" height="100%" width="{id_header.width}" verticalAlign="top" horizontalAlign="center"
+				  paddingLeft="{isSlideOut? 10:0}" 
+				  >
+			
+			<s:VGroup paddingTop="{isSlideOut? -2:0}" gap="-2" height="100%" width="{isSlideOut? id_header.width :id_header.width }"  verticalAlign="top" horizontalAlign="center" >
+				
+				
+	<s:SkinnableContainer skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.grayPanelBodySkin" width="100%" height="100%" minHeight="100">
+		<s:layout>
+			<s:VerticalLayout paddingTop="6" paddingBottom="5" paddingLeft="4" paddingRight="4" verticalAlign="middle" horizontalAlign="center" />
+		</s:layout>
+	<!--<s:Label text="{'Total Records' +' ('+ model.totalRecords_CDP.toString()+')'}"  fontWeight="bold"/>-->
+		
+		<mx:DataGrid id="id_RecentPatientGrid"  width="{this.width - 10}" height="100%" dataProvider="{model.currentDayPatientsList}" 
+					 rowHeight="22"
+					 verticalScrollBarStyleName="VScrollBar"
+					 includeInLayout="{model.totalRecords_CDP > 0?true:false}" visible="{model.totalRecords_CDP > 0?true:false}">
+			<mx:columns>
+				<mx:DataGridColumn width="70" dataField="QuivusID" headerText="GID" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn width="150" dataField="FullName" headerText="Name" labelFunction="getFullName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn width="70" dataField="PatientDOB" headerText="D.O.B" labelFunction="getDOB" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>					
+				<mx:DataGridColumn width="70" dataField="CreatedAt" headerText="Created On" labelFunction="getCreationTime" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			</mx:columns> 
+		</mx:DataGrid> 
+	<s:Label id="id_msg" text="No patient registered in last 24 hours" includeInLayout="{model.totalRecords_CDP == 0?true:false}" visible="{model.totalRecords_CDP == 0?true:false}" fontFamily="Calibri Bold" />
+	</s:SkinnableContainer>
+				<s:Button id="id_CloseBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.closeBtnSkin" 
+						  click="CloseHandler(event)" buttonMode="true" useHandCursor="true" toolTip="{toolTipLabel+headerLabel.toLowerCase()}"/>
+				<!--</s:BorderContainer>-->
+				
+			</s:VGroup>
+			</s:VGroup>
+		</custom:Contents>
+				
+</custom:SlideOutPanel>

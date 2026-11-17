@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt">
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect height="19" id="rect15" radiusX="3" width="100%" x="0.5" y="0.5" visible.down="false" visible.over="false" visible.upAndSelected="false" visible.overAndSelected="false" visible.downAndSelected="false" visible.disabledAndSelected="false">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#777462" joints="miter" miterLimit="4" weight="1" color.disabled="#999999"/>
+		</s:stroke>
+	</s:Rect>
+	
+	<s:Rect height="19" id="rect64" includeIn="disabledAndSelected,down,downAndSelected,over,overAndSelected,up,upAndSelected" radiusX="3" width="100%" x="0.5" y="0.5">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#0D90C6" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#EF8989" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#9B1010" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1" includeIn="down,up"/>
+		</s:filters>
+	</s:Rect>
+	
+	<s:Label id="labelDisplay"
+			 textAlign="center"
+			 verticalAlign="middle"
+			 fontFamily="Calibri Bold"
+			 color="#ffffff" color.downAndSelected="#ffffff" color.overAndSelected="#ffffff" color.upAndSelected="#ffffff"
+			 fontSize="10"
+			 maxDisplayedLines="1"
+			 horizontalCenter="0" verticalCenter="1"
+			 left="10" right="10" top="2" bottom="2">
+	</s:Label>
+	
+</s:Skin>
+    
+

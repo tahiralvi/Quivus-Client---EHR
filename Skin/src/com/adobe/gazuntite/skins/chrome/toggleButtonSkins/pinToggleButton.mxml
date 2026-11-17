@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt">
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect height="20" id="rect6" radiusX="3.99972" radiusY="4.24904" visible.down="false" visible.downAndSelected="false" visible.over="false" visible.overAndSelected="false" width="125" x="0" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#4A86A8" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#425E84" ratio="0.5450980392156862"/>
+				<s:GradientEntry alpha="1.0" color="#6882A3" ratio="0.5803921568627451"/>
+				<s:GradientEntry alpha="1.0" color="#97B2D5" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="1" angle="270" blurX="0" blurY="0" color="#4D7087" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="0.5" angle="270" blurX="0" blurY="0" color="0x000000" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="19" radiusX="3" visible.disabled="false" visible.disabledAndSelected="false" visible.up="false" visible.upAndSelected="false" width="124" x="0.5" y="0.5">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#505152" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#313233" ratio="0.49411764705882355"/>
+				<s:GradientEntry alpha="1.0" color="#1D1E20" ratio="0.4980392156862745"/>
+				<s:GradientEntry alpha="1.0" color="#1D1E20" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#333333" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.25" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" includeIn="down" inner="true" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter includeIn="downAndSelected" blurX="2" hideObject="false" blurY="2" distance="2" inner="true" color="0x000000" strength="1" alpha="0.5" quality="2" knockout="false" angle="90"/>
+		</s:filters>
+	</s:Rect>
+	<s:RichText color="#FFFFFF" fontFamily="Calibri" fontSize="12" fontWeight="bold" id="richtext3" tabStops="S0 S50 S100" text="Pin" visible.upAndSelected="false" x="9" y="5" visible.overAndSelected="false" visible.downAndSelected="false" visible.disabledAndSelected="false">
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="270" blurX="0" blurY="0" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:RichText>
+	<s:BitmapImage id="bitmapimage3" smooth="true" source="@Embed('com/adobe/gazuntite/skins/chrome/assets/qi_pin.png')" visible.upAndSelected="false" x="106" y="5" visible.overAndSelected="false" visible.downAndSelected="false" visible.disabledAndSelected="false">
+		<s:filters>
+			<s:GlowFilter alpha="1.0" blurX="6.0" blurY="6.0" color="#FFFFFF" inner="true" knockout="false" quality="3" strength="6"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:BitmapImage>
+	<s:RichText color="#FFFFFF" fontFamily="Calibri" fontSize="12" fontWeight="bold" id="richtext0" includeIn="disabledAndSelected,downAndSelected,overAndSelected,upAndSelected" tabStops="S0 S50 S100" text="Un-Pin" x="9" y="5">
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="270" blurX="0" blurY="0" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:RichText>
+	<s:BitmapImage id="bitmapimage0" includeIn="disabledAndSelected,downAndSelected,overAndSelected,upAndSelected" rotation="90" smooth="true" source="@Embed('com/adobe/gazuntite/skins/chrome/assets/qi_pin.png')" x="118" y="3">
+		<s:filters>
+			<s:GlowFilter alpha="1.0" blurX="6.0" blurY="6.0" color="#FFFFFF" inner="true" knockout="false" quality="3" strength="6"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:BitmapImage>
+</s:Skin>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt">
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect height="22" id="rect23" radiusX="3" visible.up="false" minWidth="132" width="100%" x="0" y="0" visible.over="false" visible.disabled="false" visible.down="false">
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.25" angle="90" blurX="1" blurY="1" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#B983FB" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#8E53CF" ratio="0.5490196078431373"/>
+				<s:GradientEntry alpha="1.0" color="#794CBA" ratio="0.5529411764705883"/>
+				<s:GradientEntry alpha="1.0" color="#9A69DA" ratio="0.8588235294117647"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Rect height="21" id="rect0" includeIn="disabled,down,over,up" radiusX="3" minWidth="132" width="100%" x="0.5" y="1.5">
+		<s:filters>
+			<s:DropShadowFilter alpha="0.75" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.75" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" includeIn="disabled,down" inner="true" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" alpha.over="1.0" color="#AAABAB" color.over="#B5B5B5" ratio="0"/>
+				<s:GradientEntry alpha="1.0" alpha.over="1.0" color="#535353" color.over="#727373" ratio="0.5176470588235295" ratio.over="0.5058823529411764"/>
+				<s:GradientEntry alpha="1.0" alpha.over="1.0" color="#3A3A3A" color.over="#595959" ratio="0.5215686274509804" ratio.over="0.5098039215686274"/>
+				<s:GradientEntry alpha="1.0" color="#666666" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<s:RichText alpha="1" color="#ffffff" fontSize="13" id="labelDisplay" kerning="off" lineHeight="100%" text="Allergies" typographicCase.downAndSelected="uppercase" typographicCase.overAndSelected="uppercase" typographicCase.upAndSelected="uppercase"  textDecoration="underline" whiteSpaceCollapse="preserve" x="10" y="6" fontFamily="Calibri Bold">
+		<s:filters>
+			<s:DropShadowFilter alpha="0.25" angle="90" blurX="1" blurY="1" color="#000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:RichText>
+</s:Skin>

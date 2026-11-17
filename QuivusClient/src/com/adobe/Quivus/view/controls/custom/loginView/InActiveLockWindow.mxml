@@ -1,0 +1,530 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="group1_creationCompleteHandler(event)"
+		 keyDown.default="group1_keyDownHandler(event)" 
+		 keyDown.forgetPassword="group2_keyDownHandler(event)"
+		 xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 >
+	
+	<s:layout>
+		<s:VerticalLayout  verticalAlign="middle" horizontalAlign="center" />
+	</s:layout>
+	
+	<s:states>
+		<s:State name="default"/>
+		<s:State name="forgetPassword"/>
+		<s:State name="resetPassword"/>
+	</s:states>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.command.patientProfileCustomization.ManageUserPatientProfileBarSettingCommand;
+			import com.adobe.Quivus.events.authenticate.LostPasswordEvent;
+			import com.adobe.Quivus.events.authenticate.SignOutEvent;
+			import com.adobe.Quivus.events.security.LogInUnlockEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.controls.extended.components.LabelTextInput;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.controls.Alert;
+			import mx.controls.ToolTip;
+			import mx.events.FlexEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.managers.ToolTipManager;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var innerTimer:Timer 	= new Timer(10,0);
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_password.setFocus();
+			}
+			private function isInValid():Boolean
+			{
+				var InValid : Boolean = vUsername.validate().type == ValidationResultEvent.INVALID;
+				InValid  = vPassword.validate().type == ValidationResultEvent.INVALID;
+				return InValid;	
+			}
+			
+			private function login() : void 
+			{
+				if(id_username.text == "")
+				{
+					id_errors.visible 			= true;
+					id_errors.includeInLayout 	= true;
+					id_errorMsg.text 			= "Please enter username";
+					return;
+				}
+				if(id_password.text == "")
+				{
+					id_errors.visible 			= true;
+					id_errors.includeInLayout 	= true;
+					id_errorMsg.text 			= "Please enter password";
+					return;
+				}
+				
+				id_errors.visible 			= false;
+				id_errors.includeInLayout 	= false;
+				
+				// validate the fields
+				if ( isInValid()) 
+				{
+					return;
+				}
+				else 
+				{
+					// if everything validates, broadcast an event containing the username & password
+					/* var cgEvent : LoginEvent = new LoginEvent( id_username.text, id_password.text , logInResponse);
+					CairngormEventDispatcher.getInstance().dispatchEvent( cgEvent );
+					return; */
+					
+					ValidationUtils.Trim(id_username);
+					ValidationUtils.Trim(id_password);
+					
+					var cgEvent : LogInUnlockEvent = new LogInUnlockEvent( id_username.text, id_password.text , logInResponse);
+					CairngormEventDispatcher.getInstance().dispatchEvent( cgEvent );
+					
+					// now that the fields are sent in the event, blank out the login form fields
+					// otherwise they'll still be populated whenever the user returns here
+					// (if the user does not get the uid/passwd correct or when the user logs out)
+					
+					//vUsername.enabled = false;
+					//username.text = "";
+					//vUsername.enabled = true;
+					//vPassword.enabled = false;
+					//password.text = "";
+					//vPassword.enabled = true;
+				}
+			}
+			
+			protected function logInResponse(val:*=null):void
+			{
+				if(model.hideSessionInActivityWindow)
+				{
+					dispatchEvent(new Event('hideLockWindowEvent', true, true));
+					id_password.text = '';
+				}
+				else
+				{
+					id_errors.visible 			     = true;
+					id_errors.includeInLayout 	     = true;
+					id_errorMsg.text 			     = "Invalid Provider Id/Password";
+				}
+				
+				
+			}
+			
+			//Call back method
+			protected function lostPasswordResponse(val:*=null):void
+			{
+				if(model.lostPasswordResult == "true")
+					currentState = 'resetPassword' ;
+				else 
+					invalidEmail();
+			}
+			
+			private function invalidEmail():void
+			{
+				id_errors.visible 			     = true;
+				id_errors.includeInLayout 	     = true;
+				
+				if(model.errorMessageResult.length>0)
+				{
+					id_errorMsg.text = model.errorMessageResult;
+					return;
+				}
+				
+				if(model.lostPasswordIsActiveResult=='false' && model.lostPasswordIsValidResult=='true')
+				{
+					id_errorMsg.text 			     = "Inactive User";
+				}
+				else if (model.lostPasswordIsLockedResult=='true' && model.lostPasswordIsValidResult=='true')
+				{
+					id_errorMsg.text 			     = "Locked User";
+				}
+				else
+				{
+					id_errorMsg.text 			     = "Invalid Email ID";
+				}
+				
+			}
+			
+			protected function CapsLockTip(show:Boolean):void
+			{
+				id_errors.visible 			     = show;
+				id_errors.includeInLayout 	     = show;
+				id_errorMsg.text 			     = "Caps Lock is on";
+			}
+			private function showAlert():void {
+				Alert.yesLabel = "Accept";
+				Alert.noLabel = "Reject";
+				Alert.buttonWidth = 120;
+				
+				Alert.show(
+					"asdasdasd",
+					"this is test",
+					Alert.NO | Alert.YES
+				);
+				/* Make the Alert form's text non-selectable. */
+			}
+			
+			protected function id_username_mouseOverHandler(event:MouseEvent):void
+			{
+				//	id_mainLoginBorder.setStyle("borderColor", "#999999");
+				//animFilter.play();
+				id_glowfilter.alpha = 1;
+			}
+			
+			protected function id_username_mouseOutHandler(event:MouseEvent):void
+			{
+				//id_mainLoginBorder.setStyle("borderColor","#bbbbbb");
+				//animFilter.stop();
+				id_glowfilter.alpha = 0;
+			}
+			
+			protected function id_password_mouseOverHandler(event:MouseEvent):void
+			{
+				//id_mainLoginBorder.setStyle("borderColor", "#999999");
+				id_glowfilter2.alpha = 1;
+			}
+			
+			protected function id_password_mouseOutHandler(event:MouseEvent):void
+			{
+				//id_mainLoginBorder.setStyle("borderColor","#bbbbbb");
+				//animFilter2.stop();
+				id_glowfilter2.alpha = 0;
+				
+			}
+			private var errorTip:ToolTip;
+			private var errorTipPass:ToolTip;
+			private function handleValid(event:ValidationResultEvent):void
+			{
+				//var pt:Point = LabelTextInput(event.target.source).localToGlobal( new Point( LabelTextInput(event.target.source).x, LabelTextInput(event.target.source).y ) ) ;
+				//var pt:Point = (event.target.source).localToGlobal(new Point((event.target.source).x, (event.target.source).y));
+				var pt:Point = id_username.localToGlobal(new Point(id_username.x, id_username.y));
+				if(null == errorTip)
+				{
+					errorTip = ToolTipManager.createToolTip(event.target.source.name + " is required", pt.x + event.target.source.width + 4, event.target.source.y + pt.y) as ToolTip;
+					errorTip.width = 135;
+				}
+				
+				if(event.type== ValidationResultEvent.VALID)
+				{
+					LabelTextInput(event.target.source).styleName = "validTextStyle";
+					errorTip.visible = false;
+				}
+				else
+				{
+					LabelTextInput(event.target.source).styleName = "inValidTextStyle";
+					errorTip.visible = true;
+				}
+				errorTip.styleName = "errorTip";
+			}
+			
+			private function handleValidPassword(event:ValidationResultEvent):void
+			{
+				var pt:Point = id_password.localToGlobal(new Point(id_password.x, id_password.y));
+				if(null == errorTipPass)
+				{
+					errorTipPass = ToolTipManager.createToolTip(event.target.source.name + " is required", pt.x + event.target.source.width + 4, event.target.source.y + pt.y) as ToolTip;
+					errorTipPass.width = 135;
+				}
+				
+				if(event.type== ValidationResultEvent.VALID)
+				{
+					LabelTextInput(event.target.source).styleName = "validTextStyle";
+					errorTipPass.visible = false;
+				}
+				else
+				{
+					LabelTextInput(event.target.source).styleName = "inValidTextStyle";
+					errorTipPass.visible = true;
+				}
+				errorTipPass.styleName = "errorTip";
+			}
+			
+			/*  protected function loginBtn_keyDownHandler(event:KeyboardEvent):void
+			{
+			if(event.keyCode == 13)
+			{
+			login();
+			}
+			}
+			*/
+			
+			protected function group1_keyDownHandler(event:KeyboardEvent):void
+			{
+				if (Keyboard.capsLock){
+					CapsLockTip( true );
+				} 
+				else{
+					CapsLockTip( false );   
+				}
+				
+				if(event.keyCode == 13){
+					login();
+				}
+			}
+			
+			protected function resetPassword():void
+			{
+				if(id_username.text == "")
+				{
+					id_errors.visible 			= true;
+					id_errors.includeInLayout 	= true;
+					id_errorMsg.text 			= "Please enter username";
+					return;
+				}
+				
+				id_errors.visible 			= false;
+				id_errors.includeInLayout 	= false;
+				
+				ValidationUtils.Trim(id_username);
+				var cgEvent : LostPasswordEvent = new  LostPasswordEvent( id_username.text, lostPasswordResponse);
+				CairngormEventDispatcher.getInstance().dispatchEvent( cgEvent );
+				return;
+			}
+			
+			protected function loginBtn_clickHandler(event:MouseEvent):void
+			{
+				/* id_errors.visible 			     = false;
+				id_errors.includeInLayout 	     = false; */
+				currentState                     = 'default';
+			}
+			
+			protected function id_forgotPass_clickHandler(event:MouseEvent):void
+			{
+				id_errors.visible 			     = false;
+				id_errors.includeInLayout 	     = false; 
+				currentState                     ='forgetPassword'
+			}
+			
+			protected function group2_keyDownHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode == Keyboard.ENTER)
+					resetPassword(); 
+			}
+			
+			protected function goBackBtn_clickHandler(event:MouseEvent):void
+			{
+				currentState                     ='default';
+				id_errors.visible 			     = false;
+				id_errors.includeInLayout 	     = false;
+			}
+			
+			public function changeToopTip():void
+			{
+				if(id_restore.toolTip=='Restore')
+				{
+					id_restore.toolTip='Maximize';
+				}
+				else if(id_restore.toolTip=='Maximize')
+				{
+					
+					id_restore.toolTip='Restore';
+				}
+			}
+			//************* application close handler *********************************
+			protected function id_close_clickHandler(event:MouseEvent):void
+			{
+				//dispatchEvent(new Event('closeApplicationEvent'));
+				UtilityFunctions.AskMessage(  "Do you really want to exit 'Quivus Online Clinic'", function():void
+				{
+					//M
+					
+					trace("DICTATION COUNT -- " + model.dictationUploadInProcessCount);
+					
+					
+					if(model.dictationUploadInProcessCount != 0)
+					{	
+						NativeApplication.nativeApplication.autoExit = false;					
+						NativeWindow( stage.nativeWindow ).visible = false;
+						
+						innerTimer = new Timer(1000);
+						innerTimer.addEventListener(TimerEvent.TIMER, checkDictationUploaded);
+						//Alert.show("Please wait while dictation upload gets complete");
+					}
+						
+						/*BUG --- socket in DM is always open, 
+						commented this block of code on Hassan request ... 
+						if(LiveServicesController.hasAnyOpenSocket()) 
+						{
+						NativeApplication.nativeApplication.autoExit = false;					
+						NativeWindow( stage.nativeWindow ).visible = false;
+						
+						DMInnerTimer = new Timer(1000);
+						DMInnerTimer.addEventListener(TimerEvent.TIMER, checkSocketClose);
+						} */
+					else
+					{
+						if(model.UserLoggedIn && !model.setAsDefault && model.userPatientProfileBarSettingTemp!=null){
+							
+							ManageUserPatientProfileBarSettingCommand.setFirstSectionOldData();
+							ManageUserPatientProfileBarSettingCommand.setSecondSectionOldData();
+							ManageUserPatientProfileBarSettingCommand.setThirdSectionOldData();
+							
+						}
+						if(model.sessionDTO!=null)
+						{
+							var lpsdEvent : SignOutEvent = new SignOutEvent(model.sessionDTO);
+							CairngormEventDispatcher.getInstance().dispatchEvent( lpsdEvent );
+						}
+						ChromeUtil.closeWindow();
+					}
+					
+				}
+					
+				);
+			}
+			private function checkDictationUploaded(event:TimerEvent):void 
+			{	
+				if(model.dictationUploadInProcessCount != 0)
+				{	
+					
+				}
+				else
+				{
+					innerTimer.removeEventListener(TimerEvent.TIMER, checkDictationUploaded);
+					
+					NativeApplication.nativeApplication.autoExit = true;
+					
+					if(model.UserLoggedIn && !model.setAsDefault && model.userPatientProfileBarSettingTemp!=null){
+						
+						ManageUserPatientProfileBarSettingCommand.setFirstSectionOldData();
+						ManageUserPatientProfileBarSettingCommand.setSecondSectionOldData();
+						ManageUserPatientProfileBarSettingCommand.setThirdSectionOldData();
+						
+					}
+					ChromeUtil.closeWindow();
+				}
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:StringValidator id="vUsername" property="text" required="true"
+							requiredFieldError="Provider ID is required" source="{ id_username }"/>
+		<mx:StringValidator id="vPassword" property="text" required="true" 
+							requiredFieldError="Password is required" source="{ id_password }"/>
+		
+		<s:GlowFilter id="glowFilter" blurX="8" blurY="8" color="#ff6600"/>
+		
+		<fx:Vector id="motionPathVector" type="spark.effects.animation.MotionPath">
+			<s:SimpleMotionPath id="blurXPath" property="blurX" valueFrom="0" valueTo="11"/>
+			<s:SimpleMotionPath id="blurYPath" property="blurY" valueFrom="0" valueTo="11"/>
+		</fx:Vector>
+	</fx:Declarations>
+	
+	
+	<s:BorderContainer width="100%" height="100%" backgroundColor="0X2C2C2C" cornerRadius="10" top="-100">
+		<s:borderStroke>
+			<s:LinearGradientStroke weight="10" rotation="270">
+				<s:GradientEntry color="0x141414"/>
+				<s:GradientEntry color="0x141414"/>
+			</s:LinearGradientStroke>
+		</s:borderStroke>
+		
+		<s:HGroup id="id_windowControlButtons" width="50" gap="0" horizontalAlign="right"
+				  				  right="5">
+			<s:Button id="id_min" height="15" width="16" useHandCursor="true" buttonMode="true" 
+					  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.minButton" 
+					  click="ChromeUtil.minimizeWindow()" toolTip="Minimize"/>
+			<s:Button id="id_restore" height="15" width="16" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.restoreButton"
+					  click="ChromeUtil.toggleMaximizeWindow(); changeToopTip()" toolTip="Maximize" useHandCursor="true" buttonMode="true"/>
+			<s:Button id="id_close" height="15" width="16" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.closeButton"
+					  click="id_close_clickHandler(event)" toolTip="Close" useHandCursor="true" buttonMode="true"/>
+		</s:HGroup>
+		<s:Group width="100%" height="100%">
+			<s:layout>
+				<s:VerticalLayout  verticalAlign="middle" horizontalAlign="center" />
+			</s:layout>
+			
+			<s:Image id="img_lock"  source="assets/icons/session_lock.png" />
+			<s:Label text="Your Session has been locked, please login again" fontSize="15"  color="#FFFFFF"  />
+			
+			<s:VGroup width="345" height="265">
+				<s:SkinnableContainer id="id_loginBG" width="100%" height="100%"  height.resetPassword="150"
+									  skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.loginPanelBG">
+					<s:layout>
+						<s:VerticalLayout gap="6" horizontalAlign="left" paddingLeft="20" paddingRight="20"  paddingTop="20" verticalAlign="top" />
+					</s:layout>
+					
+					<s:RichText color="#000000" fontFamily="Calibri Bold" fontSize="18"  text="UNLOCK" text.resetPassword="LOST PASSWORD?"/>			
+					<s:SkinnableContainer id="id_errors" visible="false" width="100%" includeInLayout="false" excludeFrom="resetPassword"
+										  skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.loginErrorMsgPlaceHolder">
+						<s:layout>
+							<s:HorizontalLayout paddingLeft="45" paddingRight="10" verticalAlign="middle" />
+						</s:layout>
+						
+						<s:Label id="id_errorMsg" color="#111111" fontFamily="Calibri" fontSize="12" text=""/> 
+					</s:SkinnableContainer>
+					
+					<mx:Spacer height="5"/>
+					
+					<s:RichText color="#000000" fontFamily="Calibri" fontSize="15" paddingLeft="9" fontSize.forgetPassword="12" 
+								text.default="Provider ID "  text.forgetPassword="{'To get  the  new  password, please enter' +'\n'+ 'your Provider ID'}"
+								text.resetPassword="{'A new password has been sent to your log in ID' + '\n' + id_username.text }" />
+					
+					<components1:LabelTextInput id="id_username" width="100%" borderAlpha="0" text="{model.connectedUserName}"
+											   keyDown="group1_keyDownHandler(event)"
+											   borderColor="#ffffff" color="#000000" includeIn="default,forgetPassword"
+											   focusOut="{isInValid()}" fontFamily="Calibri Bold" fontSize="13"
+											   mouseOut="id_username_mouseOutHandler(event)" 
+											   mouseOver="id_username_mouseOverHandler(event)" 
+											   prompt="Please type your Provider ID here" toolTip="UserName"
+											   skinClass="com.adobe.Quivus.view.controls.skins.loginTI"  
+											   editable="false">
+						<components1:filters>
+							<s:GlowFilter id="id_glowfilter" alpha="0" blurX="6.0" blurY="6.0" color="#B6E4FF"
+										  inner="false" knockout="false" quality="2" strength="1"/>
+						</components1:filters>
+					</components1:LabelTextInput>
+					
+					
+					<!--focusIn="{animFilter.play()}"  animFilter.stop();-->
+					
+					<mx:Spacer height="3"/>
+					
+					<s:Label color="#000000" fontFamily="Calibri" fontSize="15" paddingLeft="9" text="Password" includeIn="default"/>
+					
+					<components1:LabelTextInput id="id_password" width="100%" borderColor="#ffffff" text=""
+											   color="#000000" displayAsPassword="true" toolTip="Password"
+											   focusOut="{isInValid()}" fontFamily="Calibri Bold"
+											   fontSize="13" mouseOut="id_password_mouseOutHandler(event)"
+											   mouseOver="id_password_mouseOverHandler(event)"
+											   name="Password" prompt="Password" 
+											   skinClass="com.adobe.Quivus.view.controls.skins.loginTI"
+											   includeIn="default">
+						<components1:filters>
+							<s:GlowFilter id="id_glowfilter2" alpha="0" blurX="6.0" blurY="6.0"
+										  color="#B6E4FF" inner="false" knockout="false" quality="2"
+										  strength="1"/>
+						</components1:filters>
+					</components1:LabelTextInput>
+					<!--focusIn="{animFilter2.play()}" focusOut="{animFilter2.stop(); isInValid()}"-->
+					
+					<mx:Spacer height="5"/>
+					<s:HGroup width="100%" horizontalAlign.forgetPassword="center" horizontalAlign="right"  paddingBottom="5" paddingRight="0" paddingTop="2">
+						<mx:LinkButton label="Forgot Password?"  id="id_forgotPass"  fontSize="11" includeIn="default"
+									   textDecoration="underline" toolTip="Forgot Password" 
+									   click="id_forgotPass_clickHandler(event)" color="#ff0000" />
+						<s:Spacer width="100%" includeIn="default"/>
+						<s:Button id="goBackBtn" buttonMode="true"  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.Btn_goBack" label="Go Back"
+								  includeIn="forgetPassword,resetPassword" toolTip="Go back to Log In page" click="goBackBtn_clickHandler(event)"  />
+						<s:Button id="loginBtn" buttonMode="true" click.default="login()" click.forgetPassword="resetPassword()"
+								  label="Sign In" label.forgetPassword="Submit"  toolTip.forgetPassword="Submit Provider ID" includeIn="default,forgetPassword"
+								  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.Btn_signin"
+								  toolTip="Sign in" useHandCursor="true"   />
+						
+					</s:HGroup>
+				</s:SkinnableContainer>
+			</s:VGroup>
+		</s:Group>
+	</s:BorderContainer>
+</s:Group>

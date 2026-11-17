@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:components="com.zigron.controls.extended.components.*" width="100%" xmlns:components1="com.gazuntite.controls.extended.components.*">
+	<s:layout>
+		<s:VerticalLayout paddingBottom="3" paddingLeft="3" paddingRight="3" paddingTop="3"/>
+	</s:layout>
+	<fx:Script>
+		<![CDATA[
+			import valueObjects.SmokingTypeDTO;
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import mx.core.FlexGlobals;
+			import mx.controls.Alert;
+			import com.adobe.Quivus.model.AppModelLocator;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			public var isdata:Boolean = false; // Only send information to DTO id user select
+			private var isAlcoholData:Boolean = false;
+			private var isDrugData:Boolean = false;
+			private var isTobaccoData:Boolean = false;
+			[Bindable]
+			public var isChanged:Boolean = false;
+			
+			
+			public function getSocialHistory():void
+			{
+				if(isAlcoholData){
+					
+					model.patientDTO.AlcoholStatus 		= (alcoholActiveYesNo.selectedValue == "yes")? Constants.STRING_TRUE: Constants.STRING_FALSE;
+					model.patientDTO.AlcoholStatusData 	= id_AlcoholDesc.text;
+				}
+				
+				if(isDrugData){
+					
+					model.patientDTO.DrugStatus 		= (drugsActiveYesNo.selectedValue == "yes")? Constants.STRING_TRUE: Constants.STRING_FALSE ;
+					model.patientDTO.DrugStatusData 	= id_DrugDesc.text;
+				}
+				
+				if(isTobaccoData){
+					model.patientDTO.SmokingStatus 		= (tobaccoActiveYesNo.selectedValue == "yes")? Constants.STRING_TRUE : Constants.STRING_FALSE;
+					model.patientDTO.SmokingStatusData	= id_TobaccoDesc.text;
+				}
+			}
+			
+			public function loadSocialHistoryData():void
+			{
+				if( ! AppUtils.IsNullOrEmpty( model.patientProfileDTO._PatientDTO.AlcoholStatus ) )
+				{
+					id_AlcoholDesc.enabled 				= true;			
+					id_AlcoholDesc.text 				= model.patientProfileDTO._PatientDTO.AlcoholStatusData;
+					
+					if(model.patientProfileDTO._PatientDTO.AlcoholStatus == 'True'){
+						alcoholActiveYesNo.selectedValue 	= 'yes';
+					}else{
+						alcoholActiveYesNo.selectedValue 	= 'no';
+						id_AlcoholDesc.enabled = false;
+					}
+				}
+				
+				if( ! AppUtils.IsNullOrEmpty( model.patientProfileDTO._PatientDTO.DrugStatus ) )
+				{
+					id_DrugDesc.enabled 				= true;
+					id_DrugDesc.text					= model.patientProfileDTO._PatientDTO.DrugStatusData;
+					
+					if(model.patientProfileDTO._PatientDTO.DrugStatus == 'True'){
+						drugsActiveYesNo.selectedValue 	= 'yes';
+					}else{
+						drugsActiveYesNo.selectedValue 	= 'no';
+						id_DrugDesc.enabled = false;
+					}
+				}
+				
+				if( ! AppUtils.IsNullOrEmpty( model.patientProfileDTO._PatientDTO.SmokingStatus ) )
+				{
+					id_TobaccoDesc.enabled 				= true;
+					id_TobaccoDesc.text					= model.patientProfileDTO._PatientDTO.SmokingStatusData;
+					
+					if(model.patientProfileDTO._PatientDTO.SmokingStatus == 'true'){
+						tobaccoActiveYesNo.selectedValue 	= 'yes';
+					}else{
+						tobaccoActiveYesNo.selectedValue 	= 'no';
+						id_TobaccoDesc.enabled = false;
+					}
+				}
+			}
+			
+			//Enable Alchohol
+			public function enableAlchoholField():void
+			{
+				isdata = true;
+				isAlcoholData = isdata;
+				
+				if(alcoholActiveYesNo.selectedValue == "yes")
+				{					
+					id_AlcoholDesc.enabled = true;					
+				}
+				else
+				{
+					id_AlcoholDesc.text = "";
+					id_AlcoholDesc.enabled = false;
+				} 
+				isChanged = true;
+			}
+			//Enable Drug
+			public function enableDrugField():void
+			{
+				isdata = true;
+				isDrugData = isdata;
+				
+				if (drugsActiveYesNo.selectedValue == "yes")
+				{
+					id_DrugDesc.enabled = true;
+				}
+				else
+				{
+					id_DrugDesc.text = "";
+					id_DrugDesc.enabled = false;
+				}	
+				isChanged = true;
+			}
+			//Enable Tabacco
+			public function enableTobaccoField():void
+			{
+				isdata = true;
+				isTobaccoData = isdata;
+				
+				if (tobaccoActiveYesNo.selectedValue == "yes")
+				{
+					id_TobaccoDesc.enabled = true;
+				}
+				else
+				{
+					id_TobaccoDesc.text = "";
+					id_TobaccoDesc.enabled = false;
+				}	
+				isChanged = true;
+			}
+			//Validate form
+			public function isInvalid():Boolean 
+			{
+				var isNotValid:Boolean = false;
+				var errorStr:String = "";
+				var toSetFocus:*;
+				ValidationUtils.Trim(id_DrugDesc);
+				ValidationUtils.Trim(id_AlcoholDesc);
+				ValidationUtils.Trim(id_TobaccoDesc);
+				
+				if (drugsActiveYesNo.selectedValue == "yes")
+				{
+					if (!id_DrugDesc.text.length)
+					{
+						isNotValid = true;
+						errorStr += "The data in drug history is invalid.\n";
+						
+						if (!toSetFocus)
+							toSetFocus = id_DrugDesc;
+					}
+				}
+				
+				if (alcoholActiveYesNo.selectedValue == "yes")
+				{
+					if (!id_AlcoholDesc.text.length)
+					{
+						isNotValid = true;
+						errorStr += "The data in alcohol history is invalid.\n";
+						
+						if (!toSetFocus)
+							toSetFocus = id_AlcoholDesc;
+					}
+				}
+				
+				if (tobaccoActiveYesNo.selectedValue == "yes")
+				{
+					if (!id_TobaccoDesc.text.length)
+					{
+						isNotValid = true;
+						errorStr += "The data in tobacco history is invalid.\n";
+						
+						if (!toSetFocus)
+							toSetFocus = id_TobaccoDesc;
+					}
+				}
+				
+				if (isNotValid && errorStr.length)
+				{
+					Alert.show(errorStr,"Field entry error", 4, FlexGlobals.topLevelApplication.mainContainer, function(event:Event):void{
+						if (toSetFocus)
+							toSetFocus.setFocus();
+					});
+				}
+				
+				
+				return isNotValid;
+			} 
+			//Clear Form
+			public function clearForm():void
+			{
+				alcoholActiveYesNo.selectedValue 	= null;
+				id_AlcoholYes.selected 				= false;
+				id_AlcoholNo.selected 				= false;
+				id_AlcoholDesc.text 				= "";
+				drugsActiveYesNo.selectedValue 		= null;
+				id_DrugsYes.selected 				= false;
+				id_DrugsNo.selected 				= false;
+				id_DrugDesc.text 					= "";
+				tobaccoActiveYesNo.selectedValue 	= null;
+				id_TobaccoYes.selected 				= false;
+				id_TobaccoNo.selected 				= false;
+				id_TobaccoDesc.text					= '';
+			}
+			//If change in text and greater than 1
+			private function isDrugsDataChanged():void
+			{
+				if(id_DrugDesc.text.length >0)
+				{
+					isdata = true;
+					isDrugData = isdata;
+				}
+			}
+			//If change in text and greater than 1
+			private function isAlcohalDataChanged():void
+			{
+				if(id_AlcoholDesc.text.length >0)
+				{
+					isdata = true;
+					isAlcoholData = isdata;
+				}
+			}
+			//If change in text and greater than 1
+			private function isSmokingDataChanged():void
+			{
+				if(id_TobaccoDesc.text.length >0)
+				{
+					isdata = true;
+					isTobaccoData = isdata;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:RadioButtonGroup id="drugsActiveYesNo" 	itemClick="enableDrugField()"/>
+		<s:RadioButtonGroup id="alcoholActiveYesNo" itemClick="enableAlchoholField()"/>
+		<s:RadioButtonGroup id="tobaccoActiveYesNo" itemClick="enableTobaccoField()"/>
+	</fx:Declarations>
+	
+	<s:BorderContainer borderVisible="false" width="100%" height="18" backgroundColor="#C8DDEE" >
+		<s:layout>
+			<s:VerticalLayout verticalAlign="middle"/>
+		</s:layout>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label verticalAlign="middle" paddingLeft="8" text="Social History" width="100%" fontFamily="Calibri Bold"/>
+		</s:HGroup>
+	</s:BorderContainer>
+	<s:HGroup width="100%">
+		<s:VGroup width="50%">
+			<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="right">
+				<s:HGroup gap="0">
+					<s:RichText color="#4c4c4c" fontFamily="Calibri" fontSize="11" height="12" kerning="off" lineHeight="120%" trackingRight="2.5%" whiteSpaceCollapse="preserve"
+								width="40" paddingRight="3" textAlign="right">
+						<s:content><s:p><s:span>Drugs</s:span></s:p></s:content>
+					</s:RichText>
+					<s:RadioButton id="id_DrugsYes" buttonMode="true" value="yes" groupName="drugsActiveYesNo" tabIndex="15" 
+								   skinClass="com.adobe.Quivus.view.controls.skins.radioButtonSkins.YRadioButton" toolTip="Yes"/>
+					<s:RadioButton id="id_DrugsNo" buttonMode="true" value="no" groupName="drugsActiveYesNo" tabIndex="17"
+								   skinClass="com.adobe.Quivus.view.controls.skins.radioButtonSkins.NRadioButton" toolTip="No"/>
+				</s:HGroup>
+				<components1:LabelTextInput id="id_DrugDesc" enabled="false" fontFamily="Calibri" fontSize="11" fontWeight="normal" toolTip="Enter drug detail"
+										   prompt="Drug history" width="100%" tabIndex="16" maxChars="500" change="isDrugsDataChanged()"/>
+			</s:HGroup>
+			<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="right">
+				
+				<s:HGroup gap="0">
+					<s:RichText color="#4c4c4c" fontFamily="Calibri" fontSize="11" height="12" kerning="off" lineHeight="120%" trackingRight="2.5%" whiteSpaceCollapse="preserve"
+								width="40" paddingRight="3" textAlign="right">
+						<s:content><s:p><s:span>Alcohol</s:span></s:p></s:content>
+					</s:RichText>
+					<s:RadioButton id="id_AlcoholYes" buttonMode="true" value="yes" groupName="alcoholActiveYesNo" tabIndex="18" 
+								   skinClass="com.adobe.Quivus.view.controls.skins.radioButtonSkins.YRadioButton" toolTip="Yes"/>
+					<s:RadioButton id="id_AlcoholNo" buttonMode="true" value="no" groupName="alcoholActiveYesNo" 
+								   skinClass="com.adobe.Quivus.view.controls.skins.radioButtonSkins.NRadioButton" toolTip="No"/>
+				</s:HGroup>
+				<components1:LabelTextInput id="id_AlcoholDesc" enabled="false" fontFamily="Calibri" fontSize="11" fontWeight="normal" toolTip="Enter alcohol history"
+										   prompt="Alcohol history" width="100%" tabIndex="19" maxChars="500" change="isAlcohalDataChanged()"   />
+			</s:HGroup>
+			
+		</s:VGroup>
+		<s:VGroup width="50%">
+			<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="right" >
+				
+				<s:HGroup gap="0" >
+				<s:RichText color="#4c4c4c" fontFamily="Calibri" fontSize="11" height="12" kerning="off" lineHeight="120%" trackingRight="2.5%" whiteSpaceCollapse="preserve"
+							width="45" paddingRight="3" textAlign="right">
+					<s:content><s:p><s:span>Tobacco</s:span></s:p></s:content>
+				</s:RichText>
+				<s:RadioButton id="id_TobaccoYes" buttonMode="true" value="yes" groupName="tobaccoActiveYesNo" tabIndex="20" 
+							   skinClass="com.adobe.Quivus.view.controls.skins.radioButtonSkins.YRadioButton" toolTip="Yes"/>
+				<s:RadioButton id="id_TobaccoNo" buttonMode="true" value="no" groupName="tobaccoActiveYesNo" tabIndex="21" 
+							   skinClass="com.adobe.Quivus.view.controls.skins.radioButtonSkins.NRadioButton" toolTip="No"/>
+					
+				</s:HGroup>
+				<components1:LabelTextInput id="id_TobaccoDesc" enabled="false" fontFamily="Calibri" fontSize="11" maxChars="500" toolTip="Enter tobacco history"
+										   fontWeight="normal"  prompt="Tobacco history" width="100%" tabIndex="22"  change="isSmokingDataChanged()"/>
+			</s:HGroup>
+		</s:VGroup>
+		
+	</s:HGroup>
+</s:Group>

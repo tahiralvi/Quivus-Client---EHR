@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:PinableSlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+					  xmlns:components="com.gazuntite.controls.extended.components.*"
+					  xmlns:quickInput="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.*" 
+					  xmlns:labs="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.physical.labs.*"
+					  
+					  creationComplete="slideoutpanel1_creationCompleteHandler(event)"
+					  QSViewStateChange="pinableslideoutpanel1_QSViewStateChangeHandler(event)" xmlns:lab="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.plan.lab.*"
+					  >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPanel;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			
+			import mx.events.FlexEvent;
+			import mx.events.MoveEvent;
+			
+			private var notesPanel:NotesPanel;
+
+			protected function slideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_Header.id_slideoutBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					ToggleSlideOut();
+					event.stopImmediatePropagation();
+				});
+				id_Header.id_Pin.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					PinView = event.currentTarget.selected;
+					//event.stopImmediatePropagation();
+				});
+				id_Header.id_NotesBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if(id_Header.id_NotesBtn.selected)
+					{
+						showNotes();
+					}
+					else
+					{
+						if( notesPanel )
+						{	notesPanel.askSave();
+							notesPanel.removePopup();
+							event.stopImmediatePropagation();
+							return;
+						}
+					}
+					event.stopImmediatePropagation();
+				});
+				
+				id_LabContents.addEventListener("writeNotesClick", writeRecordNotesClickHandler, false, 0, true);
+			}
+			
+			private function showNotes():void
+			{
+				if( notesPanel )
+					notesPanel.removePopup();
+				
+				notesPanel = new NotesPanel();
+				notesPanel.width			= 550
+				notesPanel.height			= 150
+				notesPanel.HeadingLable 	= "Lab";
+				notesPanel.VisitDateLable 	= new Date().toDateString();
+				notesPanel.notesDTO	= QSUtilityFunctions.getModuleNoteDTO( Constants.LAB_IN_MODULE_NAME );
+				notesPanel.ShowPopup( this );
+				var loc:Point = getNotesPopupPosition();
+				notesPanel.move( loc.x, loc.y );
+				
+				notesPanel.id_header.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MoveEvent):void
+				{
+					notesPanel.SaveNotes();
+					notesPanel.removePopup();
+					event.stopImmediatePropagation();
+				}); 
+			}
+			
+			private function getNotesPopupPosition():Point
+			{
+				var pLoc:Point = new Point( id_Header.width , id_Header.y - 14 );
+				var loc:Point = id_Header.localToGlobal( pLoc );
+				
+				return loc;
+			}
+			
+			
+			protected function slideoutpanel1_moveHandler(event:MoveEvent):void
+			{
+				var loc:Point = getNotesPopupPosition();
+				
+				if( notesPanel )
+				{
+					notesPanel.move( loc.x, loc.y );	
+				}
+				
+				if (id_LabContents.recordNotesPanel)
+				{
+					id_LabContents.recordNotesPanel.move(loc.x, loc.y);
+				}
+			}
+
+
+			protected function pinableslideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( event.viewState == QSViewStateEvent.EXPANDED_VIEW )
+				{
+					if( id_Header )
+					{
+						id_Header.HeadingLable = id_Header.HeadingLable.toUpperCase();
+						id_Header.id_expandBtn.selected = false;
+					}
+				}
+				else
+				{
+					if( id_Header )
+					{
+						id_Header.HeadingLable = AppUtils.TitleCase(id_Header.HeadingLable);
+						id_Header.id_expandBtn.selected = true;
+					}
+				}
+			}
+			
+			private function writeRecordNotesClickHandler(event:Event):void
+			{
+				var loc:Point = getNotesPopupPosition();
+				id_LabContents.showNotes(loc);
+			}
+
+		]]>
+	</fx:Script>
+	<custom:HeaderContents>
+		<s:Group width="100%" height="24">
+			<s:layout>
+				<s:VerticalLayout verticalAlign="bottom" />
+			</s:layout>
+			<quickInput:PMHSectionHeader id="id_Header" width="100%" height="22"  HeadingLable="Lab"/>
+		</s:Group>
+		
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		
+		<custom:slideOutGreyHeader width="100%" />						   
+		
+	</custom:SlideHeaderContents>
+	<custom:Contents>
+		<s:VGroup paddingTop="0" width="100%" verticalAlign="top" horizontalAlign="center">
+			
+			<s:BorderContainer width="100%" cornerRadius="3" backgroundColor="#FFFFFF" borderAlpha="0" borderColor="#999AAA">
+				<s:layout>
+					<s:HorizontalLayout gap="2" paddingTop="3" paddingLeft="3" horizontalAlign="center" />
+				</s:layout>
+				
+				<lab:LabContents id="id_LabContents" width="100%"/>
+			</s:BorderContainer>
+		</s:VGroup>
+		
+	</custom:Contents>
+</custom:PinableSlideOutPanel>

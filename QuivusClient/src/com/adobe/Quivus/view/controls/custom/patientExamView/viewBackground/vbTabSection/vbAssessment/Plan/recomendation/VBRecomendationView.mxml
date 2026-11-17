@@ -1,0 +1,506 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 creationComplete="cc()"
+		 xmlns:itemEditors="com.adobe.Quivus.view.controls.custom.itemEditors.*" 
+		 xmlns:diagnosis="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.*" 
+		 xmlns:commons="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.*"
+		 xmlns:validators="com.adobe.Quivus.utils.validators.*" 
+		 xmlns:paging="com.adobe.Quivus.view.controls.custom.patientExamView.paging.*" 
+		 xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.staticData.recommendation.LoadAllLinksEvent;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.events.viewBackground.recommendation.LoadPatientRecommendationByPatientIdEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.view.controls.custom.itemEditors.ComboBoxItemEditor;
+			import com.adobe.Quivus.view.controls.custom.itemEditors.SparkComboBoxItemEditor;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.YesNoItemEditor;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.controls.extended.components.LabelComboBox;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.controls.Label;
+			import mx.controls.TextInput;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.events.DataGridEvent;
+			import mx.events.ValidationResultEvent;
+			
+			import valueObjects.MedicalHistoryDTO;
+			import valueObjects.MethodTypeDTO;
+			import valueObjects.PageDTO;
+			import valueObjects.PatientRecommendationDTO;
+			import valueObjects.PlanTypeDTO;
+			
+			private var _hasGridChanged:Boolean;
+			private var _hasViewChanged:Boolean;
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+			[Bindable]
+			public var deleteColumnData:Object;
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			
+			public function GridRowNumber(item:Object, iCol:int):String
+			{
+				var strRowNum:String = "";
+				
+				if (id_RecommendationGrid.dataProvider)
+				{
+					var rowNum:int = id_RecommendationGrid.dataProvider.getItemIndex(item) + 1;
+					strRowNum = String(rowNum);
+				}
+				
+				return strRowNum;
+			}
+			
+			private function recommendationItemEditBeginHandler(event:DataGridEvent):void
+			{
+				id_RecommendationGrid.createItemEditor(event.columnIndex, event.rowIndex);
+				var i:int;
+				
+				if ( event.columnIndex == 2 ) //Plan
+				{
+					if (model.planTypesList ) 
+					{
+						for( i = 0; i < model.planTypesList.length; i ++ )
+						{
+							var Plan:PlanTypeDTO = model.planTypesList.getItemAt( i ) as PlanTypeDTO;
+							if( event.itemRenderer.data.Plan && event.itemRenderer.data.Plan.PlanName == Plan.PlanName )
+								SparkComboBoxItemEditor(id_RecommendationGrid.itemEditorInstance).id_ComboEditor.selectedItem = Plan; 
+						}
+					}
+				}
+					
+				else if ( event.columnIndex == 3 ) //Method
+				{
+					if (model.methodTypesList ) 
+					{
+						for( i = 0; i < model.methodTypesList.length; i ++ )
+						{
+							var method:MethodTypeDTO = model.methodTypesList.getItemAt( i ) as MethodTypeDTO;
+							if( event.itemRenderer.data.Method && event.itemRenderer.data.Method.MethodName == method.MethodName )
+								SparkComboBoxItemEditor(id_RecommendationGrid.itemEditorInstance).id_ComboEditor.selectedItem = method; 
+						}
+					}
+				}
+					
+				else if ( event.columnIndex == 4 ) //Links
+				{
+					if (model.linksList ) 
+					{
+						for( i = 0; i < model.linksList.length; i ++ )
+						{
+							var link:* = model.linksList.getItemAt( i ) ;//as MethodTypeDTO;
+							if( event.itemRenderer.data.Links && event.itemRenderer.data.Links.MethodName == link.MethodName )
+								SparkComboBoxItemEditor(id_RecommendationGrid.itemEditorInstance).id_ComboEditor.selectedItem = link; 
+						}
+					}
+				}
+					
+				else if (event.columnIndex == 7)
+				{
+					//id_RecommendationGrid.createItemEditor(event.columnIndex, event.rowIndex);
+					
+					/* YesNoItemEditor(id_RecommendationGrid.itemEditorInstance).property = "IsDiscussedWithPatient";
+					
+					YesNoItemEditor(id_RecommendationGrid.itemEditorInstance).data = event.itemRenderer.data; */
+					if( id_RecommendationGrid.selectedItem.IsDiscussedWithPatient )
+						(id_RecommendationGrid.itemEditorInstance as YesNoItemEditor).isYes = id_RecommendationGrid.selectedItem.IsDiscussedWithPatient.toString();
+				}
+				
+			}
+			
+			
+			private function cc():void
+			{
+				//addEventListener("writeDictationClick", writeDictationClickHandler, false, 0, true);
+				
+				id_RecommendationGrid.addEventListener(DataGridActionsEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+				id_RecommendationGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				id_RecommendationGrid.addEventListener(DataGridActionsEvent.ITEM_EDIT_KEY_UP, itemEditKeyUpHandler, false, 0, true);
+				id_RecommendationGrid.addEventListener(DataGridActionsEvent.WRITE_NOTES_CLICK, writeNotesClickHandler, false, 0, true);
+				
+				if (!deleteColumnData)
+					deleteColumnData = {};
+				
+				deleteColumnData["noteDataFields"] = {subject: "NoteSubject", note: "Note", header: "Plan.PlanName"};
+				deleteColumnData["dictationDataField"] = "DictationID";
+				deleteColumnData["recordIDField"] = "PatientRecommendationID";
+				deleteColumnData["section"] = QIPopUpManager.RECOMMENDATION;
+			}
+			
+			private function writeNotesClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_RECOMMENDATION ) )//Tahir Alvi - implement security check 
+				{
+					
+				}
+			}
+			
+			private function editRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_RECOMMENDATION ) )//Tahir Alvi - implement security check 
+				{
+					id_RecommendationGrid.editable = true;
+					
+					var rowIndex:int = LabelDataGrid(event.currentTarget).selectedIndex;
+					
+					var itemToSetInEditableMode:IListItemRenderer = id_RecommendationGrid.indexToItemRenderer(rowIndex);
+					
+					var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+					ev.columnIndex = 2;
+					ev.rowIndex = rowIndex;
+					ev.itemRenderer = itemToSetInEditableMode;
+					ev.dataField = "Plan.PlanName";
+					id_RecommendationGrid.dispatchEvent(ev);
+					
+				}
+			}
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_RECOMMENDATION ) )//Tahir Alvi - implement security check 
+				{
+					var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+					
+					var recommendationID:int = PatientRecommendationDTO(event.currentTarget.selectedItem).PatientRecommendationID;
+					
+					if (recommendationID == 0)
+					{
+						model.patientRecommendationDTOListByPatientId.removeItemAt(curTar.selectedIndex);
+						if (model.patientRecommendationDTOListByPatientId.length <= 0)
+						{
+							_hasGridChanged = false;
+							//hasViewChanged = isGetEdited();
+						}
+					}
+					else
+					{
+						UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+						{
+							id_RecommendationGrid.selectedItem.IsDeleted = true;
+							model.patientRecommendationDTOListByPatientId.filterFunction = filterDeletedItems;
+							model.patientRecommendationDTOListByPatientId.refresh();
+							
+							hasViewChanged = _hasGridChanged = true;
+						});
+					}
+					
+				}
+			}
+			
+			private function itemEditKeyUpHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_RECOMMENDATION ) )//Tahir Alvi - implement security check 
+				{
+					if (event.searchString.length > 2)
+					{
+						var loadLinksEv:LoadAllLinksEvent = new LoadAllLinksEvent(event.searchString);
+						CairngormEventDispatcher.getInstance().dispatchEvent(loadLinksEv);
+					}
+					
+				}
+			}
+			
+			public function discussedWithPatientLabel(oItem:Object, icol:int):String
+			{
+				var label:String = "";
+				
+				if (oItem.hasOwnProperty("IsDiscussedWithPatient"))
+				{
+					if (oItem.IsDiscussedWithPatient == Constants.STRING_TRUE)
+						label = "Yes";
+						
+					else if (oItem.IsDiscussedWithPatient == Constants.STRING_FALSE)
+						label = "No";
+				}
+				
+				return label;
+			}
+			
+			private function recommendationItemEditEndHandler(event:DataGridEvent):void
+			{
+				var validationRes:ValidationResultEvent;
+				
+				
+				if (event.dataField == "Plan.PlanName")
+				{
+					var editor:LabelComboBox = SparkComboBoxItemEditor(id_RecommendationGrid.itemEditorInstance).id_ComboEditor;
+					//					var planEditor:ComboBoxItemEditor = ComboBoxItemEditor(id_RecommendationGrid.itemEditorInstance);
+					
+					comboValidator.error = "Invalid Plan";
+					comboValidator.source = editor;
+					
+					validationRes = comboValidator.validate(editor.selectedItem);
+					
+					if (validationRes && !validationRes.results)
+					{
+						event.itemRenderer.data.Plan = editor.selectedItem;
+						event.itemRenderer.data.IsDirty = true;
+						hasViewChanged = _hasGridChanged = true;
+					}
+					else
+					{
+						//event.itemRenderer.data.Plan = editor.previouslySelectedItem;
+						id_RecommendationGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+					}
+					
+				}
+				else if (event.dataField == "Method.MethodName")
+				{
+					//var methodEditor:ComboBoxItemEditor = ComboBoxItemEditor(id_RecommendationGrid.itemEditorInstance);
+					editor = SparkComboBoxItemEditor(id_RecommendationGrid.itemEditorInstance).id_ComboEditor;
+					comboValidator.error = "Invalid Method";
+					comboValidator.source = editor;
+					
+					validationRes = comboValidator.validate(editor.selectedItem);
+					
+					if (validationRes && !validationRes.results)
+					{
+						event.itemRenderer.data.Method = editor.selectedItem;
+						event.itemRenderer.data.IsDirty = true;
+						hasViewChanged = _hasGridChanged = true;
+					}
+					else
+					{
+						//event.itemRenderer.data.Method = editor.previouslySelectedItem;
+						id_RecommendationGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+					}
+				}
+				else if (event.dataField == "Links")
+				{
+					//var methodEditor:ComboBoxItemEditor = ComboBoxItemEditor(id_RecommendationGrid.itemEditorInstance);
+					editor = SparkComboBoxItemEditor(id_RecommendationGrid.itemEditorInstance).id_ComboEditor;
+					comboValidator.error = "Invalid Link";
+					comboValidator.source = editor;
+					
+					validationRes = comboValidator.validate(editor.selectedItem);
+					
+					if (validationRes && !validationRes.results)
+					{
+						event.itemRenderer.data.Links = editor.selectedItem;
+						event.itemRenderer.data.IsDirty = true;
+						hasViewChanged = _hasGridChanged = true;
+					}
+					else
+					{
+						//event.itemRenderer.data.Method = editor.previouslySelectedItem;
+						id_RecommendationGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+					}
+				}	
+				else if (event.dataField == "Duration.DurationName")
+				{
+					//var durationEditor:ComboBoxItemEditor = ComboBoxItemEditor(id_RecommendationGrid.itemEditorInstance);
+					editor = SparkComboBoxItemEditor(id_RecommendationGrid.itemEditorInstance).id_ComboEditor;
+					comboValidator.error = "Invalid Duration";
+					comboValidator.source = editor;
+					
+					validationRes = comboValidator.validate(editor.selectedItem);
+					
+					if (validationRes && !validationRes.results)
+					{
+						event.itemRenderer.data.Duration = editor.selectedItem;
+						event.itemRenderer.data.IsDirty = true;
+						hasViewChanged = _hasGridChanged = true;
+					}
+					else
+					{
+						//event.itemRenderer.data.Duration = editor.selectedItem;
+						id_RecommendationGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+					}
+				}
+					
+				else if (event.dataField == "Description")
+				{
+					//var durationEditor:ComboBoxItemEditor = ComboBoxItemEditor(id_RecommendationGrid.itemEditorInstance);
+					
+					if((id_RecommendationGrid.itemEditorInstance as TextInput).text.length > 0)
+					{
+						
+						event.itemRenderer.data.Description = (id_RecommendationGrid.itemEditorInstance as TextInput).text;
+						event.itemRenderer.data.IsDirty = true;
+						
+						hasViewChanged = _hasGridChanged = true;
+					}
+					else
+					{
+						id_RecommendationGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+					}
+				}
+				
+				
+				id_RecommendationGrid.destroyItemEditor();
+				id_RecommendationGrid.invalidateProperties();
+				model.patientRecommendationDTOListByPatientId.refresh();
+				event.stopImmediatePropagation();
+				event.preventDefault();
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				/* var mpiEvent : ManagePatientImmunizationEvent = new ManagePatientImmunizationEvent(  );
+				CairngormEventDispatcher.getInstance().dispatchEvent( mpiEvent ); */
+				if(model.patientRecommendationDTOListByPatientId!=null){
+					model.patientRecommendationDTOListByPatientId.filterFunction=myFilter;
+					model.patientRecommendationDTOListByPatientId.refresh();
+				}
+			}
+			
+			private function myFilter(obj:*):Boolean
+			{
+				
+				if(model.vbFilter == Constants.BY_VISIT)
+				{
+					if(model.vbVisitId == obj.VisitID)
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+				
+				return true;
+				
+			}
+			
+			protected function id_RecommendationGrid_clickHandler(event:MouseEvent):void
+			{
+				if(id_RecommendationGrid.selectedItem && !id_RecommendationGrid.selectedItem["IsRecordEditable"])
+				{
+					id_RecommendationGrid.editable = false;
+					return;
+				}
+			}
+			
+			private function switchPageForGridView(event:*):void
+			{
+				
+				if( UtilityFunctions.IsNullOrEmpty( model.patientRecommendationCurrentPageByPatient ) )
+					model.patientRecommendationCurrentPageByPatient = new PageDTO();
+				
+				var pvital:PageDTO 		= model.patientRecommendationCurrentPageByPatient;
+				pvital.fromDate 		= model.defaultFilterAndPaging.fromDate;
+				pvital.toDate 			= model.defaultFilterAndPaging.toDate;
+				pvital.pageSize 		= model.defaultFilterAndPaging.pageSize;
+				pvital.LastVisitNumber 	= model.defaultFilterAndPaging.LastVisitNumber;
+				
+				var lpviEvent: LoadPatientRecommendationByPatientIdEvent = new LoadPatientRecommendationByPatientIdEvent(); 
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpviEvent );
+			}
+			
+			protected function id_PaginationFilterView_RefreshViewHandler(event:Event):void
+			{
+				var lpviEvent: LoadPatientRecommendationByPatientIdEvent = new LoadPatientRecommendationByPatientIdEvent(); 
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpviEvent );
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<validators:ComboValidator id="comboValidator" property="selectedItem"/>
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout gap="0" />
+		
+	</s:layout>
+	
+	
+	<s:Button label="Filter" click="button1_clickHandler(event)" visible="false" includeInLayout="false" id="id_applyFiler"/>
+	<paging:PaginationFilterView id="id_PaginationFilterView" width="100%" Page="{model.patientRecommendationCurrentPageByPatient}"
+								 GoToFirstPage="switchPageForGridView(event)" GoToNextPage="switchPageForGridView(event)" 
+								 GoToPreviousPage="switchPageForGridView(event)" GoToLastPage="switchPageForGridView(event)"
+								 RefreshView="id_PaginationFilterView_RefreshViewHandler(event)"
+								 />
+	<components1:LabelDataGrid id="id_RecommendationGrid" width="100%" useRollOver="false"
+							  dataProvider="{model.patientRecommendationDTOListByPatientId}" rowCount="{id_RecommendationGrid.dataProvider.length + 1}" verticalScrollPolicy="on"
+							  itemEditBegin="recommendationItemEditBeginHandler(event)" 
+							  rowHeight="24"
+							  itemEditEnd="recommendationItemEditEndHandler(event)"
+							  click="id_RecommendationGrid_clickHandler(event)"
+							  maxHeight="150">
+		<components1:columns>
+			<mx:DataGridColumn headerText="Sr.#" editable="false" width="55" labelFunction="GridRowNumber" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Visit Date" headerRenderer="mx.controls.Label" wordWrap="true" width="90" dataField="VisitDate" editable="false" 
+							   itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG"  />
+			<mx:DataGridColumn headerText="Plan" width="65" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="Plan.PlanName">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.planTypesList}" labelField="PlanName"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Method" width="50" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="Method.MethodName">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor  dataProvider="{outerDocument.model.methodTypesList}" labelField="MethodName"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Links" width="60" headerRenderer="mx.controls.Label" wordWrap="true" editable="true" dataField="Links" editorDataField="editorText" itemRenderer="mx.controls.Label">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor  dataProvider="{outerDocument.model.linksList}" labelField="Links"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Duration" width="90" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="Duration.DurationName">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor  dataProvider="{outerDocument.model.durationTypesList}" labelField="DurationName"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			
+			<mx:DataGridColumn headerText="Description" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" width="110" dataField="Description"  />
+			
+			<mx:DataGridColumn headerText="Discussed With Pat..." width="100" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="IsDiscussedWithPatient" labelFunction="discussedWithPatientLabel">
+				<mx:itemEditor>
+					<fx:Component>
+						<diagnosis:YesNoItemEditor width="50" height="100%" property="IsDiscussedWithPatient"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<commons:DataGridColumnEx width="85" data="{deleteColumnData}" headerText="" editable="false" 
+									  itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.VBRenderer"/>
+		</components1:columns>
+	</components1:LabelDataGrid>
+	
+</s:Group>

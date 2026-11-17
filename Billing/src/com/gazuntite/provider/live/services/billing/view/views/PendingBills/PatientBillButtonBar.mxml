@@ -1,0 +1,543 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%"  paddingTop="5" paddingRight="10" paddingLeft="10"
+		  creationComplete="hgroup1_creationCompleteHandler(event)"
+		  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.util.xml.XmlUtils;
+			import com.gazuntite.provider.live.services.billing.dto.PendingBillsDTO;
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.SuperBillENMServiceInfoDTO;
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.SuperBillProcedureInfoDTO;
+			import com.gazuntite.provider.live.services.billing.event.ClaimManagement.ClaimPatientSearchEvent;
+			import com.gazuntite.provider.live.services.billing.event.SuperBill.SaveSuperBillEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			public var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			[Bindable]
+			private var m_sGenerateClaim:String
+			
+			[Bindable]
+			public function get GenerateClaim():String
+			{
+				return m_sGenerateClaim;
+			}			
+			
+			public function set GenerateClaim(value:String):void
+			{
+				m_sGenerateClaim = value;
+			}	
+			
+			[Bindable]
+			private var m_oPBDTO:PendingBillsDTO
+			
+			[Bindable]
+			public function get SelectedPendingBill():PendingBillsDTO
+			{
+				return m_oPBDTO;
+			}			
+			
+			public function set SelectedPendingBill(value:PendingBillsDTO):void
+			{
+				m_oPBDTO = value;
+			}			
+			private var superBill:XML;
+			private var pendingBill:PendingBillsDTO;
+			protected function id_GenerateBill_clickHandler(event:MouseEvent, GenerateClaim:String):void
+			{
+				this.GenerateClaim = GenerateClaim;
+				if(this.GenerateClaim == "true" &&  model.Copay > model.TotalCharges )
+				{
+					Alert.show("Copay is greater than total charges","Info",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				
+				pendingBill = new PendingBillsDTO();
+				
+				if(id_ReadyToBill.selected == true)
+				{
+					pendingBill.BillingStatusTypeID = "3";
+					pendingBill.MediaTypeID = "0";
+				}
+				else if(id_Hold4Batch.selected == true)
+				{
+					pendingBill.BillingStatusTypeID = "1";
+					pendingBill.MediaTypeID = "2";
+				}
+				else
+				{
+					pendingBill.BillingStatusTypeID = "1";
+					pendingBill.MediaTypeID = "1";
+				}
+								
+				if( this.GenerateClaim == "true" && (model.Copay > 0 && model.CurrentPaymentTypeId == "0") )
+				{
+					var alert:Alert = Alert.show("Please select Mode of Payment","Info",4,FlexGlobals.topLevelApplication.mainContainer);
+					alert.move(alert.x, alert.y - 100 );
+					return;
+				}
+				
+				
+				if(this.GenerateClaim == "true" && ( model.CurrentTOSID == null || model.CurrentTOSID == "0") )
+				{
+					Alert.show("Please select Type of Service","Info",4,FlexGlobals.topLevelApplication.mainContainer);					
+					return;
+				}
+				else if( model.CurrentTOSID == null)
+				{
+					model.CurrentTOSID = "0";
+				}
+				
+				if(this.GenerateClaim == "true" && ( model.CurrentPOSTypeID == null || model.CurrentPOSTypeID == "" || model.CurrentPOSTypeID == "0") )
+				{
+					Alert.show("Please select Place of Service","Info",4,FlexGlobals.topLevelApplication.mainContainer);					
+					return;
+				}
+				else if( model.CurrentPOSTypeID == null || model.CurrentPOSTypeID == "")
+				{
+					model.CurrentPOSTypeID = "0";
+				}
+				
+				if(this.GenerateClaim == "true" && ( model.CMS1500Info.Block22 != "" && model.CMS1500Info.Block22RefNumber == "" ) )
+				{
+					Alert.show("Please enter Reference number in Block 22","Info",4,FlexGlobals.topLevelApplication.mainContainer);					
+					return;
+				}
+				if(this.GenerateClaim == "true" && (UtilityFunctions.IsNullOrEmpty( model.CMS1500Info.Block16DateFrom) == false && UtilityFunctions.IsNullOrEmpty( model.CMS1500Info.Block16DateTo) == true) )
+				{
+					Alert.show("Please enter Disabled-To date for Block 16","Info",4,FlexGlobals.topLevelApplication.mainContainer);					
+					return;
+				}
+				
+				if(this.GenerateClaim == "true" && (UtilityFunctions.IsNullOrEmpty( model.CMS1500Info.Block16DateFrom) == true && UtilityFunctions.IsNullOrEmpty( model.CMS1500Info.Block16DateTo) == false) )
+				{
+					Alert.show("Please enter Disabled-From date for Block 16","Info",4,FlexGlobals.topLevelApplication.mainContainer);					
+					return;
+				}
+				
+				if(this.GenerateClaim == "true" && (UtilityFunctions.IsNullOrEmpty( model.CMS1500Info.Block18DateFrom) == false && UtilityFunctions.IsNullOrEmpty( model.CMS1500Info.Block18DateTo) == true) )
+				{
+					Alert.show("Please enter Hospitalized-To date for Block 18","Info",4,FlexGlobals.topLevelApplication.mainContainer);					
+					return;
+				}
+				
+				if(this.GenerateClaim == "true" && (UtilityFunctions.IsNullOrEmpty( model.CMS1500Info.Block18DateFrom) == true && UtilityFunctions.IsNullOrEmpty( model.CMS1500Info.Block18DateTo) == false) )
+				{
+					Alert.show("Please enter Hospitalized-From date for Block 18","Info",4,FlexGlobals.topLevelApplication.mainContainer);					
+					return;
+				}
+				
+				pendingBill.PatientInfo = SelectedPendingBill.PatientInfo;
+				pendingBill.ProviderId = SelectedPendingBill.ProviderId;
+				pendingBill.PatientId = SelectedPendingBill.PatientId ;
+				pendingBill.PatientUserId = SelectedPendingBill.PatientUserId ;
+				pendingBill.PaymentTypeID = model.CurrentPaymentTypeId;
+				pendingBill.PriInsOrganizationID = SelectedPendingBill.PriInsOrganizationID;
+				pendingBill.SecInsOrganizationID = SelectedPendingBill.SecInsOrganizationID;
+				pendingBill.TerInsOrganizationID = SelectedPendingBill.TerInsOrganizationID;
+				pendingBill.ProviderId = SelectedPendingBill.ProviderId;
+				pendingBill.QuivusId = SelectedPendingBill.QuivusId;
+				pendingBill.VisitId = SelectedPendingBill.VisitId;
+				pendingBill.VisitDate = SelectedPendingBill.VisitDate;
+				pendingBill.EncounterTypeID = model.CurrentTOSID;
+				pendingBill.ServiceTypeID = model.CurrentPOSTypeID;
+				if(this.GenerateClaim == "true" && model.CurrentENMServiceInfo.length == 1 && (model.CurrentENMServiceInfo[0] as SuperBillENMServiceInfoDTO).ENMCodeTypeID == "0")
+				{
+					model.CurrentENMServiceInfo.removeItemAt(0);
+				}
+				pendingBill.ENMServiceInfo = model.CurrentENMServiceInfo;
+				pendingBill.HCFA = model.CMS1500Info;	
+				if(pendingBill.HCFA.CMSID == null)
+					pendingBill.HCFA.CMSID = "0";	
+				if(pendingBill.HCFA.ClaimID == null)
+					pendingBill.HCFA.ClaimID = "0";
+				pendingBill.DiagnosisInfo = model.CurrentDiagnosis;
+				pendingBill.ProcedureInfo =model.CurrentProcedures;
+				pendingBill.CheckNumber = model.CheckNo;
+				if(UtilityFunctions.IsNullOrEmpty(model.DisplayCopay))
+					pendingBill.Copay = "0";
+				else
+					pendingBill.Copay = model.DisplayCopay.replace("%","").replace("$","");
+				pendingBill.HistoryLevelScale = model.CurrentHistoryLevelScale;
+				pendingBill.ExaminationLevelScale = model.CurrentExaminationLevelScale;
+				pendingBill.DecisionLevelScale = model.CurrentDecisionLevelScale;
+				pendingBill.Patient = SelectedPendingBill.Patient;
+				pendingBill.Provider = SelectedPendingBill.Provider;
+				pendingBill.BillPayment = SelectedPendingBill.BillPayment;				
+				
+				pendingBill.PrimaryResponsibility = model.PrimaryResponsibility.toString();					
+				pendingBill.SecondaryResponsibility = model.SecondaryResponsibility.toString();				
+				pendingBill.BillingDisallowed = model.BillingDisallowed.toString();
+				pendingBill.AdditionalPayment = model.AdditionalPayment.toString();
+				pendingBill.WriteOff = model.WriteOff.toString();
+				
+				
+				if(model.CurrentOtherProcedures.length > 0)
+				{
+					if(pendingBill.ProcedureInfo == null)
+						pendingBill.ProcedureInfo = new ArrayCollection();
+					pendingBill.ProcedureInfo.addAll(model.CurrentOtherProcedures);
+				}
+				var isZeroAmountFound:Boolean = false;
+				
+				if(pendingBill.ProcedureInfo != null && pendingBill.ProcedureInfo.length > 0 )
+				{
+					for(var i:int = 0;i < pendingBill.ProcedureInfo.length; i++ )
+					{
+						var CPT:SuperBillProcedureInfoDTO = pendingBill.ProcedureInfo[i];
+						if(CPT.Fee == null || CPT.Fee == "" || UtilityFunctions.TrimString(CPT.Fee) == "0")
+						{						
+							isZeroAmountFound = true;						
+						}
+						if(CPT.ProcedureID == "-1")
+							CPT.ProcedureID = "0";
+								
+						if((CPT.Unit == null || CPT.Unit == "" || CPT.Unit == "0" ) && Number(CPT.Fee) > 0 )
+							CPT.Unit = "1";
+						
+						if(this.GenerateClaim == "true" && (pendingBill.DiagnosisInfo.length == 0) )
+						{
+							Alert.show("Please select at least one diagnosis","Info",4,FlexGlobals.topLevelApplication.mainContainer);			 		
+							return;
+						} 
+						
+						if(this.GenerateClaim == "true")
+						{
+							var modifierStatus:String = CheckCPTModifiers(CPT.ModifierTypeId1 == "0" ? "" : CPT.ModifierTypeId1,CPT.ModifierTypeId2 == "0" ? "" : CPT.ModifierTypeId2,CPT.ModifierTypeId3 == "0" ? "" : CPT.ModifierTypeId3,CPT.ModifierTypeId4 == "0" ? "" : CPT.ModifierTypeId4);
+							if( modifierStatus != "")
+							{
+								Alert.show(modifierStatus + ", Please Check Procedure " + CPT.ProcedureCode, "Validation",4,FlexGlobals.topLevelApplication.mainContainer);
+								return;
+							}
+						}
+					}
+				}
+				pendingBill.WRSInfo = model.CurrentWRServices; 
+				pendingBill.ManagedByUserId = model.LoggedInUserId.toString();
+				
+				if(this.GenerateClaim == "true" && (isZeroAmountFound) )
+				{
+					Alert.show("Some procedures' amounts are zero, do you want to proceed?","Confirmation", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, ProceedWithGivenData);
+				}
+				else
+				{					
+					GenerateBill();
+				}				
+			}
+			private function ProceedWithGivenData(event:CloseEvent):void
+			{
+				if( event.detail == Alert.YES )
+				{
+					GenerateBill();
+				} 
+			}
+			
+			private function GenerateBill():void
+			{
+				var msg:String = "Are you sure, you want to generate the bill with given data?";
+				if(this.GenerateClaim == "false")
+				{
+					msg = "You want to save the bill?";
+				}
+				
+				UtilityFunctions.AskMessage(msg,function(): void
+				{
+					superBill = null;
+					superBill = XmlUtils.getNodeByTagName("PendingBills");
+					
+					model.IsReport = false;
+					superBill.appendChild(pendingBill.ToXML())
+					
+					if(model.CurrentProcedures != null && model.CurrentProcedures.length > 0 && model.CurrentOtherProcedures != null && model.CurrentOtherProcedures.length > 0)
+					{
+						for(var i:int = 0; i < model.CurrentOtherProcedures.length; i++)
+						{
+							var opIndex:int = model.CurrentProcedures.getItemIndex(model.CurrentOtherProcedures[i]);
+							if(opIndex > -1)
+								model.CurrentProcedures.removeItemAt(opIndex);
+						}
+					}
+					cursorManager.setBusyCursor();
+					model.Result = false;						
+					var sbEvent:SaveSuperBillEvent = new SaveSuperBillEvent(superBill,GenerateClaim,SaveStatus);
+					CairngormEventDispatcher.getInstance().dispatchEvent(sbEvent);
+					
+				});				
+				
+			}
+				
+			protected function SaveStatus():void
+			{
+				cursorManager.removeBusyCursor();
+				if(model.Result == true)
+				{					
+					model.SearchPendingBillsResults.PendingBills.removeItemAt(model.SearchPendingBillsResults.PendingBills.getItemIndex(SelectedPendingBill));
+					
+					model.totalrecords_PB -= 1;						
+					
+					var cplEvent : ClaimPatientSearchEvent= new ClaimPatientSearchEvent(model.LoggedInUserSelectedBranchId);
+					CairngormEventDispatcher.getInstance().dispatchEvent( cplEvent );	
+					
+					model.totalRecordMessage_PB = "Total Records ("+ model.totalrecords_PB.toString() +")";
+					if(this.GenerateClaim == "true")
+						Alert.show("Super Bill generated successfully","Info",4,FlexGlobals.topLevelApplication.mainContainer);	
+					else
+						Alert.show("Super Bill saved successfully","Info",4,FlexGlobals.topLevelApplication.mainContainer);
+					model.ActionButtonEnabled = true;					
+					
+					dispatchEvent( new CloseEvent( CloseEvent.CLOSE, true ) );
+					model.Result = false;
+				}
+				else
+					Alert.show("Super Bill not saved successfully","Info",4,FlexGlobals.topLevelApplication.mainContainer);
+				
+				
+			} 
+
+			private function CheckCPTModifiers(modiCode1:String,modiCode2:String,modiCode3:String,modiCode4:String):String
+			{
+				var result:String = "";
+				var same:Boolean = CheckForSameModifiers(modiCode1,modiCode2,modiCode3,modiCode4)
+				if( same)
+				{
+					result = "Modifiers can not be same";
+					
+				}
+				
+				if( UtilityFunctions.IsNullOrEmpty(modiCode1) == true && UtilityFunctions.IsNullOrEmpty(modiCode2) == false)
+				{
+					result = "please select Modifier 1 then modifier 2";					
+				}	
+				else if( UtilityFunctions.IsNullOrEmpty(modiCode1) == false && 
+					(UtilityFunctions.IsNullOrEmpty(modiCode2) == true &&
+						(UtilityFunctions.IsNullOrEmpty(modiCode3) == false || UtilityFunctions.IsNullOrEmpty(modiCode4) == false)
+					)
+				)
+				{
+					result = "please select Modifier 2 then modifier 3 or 4";					
+				} 
+				else if( (UtilityFunctions.IsNullOrEmpty(modiCode1) == false && UtilityFunctions.IsNullOrEmpty(modiCode2) == false ) && 
+					(UtilityFunctions.IsNullOrEmpty(modiCode3) == true &&
+						UtilityFunctions.IsNullOrEmpty(modiCode4) == false )
+					
+				)
+				{
+					result = "please select Modifier 3 then modifier 4";					
+				}
+				
+				return result;
+			}
+			
+			private function CheckForSameModifiers(modiCode1:String,modiCode2:String,modiCode3:String,modiCode4:String):Boolean
+			{
+				var result:Boolean = false;
+				trace("in CheckForSameModifiers")
+				if( UtilityFunctions.IsNullOrEmpty(modiCode1) == false && UtilityFunctions.IsNullOrEmpty(modiCode2) == false && UtilityFunctions.IsNullOrEmpty(modiCode3) == false && UtilityFunctions.IsNullOrEmpty(modiCode4) == false)
+				{				
+					if( 
+						( 
+							modiCode1 == modiCode2 ||
+							modiCode1 == modiCode3 ||
+							modiCode1 == modiCode4 					  
+						) ||
+						( 
+							modiCode2 == modiCode1 ||
+							modiCode2 == modiCode3 ||
+							modiCode2 == modiCode4 					  
+						)||
+						( 
+							modiCode3 == modiCode1 ||
+							modiCode3 == modiCode2 ||
+							modiCode3 == modiCode4 					  
+						)||
+						( 
+							modiCode4 == modiCode1 ||
+							modiCode4 == modiCode3 ||
+							modiCode4 == modiCode2 					  
+						)
+					)
+						
+					{						
+						result = true;
+					}	
+				}
+				else if(UtilityFunctions.IsNullOrEmpty(modiCode1) == false && UtilityFunctions.IsNullOrEmpty(modiCode2) == false && UtilityFunctions.IsNullOrEmpty(modiCode3) == false 
+					&& UtilityFunctions.IsNullOrEmpty(modiCode4) == true)
+				{				
+					if( 
+						( 
+							modiCode1 == modiCode2 ||
+							modiCode1 == modiCode3 					  
+						) ||
+						( 
+							modiCode2 == modiCode1 ||
+							modiCode2 == modiCode3 					  
+						)||
+						( 
+							modiCode3 == modiCode1 ||
+							modiCode3 == modiCode2 					  
+						)
+					)
+					{						
+						result = true;
+					}	
+				}
+					
+				else if(UtilityFunctions.IsNullOrEmpty(modiCode1) == false && UtilityFunctions.IsNullOrEmpty(modiCode2) == false 
+					&& UtilityFunctions.IsNullOrEmpty(modiCode3) == true 
+					&& UtilityFunctions.IsNullOrEmpty(modiCode4) == false)
+				{				
+					if( 
+						( 
+							modiCode1 == modiCode2  ||
+							modiCode1 == modiCode4 					  
+						) ||
+						( 
+							modiCode2 == modiCode1 ||
+							modiCode2 == modiCode4 					  
+						)||
+						( 
+							modiCode4 == modiCode1  ||
+							modiCode4 == modiCode2 					  
+						)
+					)
+					{						
+						result = true;
+					}					
+				}
+					
+				else if(UtilityFunctions.IsNullOrEmpty(modiCode1) == false && UtilityFunctions.IsNullOrEmpty(modiCode2) == true 
+					&& UtilityFunctions.IsNullOrEmpty(modiCode3) == false 
+					&& UtilityFunctions.IsNullOrEmpty(modiCode4) == false)
+				{
+					if( 
+						( 							
+							modiCode1 == modiCode3 ||
+							modiCode1 == modiCode4 					  
+						) ||
+						( 
+							modiCode3 == modiCode1  ||
+							modiCode3 == modiCode4 					  
+						)||
+						( 
+							modiCode4 == modiCode1 ||
+							modiCode4 == modiCode3 					  
+						)
+					)
+					{						
+						result = true;
+					}
+				}
+				else if(UtilityFunctions.IsNullOrEmpty(modiCode1) == true && UtilityFunctions.IsNullOrEmpty(modiCode2) == false 
+					&& UtilityFunctions.IsNullOrEmpty(modiCode3) == false 
+					&& UtilityFunctions.IsNullOrEmpty(modiCode4) == false)
+				{
+					if( 
+						( 							
+							modiCode2 == modiCode3 ||
+							modiCode2 == modiCode4 					  
+						)||
+						( 							
+							modiCode3 == modiCode2 ||
+							modiCode3 == modiCode4 					  
+						)||
+						( 							
+							modiCode4 == modiCode3 ||
+							modiCode4 == modiCode2 					  
+						)
+					)
+					{						
+						result = true;
+					}	
+				}
+				else if(UtilityFunctions.IsNullOrEmpty(modiCode1) == false && UtilityFunctions.IsNullOrEmpty(modiCode2) == false 
+					&& UtilityFunctions.IsNullOrEmpty(modiCode3) == true 
+					&& UtilityFunctions.IsNullOrEmpty(modiCode4) == true)
+				{
+					if(modiCode1 == modiCode2)
+						result = true;
+				}
+				else if(UtilityFunctions.IsNullOrEmpty(modiCode1) == false && UtilityFunctions.IsNullOrEmpty(modiCode2) == true 
+					&& UtilityFunctions.IsNullOrEmpty(modiCode3) == false 
+					&& UtilityFunctions.IsNullOrEmpty(modiCode4) == true)
+				{
+					if(modiCode1 == modiCode3)
+						result = true;
+				}
+				else if(UtilityFunctions.IsNullOrEmpty(modiCode1) == true && UtilityFunctions.IsNullOrEmpty(modiCode2) == false 
+					&& UtilityFunctions.IsNullOrEmpty(modiCode3) == false 
+					&& UtilityFunctions.IsNullOrEmpty(modiCode4) == true)
+				{
+					if(modiCode2 == modiCode3)
+						result = true;
+				}
+				else if(UtilityFunctions.IsNullOrEmpty(modiCode1) == false && UtilityFunctions.IsNullOrEmpty(modiCode2) == true 
+					&& UtilityFunctions.IsNullOrEmpty(modiCode3) == true 
+					&& UtilityFunctions.IsNullOrEmpty(modiCode4) == false)
+				{
+					if(modiCode1 == modiCode4)
+						result = true;
+				}
+				else if(UtilityFunctions.IsNullOrEmpty(modiCode1) == true && UtilityFunctions.IsNullOrEmpty(modiCode2) == false 
+					&& UtilityFunctions.IsNullOrEmpty(modiCode3) == true 
+					&& UtilityFunctions.IsNullOrEmpty(modiCode4) == false)
+				{
+					if(modiCode2 == modiCode4)
+						result = true;
+				}
+				else if(UtilityFunctions.IsNullOrEmpty(modiCode1) == true && UtilityFunctions.IsNullOrEmpty(modiCode2) == true 
+					&& UtilityFunctions.IsNullOrEmpty(modiCode3) == false 
+					&& UtilityFunctions.IsNullOrEmpty(modiCode4) == false)
+				{
+					if(modiCode3 == modiCode4)
+						result = true;
+				}
+				
+				return result;
+			}
+			
+			public var LastChildTabIndex:int = 0;
+			protected function hgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				var incrementer:int = 0;
+				id_ReadyToBill.tabIndex = tabIndex + (++incrementer);
+				id_Hold4Batch.tabIndex = tabIndex + (++incrementer);
+				id_Hold4Print.tabIndex = tabIndex + (++incrementer);
+				id_SaveBill.tabIndex = tabIndex + (++incrementer);
+				id_GenerateBill.tabIndex = tabIndex + (++incrementer);				
+				
+				LastChildTabIndex = ++incrementer;				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+		<s:RadioButton id="id_ReadyToBill" label="Ready To Bill"  selected="{ (SelectedPendingBill.BillingStatusTypeID == '3' || SelectedPendingBill.BillingStatusTypeID == '0') ? true : false  }" 
+					   fontFamily="Calibri" fontSize="11" toolTip="Ready To Bill"
+					   />		
+		<s:RadioButton id="id_Hold4Batch"  label="Hold for Batch"  fontFamily="Calibri" fontSize="11" toolTip="Hold for Batch"
+					   selected="{ (SelectedPendingBill.BillingStatusTypeID == '1'  &amp;&amp;  SelectedPendingBill.MediaTypeID == '2' ) ? true : false  }"
+					   />
+		<s:RadioButton id="id_Hold4Print"  label="Hold for Print"  fontFamily="Calibri" fontSize="11" toolTip="Hold for Print"
+					   selected="{ (SelectedPendingBill.BillingStatusTypeID == '1' &amp;&amp;  SelectedPendingBill.MediaTypeID == '1' ) ? true : false  }"
+					   />
+	    <mx:Spacer width="100%"/>
+		<s:Button id="id_SaveBill"  toolTip="Save Bill" label="SAVE BILL" click="id_GenerateBill_clickHandler(event,'false')" styleName="blackButtonSkin" width="120" />
+	   <s:Button id="id_GenerateBill"  toolTip="Generate Bill" label="GENERATE BILL" click="id_GenerateBill_clickHandler(event,'true')" styleName="blackButtonSkin" width="120" />
+
+</s:HGroup>

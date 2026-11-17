@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:components="com.zigron.controls.extended.components.*"
+		 xmlns:components1="com.zigron.common.view.components.*" xmlns:components2="com.gazuntite.common.view.components.*" xmlns:components3="com.gazuntite.controls.extended.components.*" >
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.dto.AddInsuranceDTO;
+			import com.gazuntite.common.util.ValidationUtils;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.components.TextInput;
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			private var objToSetFocus:Object = null;
+			private var _insurance:AddInsuranceDTO;                 
+			
+			[Bindable]
+			public function get insurance():AddInsuranceDTO
+			{
+				return _insurance;
+			}
+			
+			public function set insurance(value:AddInsuranceDTO):void
+			{
+				_insurance = value;
+			}
+			
+			public function SaveInsurance():Object
+			{					
+				if(! isValidData("0")) return objToSetFocus;
+				
+				model.insuranceDto.InsOrganizationID			= "0";
+				model.insuranceDto.IsDeleted 					= "false";
+				model.insuranceDto.CreatedBy					= model.LoggedInUserId.toString();
+				model.insuranceDto.InsuranceName				= id_Name.text;
+				model.insuranceDto.Address 						= UtilityFunctions.TrimString(id_Street.text);	
+				model.insuranceDto.AddressLine2 				= UtilityFunctions.TrimString(id_Street1.text);
+				model.insuranceDto.City 						= id_ZipCityStateCombine.id_City.selectedItem.CityName;
+				model.insuranceDto.Phone						= ValidationUtils.getPhoneNumberWithoutMasking(id_Phone.text);
+				model.insuranceDto.Extension 					= id_Extension.text;
+				model.insuranceDto.FAX							=  ValidationUtils.getPhoneNumberWithoutMasking(id_Fax.text);
+				model.insuranceDto.State 						= id_ZipCityStateCombine.id_State.selectedItem.StateCode;
+				model.insuranceDto.ZIP							= id_ZipCityStateCombine.id_ZIP.selectedItem.ZipCode;
+				model.insuranceDto.PlanName						= id_Plane.text;
+				model.insuranceDto.Note							= id_Note.text;
+				if(id_StatusCheckBox.selected)				
+					model.insuranceDto.StatusTypeID				= "1";
+				else
+					model.insuranceDto.StatusTypeID				= "2";
+				
+				return null;
+			}
+			
+			private function isValidData(insOrgID:String):Boolean
+			{
+				var success:Boolean = new Boolean();
+				var errorStr:String = new String();
+				success = true;
+				
+				if(UtilityFunctions.TrimString(id_Name.text) == "")
+				{
+					success = false;
+					errorStr += "Please enter Name \n";							
+					if (!objToSetFocus)
+						objToSetFocus = id_Name;						
+				}	
+				
+				for (var i:int = 0; i < model.InsList.length; i++) 
+				{
+					var insName:String = UtilityFunctions.TrimString((model.InsList[i] as AddInsuranceDTO).InsuranceName).toLowerCase();					
+					
+					if(insOrgID != "0" &&  insOrgID == (model.InsList[i] as AddInsuranceDTO).InsOrganizationID && UtilityFunctions.TrimString(id_Name.text).toLowerCase() == insName ) continue;
+					
+					if( insName == UtilityFunctions.TrimString(id_Name.text).toLowerCase() )
+					{
+						success = false;
+						errorStr += "Insurance name [" + UtilityFunctions.TrimString(id_Name.text) + "] already exists. \n";
+						if (!objToSetFocus)
+							objToSetFocus = id_Name;
+					}					
+				}
+				
+				if(ValidationUtils.getPhoneNumberWithoutMasking(id_Phone.text).length > 0 && ValidationUtils.getPhoneNumberWithoutMasking(id_Phone.text).length != 10)
+				{
+					success = false;
+					errorStr += "Please enter valid Phone \n";							
+					if (!objToSetFocus)
+						objToSetFocus = id_Phone;					
+				}
+				
+				if(UtilityFunctions.TrimString(id_Street1.text).length > 0 && UtilityFunctions.TrimString(id_Street.text).length == 0)
+				{
+					success = false;
+					errorStr += "Please first enter Street Line 1 and then 2 \n";							
+					if (!objToSetFocus)
+						objToSetFocus = id_Street1;					
+				}
+				
+				if(ValidationUtils.getPhoneNumberWithoutMasking(id_Fax.text).length > 0 && ValidationUtils.getPhoneNumberWithoutMasking(id_Fax.text).length != 10)
+				{
+					success = false;
+					errorStr += "Please enter valid Fax \n";							
+					if (!objToSetFocus)
+						objToSetFocus = id_Fax;					
+				}
+				
+				if(! id_ZipCityStateCombine.id_ZIP.selectedItem)
+				{
+					success = false;
+					errorStr += "Please select ZIP \n";							
+					if (!objToSetFocus)
+						objToSetFocus = id_ZipCityStateCombine.id_ZIP;					
+				}
+				
+				if(! id_ZipCityStateCombine.id_City.selectedItem)
+				{
+					success = false;
+					errorStr += "Please select City \n";							
+					if (!objToSetFocus)
+						objToSetFocus = id_ZipCityStateCombine.id_City;
+				}
+				
+				if(! id_ZipCityStateCombine.id_State.selectedItem)
+				{
+					success = false;
+					errorStr += "Please select State \n";							
+					if (!objToSetFocus)
+						objToSetFocus = id_ZipCityStateCombine.id_State;					
+				}
+				
+				if(success == false)
+				{
+					var alert:Alert = Alert.show(errorStr, "Required Fields", 4, FlexGlobals.topLevelApplication.mainContainer);					
+					PopUpManager.centerPopUp (alert);					
+				}
+				
+				return success;
+			}
+			
+			public function UpdateInsurance ():Object
+			{
+				if(! isValidData(insurance.InsOrganizationID)) return objToSetFocus;
+				
+				if(id_Name.text 			!= insurance.InsuranceName)
+					insurance.InsuranceName = id_Name.text;
+				
+				if(id_Street.text 			!= insurance.Address)
+					insurance.Address		= UtilityFunctions.TrimString(id_Street.text);
+				
+				if(id_Street1.text 			!= insurance.AddressLine2)
+					insurance.AddressLine2		= UtilityFunctions.TrimString(id_Street1.text);
+				
+				if(id_ZipCityStateCombine.id_State.selectedItem.StateCode != insurance.State)
+					insurance.State 			= id_ZipCityStateCombine.id_State.selectedItem.StateCode;
+				
+				if(id_ZipCityStateCombine.id_City.selectedItem.CityName != insurance.City)
+					insurance.City 			= id_ZipCityStateCombine.id_City.selectedItem.CityName;
+				
+				if(id_ZipCityStateCombine.id_ZIP.selectedItem.ZipCode != insurance.ZIP)
+					insurance.ZIP 			= id_ZipCityStateCombine.id_ZIP.selectedItem.ZipCode;
+				
+				if(ValidationUtils.getPhoneNumberWithoutMasking(id_Phone.text) 			!= insurance.Phone)
+					insurance.Phone 		= ValidationUtils.getPhoneNumberWithoutMasking(id_Phone.text);
+				
+				if(id_Extension.text 		!= insurance.Extension)
+					insurance.Extension		= id_Extension.text;
+				
+				if(ValidationUtils.getPhoneNumberWithoutMasking(id_Fax.text) 				!= insurance.FAX)
+					insurance.FAX 			= ValidationUtils.getPhoneNumberWithoutMasking(id_Fax.text);
+				
+				if(id_Plane.text 			!= insurance.PlanName)
+					insurance.PlanName 		= id_Plane.text;
+				
+				
+				if(id_Note.text				!= insurance.Note)
+					insurance.Note 							= id_Note.text;
+				insurance.IsDeleted 					= "false";
+				//insurance.CreatedBy						= "0";
+				insurance.ModifiedBy					= model.LoggedInUserId.toString();
+				
+				if(id_StatusCheckBox.selected)
+					
+					insurance.StatusTypeID				= "1"; 
+				else
+					insurance.StatusTypeID				= "2";
+				
+				return null;
+			}
+			//Tahir Alvi - In edit case load zip city state and State 
+			public function loadZipCityState(zip:String):void
+			{
+				id_ZipCityStateCombine.loadStateCityZipCodeCombineEvent('0', '0', zip);
+			}
+			public function setStateCityZIP():void
+			{				
+				// no more use this method
+			}
+			//Tahir Alvi - apply masking on the phone number
+			/* public function applyMask():void
+			{
+				var s:String      = id_Phone.text.replace(/[^0-9]/g,"");
+				id_Phone.text = '('+s.substring(0,3) + (s.length>3?")"+s.substring(3,6) + (s.length>6?"-"+s.substring(6,10):""):"");
+				id_Phone.selectRange(id_Phone.text.length, id_Phone.text.length);
+				
+				if(id_Phone.text.length == 1 && id_Phone.text == '(')
+					id_Phone.text = '';
+			} */
+			
+			//Shahid Munir - general function for masking
+			public function applyMask(textBox:LabelTextInput):void
+			{
+				var s:String      = textBox.text.replace(/[^0-9]/g,"");
+				textBox.text = '('+s.substring(0,3) + (s.length>3?")"+s.substring(3,6) + (s.length>6?"-"+s.substring(6,10):""):"");
+				textBox.selectRange(textBox.text.length, textBox.text.length);
+				
+				if(textBox.text.length == 1 && textBox.text == '(')
+					textBox.text = '';
+			}
+			
+			protected function id_Phone_changeHandler(event:TextOperationEvent):void
+			{
+				//applyMask();
+				applyMask(id_Phone);
+			}
+			
+			protected function id_Fax_changeHandler(event:TextOperationEvent):void
+			{
+				applyMask(id_Fax);
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<s:layout>
+		<s:VerticalLayout paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" gap="2"/>
+	</s:layout>
+	
+	<s:HGroup width="100%" horizontalAlign="center" verticalAlign="middle">		
+		<s:Spacer  width="100%"/>
+		<s:CheckBox  id="id_StatusCheckBox"  tabIndex="0" label="Active" selected="{insurance.StatusTypeID == '1' ? true : false }" />
+	</s:HGroup>
+	
+	<mx:HRule width="100%"/>
+	
+	<s:Label text="Carrier Address" fontFamily="Calibri" fontSize="12"/>
+	
+	<s:VGroup  width="100%">
+		<!--1st Row -->
+		<s:HGroup width="100%" gap="3">
+			
+			<components3:LabelTextInput id="id_Name" 
+									   width="100%" prompt="Name" text="{insurance.InsuranceName}"  tabIndex="1" 
+									   maxChars="45" restrict="a-z A-Z 0-9 .  - , _ ()" required="true" toolTip="Insurance Name" />
+			<components3:LabelTextInput id="id_Phone" 
+									   width="50%" prompt="Phone" text="{ValidationUtils.setPhoneNumberMasking(insurance.Phone)}" tabIndex="2" 
+									   toolTip="Enter phone no" restrict="[0-9]" change="id_Phone_changeHandler(event)" />
+			<components3:LabelTextInput id="id_Extension"
+									   width="50%" prompt="Extension"  text="{insurance.Extension}" 
+									   tabIndex="3" toolTip="Extension"  restrict="[a-z A-Z 0-9 .  - ]" maxChars="3" />
+		</s:HGroup>
+		<!--2nd Row -->
+		<s:HGroup width="100%" gap="3">
+			<components3:LabelTextInput width="100%" id="id_Street" prompt="Street Line 1" text="{insurance.Address}" 
+									   restrict="a-z A-Z 0-9 .  # - , _ ()" tabIndex="4" maxChars="55" toolTip="Street Address Line 1" />
+			<components3:LabelTextInput id="id_Fax" change="id_Fax_changeHandler(event)"
+									   width="100%" prompt="Fax"  text="{ValidationUtils.setPhoneNumberMasking(insurance.FAX)}" tabIndex="5" toolTip="Enter fax no" restrict="[0-9]"  />
+		</s:HGroup>	
+		<!--3rd Row -->
+		<s:HGroup width="100%" gap="3">
+			<components3:LabelTextInput id="id_Street1"
+									   width="100%" tabIndex="6"  prompt="Street Line 2" text="{insurance.AddressLine2}"  
+									   restrict="a-z A-Z 0-9 .  # - , _ ()" maxChars="55" toolTip="Street Address Line 2"  />
+			<components3:LabelTextInput id="id_Contact"
+									   width="100%" prompt="Contact"  text="{insurance.ContactPerson}" tabIndex="7" 
+									   restrict="[a-z A-Z 0-9 .  - , _ ]" maxChars="20" toolTip="Contact" />
+		</s:HGroup>
+		<!--4th Row -->
+		<s:HGroup width="100%" gap="3">
+			<components2:ZipCityStateCombine id="id_ZipCityStateCombine" width="100%" tabIndex="8"/>
+		</s:HGroup>
+	</s:VGroup>
+	
+	<mx:HRule width="100%"/>
+	
+	<s:Label text="Plan Information" fontFamily="Calibri" fontSize="12"/>
+	
+	<s:HGroup width="100%">
+		<components3:LabelTextInput id="id_Plane"
+								   width="50%" prompt="Plane Name"  text="{insurance.PlanName}" 
+								   tabIndex="11" restrict="[a-z A-Z 0-9 .  - , _ ()]" maxChars="30" toolTip="Plan Name" />
+		<!--<components:LabelTextInput width="50%" prompt="Class" id="id_Class" tabIndex="14"/>-->
+	</s:HGroup>
+	<components3:LabelTextInput id="id_Note"
+							   width="100%" prompt="Note"  text="{insurance.Note}" tabIndex="12" maxChars="255" toolTip="Note" />
+</s:Group>

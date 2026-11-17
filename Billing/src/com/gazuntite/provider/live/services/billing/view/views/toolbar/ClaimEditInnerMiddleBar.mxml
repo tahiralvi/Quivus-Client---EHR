@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" paddingLeft="10" paddingRight="10">
+	
+	<fx:Script>
+		<![CDATA[
+			[Bindable]
+			private var m_sPatientName:String
+						
+			public function set PatientName(value:String):void
+			{
+				m_sPatientName = value.toUpperCase();
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:Label text="Patient" width="100" fontFamily="Calibri" fontSize="11" />
+	<s:Label id="id_lblPatient" text="{m_sPatientName}"  width="100" fontFamily="Calibri" fontSize="11" 
+			 maxWidth="15" maxDisplayedLines="1" toolTip="{m_sPatientName}" />
+	
+</s:HGroup>
+

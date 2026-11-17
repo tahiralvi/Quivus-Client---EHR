@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			private var m_slabel:String = "";
+			[Bindable]
+			public function get label():String
+			{
+				return m_slabel;
+			}
+
+			public function set label(value:String):void
+			{
+				m_slabel = value;
+			}
+
+		]]>
+	</fx:Script>
+	<!--<s:BorderContainer  width="150" backgroundColor="#E0DFCB" height="24" cornerRadius="4" borderAlpha="0">-->
+		
+	<s:SkinnableContainer skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.slideOutTabSkin" width="150" height="30">
+		
+	
+		
+		<s:layout>
+			<s:HorizontalLayout verticalAlign="middle" paddingLeft="10" gap="10" paddingRight="5"/>
+		</s:layout>
+		<s:Label text="{label}" fontFamily="Calibri Bold" width="100%" typographicCase="uppercase" />
+		
+		<s:Button buttonMode="true" id="id_slideoutClose" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.popupCloseBtnSkin" 
+				  toolTip="Close {label} slideout" height="16" width="16"/>
+	</s:SkinnableContainer>
+	
+</s:Group>

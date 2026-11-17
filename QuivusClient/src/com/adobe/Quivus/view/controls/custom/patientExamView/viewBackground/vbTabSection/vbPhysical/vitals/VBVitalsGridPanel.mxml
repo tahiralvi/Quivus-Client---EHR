@@ -1,0 +1,1144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:SlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+					  xmlns:viewBackground="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.*"
+					  
+					  creationComplete="slideoutpanel1_creationCompleteHandler(event)"
+					  QSViewStateChange="slideoutpanel1_QSViewStateChangeHandler(event)" xmlns:paging="com.adobe.Quivus.view.controls.custom.patientExamView.paging.*" 
+					  
+					  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.viewBackground.vital.LoadPatientVitalsByPatientIdEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.itemEditors.SparkComboBoxItemEditor;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.VBSectionDictation;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.VBSectionNotes;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBInternalBarInactiveSkin;
+			import com.adobe.Quivus.view.controls.skins.VBinternalBarSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.VBdictationBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.VBnotesBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBIconsButton;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.VBdictationBtnSelected;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.VBnotesBtnSelected;
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.VBIconsBlackButton;
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.VBIconsButtonFilled;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Label;
+			import mx.controls.TextInput;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.DataGridEvent;
+			import mx.events.FlexEvent;
+			
+			import valueObjects.PageDTO;
+			import valueObjects.VitalDTO;
+			
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var dictationGridPanel:VBSectionDictation;
+			private var _hasViewChanged:Boolean;
+			private var _hasGridChanged:Boolean;
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			
+			public function GridRowNumber(item:Object, iCol:int):String
+			{
+				var strRowNum:String = "";
+				
+				if (id_DataGrid.dataProvider)
+				{
+					var rowNum:int = id_DataGrid.dataProvider.getItemIndex(item) + 1;
+					strRowNum = String(rowNum);
+				}
+				
+				return strRowNum;
+				
+			}
+			
+			private var moduleConstantName:String = Constants.VB_SECTION_NAME_VITALS;
+			
+			private var vb_IsModelUpdated:Boolean;
+			
+			public function get IsModelUpdated():Boolean{
+				
+				return vb_IsModelUpdated;
+				
+			}
+			
+			public function set IsModelUpdated(value:Boolean):void{
+				
+				vb_IsModelUpdated = value;
+				
+				if(vb_IsModelUpdated )
+				{
+					var notesDTOList:ArrayCollection = QSUtilityFunctions.getModuleNoteListForViewBackGround
+						( moduleConstantName);
+					var dictationDTOList:ArrayCollection = QSUtilityFunctions.getModuleDictationListForViewBackGround
+						(moduleConstantName);
+					
+					/* if(notesDTOList && notesDTOList.length > 0) {
+					id_header.id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected); 
+					} else {
+					id_header.id_NotesBtn.setStyle("skinClass", VBnotesBtn);
+					}
+					
+					if( dictationDTOList && dictationDTOList.length > 0) {
+					id_header.id_Voice.setStyle("skinClass", VBdictationBtnSelected);
+					} else {
+					id_header.id_Voice.setStyle("skinClass", VBdictationBtn);
+					} */
+					
+					if(dictationDTOList && dictationDTOList.length > 0)
+					{
+						id_header.id_Voice.setStyle("skinClass", VBdictationBtnSelected);
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+					}
+					
+					if(notesDTOList && notesDTOList.length > 0)
+					{
+						id_header.id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected);
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+					}		
+					
+				}
+			}
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				/* var mpiEvent : ManagePatientImmunizationEvent = new ManagePatientImmunizationEvent(  );
+				CairngormEventDispatcher.getInstance().dispatchEvent( mpiEvent ); */
+				if(model.vitalDTOListByPatient!=null){
+					model.vitalDTOListByPatient.filterFunction=myFilter;
+					model.vitalDTOListByPatient.refresh();
+				}	
+			}
+			
+			private function myFilter(obj:*):Boolean
+			{
+				
+				if(model.vbFilter == Constants.BY_VISIT)
+				{
+					if(model.vbVisitId == obj.VisitID)
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+				
+				return true;
+				
+			}
+			
+			private var notesGridPanel:VBSectionNotes;
+			private var m_oNotesDTOList:ArrayCollection;
+			
+			public function get notesDTOList():ArrayCollection
+			{
+				return m_oNotesDTOList;
+			}
+			
+			public function set notesDTOList(value:ArrayCollection):void
+			{
+				m_oNotesDTOList = value;
+			}
+			
+			protected function slideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(this.ExpandedView)
+				{
+					id_header.HeadingLable = id_header.HeadingLable.toUpperCase();
+				}
+				else
+				{
+					id_header.HeadingLable = id_header.HeadingLable.toLowerCase();
+				}
+				id_header.id_OptionPopUp.displayPopUp = true;
+				id_header.id_iconButtons.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					//if(id_Area.visible)
+					{
+						
+						if(id_header.id_OptionPopUp.displayPopUp)
+						{
+							id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						}
+						else
+						{
+							id_header.id_iconButtons.setStyle("skinClass", VBIconsButton);	
+						}
+					}
+					
+				});	
+				id_header.id_Voice.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					var notesDTOList:ArrayCollection = QSUtilityFunctions.getModuleNoteListForViewBackGround
+					( moduleConstantName);
+					var dictationDTOList:ArrayCollection = QSUtilityFunctions.getModuleDictationListForViewBackGround
+					(moduleConstantName);
+					
+					id_notesDictation.notesDTOList = notesDTOList;
+					id_notesDictation.DictationDTOList = dictationDTOList;
+					id_notesDictation.id_Area.visible 		= true;
+					id_notesDictation.id_Area.includeInLayout = true;
+					//id_notesDictation.id_VBViews.selectedIndex = 1;						
+					id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+					id_header.id_iconButtons.selected = false;
+					id_header.id_OptionPopUp.displayPopUp = false;
+					
+					if(this.ExpandedView)
+					{
+						event.stopImmediatePropagation();
+					}
+				});			
+				
+				id_header.id_slideoutBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					ToggleSlideOut();
+					event.stopImmediatePropagation();
+				});
+				
+				id_header.id_NotesBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					var notesDTOList:ArrayCollection = QSUtilityFunctions.getModuleNoteListForViewBackGround
+					( moduleConstantName);
+					var dictationDTOList:ArrayCollection = QSUtilityFunctions.getModuleDictationListForViewBackGround
+					(moduleConstantName);
+					
+					id_notesDictation.notesDTOList = notesDTOList;
+					id_notesDictation.DictationDTOList = dictationDTOList;
+					{
+						id_notesDictation.id_Area.visible 		= true;
+						id_notesDictation.id_Area.includeInLayout = true;						
+						//id_notesDictation.id_VBViews.selectedIndex = 0;
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						id_header.id_iconButtons.selected = false;
+						id_header.id_OptionPopUp.displayPopUp = false;
+						
+					}
+					
+					if(this.ExpandedView)
+					{
+						event.stopImmediatePropagation();
+					}
+				});
+				
+				//addEventListener("addRecordClick", addRecordClickHandler, false, 0, true);
+				//addEventListener("writeDictationClick", writeDictationClickHandler, false, 0, true);
+				id_DataGrid.addEventListener(DataGridActionsEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+				id_DataGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				id_DataGrid.addEventListener(DataGridActionsEvent.WRITE_NOTES_CLICK, writeNotesClickHandler, false, 0, true);
+				id_DataGrid.addEventListener(DataGridActionsEvent.ITEM_EDIT_KEY_UP, itemEditKeyUpHandler, false, 0, true);
+				
+				
+				id_header.id_OptionPopUp.displayPopUp = false;
+			}
+			
+			private function writeNotesClickHandler(event:DataGridActionsEvent):void
+			{
+				
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_VITALS ) )//Tahir Alvi - implement security check 
+				{
+					
+				}
+				
+			}
+			
+			private function itemEditKeyUpHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_VITALS ) )//Tahir Alvi - implement security check 
+				{
+					/* var lblFld:String = SparkComboBoxItemEditor(event.target).labelField;
+					
+					if (lblFld == "Dose")
+					{
+					if( event.searchString.length > 2 )
+					{
+					var doseEvent : LoadImmunizationDoseStaticDataEvent = new LoadImmunizationDoseStaticDataEvent( event.searchString );
+					CairngormEventDispatcher.getInstance().dispatchEvent( doseEvent );					
+					}
+					}
+					else if (lblFld == "LotNumber")
+					{
+					if( event.searchString.length > 0 )
+					{
+					var lotNumberEvent : LoadImmunizationLotNumberStaticDataEvent = new LoadImmunizationLotNumberStaticDataEvent( event.searchString );
+					CairngormEventDispatcher.getInstance().dispatchEvent( lotNumberEvent );					
+					}
+					} */
+					
+				}
+			}
+			
+			private function editRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				id_DataGrid.editable = true;
+				var rowIndex:int = id_DataGrid.selectedIndex;
+				var itemToSetInEditableMode:IListItemRenderer = id_DataGrid.indexToItemRenderer(rowIndex);
+				
+				var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+				ev.columnIndex = 2;
+				ev.rowIndex = rowIndex;
+				ev.itemRenderer = itemToSetInEditableMode;
+				//ev.dataField = "Status";
+				id_DataGrid.dispatchEvent(ev);
+			}
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_VITALS ) )//Tahir Alvi - implement security check 
+				{
+					var curTar:DataGrid = DataGrid(event.currentTarget);
+					
+					if (curTar.selectedItem)
+					{
+						var vID:int = VitalDTO(curTar.selectedItem).PatientVitalID;
+						
+						if (vID == 0)
+						{
+							model.vitalDTOListByPatient.removeItemAt(curTar.selectedIndex);
+							if (model.vitalDTOListByPatient.length <= 0)
+							{
+								_hasGridChanged = false;
+								//hasViewChanged = isGetEdited();
+							}
+						}
+						else
+						{
+							UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+							{
+								curTar.selectedItem.IsDeleted = true;
+								//event.itemRenderer.curTar.selectedItem.IsDeleted = true;
+								model.vitalDTOListByPatient.filterFunction = filterDeletedItems;
+								model.vitalDTOListByPatient.refresh();
+								
+								hasViewChanged = _hasGridChanged = true;
+							});
+						}
+						
+					}
+					id_header.id_OptionPopUp.displayPopUp = false;
+					
+					/* if(this.ExpandedView)
+					{
+					id_header.id_pmhHeader.setStyle("skinClass", VBinternalBarSkin);	
+					}
+					else
+					{
+					id_header.id_pmhHeader.setStyle("skinClass", VBInternalBarInactiveSkin);
+					} */
+					
+				}
+			}
+			
+			
+			public function applyNumberFormatOnHeight(item:Object , iCol:int):String
+			{
+				var str:String = "";
+				
+				if (item.hasOwnProperty("Height") && item.Height)
+				{
+					str = numberFormatter.format(item.Height);
+				}
+				if(str == '0' || str == '0.00')
+					str = '';
+				
+				return str;
+			}
+			
+			public function applyNumberFormatOnWeight(item:Object , iCol:int):String
+			{
+				var str:String = "";
+				
+				if (item.hasOwnProperty("Weight") && item.Weight)
+				{
+					str = numberFormatter.format(item.Weight);
+				}
+				
+				if(str == '0' || str == '0.00')
+					str = '';
+				
+				return str;
+			}
+			
+			public function applyNumberFormatOnTemp(item:Object , iCol:int):String
+			{
+				var str:String = "";
+				
+				if (item.hasOwnProperty("Temperature") && item.Temperature)
+				{
+					str = numberFormatter.format(item.Temperature);
+				}
+				if(str == '0' || str == '0.00')
+					str = '';
+				
+				return str;
+			}
+			public function getPulse(item:Object , iCol:int):String
+			{
+				var str:String = "";
+				
+				if (item.hasOwnProperty("Pulse") && item.Pulse)
+				{
+					str = item.Pulse;
+				}
+				if(str == '0' || str == '0.00')
+					str = '';
+				
+				return str;
+			}
+			public function getResp(item:Object , iCol:int):String
+			{
+				var str:String = "";
+				
+				if (item.hasOwnProperty("Respiration") && item.Respiration)
+				{
+					str = item.Respiration;
+				}
+				if(str == '0' || str == '0.00')
+					str = '';
+				
+				return str;
+			}
+			public function getOxy(item:Object , iCol:int):String
+			{
+				var str:String = "";
+				
+				if (item.hasOwnProperty("Oxygen") && item.Oxygen)
+				{
+					str = item.Oxygen;
+				}
+				if(str == '0' || str == '0.00')
+					str = '';
+				
+				return str;
+			}
+			public function getBPs(item:Object , iCol:int):String
+			{
+				var str:String = "";
+				
+				if (item.hasOwnProperty("BPSys") && item.BPSys)
+				{
+					str = item.BPSys;
+				}
+				if(str == '0' || str == '0.00')
+					str = '';
+				
+				return str;
+			}
+			public function grtBPd(item:Object , iCol:int):String
+			{
+				var str:String = "";
+				
+				if (item.hasOwnProperty("BPDys") && item.BPDys)
+				{
+					str = item.BPDys;
+				}
+				if(str == '0' || str == '0.00')
+					str = '';
+				
+				return str;
+			}
+			
+			protected function slideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if(id_header && id_header.id_pmhHeader)
+				{
+					if(event.viewState == QSViewStateEvent.EXPANDED_VIEW)
+					{				
+						
+						//id_header.id_pmhHeader.setStyle("skinClass", VBinternalBarSkin);	
+						id_header.HeadingLable = id_header.HeadingLable.toUpperCase();
+						id_header.id_expandBtn.selected = true;
+					}
+					else
+					{
+						//id_header.id_pmhHeader.setStyle("skinClass", VBInternalBarInactiveSkin);
+						id_header.HeadingLable = AppUtils.TitleCase(id_header.HeadingLable);
+						id_header.id_expandBtn.selected = false;
+					}
+				}
+			}
+			private function GridItemEditBeginHandler(event:DataGridEvent):void 
+			{	
+				id_DataGrid.createItemEditor(event.columnIndex, event.rowIndex);
+				
+				/* if (event.columnIndex == 4)
+				{
+				SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).data = event.itemRenderer.data; 
+				} */
+				
+			}
+			
+			private function GridItemEditEndHandler(event:DataGridEvent):void
+			{
+				
+				var pID:int = VitalDTO(id_DataGrid.selectedItem).PatientVitalID;
+				var isRecordEditable:Boolean = VitalDTO(id_DataGrid.selectedItem).IsRecordEditable;
+				
+				if(isRecordEditable)
+				{
+					
+					
+					if (event.dataField == "Height")
+					{
+						var original_value:String = TextInput(id_DataGrid.itemEditorInstance).text;
+						var itemEditor:TextInput = TextInput(id_DataGrid.itemEditorInstance);
+						
+						if (itemEditor.text.length)
+						{
+							
+							
+							if((parseInt(itemEditor.text) < 38 || parseInt(itemEditor.text) > 245))
+							{
+								Alert.show("Provided value for height does not occur in feasible range.\n Do you want to keep these values",
+									"Height out of Range error", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, function(evt:CloseEvent):void
+									{									
+										switch(evt.detail)
+										{
+											case Alert.YES:							
+												event.itemRenderer.data.Height = itemEditor.text;//selectedDate;
+												
+												if (pID != 0)
+													event.itemRenderer.data.IsDirty = true;
+												
+												hasViewChanged = _hasGridChanged = true;
+												break;
+											
+											case Alert.NO:
+												itemEditor.text = original_value;
+												id_DataGrid.destroyItemEditor();
+												//event.stopImmediatePropagation();
+												//vital.setFocus();
+												break;	
+										}
+										return;	
+										
+									});
+							}
+							else
+							{
+								event.itemRenderer.data.Height = original_value;//selectedDate;
+								
+								if (pID != 0)
+									event.itemRenderer.data.IsDirty = true;
+								
+								hasViewChanged = _hasGridChanged = true;
+							}
+							
+							
+						}
+						
+						id_DataGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+						
+					}
+						
+					else if (event.dataField == "Weight")
+					{
+						var original_value:String = TextInput(id_DataGrid.itemEditorInstance).text;
+						var itemEditor:TextInput = TextInput(id_DataGrid.itemEditorInstance);
+						
+						if (itemEditor.text.length)
+						{
+							if((parseInt(itemEditor.text) < 2 || parseInt(itemEditor.text) > 200))
+							{
+								Alert.show("Provided value for weight does not occur in feasible range.\n Do you want to keep these values",
+									"Weight out of Range error", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, function(evt:CloseEvent):void
+									{									
+										switch(evt.detail)
+										{
+											case Alert.YES:							
+												event.itemRenderer.data.Weight = itemEditor.text;//selectedDate;
+												
+												if (pID != 0)
+													event.itemRenderer.data.IsDirty = true;
+												
+												hasViewChanged = _hasGridChanged = true;
+												break;
+											
+											case Alert.NO:
+												itemEditor.text =  original_value;
+												
+												id_DataGrid.destroyItemEditor();
+												//event.stopImmediatePropagation();
+												//vital.setFocus();
+												break;	
+										}
+										return;	
+										
+									});
+							}
+							else
+							{
+								event.itemRenderer.data.Weight = itemEditor.text;//selectedDate;
+								
+								if (pID != 0)
+									event.itemRenderer.data.IsDirty = true;
+								
+								hasViewChanged = _hasGridChanged = true;
+							}
+							
+							
+						}
+						
+						id_DataGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+						
+					}
+						
+						
+					else if (event.dataField == "Temperature")
+					{
+						var original_value:String = TextInput(id_DataGrid.itemEditorInstance).text;
+						var itemEditor:TextInput = TextInput(id_DataGrid.itemEditorInstance);
+						
+						if (itemEditor.text.length)
+						{
+							
+							
+							if((parseInt(itemEditor.text) < 35 || parseInt(itemEditor.text) > 40))
+							{
+								Alert.show("Provided value for temperature does not occur in feasible range.\n Do you want to keep these values",
+									"temperature out of Range error", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, function(evt:CloseEvent):void
+									{									
+										switch(evt.detail)
+										{
+											case Alert.YES:							
+												event.itemRenderer.data.Temperature = itemEditor.text;//selectedDate;
+												
+												if (pID != 0)
+													event.itemRenderer.data.IsDirty = true;
+												
+												hasViewChanged = _hasGridChanged = true;
+												break;
+											
+											case Alert.NO:
+												itemEditor.text =  original_value;
+												
+												id_DataGrid.destroyItemEditor();
+												//event.stopImmediatePropagation();
+												//vital.setFocus();
+												break;	
+										}
+										return;	
+										
+									});
+							}
+							else
+							{
+								event.itemRenderer.data.Temperature = itemEditor.text;//selectedDate;
+								
+								if (pID != 0)
+									event.itemRenderer.data.IsDirty = true;
+								
+								hasViewChanged = _hasGridChanged = true;
+							}
+							
+							/* event.itemRenderer.data.Temperature = itemEditor.text;//selectedDate;
+							
+							if (pID != 0)
+							event.itemRenderer.data.IsDirty = true;
+							
+							hasViewChanged = _hasGridChanged = true; */
+						}
+						
+						id_DataGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+						
+					}
+						
+						
+					else if (event.dataField == "Pulse")
+					{
+						var original_value:String = TextInput(id_DataGrid.itemEditorInstance).text;
+						var itemEditor:TextInput = TextInput(id_DataGrid.itemEditorInstance);
+						
+						if (itemEditor.text.length)
+						{
+							if((parseInt(itemEditor.text) < 50 || parseInt(itemEditor.text) > 135))
+							{
+								Alert.show("Provided value for Pulse does not occur in feasible range.\n Do you want to keep these values",
+									"Pulse out of Range error", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, function(evt:CloseEvent):void
+									{									
+										switch(evt.detail)
+										{
+											case Alert.YES:							
+												event.itemRenderer.data.Pulse = itemEditor.text;//selectedDate;
+												
+												if (pID != 0)
+													event.itemRenderer.data.IsDirty = true;
+												
+												hasViewChanged = _hasGridChanged = true;
+												break;
+											
+											case Alert.NO:
+												itemEditor.text =  original_value;
+												
+												id_DataGrid.destroyItemEditor();
+												//event.stopImmediatePropagation();
+												//vital.setFocus();
+												break;	
+										}
+										return;	
+										
+									});
+							}
+							else
+							{
+								event.itemRenderer.data.Pulse = itemEditor.text;//selectedDate;
+								
+								if (pID != 0)
+									event.itemRenderer.data.IsDirty = true;
+								
+								hasViewChanged = _hasGridChanged = true;
+							}
+							/* event.itemRenderer.data.Pulse = itemEditor.text;//selectedDate;
+							
+							if (pID != 0)
+							event.itemRenderer.data.IsDirty = true;
+							
+							hasViewChanged = _hasGridChanged = true; */
+						}
+						
+						id_DataGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+						
+					}
+						
+						
+					else if (event.dataField == "Respiration")
+					{
+						var original_value:String = TextInput(id_DataGrid.itemEditorInstance).text;
+						var itemEditor:TextInput = TextInput(id_DataGrid.itemEditorInstance);
+						
+						if (itemEditor.text.length)
+						{
+							
+							if((parseInt(itemEditor.text) < 10 || parseInt(itemEditor.text) > 65))
+							{
+								Alert.show("Provided value for Respiration does not occur in feasible range.\n Do you want to keep these values",
+									"Respiration out of Range error", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, function(evt:CloseEvent):void
+									{									
+										switch(evt.detail)
+										{
+											case Alert.YES:							
+												event.itemRenderer.data.Respiration = itemEditor.text;//selectedDate;
+												
+												if (pID != 0)
+													event.itemRenderer.data.IsDirty = true;
+												
+												hasViewChanged = _hasGridChanged = true;
+												break;
+											
+											case Alert.NO:
+												itemEditor.text =  original_value;
+												
+												id_DataGrid.destroyItemEditor();
+												//event.stopImmediatePropagation();
+												//vital.setFocus();
+												break;	
+										}
+										return;	
+										
+									});
+							}
+							else
+							{
+								event.itemRenderer.data.Respiration = itemEditor.text;//selectedDate;
+								
+								if (pID != 0)
+									event.itemRenderer.data.IsDirty = true;
+								
+								hasViewChanged = _hasGridChanged = true;
+							}
+							/* event.itemRenderer.data.Respiration = itemEditor.text;//selectedDate;
+							
+							if (pID != 0)
+							event.itemRenderer.data.IsDirty = true;
+							
+							hasViewChanged = _hasGridChanged = true; */
+						}
+						
+						id_DataGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+						
+					}
+						
+						
+						
+					else if (event.dataField == "Oxygen")
+					{
+						var original_value:String = TextInput(id_DataGrid.itemEditorInstance).text;
+						var itemEditor:TextInput = TextInput(id_DataGrid.itemEditorInstance);
+						
+						if (itemEditor.text.length)
+						{
+							
+							if((parseInt(itemEditor.text) < 10 || parseInt(itemEditor.text) > 65))
+							{
+								Alert.show("Provided value for Oxygen does not occur in feasible range.\n Do you want to keep these values",
+									"Oxygen out of Range error", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, function(evt:CloseEvent):void
+									{									
+										switch(evt.detail)
+										{
+											case Alert.YES:							
+												event.itemRenderer.data.Oxygen = itemEditor.text;//selectedDate;
+												
+												if (pID != 0)
+													event.itemRenderer.data.IsDirty = true;
+												
+												hasViewChanged = _hasGridChanged = true;
+												break;
+											
+											case Alert.NO:
+												itemEditor.text =  original_value;
+												
+												id_DataGrid.destroyItemEditor();
+												//event.stopImmediatePropagation();
+												//vital.setFocus();
+												break;	
+										}
+										return;	
+										
+									});
+							}
+							else
+							{
+								event.itemRenderer.data.Oxygen = itemEditor.text;//selectedDate;
+								
+								if (pID != 0)
+									event.itemRenderer.data.IsDirty = true;
+								
+								hasViewChanged = _hasGridChanged = true;
+							}
+							/* event.itemRenderer.data.Oxygen = itemEditor.text;//selectedDate;
+							
+							if (pID != 0)
+							event.itemRenderer.data.IsDirty = true;
+							
+							hasViewChanged = _hasGridChanged = true; */
+						}
+						
+						id_DataGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+						
+					}
+						
+						
+						
+					else if (event.dataField == "BPSys")
+					{
+						var original_value:String = TextInput(id_DataGrid.itemEditorInstance).text;
+						var itemEditor:TextInput = TextInput(id_DataGrid.itemEditorInstance);
+						
+						if (itemEditor.text.length)
+						{
+							if((parseInt(itemEditor.text) < 70 || parseInt(itemEditor.text) > 140))
+							{
+								Alert.show("Provided value for BPSys does not occur in feasible range.\n Do you want to keep these values",
+									"BPSys out of Range error", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, function(evt:CloseEvent):void
+									{									
+										switch(evt.detail)
+										{
+											case Alert.YES:							
+												event.itemRenderer.data.BPSys = itemEditor.text;//selectedDate;
+												
+												if (pID != 0)
+													event.itemRenderer.data.IsDirty = true;
+												
+												hasViewChanged = _hasGridChanged = true;
+												break;
+											
+											case Alert.NO:
+												itemEditor.text =  original_value;
+												
+												id_DataGrid.destroyItemEditor();
+												//event.stopImmediatePropagation();
+												//vital.setFocus();
+												break;	
+										}
+										return;	
+										
+									});
+							}
+							else
+							{
+								event.itemRenderer.data.BPSys = itemEditor.text;//selectedDate;
+								
+								if (pID != 0)
+									event.itemRenderer.data.IsDirty = true;
+								
+								hasViewChanged = _hasGridChanged = true;
+							}
+							/* event.itemRenderer.data.BPSys = itemEditor.text;//selectedDate;
+							
+							if (pID != 0)
+							event.itemRenderer.data.IsDirty = true;
+							
+							hasViewChanged = _hasGridChanged = true; */
+						}
+						
+						id_DataGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+						
+					}
+						
+						
+						
+					else if (event.dataField == "BPDys")
+					{
+						var original_value:String = TextInput(id_DataGrid.itemEditorInstance).text;
+						var itemEditor:TextInput = TextInput(id_DataGrid.itemEditorInstance);
+						
+						if (itemEditor.text.length)
+						{
+							
+							if((parseInt(itemEditor.text) < 70 || parseInt(itemEditor.text) > 140))
+							{
+								Alert.show("Provided value for BPDys does not occur in feasible range.\n Do you want to keep these values",
+									"BPDys out of Range error", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, function(evt:CloseEvent):void
+									{									
+										switch(evt.detail)
+										{
+											case Alert.YES:							
+												event.itemRenderer.data.BPDys = itemEditor.text;//selectedDate;
+												
+												if (pID != 0)
+													event.itemRenderer.data.IsDirty = true;
+												
+												hasViewChanged = _hasGridChanged = true;
+												break;
+											
+											case Alert.NO:
+												itemEditor.text = original_value;
+												
+												id_DataGrid.destroyItemEditor();
+												//event.stopImmediatePropagation();
+												//vital.setFocus();
+												break;	
+										}
+										return;	
+										
+									});
+							}
+							else
+							{
+								event.itemRenderer.data.BPDys = itemEditor.text;//selectedDate;
+								
+								if (pID != 0)
+									event.itemRenderer.data.IsDirty = true;
+								
+								hasViewChanged = _hasGridChanged = true;
+							}
+							/* event.itemRenderer.data.BPDys = itemEditor.text;//selectedDate;
+							
+							if (pID != 0)
+							event.itemRenderer.data.IsDirty = true;
+							
+							hasViewChanged = _hasGridChanged = true; */
+						}
+						
+						id_DataGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+						
+					}
+					
+					
+				}
+				/*var validationRes:ValidationResultEvent;
+				var pID:int = VitalDTO(id_DataGrid.selectedItem).PatientVitalID;
+				
+				if (event.dataField == "DateAdmin")
+				{
+				var itemEditor:TextInput = TextInput(id_DataGrid.itemEditorInstance);
+				
+				if (itemEditor.text.length)
+				{
+				
+				event.itemRenderer.data.Height = itemEditor.text;//selectedDate;
+				
+				if (immunizationID != 0)
+				event.itemRenderer.data.IsDirty = true;
+				
+				hasViewChanged = _hasGridChanged = true;
+				}
+				else
+				{
+				id_DataGrid.destroyItemEditor();
+				event.stopImmediatePropagation();
+				event.preventDefault();
+				}
+				/* else
+				{
+				event.itemRenderer.data.DateAdmin = null;
+				
+				if (immunizationID != 0)
+				event.itemRenderer.data.IsDirty = true;
+				} */
+				//}
+				event.stopImmediatePropagation();
+				
+			}
+			private function alertsCloseHandler(event:CloseEvent):void
+			{
+				
+				switch(event.detail)
+				{
+					case Alert.YES:							
+						
+						break;
+					
+					case Alert.NO:
+						
+						return;	
+						//vital.setFocus();
+						break;	
+				}
+				
+				return;
+			}
+			
+			
+			//////
+			
+			private function switchPageForGridView( event:Event ):void
+			{
+				/* var page:String = event.type;
+				
+				switch( page )
+				{
+				case PaginationFilterView.GOTO_FIRST_PAGE:
+				
+				break;
+				case PaginationFilterView.GOTO_NEXT_PAGE:
+				
+				break;
+				case PaginationFilterView.GOTO_PREVIOUS_PAGE:
+				
+				break;
+				case PaginationFilterView.GOTO_LAST_PAGE:
+				
+				break;
+				} */
+				
+				if( UtilityFunctions.IsNullOrEmpty( model.vitalCurrentPageByPatient ) )
+					model.vitalCurrentPageByPatient = new PageDTO();
+				
+				var pvital:PageDTO 		= model.vitalCurrentPageByPatient;
+				pvital.fromDate 		= model.defaultFilterAndPaging.fromDate;
+				pvital.toDate 			= model.defaultFilterAndPaging.toDate;
+				pvital.pageSize 		= model.defaultFilterAndPaging.pageSize;
+				pvital.LastVisitNumber 	= model.defaultFilterAndPaging.LastVisitNumber;
+				
+				var lpv:LoadPatientVitalsByPatientIdEvent = new LoadPatientVitalsByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpv );
+			}
+			
+			protected function id_PaginationFilterView_RefreshViewHandler(event:Event):void
+			{
+				var lpv:LoadPatientVitalsByPatientIdEvent = new LoadPatientVitalsByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpv );
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:NumberFormatter id="numberFormatter" precision="2"/>
+	</fx:Declarations>
+	<fx:Binding source="model.vbDataLoadedFlag" destination="IsModelUpdated"/>
+	<custom:HeaderContents>
+		<s:Group id="id_mainHeader" width="100%" height="24" minWidth="{ChromeUtil.topLevelMainContainer.width - 70}">
+			<s:layout>
+				<s:VerticalLayout verticalAlign="bottom" horizontalAlign="center" />
+			</s:layout>
+			<viewBackground:VBSectionHeader id="id_header" width="{id_mainHeader.width - 8}" HeadingLable="VITALS" SectionNameID="{QSSecurityUtil.VB_VITALS}"
+											Skin="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBVitalsPanelSkin"/>						   
+		</s:Group>
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		<viewBackground:VBSectionSlideoutHeader width="100%" label="{Constants.VB_SECTION_NAME_VITALS}" />
+	</custom:SlideHeaderContents>
+	<custom:Contents>
+		<s:SkinnableContainer id="id_contents" width="100%" height="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBVitalsPanelSkin">
+			<s:layout>
+				<s:VerticalLayout horizontalAlign="center" verticalAlign="top" gap="1" paddingLeft="4" paddingRight="4" paddingBottom="4" paddingTop="4" />
+			</s:layout>
+			<!--<s:HGroup id="id_NotesArea" width="100%" paddingTop="0" />-->
+			
+			<viewBackground:VBSectionLevelNotesDictation id="id_notesDictation" width="100%" />
+			
+			<s:Button label="Filter" click="button1_clickHandler(event)" visible="false" includeInLayout="false" id="id_applyFiler"/>
+			
+			<paging:PaginationFilterView id="id_PaginationFilterView" width="100%" Page="{model.vitalCurrentPageByPatient}"
+										 GoToFirstPage="switchPageForGridView(event)" GoToNextPage="switchPageForGridView(event)" 
+										 GoToPreviousPage="switchPageForGridView(event)" GoToLastPage="switchPageForGridView(event)"
+										 RefreshView="id_PaginationFilterView_RefreshViewHandler(event)"
+										 />
+			<mx:DataGrid id="id_DataGrid" width="100%" useRollOver="false"
+						 dataProvider="{model.vitalDTOListByPatient}" rowCount="{id_DataGrid.dataProvider.length + 1}" 
+						 verticalScrollPolicy="on"
+						 itemEditBegin="GridItemEditBeginHandler(event)" 
+						 itemEditEnd="GridItemEditEndHandler(event)"
+						 horizontalScrollPolicy="off" maxHeight="150">
+				<mx:columns>
+					<mx:DataGridColumn headerText="Sr.#" width="40" labelFunction="GridRowNumber" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+					<mx:DataGridColumn headerText="Visit Date" headerRenderer="mx.controls.Label" wordWrap="true" width="90" dataField="VisitDate" 
+									   itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG"/>
+					<mx:DataGridColumn headerText="Height (cm)" dataField="Height" width="60" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" labelFunction="applyNumberFormatOnHeight" />
+					<mx:DataGridColumn headerText="Weight (Kg)" dataField="Weight" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" width="60" labelFunction="applyNumberFormatOnWeight"/>
+					<mx:DataGridColumn headerText="Temp (C)" dataField="Temperature" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" width="60" labelFunction="applyNumberFormatOnTemp"/>
+					<mx:DataGridColumn headerText="Pulse (Min)" dataField="Pulse" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" width="60" labelFunction="getPulse"/>
+					<mx:DataGridColumn headerText="Resp (Min)" dataField="Respiration" width="60" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" labelFunction="getResp"/>
+					<mx:DataGridColumn headerText="Oxy (%)" dataField="Oxygen" width="60" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" labelFunction="getOxy"/>
+					<mx:DataGridColumn headerText="BP(Sys)" dataField="BPSys" width="60" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" labelFunction="getBPs"/>
+					<mx:DataGridColumn headerText="BP(Dys)" dataField="BPDys" width="60" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" labelFunction="grtBPd"/>
+					<mx:DataGridColumn  width="85" itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DeleteEditOnlyRenderer" />
+				</mx:columns>
+			</mx:DataGrid>
+			
+		</s:SkinnableContainer>
+	</custom:Contents>
+</custom:SlideOutPanel>

@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:MXTreeItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx"
+					   height="18" buttonMode="true"
+					   
+					   >
+
+	<fx:Script>
+		<![CDATA[
+			import mx.states.OverrideBase;
+			protected function hgroup1_mouseOverHandler(event:MouseEvent):void
+			{
+				if(!treeListData.hasChildren)		
+				id_rolloutbg.visible = false;
+			}
+
+			protected function hgroup1_mouseOutHandler(event:MouseEvent):void
+			{
+				if(!treeListData.hasChildren)				
+				id_rolloutbg.visible = true;
+			}
+
+
+			protected function disclosureGroup_clickHandler1(event:MouseEvent):void
+			{
+				if(id_tg.selected)
+				{
+					id_tg.selected = false;
+				}
+				else
+				{
+					id_tg.selected = true;	
+				}
+				
+				if(!treeListData.hasChildren)
+				{
+					id_rolloutbg.visible = false;
+					id_selectedbg.visible = true;
+					
+					if(selected)
+					{
+						trace("ITEM selected ");
+					}
+				}
+				
+			}
+			
+			 public override function set selected(value:Boolean):void
+			{
+				super.selected = value;
+				id_selectedbg.visible = value;
+				
+				if(value)
+				{
+					trace("ASDASDasdasdasdasdasdasdasssaassadasasasdasasdasdASD");
+				}
+				//id_rolloutbg.visible = !value;
+				//
+			} 
+
+		]]>
+	</fx:Script>
+
+	
+	<s:states>
+		<s:State name="normal" />            
+		<s:State name="hovered" />
+		<s:State name="selected" />
+	</s:states>
+	
+	<s:Rect height="18" width="100%" visible="{treeListData.hasChildren}">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#000000" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#000000" ratio="0.5058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#262626" ratio="0.5333333333333333"/>
+				<s:GradientEntry alpha="1.0" color="#474747" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<s:Rect id="id_rolloverbg" height="18" width="100%" visible="{!treeListData.hasChildren}">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#484848" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:filters>
+			<s:DropShadowFilter alpha="1" angle="90" blurX="10" blurY="10" color="0x000000" distance="0" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#BFC7CB" ratio="0.5450980392156862"/>
+				<s:GradientEntry alpha="1.0" color="#E0E8EB" ratio="0.9882352941176471"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+		
+	<s:Rect id="id_rolloutbg" height="18" width="100%" visible="{!treeListData.hasChildren}">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#484848" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#ffffff" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#eeeeee" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<s:Rect id="id_selectedbg" height="18" width="100%" visible="false">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#484848" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:filters>
+			<s:DropShadowFilter alpha="1" angle="90" blurX="10" blurY="10" color="0x000000" distance="0" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#BFC7CB" ratio="0.5450980392156862"/>
+				<s:GradientEntry alpha="1.0" color="#E0E8EB" ratio="0.9882352941176471"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<s:Group id="disclosureGroup" width="100%" click="disclosureGroup_clickHandler1(event)" mouseOver="hgroup1_mouseOverHandler(event)" mouseOut="hgroup1_mouseOutHandler(event)"
+			  buttonMode="true" height="18">	
+	<s:HGroup paddingTop="2" left="0" right="0" top="0" bottom="0" verticalAlign="middle" height="18">
+		<s:Rect maxHeight="18" id="indentationSpacer" width="{treeListData.indent}" percentHeight="100" alpha="0">
+			<s:fill>
+				<s:SolidColor color="0xFFFFFF" alpha="0.4" />
+			</s:fill>
+		</s:Rect>
+		
+			<!--<s:BitmapImage source="{treeListData.disclosureIcon}" visible="{treeListData.hasChildren}" />-->
+			<s:ToggleButton id="id_tg" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.plusButtonTree" visible="{treeListData.hasChildren}" includeInLayout="{treeListData.hasChildren}" 
+					 enabled="false" />
+			
+		
+		<s:BitmapImage maxHeight="18" source="{treeListData.icon}" />
+		<s:Label id="labelField" visible="{!treeListData.hasChildren}" includeInLayout="{!treeListData.hasChildren}" text="{treeListData.label}" color="#000000" fontFamily="Calibri" paddingTop="1"/>
+		<s:Label id="labelField2" visible="{treeListData.hasChildren}" includeInLayout="{treeListData.hasChildren}" text="{treeListData.label}" color="#ffffff" fontFamily="Calibri" paddingTop="1"/>
+	</s:HGroup>
+	<!--<mx:HRule width="147" strokeWidth="1" strokeColor="0x999999" />-->
+	</s:Group>
+</s:MXTreeItemRenderer>

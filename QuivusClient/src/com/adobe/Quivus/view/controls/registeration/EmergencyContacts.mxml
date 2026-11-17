@@ -1,0 +1,429 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:CollapsiblePanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							 xmlns:s="library://ns.adobe.com/flex/spark" 
+							 xmlns:mx="library://ns.adobe.com/flex/mx" 
+							 title="Emergency Contact" 
+							 creationComplete="cc()" 
+							 xmlns:components1="com.gazuntite.controls.extended.components.*">
+	<components1:layout>
+		<s:VerticalLayout paddingBottom="8" paddingLeft="8" paddingRight="8" paddingTop="8"/>
+	</components1:layout>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.*;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import flashx.textLayout.container.ScrollPolicy;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.utils.StringUtil;
+			
+			import spark.events.TextOperationEvent;
+			
+			import valueObjects.PatientEmergencyContactDTO;
+			import valueObjects.PhoneDTO;
+			import valueObjects.PhoneNumberTypeDTO;
+			import valueObjects.RelationshipTypeDTO;
+			import valueObjects.StatusTypeDTO;
+			
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			[Bindable] 
+			private	var isChanged:Boolean;
+			
+			private	var isNotValid:Boolean = false;
+			
+			//Start - Tahir Alvi ----- 
+			private function cc():void
+			{
+				id_EmergencyContactsGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_ONLY_CLICK, deleteRecordClickHandler, false, 0, true);
+				
+				if(id_Name.text.length > 0 )
+				{
+					enableFields(true);
+				}
+				else
+				{
+					enableFields(false);					
+				}
+				
+			}
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+				
+				if (curTar.selectedItem)
+				{
+					var patientEmergencyContactId:int = PatientEmergencyContactDTO(curTar.selectedItem).PatientEmergencyContactId;
+					UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+					{
+						if (patientEmergencyContactId == 0)
+						{
+							model.patientEmergencyContactDTOList.removeItemAt(curTar.selectedIndex);
+						}else
+						{
+							curTar.selectedItem.IsDeleted = true;
+							model.patientEmergencyContactDTOList.filterFunction = filterDeletedItems;
+							model.patientEmergencyContactDTOList.refresh();
+						}
+					});
+				}
+				if(model.patientEmergencyContactDTOList.length <=0)
+				{
+					id_EmergencyContactsGrid.visible = false; 
+					this.hasChange = false;
+				}
+				
+				
+				enableFields(false);				
+			}
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			//End - Tahir Alvi ----- 
+			
+			public function loadDataEmergencyContacts():void
+			{
+				try
+				{
+					if( model.patientProfileDTO.PatientEmergencyContactList && model.patientProfileDTO.PatientEmergencyContactList.length > 0 )
+					{
+						model.patientEmergencyContactDTOList = new ArrayCollection( model.patientProfileDTO.PatientEmergencyContactList.source );
+						id_EmergencyContactsGrid.dataProvider = model.patientEmergencyContactDTOList;
+						id_EmergencyContactsGrid.visible = true;
+						setPhoneOwnerIds();
+						this.hasChange = true;
+					}
+				}
+				catch(e:Error)
+				{
+					//trace ( "EmergencyContact::loadDataEPP", e.message );
+				}
+			}
+			
+			private function setPhoneOwnerIds():void
+			{
+				var i:int;
+				for( i = 0; i < model.patientProfileDTO.PatientEmergencyContactList.length; i++ )
+				{
+					var p:PhoneDTO = ( model.patientProfileDTO.PatientEmergencyContactList.getItemAt( i ) as valueObjects.PatientEmergencyContactDTO).EmergencyPhone;
+					if(p)
+						p.OwnerTypeID = Constants.SELF_OWNER_TYPE_ID;
+				}
+			}
+			
+			private function AddEmergencyContact():void
+			{
+				isNotValid = false;
+				isInvalid();
+				if(!isNotValid)
+					AddEmergencyRecord();
+			}
+			private function AddEmergencyRecord():void
+			{
+				if(id_Name.text.length >0)
+				{
+					var emergencyContactObj:PatientEmergencyContactDTO = new PatientEmergencyContactDTO();
+					
+					emergencyContactObj.FirstName 	= id_Name.text;
+					if(id_email.text.length>0)
+						emergencyContactObj.EmergencyEmail	= id_email.text;
+					
+					if(id_LeaveMessage.selectedItem)
+						if(id_LeaveMessage.selectedItem == 'Yes')
+							emergencyContactObj.AllowCommunication = true;
+						else
+							emergencyContactObj.AllowCommunication = false;
+					
+					emergencyContactObj.RelationShipType = new RelationshipTypeDTO();	
+					if(id_Relation.selectedItem)
+						emergencyContactObj.RelationShipType = id_Relation.selectedItem ;
+					
+					emergencyContactObj.EmergencyPhone = new PhoneDTO();
+					emergencyContactObj.EmergencyPhone.PhoneNumber = getPhoneNumberWithoutMasking(id_TelNumber.text);
+					emergencyContactObj.EmergencyPhone.IsPrimary = true;
+					emergencyContactObj.EmergencyPhone.Extension = id_ExtNumber.text;
+					emergencyContactObj.EmergencyPhone.CreatedAt = new Date();
+					emergencyContactObj.EmergencyPhone.UpdatedAt = new Date();				
+					emergencyContactObj.EmergencyPhone.OwnerTypeID = Constants.SELF_OWNER_TYPE_ID;
+					
+					if( id_TelNumberKind.selectedItem )
+					{
+						emergencyContactObj.EmergencyPhone.NumberTypeID = ( id_TelNumberKind.selectedItem as PhoneNumberTypeDTO ).NumberTypeID;
+						emergencyContactObj.EmergencyPhone.NumberTypeName = (id_TelNumberKind.selectedItem as PhoneNumberTypeDTO).NumberTypeName;
+					}
+					
+					emergencyContactObj.RecGuid = Constants.GUID_FORMAT;
+					emergencyContactObj.StatusType = new StatusTypeDTO();
+					emergencyContactObj.StatusType.StatusID = Constants.ACTIVE_STATUS_ID;
+					emergencyContactObj.IsDirty = true;
+					emergencyContactObj.IsDeleted = false;
+					model.patientEmergencyContactDTOList.addItem(emergencyContactObj);
+					id_EmergencyContactsGrid.dataProvider = model.patientEmergencyContactDTOList;
+					id_EmergencyContactsGrid.visible = true;
+					this.hasChange = true;
+					resetFields();
+					id_Name.setFocus(); //Alvi - Focus on first field after adding a record
+					
+				}else
+				{
+					id_Name.setFocus();	
+				}
+				
+			}
+			
+			public function resetFields():void
+			{
+				id_Name.text							= "";
+				id_email.text							= "";
+				id_LeaveMessage.selectedIndex			= 0;
+				id_Relation.selectedIndex				= -1;
+				id_TelNumber.text						= "";
+				id_ExtNumber.text						= "";
+				id_TelNumberKind.selectedIndex			= -1;
+				isNotValid								= false;
+			}
+			
+			public function clearEmergencyContacts():void
+			{
+				resetFields();
+				
+				if (id_EmergencyContactsGrid)
+				{
+					id_EmergencyContactsGrid.dataProvider = null;
+				}
+				
+				if(id_EmergencyContactsGrid.visible)
+				{
+					id_EmergencyContactsGrid.visible = false;					
+				}
+				this.hasChange = false;
+			}
+			
+			public function isInvalid():void
+			{
+				var errorStr:String = "";
+				var toSetFocus:*;
+				StringUtil.trim(id_Name.text);
+				id_TelNumber.text = getPhoneNumberWithoutMasking(id_TelNumber.text);
+				
+				if( id_Name.text.length > 0 || id_TelNumber.text.length > 0 || id_ExtNumber.text.length > 0 || id_TelNumberKind.selectedIndex != -1 
+					|| id_Relation.selectedIndex != -1 )
+				{
+					//Name validation
+					if( !ValidationUtils.isValidAlphaNumericWithSpaces(id_Name.text))
+					{
+						isNotValid = true;
+						errorStr += "The data in name is invalid.\n";
+						
+						if (!toSetFocus)
+							toSetFocus = id_Name;
+					}
+					else
+					{
+						//Name validation
+						if (!ValidationUtils.isValidAlphaNumericWithSpaces(id_Name.text))
+						{
+							isNotValid = true;
+							errorStr += "The data in contact name is invalid.\n";
+							
+							if (!toSetFocus)
+								toSetFocus = id_Name;
+						} 
+						//Email validation
+						if(id_email.text.length >0)
+						{
+							if(!ValidationUtils.isValidEmail(id_email))
+							{
+								isNotValid = true;
+								errorStr += "The data in email is invalid.\n";
+								
+								if (!toSetFocus)
+									toSetFocus = id_email;
+							}
+						}
+						//Telephone No Validation
+						if (id_TelNumber.text.length >= 10 && id_TelNumber.text.length <= 20)
+						{
+							if (!ValidationUtils.isValidPhone(id_TelNumber))
+							{
+								isNotValid = true;
+								errorStr += "The data in phone number is invalid.\n";
+								
+								if (!toSetFocus)
+									toSetFocus = id_TelNumber;
+							}
+							
+							if (id_ExtNumber.text.length && !ValidationUtils.isValidPhoneExt(id_ExtNumber))
+							{
+								isNotValid = true;
+								errorStr += "The data in phone ext is invalid.\n";
+								
+								if (!toSetFocus)
+									toSetFocus = id_ExtNumber;
+							}
+						}
+						else
+						{
+							isNotValid = true;
+							errorStr += "Please enter data in phone number.\n";
+							
+							if (!toSetFocus)
+								toSetFocus = id_TelNumber;
+						}
+						//Telephone Type
+						if(!ValidationUtils.isValidValueSelected(id_TelNumberKind))
+						{
+							isNotValid = true;
+							errorStr += "The data in phone type is invalid.\n";
+							
+							if (!toSetFocus)
+								toSetFocus = id_TelNumberKind;
+						}
+						//Relation Validation
+						if (!ValidationUtils.isValidValueSelected(id_Relation))
+						{
+							isNotValid = true;
+							errorStr += "The data in relationship is invalid.\n";
+							
+							if (!toSetFocus)
+								toSetFocus = id_Relation;
+						}
+					}
+				}
+				
+				if (isNotValid && errorStr.length)
+				{
+					Alert.show(errorStr, "Emergency contact Required Fields", 4, FlexGlobals.topLevelApplication.mainContainer, function(event:Event):void{
+						if (toSetFocus)
+							toSetFocus.setFocus();
+					});
+				}
+			}
+			
+			protected function id_Name_changeHandler(event:TextOperationEvent):void
+			{
+				// TODO Auto-generated method stub
+				if(id_Name.text.length > 0 )
+				{
+					enableFields(true);
+				}
+				else
+				{
+					enableFields(false);					
+				}
+			}
+			
+			public function enableFields(value:Boolean):void
+			{
+				id_TelNumber.enabled 		= value;
+				id_ExtNumber.enabled 		= value;
+				id_TelNumberKind.enabled 	= value;
+				id_Relation.enabled 		= value;				
+				id_email.enabled 			= value;				
+				id_econtactBtn.enabled 		= value;			
+				id_LeaveMessage.enabled 	= value;
+			}
+			//Tahir Alvi - apply masking on the phone number
+			public function applyMask():void
+			{
+				var s:String      = id_TelNumber.text.replace(/[^0-9]/g,"");
+				id_TelNumber.text = '('+s.substring(0,3) + (s.length>3?")"+s.substring(3,6) + (s.length>6?"-"+s.substring(6,10):""):"");
+				id_TelNumber.selectRange(id_TelNumber.text.length, id_TelNumber.text.length);
+				
+				if(id_TelNumber.text.length == 1 && id_TelNumber.text == '(')
+					id_TelNumber.text = '';
+			}
+			//Tahir Alvi - remove masking on the phone number
+			public function getPhoneNumberWithoutMasking(text:String):String
+			{
+				var val1:String = text;
+				var val2:String = val1.replace('(','');
+				var val3:String = val2.replace(')','');
+				var val4:String = val3.replace('-','');
+				
+				return val4;
+			}
+			//Tahir Alvi - apply masking on the phone number at load time
+			public function setPhoneNumberMasking(val:String):String
+			{
+				var val_Format:String = '(' + val.substring(0,3) + ')' + val.substring(3,6) + '-' + val.substring(6,10);
+				return val_Format;
+			}
+			protected function textInputChangeIndicator(event:TextOperationEvent):void 
+			{
+				applyMask();
+			}
+			private function getPhoneNo(item:Object, column:DataGridColumn):String
+			{
+				var result:String = '';
+				if(item.EmergencyPhone.PhoneNumber)
+					result = ValidationUtils.setPhoneNumberMasking(item.EmergencyPhone.PhoneNumber);
+				
+				
+				return result;
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%">
+		
+		<s:HGroup width="100%">
+			<components1:LabelTextInput id="id_Name" prompt="Name"  width="200"  restrict="[A-Z a-z , . 0-9]" required="true"
+									   fontFamily="Calibri" fontSize="11" tabIndex="0"  toolTip="Name" change="id_Name_changeHandler(event)"/>
+			<components1:LabelTextInput id="id_TelNumber" prompt="Phone Number" width="135"  required="true" 
+									   fontFamily="Calibri" fontSize="11" tabIndex="1" toolTip="Phone Number"  restrict="[0-9]"
+									   change="textInputChangeIndicator(event)"/>
+			<components1:LabelTextInput id="id_ExtNumber" prompt="Ext" width="100"  
+									   fontFamily="Calibri" fontSize="11" tabIndex="2" toolTip="Ext" maxChars="4" restrict="[0-9]"/>
+			<components1:LabelComboBox id="id_TelNumberKind" prompt="Type" width="50%"  autoWidth="false" required="true"
+									  dataProvider="{model.addressBookStaticDataDTO.PhoneNumberTypes}" 
+									  labelField="NumberTypeName" tabIndex="3" toolTip="Select phone type"/>
+			<components1:LabelComboBox id="id_Relation" prompt="Relation" width="50%" autoWidth="false" required="true"
+									  dataProvider="{model.registrationStaticDataDTO.RelationshipTypes}"							
+									  labelField="RelationshipName" tabIndex="4" toolTip="Select relation"/>
+		</s:HGroup>
+		
+		<s:HGroup width="100%" verticalAlign="middle">
+			<components1:LabelTextInput id="id_email" prompt="Email..." width="200" fontFamily="Calibri" fontSize="11" tabIndex="5" toolTip="Enter email"/>
+			<s:Label text="leave health messages?" fontFamily="Calibri" fontSize="11"  color="#333333"  width="135"/>
+			<components1:LabelComboBox id="id_LeaveMessage" width="100"  selectedIndex="0" tabIndex="6" autoWidth="false" toolTip="Select type">
+				<components1:dataProvider>
+					<s:ArrayList>
+						<fx:String>Yes</fx:String>
+						<fx:String>No</fx:String>
+					</s:ArrayList>
+				</components1:dataProvider>
+			</components1:LabelComboBox>
+			<s:Button click="AddEmergencyContact()" id="id_econtactBtn"  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.AddMoreTooltipBtn"
+					  label="Add Contacts "	 width="100%" buttonMode="true" useHandCursor="true" toolTip="Add Emergency Contact" tabIndex="7" />
+			
+		</s:HGroup>
+		
+	</s:VGroup>
+	
+	<components1:LabelDataGrid id="id_EmergencyContactsGrid" width="100%" minHeight="20" 
+							  editable="false" visible="false" includeInLayout="{id_EmergencyContactsGrid.visible}" 
+							  rowCount="{id_EmergencyContactsGrid.dataProvider.length+1}"
+							  sortableColumns="false"  
+							  columnWidths="{['20%', '15%','10%', '10%', '15%', '15%', '15']}">
+		<components1:columns>
+			<mx:DataGridColumn dataField="FirstName" headerText="Name" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn dataField="EmergencyEmail" headerText="Email" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn dataField="EmergencyPhone.PhoneNumber" labelFunction="getPhoneNo" headerText="Phone" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn dataField="EmergencyPhone.Extension" headerText="Extension" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn dataField="EmergencyPhone.NumberTypeName" headerText="Phone Type" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn dataField="RelationShipType.RelationshipName" headerText="Relation" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn itemRenderer="com.adobe.Quivus.view.controls.registeration.DeleteRecordRendererOnly" />
+		</components1:columns>
+	</components1:LabelDataGrid>	
+</components1:CollapsiblePanel>

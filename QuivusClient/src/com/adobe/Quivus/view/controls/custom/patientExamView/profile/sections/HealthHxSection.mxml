@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:components1="com.gazuntite.controls.extended.components.*"
+					  >
+	<s:layout>
+		<s:VerticalLayout paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" />
+	</s:layout>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.miniExpandButton_black;
+			import com.gazuntite.controls.extended.skins.CollapsiblePanelSkin;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Label;
+			import mx.events.CollectionEvent;
+			import mx.events.FlexEvent;
+			
+			import valueObjects.PatientFamilyHistoryDTO;
+			import valueObjects.PatientProfileDTO;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			public function getYesNoLabelFunction(item:Object, iCol:int):String
+			{
+				var label:String = "";
+				
+				if (item.IsActive)
+				{
+					if (item.IsActive == '1' || item.IsActive == 'true')
+						label = "Active";
+						
+					else if (item.IsActive == '0' || item.IsActive == 'false')
+						label = "InActive";
+				}
+				
+				return label;
+			}
+			
+			public function medicalActiveYesNoLabelFunction(item:Object, iCol:int):String
+			{
+				var label:String = "";
+				
+				if (item.IsActive)
+				{
+					if (item.IsActive.toLowerCase() == Constants.STRING_TRUE)
+						label = "Yes";
+						
+					else if (item.IsActive.toLowerCase() == Constants.STRING_FALSE)
+						label = "No";
+				}
+				
+				return label;
+			}
+			
+			private function setOnSet(oItem:Object,iCol:int):String
+			{
+				var strVisitDate:String = '';
+				
+				if (oItem && oItem.OnSetDate)
+				{
+					var dateRecieved:Date = new Date(Date.parse(oItem.OnSetDate));
+					strVisitDate = formatDateTime.format(dateRecieved);
+					if( strVisitDate.indexOf('NaN',0) != -1)
+						strVisitDate = oItem.OnSetDate;
+				}
+				return strVisitDate;
+			}
+			
+			private var _isNKDAFlag:Boolean;
+			[Bindable]
+			public function get isNKDAFlag():Boolean
+			{
+				return _isNKDAFlag;
+			}
+			
+			public function set isNKDAFlag(value:Boolean):void
+			{
+				_isNKDAFlag = value;
+				
+				if(_isNKDAFlag)
+				{
+					id_allergyGrid.visible 			= false;
+					id_nkda.visible = true;
+				}
+				else
+				{
+					if(id_allergyGrid.dataProvider.length)
+					{
+						id_allergyGrid.visible 		= true;
+					}
+					id_nkda.visible = false;
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YYYY" />
+	</fx:Declarations>
+	
+	<fx:Binding source="model.AllergyNKDAFlag" destination="isNKDAFlag" />
+	
+	<components1:CollapsiblePanel width="100%" title="Patient Allergies" skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin"
+								 hasChange="{model.QIAllergyDTOList.length>0 ?true:false}">
+		<components1:layout>
+			<s:VerticalLayout verticalAlign="middle" paddingBottom="5" paddingLeft="5" paddingRight="5"  paddingTop="5" />
+		</components1:layout>
+		
+		<s:Label id="id_nodata" text="There are no entries/data" fontFamily="Calibri" fontSize="13"  fontWeight="bold" verticalAlign="top" 
+				 visible="{(!id_allergyGrid.dataProvider.length) &amp;&amp; (!id_nkda.visible)? true:false}" includeInLayout="{id_nodata.visible}"/>
+		
+		<s:Label id="id_nkda" text="NO KNOWN DRUG ALLERGIES" fontFamily="Calibri" fontSize="15"  textAlign="center" fontWeight="bold" verticalAlign="top" 
+				 visible="false" includeInLayout="{id_nkda.visible}" width="100%"/>
+		
+		<components1:LabelDataGrid id="id_allergyGrid" width="100%" dataProvider="{model.QIAllergyDTOList}"
+								  rowHeight="23" rowCount="{id_allergyGrid.dataProvider.length+1}" 
+								  includeInLayout="{id_allergyGrid.visible}" visible="false"
+								  horizontalScrollPolicy="off" verticalScrollPolicy="auto" sortableColumns="false"
+								  columnWidths="{['20%','20%','20%','30%','10%']}">
+			<components1:columns>
+				<mx:DataGridColumn dataField="NKDA" 		headerText="NKDA" 		itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" />
+				<mx:DataGridColumn dataField="OnSet" 		headerText="On Set" 	itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn dataField="AllergyName" 	headerText="Allergy" 	itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn dataField="Reaction" 	headerText="Reaction" 	itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn dataField="Status"  		headerText="Active" 	itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			</components1:columns>
+		</components1:LabelDataGrid>
+		
+	</components1:CollapsiblePanel>
+	
+	<components1:CollapsiblePanel width="100%"  	 title="Medical History" skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin" 
+								 hasChange="{model.patientProfileDTO.PatientMedicalHistoryList.length>0 ?true:false}">
+		
+		<components1:layout>
+			<s:VerticalLayout verticalAlign="middle" paddingBottom="5" paddingLeft="5" paddingRight="5"  paddingTop="5" />
+		</components1:layout>
+		
+		<s:Label id="id_nodata1" text="There are no entries/data" fontFamily="Calibri" fontSize="13"  fontWeight="bold" verticalAlign="top" 
+				 visible="{model.patientProfileDTO.PatientMedicalHistoryList.length>0? false:true}" includeInLayout="{id_nodata1.visible}"/>
+		
+		<components1:LabelDataGrid id="id_ICDCodeGrid" width="100%" dataProvider="{model.patientProfileDTO.PatientMedicalHistoryList}"
+								  rowHeight="23"  rowCount="{id_ICDCodeGrid.dataProvider.length+1}" 
+								  horizontalScrollPolicy="off" verticalScrollPolicy="auto" sortableColumns="false"
+								  visible="{model.patientProfileDTO.PatientMedicalHistoryList.length >0 ? true : false}"
+								  includeInLayout="{id_ICDCodeGrid.visible}" columnWidths="{['80%','20%']}">
+			<components1:columns>
+				<mx:DataGridColumn dataField="Description" headerText="Problem" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn dataField="IsActive" headerText="Active" labelFunction="medicalActiveYesNoLabelFunction" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			</components1:columns> 
+		</components1:LabelDataGrid>
+		
+	</components1:CollapsiblePanel>
+	
+	<components1:CollapsiblePanel width="100%"  title="Family History" skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin"
+								 hasChange="{model.patientProfileDTO.PatientFamilyHistoryList.length>0 ?true:false}">
+		
+		<components1:layout>
+			<s:VerticalLayout verticalAlign="middle" paddingBottom="5" paddingLeft="5" paddingRight="5"  paddingTop="5" />
+		</components1:layout>
+		
+		<s:Label id="id_nodata2" text="There are no entries/data" fontFamily="Calibri" fontSize="13"  fontWeight="bold" verticalAlign="top" 
+				 visible="{model.patientProfileDTO.PatientFamilyHistoryList.length>0? false:true}" includeInLayout="{id_nodata2.visible}"/>
+		
+		<components1:LabelDataGrid id="id_FamilyHistoryGrid" width="100%" dataProvider="{model.patientProfileDTO.PatientFamilyHistoryList}"
+								  rowHeight="23"  
+								  rowCount="{id_FamilyHistoryGrid.dataProvider.length + 1}" 
+								  horizontalScrollPolicy="off" verticalScrollPolicy="auto" sortableColumns="false"
+								  visible="{model.patientProfileDTO.PatientFamilyHistoryList.length >0 ? true : false}"
+								  includeInLayout="{id_FamilyHistoryGrid.visible}" columnWidths="{['80%','20%']}" >
+			<components1:columns>
+				<mx:DataGridColumn dataField="Description" headerText="Problem"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn dataField="RelationshipType.RelationshipName" headerText="Relationship" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			</components1:columns>
+		</components1:LabelDataGrid>
+		
+	</components1:CollapsiblePanel>
+	
+	<components1:CollapsiblePanel width="100%" hasChange="{model.patientProfileDTO._PatientDTO.DrugStatusData.length>0 || model.patientProfileDTO._PatientDTO.AlcoholStatusData.length >0 || model.patientProfileDTO._PatientDTO.SmokingStatusData.length >0 ?true:false}"
+								 title="Social History" skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin">
+		
+		<components1:layout >
+			<s:HorizontalLayout paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" gap="0" />
+		</components1:layout >
+		<s:VGroup>
+			<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  text="Drug:" />
+			<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  text="Alcohol:" />
+			<s:RichText color="#333333" fontFamily="Calibri" fontSize="12"  text="Tobacco:" />
+		</s:VGroup>
+		<s:VGroup>
+			<s:RichText color="#000000" fontFamily="Calibri" fontSize="12"  text="{model.patientProfileDTO._PatientDTO.DrugStatusData}" toolTip="{model.patientProfileDTO._PatientDTO.DrugStatusData}" lineBreak="toFit" maxDisplayedLines="1" width="300"/>
+			<s:RichText color="#000000" fontFamily="Calibri" fontSize="12"  text="{model.patientProfileDTO._PatientDTO.AlcoholStatusData}" toolTip="{model.patientProfileDTO._PatientDTO.AlcoholStatusData}" lineBreak="toFit" maxDisplayedLines="1" width="300"/>
+			<s:RichText color="#000000" fontFamily="Calibri" fontSize="12"  text="{model.patientProfileDTO._PatientDTO.SmokingStatusData}" toolTip="{model.patientProfileDTO._PatientDTO.SmokingStatusData}" lineBreak="toFit" maxDisplayedLines="1" width="300"/>
+			
+		</s:VGroup>
+	</components1:CollapsiblePanel>
+</s:SkinnableContainer>

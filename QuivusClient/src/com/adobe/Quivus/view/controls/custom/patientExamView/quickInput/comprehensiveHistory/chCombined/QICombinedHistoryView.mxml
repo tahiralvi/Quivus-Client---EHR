@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:VBHistory="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbPMH.VBHistory.*" 
+					  xmlns:chCombined="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.comprehensiveHistory.chCombined.*"
+					  >
+	<fx:Script>
+		<![CDATA[
+			
+
+
+		]]>
+	</fx:Script>
+	
+	
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="left" verticalAlign="top" gap="1" paddingLeft="0" paddingRight="0" paddingBottom="0" />
+	</s:layout>
+	<!--<s:HGroup id="id_NotesArea" width="100%" paddingTop="0" />-->
+	<!--<viewBackground:VBSectionLevelNotesDictation id="id_notesDictation" width="100%" />-->
+	
+	<s:VGroup width="100%" gap="-4" paddingTop="5">									
+		<s:TabBar id="id_TabBar2" dataProvider="{id_tabs}" buttonMode="true" 				  
+				  skinClass="com.adobe.quivus.skins.chrome.tabBarSkins.VBrecordingsTabBar"/>
+		<s:SkinnableContainer id="id_VS" width="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.QISectionBGSkin">			
+			<s:layout>
+				<s:VerticalLayout paddingBottom="3" paddingLeft="3" paddingRight="3" paddingTop="3" />
+			</s:layout>
+			
+			<mx:ViewStack id="id_tabs" width="100%" minWidth="500" resizeToContent="true">
+				<s:NavigatorContent width="100%" label="General History" >
+					<chCombined:QIGeneralGridView width="100%" id="id_gen" />
+				</s:NavigatorContent>
+				
+				<s:NavigatorContent width="100%" label="Family History" >											
+					<chCombined:QIFamilyGridView width="100%" id="id_fam" />
+				</s:NavigatorContent>
+				<s:NavigatorContent width="100%" label="Social History" >											
+					<chCombined:QISocialGridView width="100%" id="id_sol" />
+				</s:NavigatorContent>
+				
+			</mx:ViewStack>
+			
+		</s:SkinnableContainer>
+	</s:VGroup>
+</s:SkinnableContainer>

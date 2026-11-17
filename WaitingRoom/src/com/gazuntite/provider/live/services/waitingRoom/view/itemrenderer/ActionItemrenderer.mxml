@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:MXDataGridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						  xmlns:s="library://ns.adobe.com/flex/spark" 
+						  xmlns:mx="library://ns.adobe.com/flex/mx" 
+						  focusEnabled="true" initialize="init()">
+	
+	<fx:Declarations>
+		<mx:DateFormatter id="dateFormatter" formatString="YYYY-MM-DD"/>
+		<mx:DateFormatter id="time" formatString="HH:MM:SS"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.provider.live.services.waitingRoom.dto.AppointmentDTO;
+			import com.gazuntite.provider.live.services.waitingRoom.event.ManageAppointmentWaitingRoomEvent;
+			import com.gazuntite.provider.live.services.waitingRoom.model.WRModelLocator;
+			import com.gazuntite.provider.live.services.waitingRoom.view.event.LoadAppEvent;
+			import com.gazuntite.provider.live.services.waitingRoom.view.event.LoadPatientEvent;
+			import com.gazuntite.provider.live.services.waitingRoom.view.util.WRUtils;
+			
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var model:WRModelLocator = WRModelLocator.getInstance();
+			
+			private var date:Date;
+			private var wrUtils:WRUtils;
+			
+			private function init():void
+			{
+				date 	= new Date();
+				wrUtils = new WRUtils();
+			}
+			
+			protected function btnData_clickHandler(event:MouseEvent):void
+			{
+				if(btnData.label == 'Room-In')
+				{
+					wrUtils.getRoomsList(data.StationID);
+					model.SelectedAppointmentDTO = data as AppointmentDTO;
+					dispatchEvent(new Event('OpenRoomInViewEvent',true, true));
+				}
+				else if(btnData.label == 'Load Patient')
+				{
+					dispatchEvent(new LoadPatientEvent(data.Patient.ID, data.UserID));
+				}
+				else
+				{
+					var appointmentDTO:AppointmentDTO = new AppointmentDTO();
+					var obj:Object 			= new Object();
+					var arr:Array 			= new Array();
+					obj 					= wrUtils.getNextAction(data.Action.Name);
+					data.ModifiedAt 	    = dateFormatter.format(date.toDateString())+'T'+time.format(date);
+					data.ModifiedBy 	    = String(model.loggedInUserProviderId);
+					data.Action.ID 			= obj.ID;
+					data.Action.Name 		= obj.Name;
+					data.Action.NextAction 	= obj.NextAction;
+					
+					var appointmentXML:XML = appointmentDTO.ToXML(data);
+
+					//call ManageAppointment Service
+					var MAPPEvent:ManageAppointmentWaitingRoomEvent = new ManageAppointmentWaitingRoomEvent(appointmentXML, model.loggedInUserProviderId, data.UserID, refreshAppointments );
+					CairngormEventDispatcher.getInstance().dispatchEvent(MAPPEvent);
+					cursorManager.setBusyCursor();
+				}
+			}
+			
+			private function refreshAppointments(val:*=null):void
+			{
+				dispatchEvent(new LoadAppEvent('loadAppointmentsEvent'));
+			}
+			
+			protected function btnData_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(data.Action.Name == 'BeingSeen' || data.Action.Name == 'Being Seen')
+				{
+					btnData.label = 'Load Patient';
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Button id="btnData" creationComplete="btnData_creationCompleteHandler(event)" useHandCursor="true" buttonMode="true" toolTip="{btnData.label}"
+			  label="{data.Action.NextAction}" horizontalCenter="-0" verticalCenter="0" 
+			  click="btnData_clickHandler(event)" styleName="actionButtonSkin" visible="{btnData.label.length >0?true:false}"/>
+</s:MXDataGridItemRenderer>

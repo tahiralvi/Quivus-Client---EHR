@@ -1,0 +1,688 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						xmlns:s="library://ns.adobe.com/flex/spark" 
+						xmlns:mx="library://ns.adobe.com/flex/mx" 						
+						xmlns:components="com.gazuntite.controls.extended.components.*" 						
+						xmlns:CheckBoxGrid="com.zigron.controls.extended.components.CheckBoxGrid.*" 
+						cornerRadius="10" 
+                        skinClass="com.adobe.gazuntite.skins.chrome.containerSkins.TitleWindowSkin"
+						xmlns:common="com.gazuntite.provider.live.services.billing.view.common.*" xmlns:CheckBoxGrid1="com.gazuntite.controls.extended.components.CheckBoxGrid.*" xmlns:components1="com.gazuntite.controls.extended.components.*" 
+						>
+	<fx:Script>
+		<![CDATA[						
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.controls.extended.components.LabelComboBox;
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.CPTMedicalTypeDTO;
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.CPTModifierTypeDTO;
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.SuperBillProcedureInfoDTO;
+			import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadCPTMedicalTypesEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.util.BillingPopUpManager;
+			import com.gazuntite.provider.live.services.billing.view.common.ComboBoxEditor;
+			import com.gazuntite.provider.live.services.billing.view.common.validators.ComboValidator;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.DataGridEvent;
+			import mx.events.ValidationResultEvent;
+			
+			import spark.events.TextOperationEvent;
+			
+						
+			[Bindable] public var model : BillingModelLocator = BillingModelLocator.getInstance();
+			[Bindable] private var searchType:ArrayCollection = new ArrayCollection([{label:"CPT Code"},{label:"Procedure"}]);
+			[Bindable] private var cptList:ArrayCollection;
+			private var val:Boolean = false;
+			private var serachTerm:String;
+			
+			[Bindable]
+			private var m_nReqNo:int;			
+			
+			public function hide():void
+			{
+				removePopup();
+			}
+			
+			[Bindable]
+			public function get ReqNo():int
+			{
+				return m_nReqNo;
+			}			
+			
+			public function set ReqNo(value:int):void
+			{
+				m_nReqNo = value;
+			}
+			
+			[Bindable]
+			private var m_sVisitId:String;
+			
+			[Bindable]
+			public function get VisitId():String
+			{
+				return m_sVisitId;
+			}			
+			
+			public function set VisitId(value:String):void
+			{
+				m_sVisitId = value;
+			}
+			
+			[Bindable]
+			private var m_sPatientId:String;
+			
+			[Bindable]
+			public function get PatientId():String
+			{
+				return m_sPatientId;
+			}			
+			
+			public function set PatientId(value:String):void
+			{
+				m_sPatientId = value;
+			}
+			
+			[Bindable]
+			private var m_sServiceDate:String
+			
+			[Bindable]
+			public function get ServiceDate():String
+			{
+				return m_sServiceDate;
+			}			
+			
+			public function set ServiceDate(value:String):void
+			{
+				m_sServiceDate = value;
+			}
+			
+			//Search and load recors on basis search term from form
+			public function searchAndLoadLabIn(_searchTerm:String, index:uint):void
+			{
+				id_SearchCombo.selectedIndex = index;
+				id_searchText.text 			 = _searchTerm; 
+				serachTerm = _searchTerm;
+				id_SearchButton.enabled		 = true;
+				searchLabCode();
+			}
+			private function saveInHouseLab(_val:Boolean):void
+			{
+				if(id_DataGrid.selectedItems.length == 0){
+					Alert.show('Please select a record to Save.','No record selected',4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				val = _val;
+				addrecord();
+			}
+			
+			// Add records on the Add & Add and Close Button Click
+			protected function addrecord():void
+			{
+				for(var i:uint = 0; i< id_DataGrid.selectedItems.length; i++)
+				{
+					var procedureDTO:SuperBillProcedureInfoDTO 	= new SuperBillProcedureInfoDTO();
+					procedureDTO.VisitDate = ServiceDate;
+					procedureDTO.ModifiedBy ="0";
+					procedureDTO.ProcedureID = "0";
+					procedureDTO.CPTMedicalTypeID = id_DataGrid.selectedItems[i].CPTMedicalTypeID;				
+					procedureDTO.CreatedBy = model.LoggedInUserId.toString();
+					procedureDTO.ProcedureCode = id_DataGrid.selectedItems[i].ProcedureCode;
+					procedureDTO.ProcedureDescription = id_DataGrid.selectedItems[i].ProcedureDescription;
+					procedureDTO.PatientID = PatientId;
+					procedureDTO.VisitID = VisitId;					
+					
+					procedureDTO.Unit = id_DataGrid.selectedItems[i].Unit;
+					procedureDTO.Fee = id_DataGrid.selectedItems[i].Fee;
+					procedureDTO.PatientID = PatientId;
+					procedureDTO.VisitID = VisitId;				
+					
+					
+					procedureDTO.Modifier1 =id_DataGrid.selectedItems[i].Modifier1 ;
+					procedureDTO.ModifierTypeId1 =id_DataGrid.selectedItems[i].ModifierTypeId1 ;
+							
+					procedureDTO.Modifier2 =id_DataGrid.selectedItems[i].Modifier2 ;
+					procedureDTO.ModifierTypeId2 =id_DataGrid.selectedItems[i].ModifierTypeId2 ;
+					
+					procedureDTO.Modifier3 =id_DataGrid.selectedItems[i].Modifier3 ;
+					procedureDTO.ModifierTypeId3 =id_DataGrid.selectedItems[i].ModifierTypeId3 ;
+					
+					procedureDTO.Modifier4 =id_DataGrid.selectedItems[i].Modifier4 ;
+					procedureDTO.ModifierTypeId4 =id_DataGrid.selectedItems[i].ModifierTypeId4 ;
+					
+					procedureDTO.IncludeInBilling = "true";
+					procedureDTO.IsCreatedFromSuperBill = "true";
+					procedureDTO.IsDeleted = "false";
+					
+					if(ReqNo == 1)
+					{
+						if(model.CurrentProcedures ==	null)
+							model.CurrentProcedures = new ArrayCollection();
+						procedureDTO.Type = "CPT";
+						model.CurrentProcedures.addItem(procedureDTO);
+					}
+					else 
+					{
+						if(model.CurrentOtherProcedures ==	null)
+							model.CurrentOtherProcedures = new ArrayCollection();
+						procedureDTO.Type = "HCPC";
+						model.CurrentOtherProcedures.addItem(procedureDTO);
+					}
+					if(UtilityFunctions.IsNullOrEmpty(procedureDTO.Fee) == false && Number(procedureDTO.Fee) > 0 )
+					{
+						if(UtilityFunctions.IsNullOrEmpty(procedureDTO.Unit) == true || Number(procedureDTO.Unit) == 0)
+							procedureDTO.Unit = "1";
+						model.TotalCharges += Number(procedureDTO.Fee) * Number(procedureDTO.Unit);
+					}
+				}
+				model.CalculateSuperBill();
+				
+				if(cptList)
+					cptList.removeAll(); cptList = null;
+				//If Clicked is Add and Close
+				if(val)
+					removePopup();
+			}
+			
+			private function searchLabCode():void
+			{
+				var cptEvent : LoadCPTMedicalTypesEvent = new LoadCPTMedicalTypesEvent(serachTerm,ReqNo, loadData);
+				CairngormEventDispatcher.getInstance().dispatchEvent( cptEvent );
+			}
+			
+			public function searchLabCodes():void 
+			{
+				if(id_searchText.text.length < 3){
+					id_message.visible 	= true;
+					id_message.text 	= 'Please enter search term before click';
+				}else{
+					if(cptList)
+						cptList.removeAll(); cptList = null;
+					serachTerm = id_searchText.text;
+					searchLabCode();
+				}
+			}
+			public  function loadData(val:* = null):void
+			{
+				var CPTList:ArrayCollection = new ArrayCollection();
+				var procedureDTO:SuperBillProcedureInfoDTO;
+					//ReqNo == 1 ? model.CPTMedicalTypeList : model.CPTMedicalTypeListOther;
+				if(ReqNo == 1)
+				{
+					for(var j:int =0 ; j < model.CPTMedicalTypeList.length; j++)
+					{
+						var typeDTO:CPTMedicalTypeDTO = model.CPTMedicalTypeList[j] as CPTMedicalTypeDTO;
+						//CPTList.addItem(typeDTO);
+						
+						procedureDTO = new SuperBillProcedureInfoDTO();
+						
+						procedureDTO.VisitDate = ServiceDate;
+						procedureDTO.ModifiedBy ="0";
+						procedureDTO.ProcedureID = "0";
+						procedureDTO.CPTMedicalTypeID = typeDTO.CPTMedicalTypeID;				
+						procedureDTO.CreatedBy = model.LoggedInUserId.toString();
+						procedureDTO.ProcedureCode = typeDTO.ProcedureCode;
+						procedureDTO.ProcedureDescription = typeDTO.ProcedureDescription;
+						procedureDTO.Unit = "0";
+						procedureDTO.Fee = "0";
+						procedureDTO.PatientID = PatientId;
+						procedureDTO.VisitID = VisitId;	
+						procedureDTO.Modifier1 = "";
+						procedureDTO.ModifierTypeId1 = "0";
+						procedureDTO.Modifier2 = "";
+						procedureDTO.ModifierTypeId2 = "0";
+						procedureDTO.Modifier3 = "";
+						procedureDTO.ModifierTypeId3 = "0";
+						procedureDTO.Modifier4 = "";
+						procedureDTO.ModifierTypeId4 = "0";
+						procedureDTO.IncludeInBilling = "true";
+						procedureDTO.IsCreatedFromSuperBill = "true";
+						procedureDTO.IsDeleted = "false";	
+						
+						CPTList.addItem(procedureDTO);
+						
+					}
+				}
+				else
+				{
+					for(var k:int =0 ; k < model.CPTMedicalTypeListOther.length; k++)
+					{
+						var typeDTO2:CPTMedicalTypeDTO = model.CPTMedicalTypeListOther[k] as CPTMedicalTypeDTO;
+						//CPTList.addItem(typeDTO);
+						
+						procedureDTO = new SuperBillProcedureInfoDTO();
+						
+						procedureDTO.VisitDate = ServiceDate;
+						procedureDTO.ModifiedBy ="0";
+						procedureDTO.ProcedureID = "0";
+						procedureDTO.CPTMedicalTypeID = typeDTO2.CPTMedicalTypeID;				
+						procedureDTO.CreatedBy = model.LoggedInUserId.toString();
+						procedureDTO.ProcedureCode = typeDTO2.ProcedureCode;
+						procedureDTO.ProcedureDescription = typeDTO2.ProcedureDescription;
+						procedureDTO.Unit = "0";
+						procedureDTO.Fee = "0";
+						procedureDTO.PatientID = PatientId;
+						procedureDTO.VisitID = VisitId;	
+						procedureDTO.Modifier1 = "";
+						procedureDTO.ModifierTypeId1 = "0";
+						procedureDTO.Modifier2 = "";
+						procedureDTO.ModifierTypeId2 = "0";
+						procedureDTO.Modifier3 = "";
+						procedureDTO.ModifierTypeId3 = "0";
+						procedureDTO.Modifier4 = "";
+						procedureDTO.ModifierTypeId4 = "0";
+						procedureDTO.IncludeInBilling = "true";
+						procedureDTO.IsCreatedFromSuperBill = "true";
+						procedureDTO.IsDeleted = "false";	
+						
+						CPTList.addItem(procedureDTO);
+					}
+				}
+				
+				if(CPTList != null)
+				{
+					if(CPTList.length)
+					{
+						if(cptList == null)
+							cptList = new ArrayCollection();						
+						
+						for(var i:uint = 0; i < CPTList.length; i++)
+						{
+							var obj:Object 						= new Object();
+							obj.SuperBillProcedureInfoDTO		= CPTList[i];							
+							
+							if( (model.CurrentProcedures != null && model.CurrentProcedures.length > 0  )
+								|| (model.CurrentOtherProcedures != null && model.CurrentOtherProcedures.length > 0)
+							)
+							{
+								if( hasDuplicateValues( obj.SuperBillProcedureInfoDTO as SuperBillProcedureInfoDTO ) )
+									continue;
+								else
+									cptList.addItem(obj.SuperBillProcedureInfoDTO  as SuperBillProcedureInfoDTO);
+							}else
+							{
+								cptList.addItem(obj.SuperBillProcedureInfoDTO  as SuperBillProcedureInfoDTO);
+							}
+						}
+						//resetFields();
+					}else
+					{
+						id_message.visible  = true;
+						id_message.text 	= 'No CPT found, try different!';
+					}
+				}
+			}
+			
+			private function hasDuplicateValues(dto:SuperBillProcedureInfoDTO):Boolean
+			{
+				if( model.CurrentProcedures != null && model.CurrentProcedures.length > 0  )
+					for(var j:uint =0; j < model.CurrentProcedures.length; j++)
+					{
+						var labDTO:SuperBillProcedureInfoDTO = model.CurrentProcedures[j] as SuperBillProcedureInfoDTO;
+						
+						if(dto.ProcedureCode == labDTO.ProcedureCode)
+							return true;
+					}
+				
+				if( model.CurrentOtherProcedures != null && model.CurrentOtherProcedures.length > 0  )
+					for(var k:uint =0; k < model.CurrentOtherProcedures.length; k++)
+					{
+						var labDTOother:SuperBillProcedureInfoDTO = model.CurrentOtherProcedures[k] as SuperBillProcedureInfoDTO;
+						
+						if(dto.ProcedureCode == labDTOother.ProcedureCode)
+							return true;
+					}
+				
+				return false;
+			}
+			
+			private function id_searchText_changeHandler(event:TextOperationEvent):void
+			{
+				if(id_searchText.text.length >= 3){
+					id_SearchButton.enabled = true;
+					id_message.visible 		= false;
+				}else{
+					id_SearchButton.enabled = false;
+					id_message.visible 		= false;
+				}
+			} 
+			private function resetFields():void
+			{
+				id_SearchCombo.selectedIndex = -1;
+				id_message.visible			 = false;
+				id_searchText.text			 = '';
+				id_SearchButton.enabled		 = false;
+			}
+			
+			//Close this popup
+			public override function removePopup():void
+			{
+				BillingPopUpManager.removePopUp(this,BillingPopUpManager.SUPER_BILL_POPUPS);
+				super.removePopup();
+				resetFields();
+			}
+			
+			private var comboValidator:ComboValidator;
+			private var bMsgShown:Boolean;
+			private function procedureItemEditHandler(event:DataGridEvent):void
+			{	
+				var validationRes:ValidationResultEvent;				
+								
+				var dto:SuperBillProcedureInfoDTO = event.itemRenderer.data as SuperBillProcedureInfoDTO;
+				if (event.dataField == "Modifier1")
+				{
+					var editorM1:LabelComboBox = ComboBoxEditor(id_DataGrid.itemEditorInstance).id_ComboEditor;
+									
+					if( editorM1.selectedItem )										
+					{
+						dto.ModifierTypeId1 	= (editorM1.selectedItem as CPTModifierTypeDTO).ModifierTypeId;
+						dto.Modifier1 	= (editorM1.selectedItem as CPTModifierTypeDTO).ModifierDescription.split("\-")[0];
+					}
+				}				
+				else if (event.dataField == "Modifier2")
+				{
+					var editorM2:LabelComboBox = ComboBoxEditor(id_DataGrid.itemEditorInstance).id_ComboEditor;				
+					
+					if( editorM2.selectedItem )											
+					{
+						dto.ModifierTypeId2 	= (editorM2.selectedItem as CPTModifierTypeDTO).ModifierTypeId;
+						dto.Modifier2 	= (editorM2.selectedItem as CPTModifierTypeDTO).ModifierDescription.split("\-")[0];
+					}
+				}
+					
+				else if (event.dataField == "Modifier3")
+				{
+					var editorM3:LabelComboBox = ComboBoxEditor(id_DataGrid.itemEditorInstance).id_ComboEditor;				
+					
+					if( editorM3.selectedItem )											
+					{
+						dto.ModifierTypeId3 	= (editorM3.selectedItem as CPTModifierTypeDTO).ModifierTypeId;
+						dto.Modifier3 	= (editorM3.selectedItem as CPTModifierTypeDTO).ModifierDescription.split("\-")[0];
+					}
+				}
+					
+				else if (event.dataField == "Modifier4")
+				{
+					var editorM4:LabelComboBox = ComboBoxEditor(id_DataGrid.itemEditorInstance).id_ComboEditor;				
+					
+					if( editorM4.selectedItem )											
+					{
+						dto.ModifierTypeId4 	= (editorM4.selectedItem as CPTModifierTypeDTO).ModifierTypeId;
+						dto.Modifier4 	= (editorM4.selectedItem as CPTModifierTypeDTO).ModifierDescription.split("\-")[0];
+					}
+				}
+				else
+				{						
+					var row:Number = Number(event.rowIndex);
+					var col:int = event.columnIndex;					
+					
+					if (event.dataField == "Fee")
+					{	
+						var feeEditor:mx.controls.TextInput = mx.controls.TextInput(id_DataGrid.itemEditorInstance);
+						
+						
+						id_NumberValidator.domain="Float";
+						id_NumberValidator.source = feeEditor;
+						id_NumberValidator.property = "text";
+						
+						validationRes = id_NumberValidator.validate(UtilityFunctions.TrimString(feeEditor.text));
+						
+						if (validationRes && !validationRes.results)
+						{
+							
+							var newFee:String = String(id_DataGrid.itemEditorInstance[id_DataGrid.columns[col].editorDataField]);								
+							dto.Fee = newFee;
+								
+						}
+						else
+						{
+							if( ! bMsgShown )
+							{
+								bMsgShown = true;
+								Alert.show("Please enter valid amount","Invalid Data");
+							}
+							else
+								bMsgShown = false;
+							id_DataGrid.destroyItemEditor();
+							event.stopImmediatePropagation();
+							event.preventDefault();
+						}
+						
+						
+					}				
+					else if (event.dataField == "Unit")
+					{
+						
+						var unitEditor:mx.controls.TextInput = mx.controls.TextInput(id_DataGrid.itemEditorInstance);
+						
+						id_NumberValidator.domain="Float";
+						id_NumberValidator.source = unitEditor;
+						id_NumberValidator.property = "text";
+						
+						validationRes = id_NumberValidator.validate(UtilityFunctions.TrimString(unitEditor.text));
+						
+						if (validationRes && !validationRes.results)
+						{							
+							var newUnit:String = String(id_DataGrid.itemEditorInstance[id_DataGrid.columns[col].editorDataField]);
+							dto.Unit = newUnit;	
+						}
+						else
+						{
+							if( ! bMsgShown )
+							{
+								bMsgShown = true;
+								Alert.show("Please enter valid units","Invalid Data");
+							}
+							else
+								bMsgShown = false;
+							id_DataGrid.destroyItemEditor();
+							event.stopImmediatePropagation();
+							event.preventDefault();
+						}
+						
+					}
+				}	
+				if(dto.IsCreatedFromSuperBill == "false")
+					dto.ModifiedBy = model.LoggedInUserId.toString();
+				
+				event.currentTarget.dataProvider.refresh();
+				id_DataGrid.destroyItemEditor();
+				event.stopImmediatePropagation();
+				event.preventDefault();
+			}			
+
+
+			protected function id_searchText_keyDownHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode == 13 )
+				{
+					if(id_searchText.text.length < 3){
+						id_message.visible 	= true;
+						id_message.text 	= 'Please enter search term';
+					}else{
+						if(cptList)
+							cptList.removeAll(); cptList = null;
+						serachTerm = id_searchText.text;
+						searchLabCode();
+					}
+				}
+			}
+
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>		
+		<mx:NumberValidator id="id_NumberValidator" />	
+	</fx:Declarations>
+	
+	<components:layout>
+		<s:VerticalLayout horizontalAlign="center" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5"/>
+	</components:layout>
+	
+	
+	<s:HGroup width="100%" gap="4" >
+		<s:DropDownList id="id_SearchCombo" height="19" tabIndex="1"
+						prompt="Select Type" dataProvider="{searchType}"
+						width="150" />
+		
+		<s:SkinnableContainer width="200" styleName="patientSearchBGContainerSkin" >
+			<s:layout >
+				<s:HorizontalLayout gap="0" verticalAlign="middle"/>
+			</s:layout>
+			
+			<components1:LabelTextInput id="id_searchText" tabIndex="2"
+									   restrict="0-9 A-Z a-z \." maxChars="30" width="100%" prompt="Search Procedure"
+									   keyDown="id_searchText_keyDownHandler(event)" height="19"
+									   change="id_searchText_changeHandler(event)" skinClass="com.adobe.gazuntite.skins.chrome.textInputSkins.transparentTextInput"/>
+			
+			<s:Button id="id_SearchButton" tabIndex="3"
+					  enabled="false" styleName="orangeSearchButtonSkin" width="23" 
+					  toolTip="Procedure  Search" buttonMode="true"  height="19" 
+					  click="searchLabCodes()" />
+		</s:SkinnableContainer>
+	
+		<s:Label id="id_message" color="#DE2626"  visible="false"/>
+	</s:HGroup >
+	
+	<CheckBoxGrid1:CheckBoxDataGrid id="id_DataGrid" tabIndex="4"
+								   width="100%" height="90%"  allowMultipleSelection="true" 
+								   dataProvider="{cptList}"
+								   draggableColumns="false" 
+								   useRollOver="false"	
+								   editable="true"
+								   resizableColumns="false"
+								   rowCount="{id_DataGrid.dataProvider.length + 1}"
+								   itemEditEnd="procedureItemEditHandler(event)"								  
+								   columnWidths="{[40,70,70,70,70,70,70,70,70]}">
+		<CheckBoxGrid1:columns>
+			<mx:DataGridColumn dataField="" 
+							   headerText="" 
+							   rendererIsEditor="true"
+							   sortable="false" 
+							   itemRenderer="com.gazuntite.controls.extended.components.CheckBoxGrid.CheckBoxRenderer" 
+							   headerRenderer="com.gazuntite.controls.extended.components.CheckBoxGrid.CheckBoxHeaderRenderer" 
+							   editorDataField="selected" /> 
+			<mx:DataGridColumn headerText="CPT" dataField="ProcedureCode" sortable="false" />
+			<mx:DataGridColumn headerText="Procedure" dataField="ProcedureDescription" sortable="false"/>
+			<mx:DataGridColumn headerText="Amount" dataField="Fee" id="id_Fee" sortable="false"
+							   />	
+			<mx:DataGridColumn headerText="Unit" dataField="Unit" id="id_Unit" sortable="false"							   
+							   />	
+			<mx:DataGridColumn headerText="Modifier1" dataField="Modifier1" editable="true" sortable="false"  editorDataField="selectedItem" >
+				<mx:itemEditor>
+					<fx:Component>
+						<common:ComboBoxEditor dataProvider="{outerDocument.model.CPTModifierTypeList1}" labelField="ModifierDescription"
+											   keyUp="comboboxeditor3_keyUpHandler(event)"
+											   >
+							<fx:Script>
+								<![CDATA[
+									import com.adobe.cairngorm.control.CairngormEventDispatcher;
+									import com.gazuntite.provider.live.services.billing.dto.SuperBill.SuperBillProcedureInfoDTO;
+									import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadCPTModifierTypesEvent;
+									protected function comboboxeditor3_keyUpHandler(event:KeyboardEvent):void
+									{		
+										var searchString:String = event.currentTarget.id_ComboEditor.textInput.text;											
+										if(searchString.length > 0)
+										{
+											var modiEvent : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,1);
+											CairngormEventDispatcher.getInstance().dispatchEvent( modiEvent );
+										}
+									}
+								]]>
+							</fx:Script>
+						</common:ComboBoxEditor>
+						
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>	
+			<mx:DataGridColumn headerText="Modifier2" dataField="Modifier2" editable="true" sortable="false"  editorDataField="selectedItem" >
+				<mx:itemEditor>
+					<fx:Component>
+						<common:ComboBoxEditor dataProvider="{outerDocument.model.CPTModifierTypeList2}" labelField="ModifierDescription"
+											   keyUp="comboboxeditor4_keyUpHandler(event)"
+											   >
+							<fx:Script>
+								<![CDATA[
+									import com.adobe.cairngorm.control.CairngormEventDispatcher;
+									import com.gazuntite.provider.live.services.billing.dto.SuperBill.SuperBillProcedureInfoDTO;
+									import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadCPTModifierTypesEvent;
+									protected function comboboxeditor4_keyUpHandler(event:KeyboardEvent):void
+									{	
+										var searchString:String = event.currentTarget.id_ComboEditor.textInput.text;											
+										if(searchString.length > 0)
+										{
+											var modiEvent : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,2);
+											CairngormEventDispatcher.getInstance().dispatchEvent( modiEvent );
+										}
+									}
+								]]>
+							</fx:Script>
+						</common:ComboBoxEditor>
+						
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Modifier3" dataField="Modifier3" editable="true" sortable="false"  editorDataField="selectedItem" >
+				<mx:itemEditor>
+					<fx:Component>
+						<common:ComboBoxEditor dataProvider="{outerDocument.model.CPTModifierTypeList3}" labelField="ModifierDescription" 
+											   keyUp="comboboxeditor5_keyUpHandler(event)"
+											   >
+							<fx:Script>
+								<![CDATA[
+									import com.adobe.cairngorm.control.CairngormEventDispatcher;
+									import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadCPTModifierTypesEvent;
+									protected function comboboxeditor5_keyUpHandler(event:KeyboardEvent):void
+									{
+										var searchString:String = event.currentTarget.id_ComboEditor.textInput.text;											
+										if(searchString.length > 0)
+										{
+											var modiEvent : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,3);
+											CairngormEventDispatcher.getInstance().dispatchEvent( modiEvent );
+										}
+									}
+								]]>
+							</fx:Script>
+						</common:ComboBoxEditor>
+						
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Modifier4" dataField="Modifier4" editable="true" sortable="false"  editorDataField="selectedItem" >
+				<mx:itemEditor>
+					<fx:Component>
+						<common:ComboBoxEditor dataProvider="{outerDocument.model.CPTModifierTypeList4}" labelField="ModifierDescription" 
+											   keyUp="comboboxeditor6_keyUpHandler(event)"
+											   >
+							<fx:Script>
+								<![CDATA[
+									import com.adobe.cairngorm.control.CairngormEventDispatcher;
+									import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadCPTModifierTypesEvent;
+									protected function comboboxeditor6_keyUpHandler(event:KeyboardEvent):void
+									{
+										var searchString:String = event.currentTarget.id_ComboEditor.textInput.text;											
+										if(searchString.length > 0)
+										{
+											var modiEvent : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,4);
+											CairngormEventDispatcher.getInstance().dispatchEvent( modiEvent );
+										}
+									}
+								]]>
+							</fx:Script>
+						</common:ComboBoxEditor>
+						
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+		</CheckBoxGrid1:columns>
+		
+	</CheckBoxGrid1:CheckBoxDataGrid>
+	
+	<s:HGroup width="95%" horizontalAlign="center" height="5%" verticalAlign="middle" paddingBottom="4" >
+		<s:Button buttonMode="true" toolTip="Add procedures and close popup" label="Add  &amp; Close" width="100" click="saveInHouseLab(true)" styleName="blackButtonSkin" tabIndex="5" />
+		<s:Button buttonMode="true" toolTip="Add procedures" label="Add" click="saveInHouseLab(false)" width="60" styleName="blackButtonSkin" tabIndex="6" />
+		<s:Button buttonMode="true" toolTip="Close popup" label="Cancel" click="removePopup()" width="60" styleName="blackButtonSkin" tabIndex="7" />
+	</s:HGroup>
+	
+</components1:PopupWindow>

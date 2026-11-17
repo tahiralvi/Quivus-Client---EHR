@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true" 
+				xmlns:itemRenderers="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.physical.chiefComplaint.itemRenderers.*"
+				width="100%" height="300">
+	<fx:Script>
+		<![CDATA[
+			private var _data:Object;
+			private var _dataChanged:Boolean;
+			
+			private var _hpiFieldsOrder:Array;
+			
+			private var _disableEditableMode:Boolean;
+			[Bindable]
+			override public function get data():Object
+			{
+				return _data;
+			}
+			
+			override public function set data(value:Object):void
+			{
+				_data = value;
+				_dataChanged = true;
+				
+				_hpiFieldsOrder = ["symptom", "onset", "duration", "location", "quality",
+					"severity", "context", "modifyingFactors", "exacerbating", "progression", "radiation"];
+				
+				invalidateProperties();
+			}
+			
+			override protected function commitProperties():void
+			{
+				super.commitProperties();
+				
+				if (_dataChanged)
+				{
+					_dataChanged = false;
+					
+					if (_data)
+					{
+						complaintFreeTextArea.text = _data.hasOwnProperty("ChiefComplaint") ? _data["ChiefComplaint"] : "";
+						hpiItemRenderer.disableEditableMode = _data.hasOwnProperty("disableEditableMode")? _data["disableEditableMode"]: false;
+						hpiItemRenderer.fieldOrder = _hpiFieldsOrder;
+						hpiItemRenderer.data = _data.hasOwnProperty("hpiFields") ? _data["hpiFields"] : null;
+					}
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" paddingLeft="3" paddingRight="3" paddingTop="3" paddingBottom="3" gap="0">
+		<s:HGroup gap="3">
+			<s:Label id="complaintLbl" text="Chief Complaint:" fontFamily="Calibri" fontSize="11" fontWeight="bold" width="120" textAlign="left" height="25"/>
+		</s:HGroup>
+		<!--<s:HGroup width="100%" gap="3">-->
+			<s:Label id="complaintFreeTextArea" fontFamily="Calibri" fontSize="11" width="100%"/>
+			<itemRenderers:HPIItemRenderer id="hpiItemRenderer" width="100%" horizontalAlign="left"/>
+		<!--</s:HGroup>-->
+	</s:VGroup>
+</s:ItemRenderer>

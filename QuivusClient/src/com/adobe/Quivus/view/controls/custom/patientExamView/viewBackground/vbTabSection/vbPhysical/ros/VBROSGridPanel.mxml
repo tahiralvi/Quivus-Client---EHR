@@ -1,0 +1,664 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:SlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+					  xmlns:viewBackground="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.*"
+					  xmlns:commons="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.*"
+					  creationComplete="slideoutpanel1_creationCompleteHandler(event)"
+					  preinitialize="preInitializeHandler()" 
+					  QSViewStateChange="slideoutpanel1_QSViewStateChangeHandler(event)" 
+					  xmlns:itemEditors="com.adobe.Quivus.view.controls.custom.itemEditors.*" 
+					  xmlns:validators="com.adobe.Quivus.utils.validators.*" 
+					  xmlns:diagnosis="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.*"
+					  xmlns:paging="com.adobe.Quivus.view.controls.custom.patientExamView.paging.*"
+					  xmlns:components1="com.gazuntite.controls.extended.components.*"
+					  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.viewBackground.ros.LoadPatientROSByPatientIdEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.itemEditors.SparkComboBoxItemEditor;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.YesNoItemEditor;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.VBSectionDictation;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.VBSectionNotes;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBInternalBarInactiveSkin;
+			import com.adobe.Quivus.view.controls.skins.VBinternalBarSkin;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBIconsButton;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.VBdictationBtnSelected;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.VBnotesBtnSelected;
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.VBIconsBlackButton;
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.VBIconsButtonFilled;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Label;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.events.DataGridEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ValidationResultEvent;
+			
+			import spark.components.ComboBox;
+			
+			import valueObjects.PageDTO;
+			import valueObjects.ROSDTO;
+			import valueObjects.ROSMainCategoryTypeDTO;
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			[Bindable]
+			public var deleteColumnData:Object;
+			
+			private var dictationGridPanel:VBSectionDictation;
+			private var _hasViewChanged:Boolean;
+			private var _hasGridChanged:Boolean;
+			
+			//private var m_bCustomizeData:Boolean;
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			private var moduleConstantName:String = Constants.REVIEW_OF_SYSTEM_MODULE_NAME;
+			
+			
+			private var vb_IsModelUpdated:Boolean;
+			
+			public function get IsModelUpdated():Boolean{
+				
+				return vb_IsModelUpdated;
+				
+			}
+			
+			public function set IsModelUpdated(value:Boolean):void{
+				
+				vb_IsModelUpdated = value;
+				
+				if(vb_IsModelUpdated )
+				{
+					var notesDTOList:ArrayCollection = QSUtilityFunctions.getModuleNoteListForViewBackGround
+						( moduleConstantName);
+					var dictationDTOList:ArrayCollection = QSUtilityFunctions.getModuleDictationListForViewBackGround
+						(moduleConstantName);
+					
+					/* if(notesDTOList && notesDTOList.length > 0) {
+					id_header.id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected); 
+					} else {
+					id_header.id_NotesBtn.setStyle("skinClass", VBnotesBtn);
+					}
+					
+					if( dictationDTOList && dictationDTOList.length > 0) {
+					id_header.id_Voice.setStyle("skinClass", VBdictationBtnSelected);
+					} else {
+					id_header.id_Voice.setStyle("skinClass", VBdictationBtn);
+					} */
+					
+					if(dictationDTOList && dictationDTOList.length > 0)
+					{
+						id_header.id_Voice.setStyle("skinClass", VBdictationBtnSelected);
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+					}
+					
+					if(notesDTOList && notesDTOList.length > 0)
+					{
+						id_header.id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected);
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+					}		
+					
+				}
+			}
+			
+			private function preInitializeHandler():void
+			{
+				if (!deleteColumnData)
+					deleteColumnData = {};
+				
+				deleteColumnData["noteDataFields"] 		= {subject: "NoteSubject", note: "Notes", header: "SubCategoryName", statusFunction:RecordLevelNotesStatus};
+				deleteColumnData["dictationDataField"] 	= "DictationID";
+				deleteColumnData["recordIDField"] 		= "PatientROSID";
+				deleteColumnData["section"] 			= QIPopUpManager.VB_ROS;
+			}
+			private function RecordLevelNotesStatus(hasNotes:Boolean, data:Object):void
+			{
+				//trace( data.MainCategoryName, data.SubCategoryName )
+				if( hasNotes ) 
+					data.IsNormal = Constants.STRING_FALSE;
+				else
+					data.IsNormal = Constants.STRING_TRUE;
+				
+				model.rosDTOListVB.refresh();
+			}
+			
+			public function GridRowNumber(item:Object, iCol:int):String
+			{
+				var strRowNum:String = "";
+				
+				if (id_DataGrid.dataProvider)
+				{
+					var rowNum:int = id_DataGrid.dataProvider.getItemIndex(item) + 1;
+					strRowNum = String(rowNum);
+				}
+				
+				return strRowNum;
+				
+			}
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				/* var mpiEvent : ManagePatientImmunizationEvent = new ManagePatientImmunizationEvent(  );
+				CairngormEventDispatcher.getInstance().dispatchEvent( mpiEvent ); */
+				if(model.rosDTOListVB!=null){
+					model.rosDTOListVB.filterFunction=myFilter;
+					model.rosDTOListVB.refresh();
+				}
+			}
+			
+			private function myFilter(obj:*):Boolean
+			{
+				
+				if(model.vbFilter == Constants.BY_VISIT)
+				{
+					if(model.vbVisitId == obj.VisitID)
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+				
+				return true;
+				
+			}
+			
+			private var notesGridPanel:VBSectionNotes;
+			private var m_oNotesDTOList:ArrayCollection;
+			
+			public function get notesDTOList():ArrayCollection
+			{
+				return m_oNotesDTOList;
+			}
+			
+			public function set notesDTOList(value:ArrayCollection):void
+			{
+				m_oNotesDTOList = value;
+			}
+			//var dictationDTOList:ArrayCollection = UtilityFunctions.getModuleDictationListForViewBackGround(Constants.REVIEW_OF_SYSTEM_MODULE_NAME);
+			protected function slideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				
+				/* 	var myAC:ArrayCollection = new ArrayCollection([{name: 'Normal'}]);
+				var obj1:Object = new Object();
+				obj1.name = "Abnormal";
+				
+				
+				myAC.addItem(obj1); */
+				
+				/* for(var i=0; i<myAC.length; i++)
+				{
+				trace(myAC.getItemAt(i).name);
+				} */
+				//trace("ASD "+myAC["name"]);
+				
+				if(this.ExpandedView)
+				{
+					id_header.HeadingLable = id_header.HeadingLable.toUpperCase();
+				}
+				else
+				{
+					id_header.HeadingLable = id_header.HeadingLable.toLowerCase();
+				}
+				id_header.id_OptionPopUp.displayPopUp = true;
+				id_header.id_iconButtons.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					//if(id_Area.visible)
+					{
+						
+						if(id_header.id_OptionPopUp.displayPopUp)
+						{
+							id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						}
+						else
+						{
+							id_header.id_iconButtons.setStyle("skinClass", VBIconsButton);	
+						}
+					}
+					
+				});	
+				id_header.id_Voice.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					var notesDTOList:ArrayCollection = QSUtilityFunctions.getModuleNoteListForViewBackGround
+					( moduleConstantName);
+					var dictationDTOList:ArrayCollection = QSUtilityFunctions.getModuleDictationListForViewBackGround
+					(moduleConstantName);
+					
+					id_notesDictation.notesDTOList = notesDTOList;
+					id_notesDictation.DictationDTOList = dictationDTOList;
+					id_notesDictation.id_Area.visible 		= true;
+					id_notesDictation.id_Area.includeInLayout = true;
+					//id_notesDictation.id_VBViews.selectedIndex = 1;						
+					id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+					id_header.id_iconButtons.selected = false;
+					id_header.id_OptionPopUp.displayPopUp = false;
+					
+					if(this.ExpandedView)
+					{
+						event.stopImmediatePropagation();
+					}
+				});			
+				
+				id_header.id_slideoutBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					ToggleSlideOut();
+					event.stopImmediatePropagation();
+				});
+				
+				id_header.id_NotesBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					var notesDTOList:ArrayCollection = QSUtilityFunctions.getModuleNoteListForViewBackGround
+					( moduleConstantName);
+					var dictationDTOList:ArrayCollection = QSUtilityFunctions.getModuleDictationListForViewBackGround
+					(moduleConstantName);
+					
+					id_notesDictation.notesDTOList = notesDTOList;
+					id_notesDictation.DictationDTOList = dictationDTOList;
+					{
+						id_notesDictation.id_Area.visible 		= true;
+						id_notesDictation.id_Area.includeInLayout = true;						
+						//id_notesDictation.id_VBViews.selectedIndex = 0;
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						id_header.id_iconButtons.selected = false;
+						id_header.id_OptionPopUp.displayPopUp = false;
+						
+					}
+					
+					if(this.ExpandedView)
+					{
+						event.stopImmediatePropagation();
+					}
+				});
+				id_header.id_OptionPopUp.displayPopUp = false;
+				
+				if(this.ExpandedView)
+				{
+					//id_header.id_pmhHeader.setStyle("skinClass", VBinternalBarSkin);	
+				}
+				else
+				{
+					//id_header.id_pmhHeader.setStyle("skinClass", VBInternalBarInactiveSkin);
+				}
+				
+				id_DataGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				id_DataGrid.addEventListener(DataGridActionsEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+			}
+			
+			private function editRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				id_DataGrid.editable = true;
+				var rowIndex:int = id_DataGrid.selectedIndex;
+				var itemToSetInEditableMode:IListItemRenderer = id_DataGrid.indexToItemRenderer(rowIndex);
+				
+				var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+				ev.columnIndex = 2;
+				ev.rowIndex = rowIndex;
+				ev.itemRenderer = itemToSetInEditableMode;
+				ev.dataField = "DateAdmin";
+				
+				id_DataGrid.dispatchEvent(ev);
+			}
+			
+			public function displayStatus(oItem:Object,iCol:int):String
+			{
+				//Tahir - New implementation of IsAbnormal property	ROSDTO	
+				var result:String;
+				var isNormal:Boolean = (oItem as ROSDTO).IsNormal 	  == Constants.STRING_TRUE;
+				var isAbNormal:Boolean = (oItem as ROSDTO).IsAbNormal == Constants.STRING_TRUE;
+				
+				if(isNormal)
+				{
+					result =  "Normal";
+				}
+					//else if(isAbNormal)
+				else
+				{
+					result =  "Abnormal";
+				}
+				return result; 
+			}
+			
+			protected function slideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if(id_header && id_header.id_pmhHeader)
+				{
+					if(event.viewState == QSViewStateEvent.EXPANDED_VIEW)
+					{				
+						
+						//id_header.id_pmhHeader.setStyle("skinClass", VBinternalBarSkin);	
+						id_header.HeadingLable = id_header.HeadingLable.toUpperCase();
+						id_header.id_expandBtn.selected = true;
+					}
+					else
+					{
+						//id_header.id_pmhHeader.setStyle("skinClass", VBInternalBarInactiveSkin);
+						id_header.HeadingLable = AppUtils.TitleCase(id_header.HeadingLable);
+						id_header.id_expandBtn.selected = false;
+					}
+				}
+			}
+			
+			private function customizeROSData():void
+			{
+				var dataPvdr:ArrayCollection = new ArrayCollection();
+				
+				for (var j:int = 0; j < model.rosDTOListVB.length; j++)
+				{
+					var rosDTO:ROSDTO = model.rosDTOListVB.getItemAt(j) as ROSDTO;
+					
+					if (rosDTO)
+					{
+						var children:ArrayCollection = rosDTO.children;
+						
+						if (children)
+						{
+							var childStr:String = "";
+							var childNotes:String = "";
+							
+							for (var i:int = 0; i < children.length; i++)
+							{
+								var childROS:ROSDTO = children[i];
+								
+								if ( childROS.IsNormal )
+								{
+									var normal:String = childROS.IsNormal == Constants.STRING_TRUE ? "NORMAL":"ABNORMAL";
+									childStr += childROS.SubCategoryName + ": " + normal + ", ";
+									if( childROS.Notes && childROS.Notes.length )
+										childNotes +=  childROS.SubCategoryName + ": " + childROS.Notes + ", ";
+								}
+							}  
+							
+							if( childStr && childStr.length )
+							{
+								trace (childStr);
+								var data:Object = {type: "", typeValue:"", notes:""};
+								data["type"] = rosDTO.MainCategoryName;
+								data["typeValue"] = childStr.substr(0, childStr.length-2);
+								if( childNotes && childNotes.length )
+									data["notes"] = childNotes.substr(0, childNotes.length-2);
+								data["IsNormal"] = childROS.IsNormal;
+								dataPvdr.addItem(data);
+							}
+						}
+					}
+				}
+				
+				if (dataPvdr.length)
+				{
+					var type:DataGridColumn = new DataGridColumn();
+					type.headerText = "Type";
+					type.dataField = "type";
+					
+					var typeValue:DataGridColumn = new DataGridColumn();
+					typeValue.headerText = "Type value";
+					typeValue.dataField = "typeValue";
+					typeValue.wordWrap = true;
+					
+					var notes:DataGridColumn = new DataGridColumn();
+					notes.headerText = "Notes";
+					notes.dataField = "notes";
+					notes.wordWrap = true;
+					
+					/* id_DataGrid.columns = new ArrayCollection([{subColumns: 
+					[{type: type}, {typeValue: typeValue}, {notes: notes}]
+					}]); */
+					
+					id_DataGrid.dataProvider = new ArrayCollection([{subDataProvider: dataPvdr}]);
+				}
+			}
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_ROS ))//Tahir Alvi - implement security check
+				{
+					var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+					
+					if (curTar.selectedItem)
+					{
+						var rosID:int = ROSDTO(curTar.selectedItem).PatientROSID;
+						
+						if (rosID == 0)
+						{
+							model.rosDTOListVB.removeItemAt(curTar.selectedIndex);
+							if (model.rosDTOListVB.length <= 0)
+							{
+								_hasGridChanged = false;
+								//hasViewChanged = isGetEdited();
+							}
+						}
+						else
+						{
+							UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+							{
+								curTar.selectedItem.IsDeleted = true;
+								model.rosDTOListVB.filterFunction = filterDeletedItems;
+								model.rosDTOListVB.refresh();
+								
+								hasViewChanged = _hasGridChanged = true;
+							});
+						}
+					}
+					
+				}
+				
+			}
+			
+			protected function id_DataGrid_itemEditBeginHandler(event:DataGridEvent):void
+			{
+				id_DataGrid.createItemEditor(event.columnIndex, event.rowIndex);
+				
+				/* if ( event.columnIndex == 2 )
+				{
+				SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).data = event.itemRenderer.data; 
+				}
+				*/
+				
+				
+				if (event.columnIndex == 2 ) // == "ImmunizationType.ImmunizationTypeName")
+				{
+					/* var dto:ROSMainCategoryTypeDTO 		= event.itemRenderer.data as ROSMainCategoryTypeDTO;
+					var col:ArrayCollection    		 	= model.rosDTOListVB;
+					
+					var i:int; */
+					/* for( i = 0; i < col.length; i ++ )
+					{
+					var item:ROSMainCategoryTypeDTO = col.getItemAt( i ) as ROSMainCategoryTypeDTO;
+					if( dto.ROSMainCategoryTypeID == item.ROSMainCategoryTypeID )
+					{
+					SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.selectedItem = item;
+					break;
+					}
+					} */
+				} 
+				
+				if ( event.columnIndex == 4 )
+				{
+					// SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).dataProvider = id_normal;
+				}
+				
+				
+			}
+			
+			
+			protected function id_DataGrid_itemEditEndHandler(event:DataGridEvent):void
+			{
+				// TODO Auto-generated method stub
+				var validationRes:ValidationResultEvent;
+				
+				
+				/* if (event.dataField == "MainCategoryName")
+				{
+				var editor:ComboBox = SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor;
+				
+				comboValidator.error = "Invalid";
+				comboValidator.source = editor;
+				comboValidator.property = "selectedItem";
+				
+				validationRes = comboValidator.validate(editor.selectedItem);
+				
+				if (validationRes && !validationRes.results)
+				{
+				event.itemRenderer.data = editor.selectedItem as ROSMainCategoryTypeDTO;
+				
+				// if (immunizationID != 0)
+				//event.itemRenderer.data.IsDirty = true; 
+				
+				hasViewChanged = _hasGridChanged = true;
+				}
+				else
+				{
+				id_DataGrid.destroyItemEditor();
+				event.stopImmediatePropagation();
+				event.preventDefault();
+				}
+				
+				} */
+				
+				if(event.columnIndex == 4)
+				{
+					//var editor_cb:ComboBox = SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor;
+					var isYes:String = (id_DataGrid.itemEditorInstance as YesNoItemEditor).isYes;
+					
+					
+					
+					isYes = (id_DataGrid.itemEditorInstance as YesNoItemEditor).isYes;
+					//event.itemRenderer.data.Educated = isYes == Constants.STRING_TRUE ? Constants.STRING_YES_UI : Constants.STRING_NO_UI ;
+					
+					event.itemRenderer.data.IsNormal = isYes == Constants.STRING_TRUE ? Constants.STRING_YES_UI : Constants.STRING_NO_UI ;
+					event.itemRenderer.data.IsAbNormal = isYes == Constants.STRING_TRUE ? Constants.STRING_NO_UI : Constants.STRING_YES_UI ;
+					
+					/* event.itemRenderer.data.IsNormal = editor_cb.textInput.text == "Normal" ? true: false;
+					event.itemRenderer.data.IsAbNormal = editor_cb.textInput.text == "Abnormal" ? true: false; */
+					event.itemRenderer.data.IsDirty = true; 
+				}
+			}
+			
+			private function switchPageForGridView( event:Event ):void
+			{
+				
+				if( UtilityFunctions.IsNullOrEmpty( model.rosCurrentPageByPatient ) )
+					model.rosCurrentPageByPatient = new PageDTO();
+				
+				var pvital:PageDTO 		= model.rosCurrentPageByPatient;
+				pvital.fromDate 		= model.defaultFilterAndPaging.fromDate;
+				pvital.toDate 			= model.defaultFilterAndPaging.toDate;
+				pvital.pageSize 		= model.defaultFilterAndPaging.pageSize;
+				pvital.LastVisitNumber 	= model.defaultFilterAndPaging.LastVisitNumber;
+				
+				var lpros:LoadPatientROSByPatientIdEvent = new LoadPatientROSByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpros );
+			}
+			
+			protected function id_PaginationFilterView_RefreshViewHandler(event:Event):void
+			{
+				var lpros:LoadPatientROSByPatientIdEvent = new LoadPatientROSByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpros );
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<validators:ComboValidator id="comboValidator"/>
+		
+		
+		<s:ArrayCollection id="id_normal">
+			<fx:String>Normal</fx:String>
+			<fx:String>Abnormal</fx:String>
+		</s:ArrayCollection>
+		
+	</fx:Declarations>
+	<custom:HeaderContents>
+		<s:Group id="id_mainHeader" width="100%" height="24" minWidth="{ChromeUtil.topLevelMainContainer.width - 70}">
+			<s:layout>
+				<s:VerticalLayout verticalAlign="bottom" horizontalAlign="center" />
+			</s:layout>
+			<viewBackground:VBSectionHeader id="id_header" width="{id_mainHeader.width - 8}" HeadingLable="{Constants.VB_SECTION_NAME_ROS}" 
+											Skin="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBROSPanelSkin"
+											SectionNameID="{QSSecurityUtil.VB_ROS}"/>						   
+		</s:Group>
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		<viewBackground:VBSectionSlideoutHeader width="100%" label="{Constants.VB_SECTION_NAME_ROS}"  />
+		
+	</custom:SlideHeaderContents>
+	<custom:Contents>
+		<s:SkinnableContainer id="id_contents" width="100%" height="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBROSPanelSkin">
+			<s:layout>
+				<s:VerticalLayout horizontalAlign="center" verticalAlign="top" gap="1" paddingLeft="4" paddingRight="4" paddingBottom="4" paddingTop="4" />
+			</s:layout>
+			<!--<s:HGroup id="id_NotesArea" width="100%" paddingTop="0" />-->
+			<viewBackground:VBSectionLevelNotesDictation id="id_notesDictation" width="100%" />
+			<s:Button label="Filter" click="button1_clickHandler(event)" visible="false" includeInLayout="false" id="id_applyFiler"/>
+			
+			<paging:PaginationFilterView id="id_PaginationFilterView" width="100%" Page="{model.rosCurrentPageByPatient}"
+										 GoToFirstPage="switchPageForGridView(event)" GoToNextPage="switchPageForGridView(event)" 
+										 GoToPreviousPage="switchPageForGridView(event)" GoToLastPage="switchPageForGridView(event)"
+										 RefreshView="id_PaginationFilterView_RefreshViewHandler(event)"
+										 />
+			<components1:LabelDataGrid id="id_DataGrid" width="100%" useRollOver="false" height="100%"
+									  dataProvider="{model.rosDTOListVB}" rowCount="{id_DataGrid.dataProvider.length + 1}" verticalScrollPolicy="on"
+									  maxHeight="150"
+									  itemEditBegin="id_DataGrid_itemEditBeginHandler(event)"
+									  itemEditEnd="id_DataGrid_itemEditEndHandler(event)" >
+				<components1:columns>
+					<mx:DataGridColumn headerText="Sr.#" width="50" labelFunction="GridRowNumber" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+					<mx:DataGridColumn headerText="Visit Date" width="80" dataField="VisitDate" headerRenderer="mx.controls.Label" wordWrap="true"
+									   itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG"/>
+					<mx:DataGridColumn headerText="Review of System" dataField="MainCategoryName" width="130" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editorDataField="editorText" editable="false">
+						<mx:itemEditor>
+							<fx:Component>
+								<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.rosDTOListVB}" labelField="MainCategoryName" />
+							</fx:Component>
+						</mx:itemEditor>	
+					</mx:DataGridColumn>
+					<mx:DataGridColumn headerText="Type Value" dataField="SubCategoryName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editable="false"/>
+					<mx:DataGridColumn headerText="Status" dataField="IsNormal" labelFunction="displayStatus" width="70" editorDataField="isYes" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true">	
+						<!--<mx:itemEditor>
+						<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.id_normal}" />
+						</fx:Component>
+						</mx:itemEditor>	-->
+						<mx:itemEditor>
+							<fx:Component>
+								<diagnosis:YesNoItemEditor width="100%" height="90%" property="IsYesSelected" isNormalAbnormal="true"/>								
+							</fx:Component>
+						</mx:itemEditor>
+					</mx:DataGridColumn>	
+					<commons:DataGridColumnEx data="{deleteColumnData}" width="85" itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.VBRenderer" editable="false"/>
+				</components1:columns>
+			</components1:LabelDataGrid>
+			
+		</s:SkinnableContainer>
+	</custom:Contents>
+</custom:SlideOutPanel>

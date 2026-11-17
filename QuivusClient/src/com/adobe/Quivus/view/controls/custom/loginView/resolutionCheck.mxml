@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 close="Cancel_clickHandler(event)"
+		 backgroundColor="#444444"
+		 
+		 skinClass="com.adobe.Quivus.view.controls.skins.PopupPanelSkin"
+		 >
+	
+	<s:layout >
+		<s:VerticalLayout paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10" />
+	</s:layout>
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.utils.ChromeUtil;
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				ChromeUtil.closeWindow();
+				this.Close();
+			}
+		]]>
+	</fx:Script>
+
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.QuivusCombineEventDispatcher;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.managers.PopUpManager;
+			
+			import spark.events.IndexChangeEvent;
+			
+			import valueObjects.StationDTO;
+			
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			private var m_Practice:ArrayCollection;
+			
+			
+			
+			
+
+			protected function Cancel_clickHandler(event:Event):void
+			{
+				Close();
+			}
+			
+			private function Close():void
+			{
+				PopUpManager.removePopUp( this );
+			}
+			
+			public function Show(modal:Boolean =false):void
+			{
+				PopUpManager.addPopUp( this, FlexGlobals.topLevelApplication.mainContainer as DisplayObject, modal );
+				PopUpManager.centerPopUp( this );
+				
+				
+			}
+
+			
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	
+
+	
+	
+	<mx:VBox width="50%" verticalAlign="middle">
+		<mx:HBox width="50%" horizontalAlign="left">
+		<s:Label color="#FFFFFF" text="Resolution Check: " />
+		</mx:HBox>
+		<mx:HBox width="100%" horizontalAlign="left">
+			<!--<s:Label color="#FFFFFF" text="General Notes: Application is tested on windows and at minimum resolution of 1280 X 768 or higher, so please check and set your resolution at minimum of 1280 X 800 or higher resolution." />-->
+			<s:RichText width="300" color="#FFFFFF" text="Note: Application is tested on windows and at minimum resolution of 1280 X 768 or higher. Please check and set your resolution at minimum of 1280 X 800 or higher resolution" />			
+			</mx:HBox>
+		<mx:LinkButton click="navigateToURL(new URLRequest('http://windows.microsoft.com/en-US/windows7/Change-your-screen-resolution
+'), '')" label="How to change screen resolution for Windows 7?" color="#00aaff" />
+		<mx:LinkButton click="navigateToURL(new URLRequest('http://www.microsoft.com/enable/training/windowsxp/screenresolution.aspx
+'), '')" label="How to change screen resolution for Windows XP?" color="#00aaff" />
+		
+	</mx:VBox>
+	
+	
+		
+	<mx:HBox width="100%" verticalAlign="middle" horizontalAlign="center">
+	
+		
+		<s:Button skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.addmoreOkBtn" label="Exit"  click="button1_clickHandler(event)"/>
+		
+</mx:HBox>
+	
+</s:TitleWindow>

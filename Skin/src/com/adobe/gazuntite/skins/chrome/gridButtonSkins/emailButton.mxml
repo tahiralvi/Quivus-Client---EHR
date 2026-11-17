@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/>
+	</s:states>
+	<s:Rect height="20" height.down="18" height.over="18" includeIn="down,over,up" radiusX="2" visible.up="false" width="20" width.down="18" width.over="18" x="0.5" x.over="1.5" y="0.5" y.over="1.5" x.down="1.5" y.down="1.5">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#565656" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#292929" ratio="0.47058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#4A4A4A" ratio="0.5058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#737373" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:stroke>
+			<s:LinearGradientStroke caps="none" joints="miter" miterLimit="4" rotation="90" weight="1">
+				<s:GradientEntry alpha="1" color="#727272" ratio="0"/>
+				<s:GradientEntry alpha="1" color="#000000" ratio="0.5058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#727272" ratio="1"/>
+			</s:LinearGradientStroke>
+		</s:stroke>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="4.0" blurX.down="2" blurY="4.0" blurY.down="2" color="0x000000" distance="0" distance.down="2" hideObject="false" includeIn="down,up" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:RichText color.disabled="#CCCCCC" color.down="#FFFFFF" color.over="#FFFFFF" color.up="#555555" fontFamily="Arial" fontSize="11" tabStops="S0" text="@" d:userLabel="GridEmail" x="5" y="5">
+		<s:filters>
+			<s:DropShadowFilter alpha="0.25" angle="90" blurX="0" blurY="0" color="#333333" distance="1" hideObject="false" includeIn="over" inner="false" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="0.25" angle="90" blurX="0" blurY="0" color="#333333" distance="1" hideObject="false" includeIn="down" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:RichText>
+</s:Skin>

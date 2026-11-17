@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 creationComplete="group1_creationCompleteHandler(event)"
+		 xmlns:components="com.zigron.controls.extended.components.*" xmlns:components1="com.gazuntite.controls.extended.components.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.common.dto.AddInsuranceDTO;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			public var insSig:int ;
+			
+			private var _pinsArray:ArrayCollection ;
+
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			[Bindable]
+			private  var _insurance :AddInsuranceDTO;
+
+			public function get insurance():AddInsuranceDTO
+			{
+				return _insurance;
+			}
+
+			public function set insurance(value:AddInsuranceDTO):void
+			{
+				_insurance = value;
+			}
+
+			
+			private var _code					:ArrayCollection		= new ArrayCollection ();
+			private var _typeArrayCollection 	:ArrayCollection 		= new  ArrayCollection();
+			private var _defaultArrayCollection :ArrayCollection 		= new ArrayCollection ();
+			
+			
+			[Bindable]
+			public function get typeArrayCollection():ArrayCollection
+			{
+				return _typeArrayCollection;
+			}
+			
+			public function set typeArrayCollection(value:ArrayCollection):void
+			{
+				_typeArrayCollection = value;
+			}
+			
+			[Bindable] 
+			public function get defaultArrayCollection():ArrayCollection
+			{
+				return _defaultArrayCollection;
+			}
+			
+			public function set defaultArrayCollection(value:ArrayCollection):void
+			{
+				_defaultArrayCollection = value;
+			}
+			
+			[Bindable]
+			public function get pinsArray():ArrayCollection
+			{
+				return _pinsArray;
+			}
+			
+			public function set pinsArray(value:ArrayCollection):void
+			{
+				_pinsArray = value;
+			}
+			[Bindable]
+			public function get code():ArrayCollection
+			{
+				return _code;
+			}
+			
+			public function set code(value:ArrayCollection):void
+			{
+				_code = value;
+			}
+
+			public function LoadData():void
+			{
+				//Options
+				if(insurance && insurance !=null)
+				{
+					if(! UtilityFunctions.IsNullOrEmpty(insurance.InsuredSignatureOnFile))
+					{
+						insSig = Number(insurance.InsuredSignatureOnFile) ;
+						id_patSig.selectedIndex = insSig - 1; 
+					}
+					if(! UtilityFunctions.IsNullOrEmpty(insurance.PhysicianSignatureOnFile))
+					{
+						insSig = Number(insurance.PhysicianSignatureOnFile);
+						id_phySig.selectedIndex = insSig- 1;
+					}
+					if(! UtilityFunctions.IsNullOrEmpty(insurance.PatientSignatureOnFile))
+					{
+						insSig = Number(insurance.PatientSignatureOnFile);
+						id_patSig.selectedIndex = insSig- 1;
+					}
+					if(!UtilityFunctions.IsNullOrEmpty(insurance.PrintPINsOnInsForm))
+					{
+						insSig = Number(insurance.PrintPINsOnInsForm);
+						id_Pins.selectedIndex = insSig- 1;
+					}
+					
+					if(!UtilityFunctions.IsNullOrEmpty(insurance.PrimaryMediaTypeID))
+					{
+						insSig = Number(insurance.PrimaryMediaTypeID);
+						id_Meth1.selectedIndex = insSig- 1;
+					}
+					
+					if(!UtilityFunctions.IsNullOrEmpty(insurance.SecondaryMediaTypeID))
+					{
+						insSig = Number(insurance.SecondaryMediaTypeID);
+						id_Meth2.selectedIndex = insSig- 1;
+					}
+					
+					if(!UtilityFunctions.IsNullOrEmpty(insurance.TertiaryMediaTypeID))
+					{
+						insSig = Number(insurance.TertiaryMediaTypeID);
+						id_Meth3.selectedIndex = insSig- 1;
+					}
+					
+				}
+				
+			}
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				LoadData();
+				
+			}
+			
+			private var objToSetFocus:Object = null;
+			public function SaveInsurance():Object
+			{
+				if(! isValidData("0")) return objToSetFocus;
+				
+				model.insuranceDto.PatientSignatureOnFile		= (id_patSig.selectedIndex + 1 ).toString();
+				model.insuranceDto.InsuredSignatureOnFile 		= (id_insSig.selectedIndex + 1 ).toString();
+				model.insuranceDto.PhysicianSignatureOnFile 		= (id_phySig.selectedIndex + 1 ).toString();
+				if(id_Pins.selectedItem=="PinOnly")
+					
+					model.insuranceDto.PrintPINsOnInsForm 		= "true";
+				else
+					model.insuranceDto.PrintPINsOnInsForm 		= "false";
+				model.insuranceDto.PrimaryMediaTypeID 			= (id_Meth1.selectedIndex + 1 ).toString();
+				model.insuranceDto.SecondaryMediaTypeID			= (id_Meth2.selectedIndex + 1 ).toString();
+				model.insuranceDto.TertiaryMediaTypeID			= (id_Meth3.selectedIndex + 1 ).toString();
+				
+				return null
+			}
+			
+			private function isValidData(insOrgID:String):Boolean
+			{
+				var success:Boolean = new Boolean();
+				var errorStr:String = new String();
+				success = true;
+				
+				/* if(UtilityFunctions.TrimString(id_Name.text) == "")
+				{
+					success = false;
+					errorStr += "Please enter Name \n";							
+					if (!objToSetFocus)
+						objToSetFocus = id_Name;						
+				} */	
+				
+				
+				if(success == false)
+				{
+					var alert:Alert = Alert.show(errorStr, "Required Fields", 4, FlexGlobals.topLevelApplication.mainContainer);					
+					PopUpManager.centerPopUp (alert);					
+				}
+				
+				return success;
+			}
+			
+			public function UpdateInsurance():Object
+			{
+				if(! isValidData("0")) return objToSetFocus;
+				
+				if(id_patSig.selectedIndex > -1)
+				{
+					if(!UtilityFunctions.IsNullOrEmpty(insurance.PatientSignatureOnFile))
+					{
+						if (id_patSig.selectedIndex + 1 != Number(insurance.PatientSignatureOnFile))
+						{
+							
+							insurance.PatientSignatureOnFile= (id_patSig.selectedIndex + 1 ).toString();
+						}
+						
+					}
+				}
+				if(id_insSig.selectedIndex > -1)
+				{
+					if(!UtilityFunctions.IsNullOrEmpty(insurance.InsuredSignatureOnFile))
+					{
+						insurance.InsuredSignatureOnFile = (id_insSig.selectedIndex + 1 ).toString();
+						
+					}
+				}
+				if(id_phySig.selectedIndex > -1)
+				{
+					if(!UtilityFunctions.IsNullOrEmpty(insurance.PhysicianSignatureOnFile))
+					{
+						insurance.PhysicianSignatureOnFile = (id_phySig.selectedIndex + 1 ).toString();
+						
+					}
+				}
+				if(id_Pins.selectedIndex > -1)
+				{
+					if(!UtilityFunctions.IsNullOrEmpty(insurance.PrintPINsOnInsForm))
+					{
+						if(id_Pins.selectedItem=="PinOnly")
+							
+							insurance.PrintPINsOnInsForm = "true";
+							
+						else if(id_Pins.selectedItem=="Leave")
+							
+							insurance.PrintPINsOnInsForm = "false";
+					}
+				}
+				
+				//Default Payment Application Codes
+				if(id_Meth1.selectedIndex > -1)
+				{
+					if(!UtilityFunctions.IsNullOrEmpty(insurance.PrimaryMediaTypeID))
+					{
+						
+						insurance.PrimaryMediaTypeID = (id_Meth1.selectedIndex + 1 ).toString();
+						
+					}
+				}
+				if(id_Meth2.selectedIndex > -1)
+				{
+					if(!UtilityFunctions.IsNullOrEmpty(insurance.SecondaryMediaTypeID))
+					{
+						
+						insurance.SecondaryMediaTypeID = (id_Meth2.selectedIndex + 1 ).toString();
+						
+					}
+				}
+				if(id_Meth3.selectedIndex > -1)
+				{
+					if(!UtilityFunctions.IsNullOrEmpty(insurance.TertiaryMediaTypeID))
+					{
+						
+						insurance.TertiaryMediaTypeID = (id_Meth3.selectedIndex + 1 ).toString();
+						
+					}
+				}
+				
+				return null;
+			}
+			
+		public function callBack():void{}
+			
+
+
+		]]>
+	</fx:Script>
+	<s:layout>
+		<s:VerticalLayout  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5"/>
+	</s:layout>
+	<s:Label text="OPTIONS" fontFamily="Calibri" fontSize="11"/>
+	<s:HGroup width="100%">
+		<s:VGroup width="50%" gap="3">
+			<components1:LabelComboBox  width="100%" prompt="Procedure Code Set"  id="id_ProcedureCodeSet" selectedIndex="1" 
+									   dataProvider="{code}" tabIndex="1" toolTip="Procedure Code Set" />
+			<components1:LabelComboBox width="100%" prompt="Patient Signature on File" id="id_patSig" 
+									  dataProvider="{typeArrayCollection}" tabIndex="3" toolTip="Patient Signature on File" />
+			<components1:LabelComboBox width="100%" prompt="Insured Signature on File" id="id_insSig" 
+									  dataProvider="{typeArrayCollection}" tabIndex="5"  toolTip="Insured Signature on File" />
+			<components1:LabelComboBox width="100%" prompt="Physician Signature on File" id="id_phySig"
+									  dataProvider="{typeArrayCollection}" tabIndex="7" toolTip="Physician Signature on File" />
+			<components1:LabelComboBox width="100%" prompt="Print PINS on Forms" id="id_Pins" 
+									  dataProvider="{pinsArray}" tabIndex="9" toolTip="Print PINS on Forms" />
+		</s:VGroup>
+		<s:VGroup width="50%" gap="3">
+			<components1:LabelComboBox  width="100%" prompt="Diagnosis Code Set"  id="id_DiagnosisCodeSet" selectedIndex="1"
+									   dataProvider="{code}" tabIndex="2" toolTip="Diagnosis Code Set" />
+			<components1:LabelComboBox width="100%" prompt="Default Billing Method 1" id="id_Meth1" 
+									  dataProvider="{defaultArrayCollection}" tabIndex="4" toolTip="Default Billing Method 1" />
+			<components1:LabelComboBox width="100%" prompt="Default Billing Method 2" id="id_Meth2"
+									  dataProvider="{defaultArrayCollection}" tabIndex="6" toolTip="Default Billing Method 2" />
+			<components1:LabelComboBox width="100%" prompt="Default Billing Method 3" id="id_Meth3" 
+									  dataProvider="{defaultArrayCollection}" tabIndex="8" toolTip="Default Billing Method 3" />
+		</s:VGroup>
+	</s:HGroup>
+	<s:Label text="Default Payment Application Codes" fontFamily="Calibri" fontSize="11"/>
+	<s:HGroup width="100%">
+		<s:VGroup width="50%" gap="3">
+			<components1:LabelComboBox width="100%" 	skinClass="com.adobe.gazuntite.skins.chrome.comboBoxSkins.searchComboBox"
+									  prompt="Payment"  tabIndex="10" toolTip="Payment"
+									 />
+			<components1:LabelComboBox width="100%" 	skinClass="com.adobe.gazuntite.skins.chrome.comboBoxSkins.searchComboBox"
+									  prompt="Adjusment" tabIndex="12" toolTip="Adjusment"
+									 />
+			<components1:LabelComboBox width="100%" 	skinClass="com.adobe.gazuntite.skins.chrome.comboBoxSkins.searchComboBox"
+									  prompt="Withhold" tabIndex="14" toolTip="Withhold"
+									  />
+			<components1:LabelComboBox  width="100%" skinClass="com.adobe.gazuntite.skins.chrome.comboBoxSkins.searchComboBox"
+									   prompt="Deductible" tabIndex="16" toolTip="Deductible"
+									   />
+			<components1:LabelComboBox width="100%" 	skinClass="com.adobe.gazuntite.skins.chrome.comboBoxSkins.searchComboBox"
+									  prompt="Takeback" tabIndex="18" toolTip="Takeback"
+									   />
+		</s:VGroup>
+		<s:VGroup width="50%" gap="3">
+			<components1:LabelTextInput  width="100%" tabIndex="11" enabled="false" />
+			<components1:LabelTextInput width="100%" tabIndex="13" enabled="false"/>
+			<components1:LabelTextInput width="100%" tabIndex="15" enabled="false"/>
+			<components1:LabelTextInput width="100%" tabIndex="17" enabled="false"/>
+			<components1:LabelTextInput width="100%" tabIndex="19" enabled="false"/>
+		</s:VGroup>
+	</s:HGroup>
+</s:Group>

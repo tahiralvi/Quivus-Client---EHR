@@ -1,0 +1,502 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   title="Add Location" width="500" height="350" 
+			   skinClass="com.adobe.gazuntite.skins.chrome.containerSkins.TitleWindowSkin"
+			   xmlns:components="com.gazuntite.controls.extended.components.*"
+			   creationComplete="titlewindow1_creationCompleteHandler(event)"
+			   close="titlewindow1_closeHandler(event)" 
+			   xmlns:components1="com.zigron.common.view.components.*" 
+			   xmlns:components2="com.gazuntite.common.view.components.*"
+			   xmlns:components3="com.gazuntite.controls.extended.components.*" >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.provider.live.services.administration.dto.locationManagement.AdminStationDTO;
+			import com.gazuntite.provider.live.services.administration.event.locationManagement.LoadAllStationsByClinicBranchIDEvent;
+			import com.gazuntite.provider.live.services.administration.event.locationManagement.SaveStationDetailsEvent;
+			import com.gazuntite.provider.live.services.administration.model.AdminAppModelLocator;
+			import com.gazuntite.provider.live.services.administration.util.AdminConstant;
+			import com.gazuntite.provider.live.services.administration.util.AdminUtils;
+			import com.gazuntite.provider.live.services.administration.view.events.DataGridActionEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.CheckBox;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.DataGridEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.utils.ObjectProxy;
+			
+			import spark.events.TextOperationEvent;
+			
+			[Bindable]
+			private var model:AdminAppModelLocator = AdminAppModelLocator.getInstance();
+			
+			//add button click hadler
+			private function addNewLocation():void
+			{
+				if(!isLocationInvalid())
+				{
+					var tempDto:AdminStationDTO 	= new AdminStationDTO();
+					tempDto.IsDeleted       		= 'false';
+					tempDto.IsDirty         		= 'true';
+					tempDto.StationID       		= '0';
+					tempDto.ClinicBranchID     		= model.loggedInUserSelectedBranchId.toString();
+					tempDto.CreatedAt     	 		= id_dateformater2.format(new Date().toString());
+					tempDto.CreatedBy     	 		= model.loggedInUserId.toString();
+					tempDto.ModifiedAt     			= id_dateformater2.format(new Date().toString());
+					tempDto.ModifiedBy     			=  model.loggedInUserId.toString();
+					tempDto.IsDefault     			= 'false';
+					tempDto.Address     			= id_Address.text;
+					tempDto.StationName     		= id_LocationName.text;
+					tempDto.City     				= id_ZipCityStateCombine.id_City.selectedItem.CityName;
+					tempDto.PhoneNumber     		= getPhoneNumberWithoutMasking(id_Phone.text);
+					tempDto.FaxNumber     			= id_Fax.text;
+					
+					UtilityFunctions.AskMessage(  "Do you really want to add new location ?", function():void
+					{
+						var locationXML:XML             = AdminUtils.ConvertToLocationXML(tempDto);
+						saveNewStation(locationXML);
+						
+					});
+				}
+			}
+			//save new station 
+			private function saveNewStation(xml:XML):void
+			{
+				var sSde:SaveStationDetailsEvent = new SaveStationDetailsEvent(xml, model.loggedInUserSelectedBranchId, callBack);
+				CairngormEventDispatcher.getInstance().dispatchEvent( sSde );	
+				cursorManager.setBusyCursor(); 
+			}
+			//on Sucess result
+			private function callBack(val:*=null):void
+			{
+				clearFields();
+				getLocationsList();
+				id_LocationName.setFocus();
+			}
+			//Close button click handler
+			protected function titlewindow1_closeHandler(event:CloseEvent):void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			//get the location list fron server
+			public function getLocationsList():void
+			{
+				var lsCe:LoadAllStationsByClinicBranchIDEvent = new LoadAllStationsByClinicBranchIDEvent(model.loggedInUserSelectedBranchId);
+				CairngormEventDispatcher.getInstance().dispatchEvent( lsCe );	
+				cursorManager.setBusyCursor(); 
+			}
+			// get grid row no
+			private function getRowNo(item:Object, iCol:int):String
+			{
+				var strRowNum:String = "";
+				
+				if (id_locationGrid.dataProvider)
+				{
+					var rowNum:int = id_locationGrid.dataProvider.getItemIndex(item) + 1;
+					strRowNum = String(rowNum);
+				}
+				
+				return strRowNum;
+			}
+			
+			//Validate room Details before submit
+			private function isLocationInvalid() : Boolean 
+			{
+				var isNotValid:Boolean = false;
+				var errorStr:String = ""; 
+				var toSetFocus:Object;
+				AdminUtils.Trim(id_LocationName);
+				AdminUtils.Trim(id_Address);
+				
+				//Location - Mandatory
+				if (id_LocationName.text.length >= 1 && id_LocationName.text.length <= 100)
+				{
+					if (id_LocationName.text.length <= 1 || id_LocationName.text.length >= 101)
+					{
+						isNotValid = true;
+						errorStr += "The data in location name is invalid.\n";
+						
+						if (!toSetFocus)
+							toSetFocus = id_LocationName;
+					}
+				}
+				else
+				{
+					isNotValid = true;
+					errorStr += "Please enter data in  location name.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_LocationName;
+				}
+				//Address - Mandatory
+				if (id_Address.text.length >= 1 && id_Address.text.length <= 100)
+				{
+					if (id_Address.text.length <= 1 || id_Address.text.length >= 101)
+					{
+						isNotValid = true;
+						errorStr += "The data in address is invalid.\n";
+						
+						if (!toSetFocus)
+							toSetFocus = id_Address;
+					}
+				}
+				else
+				{
+					isNotValid = true;
+					errorStr += "Please enter data in address.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_Address;
+				}
+				
+				//ZIP - Mandatory
+				if(id_ZipCityStateCombine.id_ZIP.selectedIndex == -1 )
+				{
+					isNotValid = true;
+					errorStr += "The data in zip is invalid.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_ZipCityStateCombine.id_ZIP;
+				} 
+				//City - Mandatory
+				if(id_ZipCityStateCombine.id_City.selectedIndex == -1 )
+				{
+					isNotValid = true;
+					errorStr += "The data in city is invalid.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_ZipCityStateCombine.id_City;
+				} 
+				//State - Mandatory
+				if(id_ZipCityStateCombine.id_State.selectedIndex == -1 )
+				{
+					isNotValid = true;
+					errorStr += "The data in state is invalid.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_ZipCityStateCombine.id_State;
+				} 
+				
+				//Phone - mandatory
+				if (id_Phone.text.length >= 1)
+				{
+					if (id_Phone.text.length >= 1 && id_Phone.text.length <= 13)
+					{
+						if (!AdminUtils.isValidPhone(getPhoneNumberWithoutMasking(id_Phone.text)))
+						{
+							isNotValid = true;
+							
+							errorStr += "The data in phone number is invalid.\n";
+							
+							if (!toSetFocus)
+								toSetFocus = id_Phone;
+						}
+					}
+				}else{
+					isNotValid = true;
+					errorStr += "Please enter data in phone.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_Phone;
+				}
+				
+				//FAX - mandatory
+				if (id_Fax.text.length >= 1)
+				{
+					if (id_Fax.text.length >= 1 && id_Fax.text.length <= 13)
+					{
+						if (!AdminUtils.isValidPhone(id_Fax.text))
+						{
+							isNotValid = true;
+							
+							errorStr += "The data in fax number is invalid.\n";
+							
+							if (!toSetFocus)
+								toSetFocus = id_Fax;
+						}
+					}
+				}else{
+					isNotValid = true;
+					errorStr += "Please enter data in fax.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_Fax;
+				}
+				
+				if (isNotValid && errorStr.length)
+					Alert.show(errorStr, "Location details Required Fields", 4, FlexGlobals.topLevelApplication.mainContainer, function(event:Event):void{
+						if (toSetFocus)
+							toSetFocus.setFocus();
+					});
+				
+				return isNotValid;
+			}
+			
+			//*********** clear form data after enter a record Successfully *************************************
+			private function clearFields():void
+			{
+				id_LocationName.text  	= '';
+				id_ZipCityStateCombine.id_City.selectedIndex 	= -1;
+				id_ZipCityStateCombine.id_State.selectedIndex	= -1;
+				id_ZipCityStateCombine.id_ZIP.selectedIndex	= -1;
+				id_Address.text		  	= '';
+				id_Phone.text         	= '';
+				id_Fax.text			  	= '';
+			}
+			//item edit begin handler
+			private function gridItemEditBeginHandler(event:DataGridEvent):void
+			{
+				id_locationGrid.createItemEditor(event.columnIndex, event.rowIndex);
+			}
+			//Item edit end handler
+			private function gridItemEditEndHandler(event:DataGridEvent):void
+			{
+				var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+				var locID:String = curTar.selectedItem.StationID; 
+				
+				if (event.dataField == "StationName")
+				{
+					event.itemRenderer.data.StationName = event.target.itemEditorInstance.text;
+					if (locID != '0')
+						event.itemRenderer.data.IsDirty = true;
+				}
+				else if(event.dataField == "Address")
+				{
+					event.itemRenderer.data.Address = event.target.itemEditorInstance.text;
+					if (locID != '0')
+						event.itemRenderer.data.IsDirty = true;
+				}
+				else if(event.dataField == "PhoneNumber")
+				{
+					event.itemRenderer.data.PhoneNumber = event.target.itemEditorInstance.text;
+					if (locID != '0')
+						event.itemRenderer.data.IsDirty = true;
+				}
+				else if(event.dataField == "FaxNumber")
+				{
+					event.itemRenderer.data.FaxNumber = event.target.itemEditorInstance.text;
+					if (locID != '0')
+						event.itemRenderer.data.IsDirty = true;
+				}
+				/* else if(event.dataField == "IsDefault")
+				{
+				event.itemRenderer.data.IsDefault = event.target.itemEditorInstance.selected;
+				if (locID != '0')
+				event.itemRenderer.data.IsDirty = true;
+				} */
+				
+				id_locationGrid.destroyItemEditor();
+				event.stopImmediatePropagation();
+				event.preventDefault();
+			}
+			
+			//Creation Complete Handler
+			protected function titlewindow1_creationCompleteHandler(event:FlexEvent):void
+			{
+				model.statscodeList 	= new ArrayCollection();
+				model.citiesList 	= new ArrayCollection();
+				model.zipcodeList 		= new ArrayCollection();
+				id_locationGrid.addEventListener(DataGridActionEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+				id_locationGrid.addEventListener(DataGridActionEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				id_locationGrid.addEventListener(DataGridActionEvent.SAVE_RECORD_CLICK, saveRecordClickHandler, false, 0, true);
+				id_LocationName.setFocus();
+				
+			}
+			// edit room record handler
+			private function editRecordClickHandler(event:DataGridActionEvent):void
+			{
+				id_locationGrid.editable 						= true;
+				var rowIndex:int 								= id_locationGrid.selectedIndex;
+				var itemToSetInEditableMode:IListItemRenderer 	= id_locationGrid.indexToItemRenderer(rowIndex);
+				var ev:DataGridEvent 							= new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+				ev.columnIndex 									= 1;
+				ev.rowIndex 									= rowIndex;
+				ev.itemRenderer 								= itemToSetInEditableMode;
+				id_locationGrid.dispatchEvent(ev);
+			}
+			// delete room record handler
+			private function  deleteRecordClickHandler(event:DataGridActionEvent):void
+			{
+				var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+				var locID:String 		 = curTar.selectedItem.StationID; 
+				var obP:ObjectProxy 	 = curTar.selectedItem as ObjectProxy;
+				
+				if(obP.IsDefault)
+				{
+					Alert.show('Default location could not be delete', AdminConstant.INFO, 4, FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				
+				if (curTar.selectedItem)
+				{
+					UtilityFunctions.AskMessage(  "Do you want to delete selected location ?", function():void
+					{
+						if (locID == '0')
+						{
+							model.allLocationsList.removeItemAt(curTar.selectedIndex);
+							return;
+						}
+						else
+						{
+							id_locationGrid.selectedItem.IsDeleted 		= true;
+							id_locationGrid.selectedItem.IsDirty 		= true;
+							model.allLocationsList.filterFunction = filterDeletedItems;
+							model.allLocationsList.refresh();
+							var locationXML:XML = AdminUtils.ConvertLocationOBJXML(obP);
+							saveNewStation(locationXML);
+							return;
+						}
+					});
+				}
+			}
+			// isDeleted bit true for records
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			// save room record handler
+			private function saveRecordClickHandler(event:DataGridActionEvent):void
+			{
+				var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+				var obP:ObjectProxy = curTar.selectedItem as ObjectProxy;
+				id_locationGrid.selectedItem.IsDirty 		= true;
+				
+				if(obP.StationName == '' || obP.Address == '' || obP.PhoneNumber=='' || obP.FaxNumber =='' )
+				{
+					Alert.show('Location fields must not be empty', AdminConstant.INFO, 4, FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				else
+				{
+					var clinicRoomDTOXML:XML = AdminUtils.ConvertLocationOBJXML(obP);
+					saveNewStation(clinicRoomDTOXML);
+				}
+			}
+			
+			protected function id_Phone_changeHandler(event:TextOperationEvent):void
+			{
+				applyMask();
+			}
+			//Tahir Alvi - apply masking on the phone number
+			public function applyMask():void
+			{
+				var s:String      		= id_Phone.text.replace(/[^0-9]/g,"");
+				id_Phone.text 			= '('+s.substring(0,3) + (s.length>3?")"+s.substring(3,6) + (s.length>6?"-"+s.substring(6,10):""):"");
+				id_Phone.selectRange(id_Phone.text.length, id_Phone.text.length);
+				
+				if(id_Phone.text.length == 1 && id_Phone.text == '(')
+					id_Phone.text = '';
+			}
+			//Tahir Alvi - remove masking on the phone number
+			public function getPhoneNumberWithoutMasking(text:String):String
+			{
+				var val1:String = text;
+				var val2:String = val1.replace('(','');
+				var val3:String = val2.replace(')','');
+				var val4:String = val3.replace('-','');
+				
+				return val4;
+			}
+			//Tahir Alvi - apply masking on the phone number at load time
+			public function setPhoneNumberMasking(val:String):String
+			{
+				var val_Format:String = '(' + val.substring(0,3) + ')' + val.substring(3,6) + '-' + val.substring(6,10);
+				return val_Format;
+			}
+			
+			private function getPhoneNo(item:Object, column:DataGridColumn):String
+			{
+				var result:String = '';
+				if(item.PhoneNumber)
+					result = setPhoneNumberMasking(item.PhoneNumber);
+				
+				return result;
+			}
+		]]>
+	</fx:Script>
+	
+	
+	<fx:Declarations>
+		<mx:DateFormatter id="id_dateformater2" formatString="YYYY-MM-DD" />
+	</fx:Declarations>
+	
+	
+	<s:layout>
+		<s:VerticalLayout gap="5" paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5"   />
+	</s:layout>
+	
+	<s:HGroup width="100%" height="50">
+		<s:VGroup width="50%">
+			<components3:LabelTextInput id="id_LocationName" 
+									   width="100%" maxChars="100"
+									   prompt="Location Name" restrict="[a-z A-Z 0-9 . , _ -]"
+									   skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin"
+									   tabIndex="1" toolTip="Location Name"/>
+			<components2:ZipCityStateCombine id="id_ZipCityStateCombine" width="100%" tabIndex="3"/>
+		</s:VGroup>
+		
+		<s:VGroup width="50%">
+			<components3:LabelTextInput id="id_Address"
+									   width="100%" maxChars="100" prompt="Address"
+									   restrict="[a-z A-Z 0-9 . , _ -]"
+									   skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin"
+									   tabIndex="2" toolTip="Enter address"/>
+			<s:HGroup width="100%">
+				<components3:LabelTextInput id="id_Phone" 
+										   width="100%" prompt="Phone"
+										   change="id_Phone_changeHandler(event)" 
+										   skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin"
+										   restrict="[0-9]" tabIndex="6" toolTip="Enter phone"/>
+				<components3:LabelTextInput id="id_Fax" 
+										   width="100%" maxChars="10" prompt="Fax"
+										   restrict="[0-9]" tabIndex="7"
+										   skinClass="com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin"  />
+			</s:HGroup>
+		</s:VGroup>
+	</s:HGroup>
+	
+	<s:HGroup width="100%"  height="22" horizontalAlign="right" verticalAlign="middle">
+		<s:Button label="ADD" styleName="blackButtonSkin" width="70" click="addNewLocation()" toolTip="Add"/>
+	</s:HGroup>
+	
+	<components3:LabelDataGrid id="id_locationGrid" 
+							  width="100%" height="223"
+							  dataProvider="{model.allLocationsList}"
+							  draggableColumns="false" useRollOver="false" sortableColumns="false"
+							  horizontalScrollPolicy="off"
+							  verticalScrollBarStyleName="VScrollBar"
+							  itemEditBegin="gridItemEditBeginHandler(event)"
+							  itemEditEnd="gridItemEditEndHandler(event)"
+							  columnWidths="{['10%', '15%', '15%', '15%', '15%', '15%', '10%']}" >
+		<components:columns>
+			<mx:DataGridColumn headerText="Sr #" labelFunction="getRowNo" editable="false"/>
+			<mx:DataGridColumn headerText="Location Name"  dataField="StationName" 
+							   editable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editorDataField="text"/>
+			<mx:DataGridColumn headerText="Address" 	   dataField="Address" 
+							   editable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editorDataField="text"/>
+			<mx:DataGridColumn headerText="Phone"          dataField="PhoneNumber" labelFunction="getPhoneNo"
+							   editable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editorDataField="text"/>
+			<mx:DataGridColumn headerText="Fax"            dataField="FaxNumber" 
+							   editable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editorDataField="text"/>
+			<mx:DataGridColumn headerText="Default"        dataField="IsDefault" 
+							   editable="false" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" itemEditor="mx.controls.CheckBox" editorDataField="editorText">
+				<!--<mx:itemEditor> itemEditor="mx.controls.CheckBox" editorDataField="editorText"
+				<fx:Component>
+				<s:CheckBox labelField="IsDefault" selected="{IsDefault == 'true' ? true:false}"/>
+				</fx:Component>
+				</mx:itemEditor>-->
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Action" editable="false"   itemRenderer="com.gazuntite.provider.live.services.administration.view.itemRenderer.EditDeleteItemRender"/>
+		</components:columns>
+	</components3:LabelDataGrid>
+	
+</s:TitleWindow>

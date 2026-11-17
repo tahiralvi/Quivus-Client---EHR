@@ -1,0 +1,1272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:components1="com.gazuntite.controls.extended.components.*" 
+		 xmlns:components="com.gazuntite.controls.extended.components.*"
+		 xmlns:view="com.gazuntite.provider.search.services.patient.view.*" 
+		 width="600" height="235"
+		 initialize="upLoad();" 
+		 creationComplete="group1_creationCompleteHandler(event)" xmlns:view1="com.gazuntite.provider.search.services.patient.view.*" 
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.dto.PatientDTO;
+			import com.gazuntite.common.dto.PatientDocumentDTO;
+			import com.gazuntite.common.dto.ProviderDTO;
+			import com.gazuntite.common.dto.typeDTO.DocumentSectionTypeDTO;
+			import com.gazuntite.controls.extended.components.PopupWindow;
+			import com.gazuntite.provider.live.services.documentMgmt.event.CreateFTPFolderEvent;
+			import com.gazuntite.provider.live.services.documentMgmt.event.ManagePatientDocumentEvent;
+			import com.gazuntite.provider.live.services.documentMgmt.model.DMAppModelLocator;
+			import com.gazuntite.provider.live.services.documentMgmt.util.DMConstant;
+			import com.gazuntite.provider.live.services.documentMgmt.util.DMEventStrings;
+			import com.gazuntite.provider.search.services.patient.view.events.PatientSelectedEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Label;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.utils.UIDUtil;
+			
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable]
+			private var model:DMAppModelLocator = DMAppModelLocator.getInstance(); 
+			
+			private var fileReference:FileReference;
+			private var documentId:int = 0 ;
+			private var mLoader:Loader;
+			
+			public var selectedPatientId:int;
+			public var selectedPatientName:String;
+			public var pdDTO:PatientDocumentDTO;
+			
+			[Embed('com/gazuntite/provider/live/services/documentMgmt/view/skins/assets/word.png')]
+			public static var WORD_ICON:Class;
+			
+			[Embed('com/gazuntite/provider/live/services/documentMgmt/view/skins/assets/pdf.png')]
+			public static var PDF_ICON:Class;
+			
+			[Embed('com/gazuntite/provider/live/services/documentMgmt/view/skins/assets/wpd.png')]
+			public static var WPD_ICON:Class;
+			
+			private var uploadingInProgress:Boolean	= false;
+			
+			[Bindable]
+			private var editMode:Boolean		= false;
+			
+			protected function onUploadingError(event:IOErrorEvent):void
+			{
+				cursorManager.removeBusyCursor();
+				Alert.show(event.type + "\n" + event.text + " " + event.toString(), event.type,4, FlexGlobals.topLevelApplication.mainContainer);
+			}
+			protected function onComplete(event:Event):void
+			{
+				var mpd:ManagePatientDocumentEvent = new ManagePatientDocumentEvent(pdDTO);
+				CairngormEventDispatcher.getInstance().dispatchEvent( mpd ); 
+			}
+			
+			protected function id_browse_clickHandler(event:MouseEvent):void
+			{
+				fileReference=new FileReference();
+				fileReference.addEventListener(Event.SELECT, onFileSelected);
+				
+				
+				var imagesFilter:FileFilter 	= new FileFilter("Images ( *.bmp,*.jpg,*.jpeg,*.tiff,*.gif,*.png )", "*.bmp;*.jpg;*.jpeg;*.tiff;*.gif;*.png"); 
+				var docFilter:FileFilter 		= new FileFilter("Documents ( *.pdf,*.doc,*.docx,*.wpd )", "*.pdf;*.doc;*.docx;*.wpd");
+				var allTypeFilter:FileFilter 	= new FileFilter("All Files (Documents, Images)","*.pdf;*.doc;*.docx;*.wpd;*.jpg;*.jpeg;*.tiff;*.gif;*.png");
+				
+				
+				if(s!=null && s.connected && dataChannelSocket!=null && dataChannelSocket.connected)
+				{
+					fileReference.browse([docFilter, imagesFilter, allTypeFilter]);
+				}
+				else
+				{
+					upLoad();
+					fileReference.browse([docFilter, imagesFilter, allTypeFilter]);
+				} 
+			}
+			
+			public function onFileSelected(event:Event):void
+			{
+				try
+				{
+					trace("onFileSelected");
+					fileReference.addEventListener(Event.COMPLETE, onFileLoaded);
+					fileReference.load();
+				}
+				catch(e:Error)
+				{
+					trace("ERROR IN onFileSelected", e.errorID, e.name, e.message);
+				}
+				
+			}
+			
+			protected function onFileLoaded(event:Event):void
+			{
+				try
+				{
+					var fileReference:FileReference=event.target as FileReference;
+					trace("File loaded");
+					var data:ByteArray=fileReference.data;
+					mLoader = new Loader();
+					mLoader.loadBytes(data); 
+					//mLoader.contentLoaderInfo.addEventListener(Event.COMPLETE, onLoaderComplete);
+					
+					//saveToServer(data,fileReference.name,435,3,3);
+					id_FileName.text = fileReference.name;
+					setDocumentIcon( fileReference.type, data );
+				}
+				catch(e:Error)
+				{
+					trace("ERROR IN onFileLoaded", e.errorID, e.name, e.message);
+				}
+			}
+			
+			private function setDocumentIcon( type:String, data:Object=null ):void
+			{
+				switch( type.toLowerCase() )
+				{
+					case ".pdf":
+						id_Image.source = PDF_ICON;
+						break;
+					case ".doc":
+					case ".docx":
+						id_Image.source = WORD_ICON;
+						break;
+					case ".wpd":
+						id_Image.source = WPD_ICON;
+						break;
+					default:
+						id_Image.source = data;
+						
+				}
+			}
+			
+			protected function id_savebtn_clickHandler(event:MouseEvent):void
+			{
+				if( IsValid() )
+				{
+					var secID:DocumentSectionTypeDTO = id_SectionTypesCmbo.selectedItem as DocumentSectionTypeDTO;
+					var subSec:DocumentSectionTypeDTO = id_SubSectionTypesCmbo.selectedItem as DocumentSectionTypeDTO;
+					
+					if( selectedPatientId > 0 &&  secID != null )
+					{
+						var note:String = id_note.text;
+						
+						var subSection:int =0;
+						if(subSec!=null)
+							subSection = subSec.SectionId;	
+						
+						var fileName:String;
+						
+						if( editMode && fileReference == null) //fileReference will be null if user have not selected new file, 
+						{
+							fileName = id_DocumentName.text;
+							
+							UpdateDocumentOnServer( note, fileName, selectedPatientId, subSection, secID.SectionId );
+						}
+						else
+						{
+							fileName = fileReference.name;
+							
+							saveToServer( note, fileName, selectedPatientId, subSection, secID.SectionId );
+						}
+					}
+				}
+			}
+			
+			private function UpdateDocumentOnServer(note:String, fileName:String, patientId:int, subSecId:int, sectionId:int):void
+			{
+				this.pdDTO.DocumentName				= fileName;
+				pdDTO.CommentNote					= note;
+				
+				var df:DateFormatter 				= new DateFormatter();
+				df.formatString 					= "DD-M-YYYY";
+				pdDTO.ModifiedAt					= df.format( new Date() );
+				
+				if(subSecId==0)
+				{
+					pdDTO.SectionId					= sectionId;
+					pdDTO.SectionName = (id_SectionTypesCmbo.selectedItem as DocumentSectionTypeDTO).SectionName;
+				}
+				else
+				{
+					pdDTO.SectionId					= subSecId;
+					pdDTO.SectionName= (id_SubSectionTypesCmbo.selectedItem as DocumentSectionTypeDTO).SectionName;
+				}
+				pdDTO.IsDirty = true;
+				
+				// following all properties are added on request of Back End ( sami )
+				// I think back end need it as echo back, 
+				//ask back end to change the impl. on their end.
+				pdDTO.PatientID  					= patientId;
+				pdDTO.UploadedByUserId				= model.loggedInUserId;
+				pdDTO.UploadedByUserTypeId			= model.loggedInUserProviderTypeId;
+				pdDTO.UploadedByClinicBranchId		= model.loggedInUserSelectedBranchId;
+				//pdDTO.UploadedDate					= date.fullYear+"-"+(date.month+1)+"-"+date.getDate();
+				//pdDTO.CreatedBy						= model.loggedInUserId;
+				//pdDTO.CreatedAt						= date.fullYear+"-"+(date.month+1)+"-"+date.getDate();
+				pdDTO.StationName					= model.loggedInUserSelectedStationName;
+				pdDTO.PracticeName					= model.loggedInUserSelectedPracticeName
+				pdDTO.PatientFullName				= selectedPatientName;
+				
+				
+				
+				
+				var mpd:ManagePatientDocumentEvent = new ManagePatientDocumentEvent(pdDTO, editMode);
+				CairngormEventDispatcher.getInstance().dispatchEvent( mpd ); 
+				
+				dispatchEvent( new Event(DMEventStrings.DOCUMENT_CLOSE, true) );
+				
+				ClearInfo();
+			}
+			
+			/* protected function id_btnSearch_clickHandler(event:MouseEvent):void
+			{
+			var searchString:String = id_patientSearchTextInput.text;
+			if( searchString && searchString.length )
+			{
+			searchPatientAndDisplay();
+			//always send call, user is definitely requesting it on demand...down side is if searchPatientAndDisplay ( above call ) criteria is met 2nd call is being generated. ---TH
+			var pseEvent : SearchPatientEvent 	= new SearchPatientEvent(searchString, showSuggestPopup );
+			cursorManager.setBusyCursor();
+			CairngormEventDispatcher.getInstance().dispatchEvent( pseEvent );
+			}
+			else
+			{
+			Alert.show("Plese enter some thing to serach ...", "Search Field Empty" );
+			}
+			event.stopImmediatePropagation();	
+			} */
+			
+			protected function id_patientSearchTextInput_clickHandler(event:MouseEvent):void
+			{
+				event.stopImmediatePropagation();				
+			}
+			
+			
+			private var m_acDataProvider:ArrayCollection = new ArrayCollection();
+			//public var pop:PopUpManager = new PopUpManager();
+			[Bindable]
+			public function get DataProvider():ArrayCollection
+			{
+				return m_acDataProvider;
+			}
+			
+			public function set DataProvider(value:ArrayCollection):void
+			{
+				m_acDataProvider = value;
+			}
+			
+			private function Init():void
+			{
+				
+			}
+			
+			/* protected function patientSearchTextInput_changeHandler(event:TextOperationEvent):void
+			{
+			searchPatientAndDisplay();
+			}
+			
+			private function searchPatientAndDisplay():void
+			{
+			if( id_patientSearchTextInput.text.length < 2 )
+			{
+			//model.patientSearchPageNo = 1;
+			if( SearchListView )
+			{
+			SearchListView.removePopup();
+			}
+			return;
+			}
+			var dispatchSearchEvent:Boolean = false;
+			var tok:Array
+			var searchString:String = id_patientSearchTextInput.text;
+			var num:Number = new Number( id_patientSearchTextInput.text.substr( 0, 2 ) );// as Number;
+			//search every thing on server ... shamsi requested ---- tj
+			while( searchString.indexOf( "/" ) != -1 )
+			searchString = searchString.replace( "/", "-" );
+			
+			var pseEvent : SearchPatientEvent = new SearchPatientEvent(searchString, showSuggestPopup );
+			cursorManager.setBusyCursor();
+			//CairngormEventDispatcher.getInstance().dispatchEvent( pseEvent ); 
+			
+			//return; //search every thing on server ... shamsi requested ---- tj
+			
+			if( ! isNaN( num ) )
+			{
+			if( searchString.charAt(2) == '-' )//	its a DOB,			date format MM-DD-YY
+			{
+			trace( "length",searchString.length );
+			if(searchString.length >= 8)
+			dispatchSearchEvent = true;
+			else
+			return;
+			}
+			else if( searchString.charAt(2) == '/' )//   its a DOB,       date format MM/DD/YYYY
+			{
+			trace( "length",searchString.length );
+			if(searchString.length >= 8)
+			{
+			while( searchString.search( "/" ) != -1 )
+			{
+			searchString = searchString.replace( new RegExp( "/", "i" ), "-" );
+			}
+			
+			dispatchSearchEvent = true;
+			}
+			else
+			return;
+			}
+			else if( searchString.charAt(3) == '-' ) // its ssn with hyphen format XXX-XX-XXXX
+			{
+			trace( "length",searchString.length );
+			if( searchString.length == 11 )
+			dispatchSearchEvent = true;
+			else
+			return;
+			}
+			else if(searchString.length >= 6 && searchString.length <= 10)// its a i) date MMDDYY or MMDDYYYY  or ii) ssn without hyphen format XXXXXXXXX
+			dispatchSearchEvent = true;
+			else
+			return;
+			}
+			if( searchString.indexOf( ',' ) != -1 ) // its a Name 			format  Last, First
+			{
+			tok = searchString.split( ',' );
+			if( tok.length == 2 && ( tok[0].length >= 2 || tok[1].length >= 2 ) )
+			dispatchSearchEvent = true;
+			else
+			return;
+			}
+			else if( searchString.indexOf( ' ' ) != -1 ) // its a Name 			format  First <SPACE> Last OR First <SPACE> Middle <SPACE> Last
+			{
+			tok = searchString.split( ' ' );
+			if( tok.length == 2 ||
+			tok.length == 3 )
+			dispatchSearchEvent = true;
+			else
+			return;
+			}
+			else if( searchString.charAt(0).toLowerCase() == 'q')// its a QID,
+			{
+			if( searchString.length == 2 )
+			return;
+			if ( searchString.length >= 3 && searchString.charAt( 2 ) == '-' )
+			{
+			for( var i:int = 3; i < searchString.length ; i++ )
+			{
+			num = new Number ( searchString.charAt( i ) );
+			if( num > 0 )
+			dispatchSearchEvent = true;
+			}
+			}
+			}
+			if( searchString.length == 2 ||  searchString.length == 5)
+			{
+			dispatchSearchEvent = true;
+			}
+			
+			if( dispatchSearchEvent )
+			{
+			pseEvent = new SearchPatientEvent(searchString, showSuggestPopup );
+			cursorManager.setBusyCursor();
+			CairngormEventDispatcher.getInstance().dispatchEvent( pseEvent );
+			trace("patientSearchTextInput_changeHandler", "search Event dispatched" );
+			trace("eventDispatched with q=", searchString  );
+			}
+			
+			if( SearchListView )
+			SearchListView.refreshList( searchString );
+			
+			
+			}
+			
+			private function showSuggestPopup(val:* = null):void
+			{
+			if( SearchListView )
+			{
+			clearSearchResults();
+			}
+			
+			SearchListView 			= new patientSearchList();
+			var pLoc:Point 			= new Point( id_patientSearchBoxContainer.x + id_patientSearchBoxContainer1.x +id_patientSearchBoxContainer11.x + id_patientSearchBoxContainer2.x + id_patientSearchTextInput.x,
+			id_patientSearchBoxContainer.y + id_patientSearchBoxContainer1.y + id_patientSearchBoxContainer2.y + id_patientSearchTextInput.y + id_patientSearchTextInput.height + 5 );
+			var loc:Point 			= this.localToGlobal( pLoc );
+			SearchListView.x 		= loc.x; 
+			SearchListView.y 		= loc.y;
+			SearchListView.maxWidth = 450;
+			SearchListView.minWidth = id_patientSearchBoxContainer.width;
+			
+			SearchListView.addEventListener( "SearchListPatientSelected", OnItemClick);
+			SearchListView.ShowPopup( this );
+			
+			}
+			
+			private function OnItemClick(event:Event):void
+			{
+			try
+			{
+			trace("LoadPatient",SearchListView.id_SearchList.selectedItem.UserId, 
+			SearchListView.id_SearchList.selectedItem.FirstName, SearchListView.id_SearchList.selectedItem.LastName);
+			
+			var selectedPatient:LPatientSearchDTO = SearchListView.id_SearchList.selectedItem;
+			
+			var fName:String = selectedPatient.FirstName ? selectedPatient.FirstName :"";
+			var mName:String = selectedPatient.MiddleName? selectedPatient.MiddleName:"";
+			var lName:String = selectedPatient.LastName  ? selectedPatient.LastName  :"";
+			
+			id_PatientName.text 	= fName + " " + mName + " " + lName;
+			id_PatientName.enabled 	= false;
+			
+			id_quivusId.text 	= selectedPatient.QuivusID;
+			id_quivusId.enabled = false;
+			
+			id_gender.text 		= selectedPatient.GenderName;
+			id_gender.enabled 	= false;
+			
+			selectedPatientId 	= selectedPatient.PatientId;
+			selectedPatientName	= selectedPatient.FirstName+"|"+selectedPatient.MiddleName+"|"+selectedPatient.LastName;
+			}
+			catch(e:Error)
+			{
+			trace("patientExamControls", e );
+			}
+			}
+			
+			private function clearSearchResults():void
+			{
+			SearchListView.removePopup();
+			SearchListView.id_SearchList.removeEventListener(MouseEvent.CLICK, OnItemClick);
+			SearchListView = null;
+			}
+			
+			private function getPatientList():void
+			{
+			model.patientSearchPageNo ++;
+			var searchString:String 			= id_patientSearchTextInput.text;
+			var pseEvent : SearchPatientEvent 	= new SearchPatientEvent( searchString , null);
+			cursorManager.setBusyCursor();
+			CairngormEventDispatcher.getInstance().dispatchEvent( pseEvent );
+			}
+			
+			
+			public function removePopup(event:Event = null):void
+			{
+			if( SearchListView )
+			{
+			/* PopUpManager.removePopUp( SearchListView );	
+			SearchListView = null; *  /
+			
+			SearchListView.removePopup();
+			SearchListView = null;
+			trace( "close SearchListView" );
+			}
+			} */
+			
+			protected function id_DocumentTypesCmbo_changeHandler(event:Event):void
+			{
+				/* if( id_SectionTypesCmbo.selectedIndex != -1 )
+				{
+				id_SubSectionTypesCmbo.selectedIndex = -1;
+				id_SubSectionTypesCmbo.textInput.text = "";
+				} */
+				
+				var dto:DocumentSectionTypeDTO = id_SectionTypesCmbo.selectedItem as DocumentSectionTypeDTO;
+				
+				
+				if( dto && dto.ChildSectionType!=null)
+				{
+					id_SubSectionTypesCmbo.dataProvider = dto.ChildSectionType;
+				}
+				else
+				{
+					id_SubSectionTypesCmbo.dataProvider =  new ArrayCollection([dto]);
+				}
+			}
+			
+			public function LoadData(data:PatientDocumentDTO):void
+			{
+				ClearInfo();
+				var token:Array = data.ServerFilePath.split( '.' );
+				var type:String = "." + token[ token.length - 1 ];
+				
+				setDocumentIcon( type, data.ServerFilePath );
+				
+				
+				editMode = true;
+				id_savebtn.label 	= "Update";
+				pdDTO = data;
+				
+				id_PatientName.text = data.PatientFullName;
+				id_PatientName.enabled = false;
+				
+				id_quivusId.text 	= data.QuivusId;
+				id_quivusId.enabled = false;
+				
+				id_gender.text 		= data.GenderName;
+				id_gender.enabled 	= false;
+				
+				selectedPatientId 	= data.PatientID;
+				//selectedPatientName	= data.PatientFirstName+"|"+data.PatientMiddleName+"|"+data.PatientLastName;
+				selectedPatientName = "";
+				if( ! UtilityFunctions.IsNullOrEmpty( data.PatientFirstName ) )
+					selectedPatientName	+= data.PatientFirstName+"|";
+				if( ! UtilityFunctions.IsNullOrEmpty( data.PatientMiddleName ) )
+					selectedPatientName	+= data.PatientMiddleName+"|";
+				if( ! UtilityFunctions.IsNullOrEmpty( data.PatientLastName ) )
+					selectedPatientName	+= data.PatientLastName;
+				
+				documentId			= data.DocumentId;
+				id_note.text 		= data.CommentNote;
+				
+				id_DocumentName.text = data.DocumentName;
+				
+				callLater( function():void
+				{
+					if( data.SectionParentId == 0 )
+					{
+						setSubSecTypeSelectedById( data.SectionId );
+					}
+					else
+					{
+						setSecTypeSelectedById( data.SectionId );
+					}
+					//Change Request @ https://zigron.basecamphq.com/projects/4449228-quivus/todo_items/119823831/comments
+					//user can change section or sub-section and once updated document should be placed in updated section/sub section.
+					/* id_SectionTypesCmbo.enabled 	= false; //
+					id_SubSectionTypesCmbo.enabled 	= false; */
+				});
+			}
+			
+			public function ClearInfo():void
+			{
+				fileReference	 	= null;
+				selectedPatientId 	= 0;	
+				selectedPatientName = "";
+				
+				id_savebtn.label 	= "Save";
+				
+				if( editMode )
+				{
+					pdDTO = null;
+					editMode = false;
+				}
+				
+				
+				documentId			= 0;
+				
+				id_PatientName.text 	= ""
+				id_PatientName.enabled 	= false;
+				
+				id_quivusId.text 	= "";
+				id_quivusId.enabled = false;
+				
+				id_gender.text 		= "";
+				id_gender.enabled 	= false;
+				
+				selectedPatientId 	= -1;
+				selectedPatientName	= "";
+				id_note.text 		= "";
+				
+				id_FileName.text 	= "";
+				id_FileName.enabled = false;
+				
+				//id_ReferredBy.text 	= "";
+				
+				
+				id_Image.source 	= null;
+				
+				id_SectionTypesCmbo.selectedIndex 	= -1;
+				id_SectionTypesCmbo.selectedIndex	= -1;
+				id_Provider.selectedIndex 			= -1;
+				
+				id_SectionTypesCmbo.enabled 		= true;
+				id_SectionTypesCmbo.textInput.text 	= "";
+				id_SubSectionTypesCmbo.enabled 		= true;
+				id_SubSectionTypesCmbo.textInput.text = "";
+				
+			}
+			
+			public function IsValid():Boolean
+			{
+				var isValid:Boolean = true;
+				
+				if( isValid && ( id_PatientName.text == "" || id_quivusId.text == "" || id_gender.text	== "" || selectedPatientId 	== -1 ) )
+				{
+					isValid = false;
+					Alert.show( "Please Select Patient", "Invalid document data", 4, this);
+				}
+				
+				if( isValid && ( id_SectionTypesCmbo.selectedIndex == -1 || id_SubSectionTypesCmbo.selectedIndex == -1 ) )
+				{
+					isValid = false;
+					Alert.show( "Please Select Section/Sub-Section", "Invalid document data", 4, this);
+				}
+				
+				if( isValid && !editMode && ( null == fileReference || id_FileName.text == "") )
+				{
+					isValid = false;
+					Alert.show( "Please Select Document", "Invalid document data", 4, this);
+				}
+				
+				return isValid;
+				
+			}
+			
+			private function setSecTypeSelectedById( id:int ):void
+			{
+				var len:int = model.documentSectionTypeDTOList.length;
+				
+				for( var i:int = 0; i < len; i ++ )
+				{
+					var dto:DocumentSectionTypeDTO = model.documentSectionTypeDTOList.getItemAt( i ) as DocumentSectionTypeDTO;
+					if( dto.SectionId == id )
+					{
+						id_SectionTypesCmbo.selectedItem = dto;
+						id_SubSectionTypesCmbo.selectedIndex = 0;
+						break;
+					}
+				}
+			}
+			
+			private function setSubSecTypeSelectedById( id:int ):void
+			{
+				var len:int = model.documentSectionTypeDTOList.length;
+				id_SectionTypesCmbo.dataProvider = model.documentSectionTypeDTOList;
+				for( var i:int = 0; i < len; i ++ )
+				{
+					var pdto:DocumentSectionTypeDTO = model.documentSectionTypeDTOList.getItemAt( i ) as DocumentSectionTypeDTO;
+					if( pdto.children )
+					{
+						var lis:ArrayCollection = pdto.children;
+						for( var j:int = 0; j < lis.length; j++ )
+						{
+							var dto:DocumentSectionTypeDTO = lis.getItemAt( j ) as DocumentSectionTypeDTO;
+							if( dto.SectionId == id )
+							{
+								id_SectionTypesCmbo.selectedIndex = i;
+								id_SubSectionTypesCmbo.dataProvider = pdto.children;
+								id_SubSectionTypesCmbo.selectedIndex = j;
+								return;
+							}
+						}
+					}
+					else if( pdto.SectionId == id )
+					{
+						id_SectionTypesCmbo.selectedIndex = id;
+						id_SubSectionTypesCmbo.selectedIndex = 0;
+						return;
+					}
+				}
+			}
+			
+			
+			/* private function setDocTypeSelectedItemBySectionTypeId( id:int ):void
+			{
+			var len:int = model.documentSectionTypeDTOList.length;
+			
+			for( var i:int = 0; i < len; i ++ )
+			{
+			var dto:DocumentSectionTypeDTO = model.documentSectionTypeDTOList.getItemAt( i ) as DocumentSectionTypeDTO;
+			if( dto.SectionId == id )
+			{
+			id_SectionTypesCmbo.selectedIndex = i;
+			id_SubSectionTypesCmbo.selectedIndex = 0;
+			return;
+			}
+			else
+			{
+			if( dto.children )
+			{
+			var lis:ArrayCollection = dto.children;
+			for( var j:int = 0; j < lis.length; j++ )
+			{
+			dto = lis.getItemAt( j ) as DocumentSectionTypeDTO;
+			if( dto.SectionId == id )
+			{
+			id_SectionTypesCmbo.selectedIndex = i;
+			id_SubSectionTypesCmbo.selectedIndex = j;
+			return;
+			}
+			}
+			}
+			}
+			}
+			
+			} */
+			
+			
+			protected function cancel_clickHandler(event:MouseEvent):void
+			{
+				dispatchEvent( new Event(DMEventStrings.DOCUMENT_CLOSE, true) );
+				ClearInfo();
+			}
+			
+			protected function id_SectionTypesCmbo_changeHandler(event:IndexChangeEvent):void
+			{
+				var sel:DocumentSectionTypeDTO = id_SubSectionTypesCmbo.selectedItem as DocumentSectionTypeDTO;
+				if( null == sel )
+					return;
+				
+				var pid:int
+				if( sel.ParentId > 0 )
+					pid = sel.ParentId;
+				else
+					pid = sel.SectionId;
+				
+				var i:int;
+				for( i = 0; i < model.documentSectionTypeDTOList.length; i++ )
+				{
+					var d:DocumentSectionTypeDTO = model.documentSectionTypeDTOList.getItemAt( i ) as DocumentSectionTypeDTO;
+					if( d.SectionId == pid || d.ParentId == pid) 
+					{
+						id_SectionTypesCmbo.selectedIndex = i;
+						break;
+					}
+					
+				}
+				
+				//id_DocumentTypesCmbo, model.documentSectionTypeDTOList
+			}
+			
+			
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				ClearInfo();
+			}
+			
+			
+			protected function button5_clickHandler(event:MouseEvent):void
+			{
+				dispatchEvent( new Event( DMEventStrings.SCAN_DOCUMENT, true ) );
+			}
+			
+			
+			private function saveToServer(not:String,fileName:String,patientId:int,subSecId:int,sectionId:int):void
+			{
+				trace("SAVING DOCUMENT FILE TO SERVER ......");
+				
+				var model : DMAppModelLocator = DMAppModelLocator.getInstance();
+				
+				
+				var date:Date = new Date();
+				
+				pdDTO = new PatientDocumentDTO();
+				var df:DateFormatter 			= new DateFormatter();
+				df.formatString 				= "DD-M-YYYY";
+				
+				var guid:String  = UIDUtil.createUID();
+				
+				pdDTO.PatientID  					= patientId;
+				pdDTO.DocumentId					= documentId;
+				pdDTO.DocumentVirtualName  			= guid;
+				pdDTO.DocumentName					= fileName;
+				if(subSecId==0)
+				{
+					pdDTO.SectionId						= sectionId;
+					pdDTO.SectionName = (id_SectionTypesCmbo.selectedItem as DocumentSectionTypeDTO).SectionName;
+				}
+				else
+				{
+					pdDTO.SectionId						= subSecId;
+					pdDTO.SectionName= (id_SubSectionTypesCmbo.selectedItem as DocumentSectionTypeDTO).SectionName;
+				}
+				
+				pdDTO.UploadedByUserId				= model.loggedInUserId;
+				pdDTO.UploadedByUserTypeId			= model.loggedInUserProviderTypeId;
+				pdDTO.UploadedByClinicBranchId		= model.loggedInUserSelectedBranchId;
+				pdDTO.UploadedDate					= date.fullYear+"-"+(date.month+1)+"-"+date.getDate();
+				pdDTO.CreatedBy						= model.loggedInUserId;
+				pdDTO.CreatedAt						= date.fullYear+"-"+(date.month+1)+"-"+date.getDate();
+				pdDTO.CommentNote					= not;
+				pdDTO.StationName					= model.loggedInUserSelectedStationName;
+				pdDTO.PracticeName					= model.loggedInUserSelectedPracticeName
+				pdDTO.PatientFullName				= selectedPatientName;
+				
+				//changes done by baber to accomodate edit case for document managment 
+				// date aug 29 2011
+				if(documentId > 0 )
+				{
+					// setting document id and fields necessary for edit cases these fields needs to be set for every edit case in whole application
+					pdDTO.DocumentId = documentId;
+					pdDTO.ModifiedBy =  model.loggedInUserId;
+					pdDTO.IsDirty = true;
+					pdDTO.ModifiedAt =  date.fullYear+"-"+(date.month+1)+"-"+date.getDate();
+				}
+				
+				//changes End by baber to accomodate edit case for document managment 
+				// date aug 29 2011
+				
+				// changes by Waqas Baber on 29 aug 
+				// for the sake of synching bulk upload we need to have section name instead of section id so i am changing section id in below call to section name 
+				//var uploadPath:String = Constant.RESTFULL_SERVICE_BASE_URL + RServiceMethod.UPLOAD_PATIENT_DOCUMENTS +"/"+patientId+"/"+pdDTO.SectionId+"/"+guid+"/"+fileName+"/"+model.loggedInUserSelectedPracticeName+"/"+model.loggedInUserSelectedStationName;			
+				//var uploadPath:String = DMConstant.RESTFULL_SERVICE_BASE_URL + DMRServiceMethod.UPLOAD_PATIENT_DOCUMENTS +"/"+patientId+"/"+pdDTO.SectionName+"/"+guid+"/"+fileName+"/"+model.loggedInUserSelectedPracticeName+"/"+model.loggedInUserSelectedStationName.replace('.','');			
+				/* >>>>>>> .r2844 */
+				
+				
+				
+				/* var uploadPath:String = DMConstant.RESTFULL_SERVICE_BASE_URL + DMRServiceMethod.UPLOAD_PATIENT_DOCUMENTS +"/"+patientId+"/"+pdDTO.SectionName+"/"+guid+"/"+fileName+"/temp/temp"; //+model.loggedInUserSelectedPracticeName+"/"+model.loggedInUserSelectedStationName.replace('.','');			
+				var urlRequest:URLRequest = new URLRequest();
+				urlRequest.url = uploadPath;
+				urlRequest.contentType = 'multipart/form-data;';// boundary=' + UploadPostHelper.getBoundary();
+				urlRequest.method = URLRequestMethod.POST;
+				urlRequest.data = sba;
+				//urlRequest.requestHeaders.push( new URLRequestHeader( 'Cache-Control', 'no-cache' ) );
+				var urlLoader:URLLoader = new URLLoader();
+				urlLoader.dataFormat = URLLoaderDataFormat.BINARY;
+				urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onUploadingError);
+				urlLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onUploadingError);
+				urlLoader.addEventListener(Event.COMPLETE, onComplete);
+				urlLoader.addEventListener(HTTPStatusEvent.HTTP_STATUS, function(event:HTTPStatusEvent):void
+				{
+				cursorManager.removeBusyCursor();
+				//Alert.show( "Server returned status " + event.status, event.type ); 
+				trace( "Server returned status " + event.status, event.type );
+				});
+				urlLoader.load(urlRequest); */
+				/* if(!s.connected)
+				{					
+				connect();
+				//send the usernae and password
+				this.userName(DMConstant.FTP_SERVICE_USERNAME);
+				this.passWord(DMConstant.FTP_SERVICE_PASSWORD);
+				} */
+				//changeDirectoryToCurrentHirarchey(pdDTO.SectionName);
+				
+				var lastIndexOfDot:int = pdDTO.DocumentName.lastIndexOf(".");
+				fileExt = pdDTO.DocumentName.substring(lastIndexOfDot+1,pdDTO.DocumentName.length);
+				
+				
+				var eve:CreateFTPFolderEvent = new CreateFTPFolderEvent(model.loggedInUserSelectedPracticeName+"|"+model.loggedInUserSelectedStationName.replace('.','')+"|"+selectedPatientId+"|"+pdDTO.SectionName,sendFileToFTP,selectedPatientId);
+				CairngormEventDispatcher.getInstance().dispatchEvent( eve );
+				/* s.writeUTFBytes("PASV\n");
+				s.flush(); */
+				/* var lastIndexOfDot:int = pdDTO.DocumentName.lastIndexOf(".");
+				var fileExt:String = pdDTO.DocumentName.substring(lastIndexOfDot+1,pdDTO.DocumentName.length);
+				
+				createRemoteFile(pdDTO.DocumentVirtualName+"."+fileExt);
+				sendData();
+				
+				cursorManager.setBusyCursor();
+				
+				var mpd:ManagePatientDocumentEvent = new ManagePatientDocumentEvent(pdDTO);
+				CairngormEventDispatcher.getInstance().dispatchEvent( mpd );  
+				
+				trace("DOCUMENT SENT TO SERVER ......"); */
+			}
+			private var fileExt:String;
+			
+			public function sendFileToFTP(patientId:int):void
+			{
+				//this.changeDirectory("/"+DMConstant.FTP_SERVICE_ROOT_FOLDER_NAME+"/"+model.loggedInUserSelectedPracticeName+"/"+model.loggedInUserSelectedStationName.replace('.','')+"/"+patientId+"/"+pdDTO.SectionName+"/");
+				
+				
+				var FTP_SERVICE_ROOT_FOLDER_NAME:String = model.ConfigXML.property.( @name == 'FTP_SERVICE_ROOT_FOLDER_NAME' )[0].@value;
+				
+				this.changeDirectory( "/" + FTP_SERVICE_ROOT_FOLDER_NAME + "/" +model.loggedInUserSelectedPracticeName+ "/" +model.loggedInUserSelectedStationName.replace('.','')+"/"+patientId+"/"+pdDTO.SectionName+"/");
+				
+				createRemoteFile(pdDTO.DocumentVirtualName+"."+fileExt);
+				sendData();
+				
+				cursorManager.setBusyCursor();
+				
+				var mpd:ManagePatientDocumentEvent = new ManagePatientDocumentEvent(pdDTO);
+				CairngormEventDispatcher.getInstance().dispatchEvent( mpd );  
+				
+				trace("DOCUMENT SENT TO SERVER ......");
+				
+				dispatchEvent( new Event(DMEventStrings.DOCUMENT_CLOSE, true) );
+				
+				ClearInfo();
+				
+			}
+			//######################################################################
+			//DM through ftp
+			
+			//you need to initiate two scokets one for sending
+			//commands and second for sending data to FTP Server
+			//socket for sending commands to FTP
+			
+			private    var s:Socket//responce from FTP
+			private    var ftpResponce:String;//socket for sending Data to FTP
+			private    var dataChannelSocket:Socket;//responce from FTP when sending Data to FTP
+			private    var dataResponce:String;//will hold the IP address of new socket created by FTP
+			private    var dataChannelIP:String;//will hold the Port number created by FTP
+			private    var dataChannelPort:int;
+			private var fileSize:uint; 			
+			private var fileContents:ByteArray ; 
+			
+			public function upLoad():void {
+				
+				//this fucntion connect to the ftp server
+				connect();
+				//send the usernae and password
+				//this.userName(DMConstant.FTP_SERVICE_USERNAME);
+				var FTP_SERVICE_USERNAME:String = model.ConfigXML.property.( @name == 'FTP_SERVICE_USERNAME' )[0].@value;
+				this.userName(FTP_SERVICE_USERNAME);
+				//this.passWord(DMConstant.FTP_SERVICE_PASSWORD);
+				var FTP_SERVICE_PASSWORD:String = model.ConfigXML.property.( @name == 'FTP_SERVICE_PASSWORD' )[0].@value;
+				this.passWord( FTP_SERVICE_PASSWORD);
+				
+				//this.createDirectory("/"+DMConstant.FTP_SERVICE_ROOT_FOLDER_NAME+"/");
+				//this.changeDirectory("/"+DMConstant.FTP_SERVICE_ROOT_FOLDER_NAME+"/");
+				
+				s.writeUTFBytes("PASV\n");
+				s.flush();
+				
+				
+			}
+			private function connect():void
+			{
+				//BUG --- Hassan please check the logic,
+				//BUG --- socket in DM is always open, check the logic and close it
+				model.hasAnyOpenSocket = true;
+				//s = new Socket(DMConstant.FTP_SERVICE_URL,21); // Production
+				//s = new Socket(DMConstant.FTP_SERVICE_URL,22);   // Dev 
+				
+				s = new Socket( DMConstant.FTP_SERVICE_URL, DMConstant.FTP_SERVICE_PORT );   // from config 
+				s.addEventListener(ProgressEvent.SOCKET_DATA, receiveReply);
+				s.addEventListener(IOErrorEvent.IO_ERROR, showError);
+				s.addEventListener(SecurityErrorEvent.SECURITY_ERROR, showSecError);
+				
+				//s.addEventListener(Event.CONNECT,onSocketConnect);
+				//s.addEventListener(Event.CLOSE,onSocketClose);
+				//s.addEventListener(Event.ACTIVATE,onSocketAtivate);
+			}
+			
+			//close event listener is commented, this function will never be called,
+			private function onSocketClose(evt:Event):void {
+				model.hasAnyOpenSocket = false;
+			}
+			
+			private function userName(str:String):void {
+				sendCommand("USER "+str);
+			}
+			private function passWord(str:String):void {
+				sendCommand("PASS "+str);
+			}
+			
+			private var win:PopupWindow;
+			private function receiveReply(e:ProgressEvent):void{
+				ftpResponce = s.readUTFBytes(s.bytesAvailable)
+				var serverResponse:Number = Number(ftpResponce.substr(0, 3));
+				if(ftpResponce.indexOf('227')>-1){
+					//get the ip from the string response
+					var temp:Object = ftpResponce.substring(ftpResponce.indexOf("(")+1
+						,ftpResponce.indexOf(")"));
+					var dataChannelSocket_temp:Object = temp.split(",");
+					dataChannelIP = dataChannelSocket_temp.slice(0,4).join(".");
+					dataChannelPort = parseInt(dataChannelSocket_temp[4])*256+
+						int(dataChannelSocket_temp[5]);
+					//create new Data Socket based on dataChannelSocket and dataChannelSocket port
+					dataChannelSocket = new Socket(dataChannelIP,dataChannelPort);
+					dataChannelSocket.addEventListener(ProgressEvent.SOCKET_DATA, receiveData);
+				}
+				//some of the FTP Responce Codes
+				switch(String(serverResponse)){
+					case "220" :
+						//FTP Server ready responce
+						break;
+					case "331" :
+						//User name okay, need password
+						break;
+					case  "230":
+						//User  logged in
+						break;
+					case "250" :
+						//CWD command successful
+						break;
+					case "227" :
+						//Entering Passive Mode (h1,h2,h3,h4,p1,p2).
+						break;
+					case "125" :
+						//Transfer starting.....
+						//Alert.show("File being uploaded.... ");
+						uploadingInProgress= true;
+						id_browse.enabled = false;
+						id_savebtn.enabled = false;
+						win = UtilityFunctions.ShowStatusMessage("Document is being uploaded.", FlexGlobals.topLevelApplication.mainContainer);
+						
+						break;
+					case "426" :
+						//connection closed .....
+						Alert.show("File uploaded.... ");
+						uploadingInProgress= false;
+						id_browse.enabled = true;
+						id_savebtn.enabled = true;
+						PopUpManager.removePopUp(win);
+						//upLoad();
+						break;
+					case "226" :
+						//treanfer complete.
+						Alert.show("Document uploaded successfully.\n", "Info",4, FlexGlobals.topLevelApplication.mainContainer);
+						uploadingInProgress= false;
+						id_browse.enabled = true;
+						id_savebtn.enabled = true;
+						PopUpManager.removePopUp(win);
+						//upLoad();
+						break;
+					
+					default:
+				} 
+				
+				
+				traceData(ftpResponce);
+			}  
+			
+			private function receiveData(e:ProgressEvent):void{
+				dataResponce = dataChannelSocket.readUTFBytes(
+					dataChannelSocket.bytesAvailable);
+				traceData("dataChannelSocket_response—>"+dataResponce);
+			}
+			private function showError(e:IOErrorEvent):void{
+				traceData("Error—>"+e.text);
+			}
+			private function showSecError(e:SecurityErrorEvent):void{
+				traceData("SecurityError–>"+e.text);
+			} 
+			private function traceData(event:Object):void {
+				var tmp:String = "================================\n";
+				ta.text +=event.toString()+ "\n" ;
+				
+			}
+			private function createRemoteFile(fileName:String):void{
+				if(fileName!=null && fileName !=""){
+					s.writeUTFBytes("STOR "+fileName+"\n");
+					s.flush();
+				}
+			}
+			private function sendData():void
+			{
+				if( fileReference == null && editMode )
+					return;
+				fileContents=fileReference.data as ByteArray;
+				fileSize=fileReference.size;
+				dataChannelSocket.writeBytes(fileContents,0,fileSize);
+				dataChannelSocket.flush();
+				
+				
+				
+				
+				
+				dataChannelSocket.close();
+			}
+			private function sendCommand(arg:String):void {
+				arg +="\n";
+				s.writeUTFBytes(arg);
+				s.flush();
+			}
+			private function createDirectory(str:String):void {
+				sendCommand("MKD "+str);
+			}
+			private function changeDirectory(str:String):void {
+				sendCommand("CWD "+str);
+			}
+			private function changeDirectoryToCurrentHirarchey(secName:String):void
+			{
+				/* this.createDirectory("/"+DMConstant.FTP_SERVICE_ROOT_FOLDER_NAME+"/");
+				this.changeDirectory("/"+DMConstant.FTP_SERVICE_ROOT_FOLDER_NAME+"/");
+				
+				this.createDirectory("/"+DMConstant.FTP_SERVICE_ROOT_FOLDER_NAME+"/"+model.loggedInUserSelectedPracticeName+"/");
+				this.changeDirectory("/"+DMConstant.FTP_SERVICE_ROOT_FOLDER_NAME+"/"+model.loggedInUserSelectedPracticeName+"/");
+				
+				this.createDirectory("/"+DMConstant.FTP_SERVICE_ROOT_FOLDER_NAME+"/"+model.loggedInUserSelectedPracticeName+"/"+model.loggedInUserSelectedStationName.replace('.','')+"/");
+				this.changeDirectory("/"+DMConstant.FTP_SERVICE_ROOT_FOLDER_NAME+"/"+model.loggedInUserSelectedPracticeName+"/"+model.loggedInUserSelectedStationName.replace('.','')+"/");
+				
+				this.createDirectory("/"+DMConstant.FTP_SERVICE_ROOT_FOLDER_NAME+"/"+model.loggedInUserSelectedPracticeName+"/"+model.loggedInUserSelectedStationName.replace('.','')+"/"+selectedPatientId+"/");
+				this.changeDirectory("/"+DMConstant.FTP_SERVICE_ROOT_FOLDER_NAME+"/"+model.loggedInUserSelectedPracticeName+"/"+model.loggedInUserSelectedStationName.replace('.','')+"/"+selectedPatientId+"/");
+				
+				this.createDirectory("/"+DMConstant.FTP_SERVICE_ROOT_FOLDER_NAME+"/"+model.loggedInUserSelectedPracticeName+"/"+model.loggedInUserSelectedStationName.replace('.','')+"/"+selectedPatientId+"/"+secName+"/");
+				this.changeDirectory("/"+DMConstant.FTP_SERVICE_ROOT_FOLDER_NAME+"/"+model.loggedInUserSelectedPracticeName+"/"+model.loggedInUserSelectedStationName.replace('.','')+"/"+selectedPatientId+"/"+secName+"/");
+				
+				*/
+				var arg:String;
+				var FTP_SERVICE_ROOT_FOLDER_NAME:String = model.ConfigXML.property.( @name == 'FTP_SERVICE_ROOT_FOLDER_NAME' )[0].@value;
+				
+				arg = "MKD "+"/"+ FTP_SERVICE_ROOT_FOLDER_NAME+"/";
+				arg +="\n";
+				arg += "CWD "+"/"+ FTP_SERVICE_ROOT_FOLDER_NAME+"/";
+				arg +="\n";
+				
+				arg += "MKD "+"/"+ FTP_SERVICE_ROOT_FOLDER_NAME+"/"+model.loggedInUserSelectedPracticeName+"/";
+				arg +="\n";
+				arg += "CWD "+"/"+ FTP_SERVICE_ROOT_FOLDER_NAME+"/"+model.loggedInUserSelectedPracticeName+"/";
+				arg +="\n";
+				
+				arg += "MKD "+"/"+ FTP_SERVICE_ROOT_FOLDER_NAME+"/"+model.loggedInUserSelectedPracticeName+"/"+model.loggedInUserSelectedStationName.replace('.','')+"/";
+				arg +="\n";
+				arg += "CWD "+"/"+ FTP_SERVICE_ROOT_FOLDER_NAME+"/"+model.loggedInUserSelectedPracticeName+"/"+model.loggedInUserSelectedStationName.replace('.','')+"/";
+				arg +="\n";
+				
+				arg += "MKD "+"/"+ FTP_SERVICE_ROOT_FOLDER_NAME+"/"+model.loggedInUserSelectedPracticeName+"/"+model.loggedInUserSelectedStationName.replace('.','')+"/"+selectedPatientId+"/";
+				arg +="\n";
+				arg += "CWD "+"/"+ FTP_SERVICE_ROOT_FOLDER_NAME+"/"+model.loggedInUserSelectedPracticeName+"/"+model.loggedInUserSelectedStationName.replace('.','')+"/"+selectedPatientId+"/";
+				arg +="\n";
+				
+				arg += "MKD "+"/"+ FTP_SERVICE_ROOT_FOLDER_NAME+"/"+model.loggedInUserSelectedPracticeName+"/"+model.loggedInUserSelectedStationName.replace('.','')+"/"+selectedPatientId+"/"+secName+"/";
+				arg +="\n";
+				arg += "CWD "+"/"+ FTP_SERVICE_ROOT_FOLDER_NAME+"/"+model.loggedInUserSelectedPracticeName+"/"+model.loggedInUserSelectedStationName.replace('.','')+"/"+selectedPatientId+"/"+secName+"/";
+				arg +="\n";
+				
+				s.writeUTFBytes(arg);
+				s.flush();
+			}
+			
+			private function getProviderName( value:Object ):String
+			{
+				var name:String = "";
+				if( value )
+				{
+					var o:ProviderDTO = value as ProviderDTO;
+					name =  o.MiddleName && o.MiddleName.length  ?  
+						o.FirstName + " " + o.MiddleName + " " + o.LastName  :  
+						o.FirstName + " " + o.LastName   ;
+				}
+				else
+				{
+					trace( "AddNewDocument::LabelFunction::getProviderName --> ( NO VALUE ) -> value: ", value )
+				}
+				
+				return name;
+			}
+			
+			
+			protected function searchpatientview1_PatientSelectedHandler(event:PatientSelectedEvent):void
+			{
+				var selectedPatient:PatientDTO 	= event.selection as PatientDTO;
+				
+				try
+				{
+					//var selectedPatient:PatientDTO 	= event.selection as PatientDTO;
+					trace("PatientSelectedHandler --> ",selectedPatient.ID, selectedPatient.FirstName, selectedPatient.LastName);
+					
+					
+					var fName:String = selectedPatient.FirstName ? selectedPatient.FirstName :"";
+					var mName:String = selectedPatient.MiddleName? selectedPatient.MiddleName:"";
+					var lName:String = selectedPatient.LastName  ? selectedPatient.LastName  :"";
+					
+					id_PatientName.text 	= fName + " " + mName + " " + lName;
+					id_PatientName.toolTip 	= fName + " " + mName + " " + lName;
+					id_PatientName.enabled 	= false;
+					
+					id_quivusId.text 	= selectedPatient.QuivusID;
+					id_quivusId.enabled = false;
+					
+					id_gender.text 		= selectedPatient.Gender;
+					id_gender.enabled 	= false;
+					
+					selectedPatientId 	= selectedPatient.ID;
+					selectedPatientName	= selectedPatient.FirstName+"|"+selectedPatient.MiddleName+"|"+selectedPatient.LastName;
+				}
+				catch(e:Error)
+				{
+					trace("patientExamControls", e );
+				}
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:SkinnableContainer  styleName="docManagBGContainerSkin" height="100%" minWidth="600" width="100%">
+		<s:layout>
+			<s:HorizontalLayout paddingTop="32" paddingLeft="10" paddingRight="10" gap="10"/>
+		</s:layout>
+
+		
+		<s:VGroup width="70%" id="id_patientSearchBoxContainer11" gap="5" height="175">
+			<s:HGroup>
+			<s:RichText text="Upload/Scan New Document" fontFamily="Calibri" fontSize="14" visible="{!editMode}" includeInLayout="{!editMode}" />
+			<s:RichText color="#111111" fontSize="15" id="richtext5" visible="{editMode}" includeInLayout="{editMode}"
+						text="{'Edit Document ' + id_PatientName.text}" fontFamily="Calibri Bold"/>
+				
+			
+				</s:HGroup>
+			<s:HGroup width="100%" verticalAlign="middle">
+				<s:SkinnableContainer styleName="patientSearchBGContainerSkin" height="23" width="66%" visible="{!editMode}" includeInLayout="{!editMode}"  >
+					<view1:SearchPatientView id="id_SearchPatientView"  width="100%"  height="23"  PatientSelected="searchpatientview1_PatientSelectedHandler(event)" />
+				</s:SkinnableContainer>
+				<s:RichText color="#111111" fontFamily="Calibri" fontSize="11" id="richtext3" text="Document Name:" width="85" visible="{editMode}" includeInLayout="{editMode}" />
+				<components:LabelTextInput id="id_DocumentName" prompt="Document Name"   required="true" width="100%"  height="23" 
+										   visible="{editMode}" includeInLayout="{editMode}"  />
+			</s:HGroup>
+			<s:HGroup width="100%">
+
+				<components:LabelTextInput id="id_PatientName" prompt="Patient Name" width="67%" styleName="optionalTextInputSkin"/>
+				
+				<components:LabelComboBox id="id_SectionTypesCmbo" valueCommit="id_DocumentTypesCmbo_changeHandler(event)" change="id_DocumentTypesCmbo_changeHandler(event)" dataProvider="{model.documentSectionTypeDTOList}"
+										  required="true" labelField="SectionName" prompt="Select Section" width="33%"/>
+			</s:HGroup>
+			<s:HGroup width="100%">
+				
+				
+				
+				<components:LabelTextInput  id="id_gender" prompt="Gender" width="33%" styleName="optionalTextInputSkin"/>
+				
+				
+				<components:LabelTextInput  id="id_quivusId" prompt="GID" width="33%" styleName="optionalTextInputSkin" />
+				
+				<components:LabelComboBox id="id_SubSectionTypesCmbo" change="id_SectionTypesCmbo_changeHandler(event)" 
+										  dataProvider="{model.documentSectionTypeDTOListLinear}" required="true"
+										  labelField="SectionName"  prompt="Select Sub-Section" width="33%" />
+			</s:HGroup>
+
+			<components:LabelTextInput  id="id_note" prompt="Notes" width="100%" styleName="optionalTextInputSkin" />
+			<s:HGroup verticalAlign="middle" width="100%">
+				<s:CheckBox buttonMode="true" id="checkbox1" selected="true" width="2%" styleName="lightGreyCheckBoxSkin"/>
+				<s:RichText color="#111111" fontFamily="Calibri" fontSize="11" id="richtext7" text="Alert Provider" width="18%" />
+				<components:LabelComboBox  dataProvider="{model.lProviderDTOList}" labelField="FirstName" itemRenderer="mx.controls.Label"
+										   id="id_Provider" prompt="Provider" width="52%" styleName="optionalComboBoxSkin" />
+				<components:LabelTextInput  id="textDisplay6" prompt="Referred by" width="33%" styleName="optionalTextInputSkin" />
+			</s:HGroup>
+			<s:HGroup  width="100%" horizontalAlign="right">
+
+
+				<s:Button buttonMode="true" id="id_savebtn" label="Save" click="id_savebtn_clickHandler(event)" fontFamily="Calibri" fontSize="12"
+						  styleName="blackButtonSkin" toolTip="{id_savebtn.label}" width="60" />
+				<s:Button buttonMode="true" id="button3" label="Cancel" fontFamily="Calibri" fontSize="12"
+						  click="cancel_clickHandler(event)" width="60"
+						  styleName="blackButtonSkin" toolTip="Cancel"/>
+			</s:HGroup>
+			<s:HGroup width="100%" visible="false" includeInLayout="false" >
+				<s:RichText color="#ffffff" fontSize="11" fontFamily="Calibri Bold" />
+				<s:CheckBox buttonMode="true" id="checkbox0" selected="false" styleName="lightGreyCheckBoxSkin" />	
+				<s:RichText color="#FFFFFF" fontFamily="Calibri" fontSize="11" id="richtext1" text="Preferred Provider" width="88" />
+				<s:RichText color="#FFCB00" fontSize="11" id="richtext0" tabStops="S0 S50 S100 S150" text="Dr. Allan Peterson" whiteSpaceCollapse="preserve" fontFamily="Calibri Bold"/>
+			</s:HGroup>
+		</s:VGroup>
+		
+		
+		<s:VGroup height="200" width="30%" gap="10" >
+			<s:SkinnableContainer  styleName="gradientGreyImageBGContainerSkin" buttonMode="true" useHandCursor="true" height="145" width="100%" toolTip="Upload Documents">
+				<mx:Image id="id_Image" width="100%"  height="140" verticalCenter="0" horizontalCenter="0" useHandCursor="true" buttonMode="true" />
+			</s:SkinnableContainer>
+			<s:HGroup  width="100%" visible="true">
+				<s:TextArea id="ta"  visible="false" width="1"  />
+				<components:LabelTextInput  id="id_FileName" prompt="Select or Scan Doc" width="105" toolTip="Select or Scan" required="true" />
+
+				<s:Button buttonMode="true" id="id_browse" click="id_browse_clickHandler(event)"   label="Browse Document"  fontFamily="Calibri" fontSize="12"
+						  styleName="folderButtonSkin" toolTip="Browse Document" width="25" />
+				<s:Button buttonMode="true" id="button5"  label="Scan Document" fontFamily="Calibri" fontSize="12" 
+						  click="button5_clickHandler(event)" visible="{DMConstant.BUILD_TYPE == DMConstant.NATIVE_BUILD}" 
+						  includeInLayout="{DMConstant.BUILD_TYPE == DMConstant.NATIVE_BUILD}"
+						  styleName="scanButtonSkin" toolTip="Scan Document" width="25"/>
+				
+				
+			</s:HGroup>
+		</s:VGroup>
+		
+	</s:SkinnableContainer>
+</s:Group>
+

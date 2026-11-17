@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="cc(event)" 
+		 xmlns:validators="com.gazuntite.common.util.validators.*" xmlns:components="com.gazuntite.controls.extended.components.*" xmlns:itemEditors="com.gazuntite.common.view.itemEditors.*" xmlns:grid="com.gazuntite.common.view.components.grid.*"
+		 >
+	
+	<fx:Declarations>
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YY" />
+		<validators:ComboValidator id="comboValidator" property="selectedItem"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.util.QSConstants;
+			import com.gazuntite.common.view.events.DataGridActionsEvent;
+			import com.gazuntite.controls.extended.components.LabelComboBox;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.controls.Label;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.events.DataGridEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ValidationResultEvent;
+			
+			[Bindable]
+			public var model:VBModelLocator = VBModelLocator.getInstance();
+			
+			[Bindable]
+			public var dataGridActionsData:Object;
+			
+			private function cc(event:FlexEvent):void
+			{
+				if (!dataGridActionsData)
+					dataGridActionsData = {};
+				
+				dataGridActionsData["noteDataFields"] = {subject: "NoteSubject", note: "Note", header: "IcdDto.IcdCodeDescription", visitDate: "VisitDate"};
+				dataGridActionsData["dictationDataField"] = "DictationID";
+			}
+			
+			public function displayRowNum(oItem:Object,iCol:int):String
+			{
+				var rowNumber:int = id_DiagnosisResolvedGrid.dataProvider.getItemIndex(oItem) + 1;
+				return String(rowNumber);
+			}
+			
+			public function displayVisitDate(oItem:Object,iCol:int):String
+			{
+				var strVisitDate:String = "";
+				
+				if (oItem && oItem.VisitDate)
+				{
+					var dateRecieved:Date = new Date(Date.parse(oItem.VisitDate));
+					strVisitDate = formatDateTime.format(dateRecieved);
+					var nullDate:Date = QSConstants.NULL_DATE;
+					
+					if (dateRecieved.getFullYear() <= nullDate.getFullYear() && dateRecieved.getMonth() <= nullDate.getMonth())
+						strVisitDate = "";
+					
+					if(oItem.IsNA)
+						strVisitDate = "N/A";
+				}
+				return strVisitDate;
+			}
+			
+			public function displayOnSetDate(oItem:Object, iCol:int):String
+			{
+				var strOnSetDate:String = "";
+				
+				if (oItem && oItem.OnSet)
+				{
+					var dateNumber:Number = Date.parse(oItem.OnSet);
+					
+					if (isNaN(dateNumber))
+					{
+						strOnSetDate = oItem.OnSet;
+					}
+					else
+					{
+						var dateRecieved:Date = new Date(dateNumber);
+						
+						strOnSetDate = formatDateTime.format(dateRecieved);
+						
+						var nullDate:Date = QSConstants.NULL_DATE;
+						
+						if (dateRecieved.getFullYear() <= nullDate.getFullYear() && dateRecieved.getMonth() <= nullDate.getMonth())
+							strOnSetDate = "";
+					}
+				}
+				
+				return strOnSetDate;
+			}
+			
+			public function displayChronicLabel(oItem:Object,iCol:int):String
+			{
+				var label:String = "";
+				
+				if (oItem.hasOwnProperty("IsChronic"))
+				{
+					if (oItem.IsChronic)
+						label = "Yes";
+					else
+						label = "No";
+				}
+				
+				return label;
+			}
+			
+			public function displayActiveLabel(oItem:Object, iCol:int):String
+			{
+				var label:String = "";
+				
+				if (oItem.hasOwnProperty("IsActive"))
+				{
+					if (oItem.IsActive)
+						label = "Yes";
+					else
+						label = "No";
+				}
+				
+				return label;
+			}
+		]]>
+	</fx:Script>
+	
+	<components:LabelDataGrid id="id_DiagnosisResolvedGrid"
+							  rowCount="{id_DiagnosisResolvedGrid.dataProvider.length + 1}" rowHeight="24"
+							  width="100%" useRollOver="false"  maxHeight="150" verticalScrollPolicy="on" horizontalScrollPolicy="off"
+							  dataProvider="{model.diagnosisDTOResolvedListByPatientId}"
+							  columnWidths="{[30, '9%', '9%', '9%', '15%', '8%', '15%', 100]}">
+		<components:columns>
+			<mx:DataGridColumn headerText="Sr. #" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"
+							   editable="false" labelFunction="displayRowNum"/>
+			<mx:DataGridColumn headerText="Visit Date" width="120" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" 
+							   editable="false" labelFunction= "displayVisitDate"/>
+			<mx:DataGridColumn headerText="On Set" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"
+							   labelFunction="displayOnSetDate">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:DateFieldEditor editable="true"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="ICD Code" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"
+							   dataField="IcdDto.IcdCodeName" editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor labelField="IcdCodeName" width="100%" dataProvider="{outerDocument.model.icdCodeDTOList}"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Diagnosis" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" 
+							   dataField="IcdDto.IcdCodeDescription" editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor labelField="IcdCodeDescription" width="100%" dataProvider="{outerDocument.model.icdCodeDTOList}"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Chronic" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"
+							   dataField="IsChronic" labelFunction="displayChronicLabel" >
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:YesNoItemEditor property="IsChronic"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Active" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"
+							   dataField="IsActive" labelFunction="displayActiveLabel">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:YesNoItemEditor property="IsActive" canShowDateField="true"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<grid:DataGridColumnEx headerText="" itemRenderer="com.gazuntite.patient.visit.view.itemrenderer.VBRenderer"
+								   data="{dataGridActionsData}" editable="false"/>
+		</components:columns>
+	</components:LabelDataGrid>
+</s:Group>

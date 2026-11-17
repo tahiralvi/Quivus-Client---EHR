@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:CollapsiblePanel xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:d="http://ns.adobe.com/fxg/2008/dt"
+		 title="Emergency Contacts"
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 hasChange="{model.patientProfileDTO.PatientEmergencyContactList.length >0 ? true:false}" 
+		 xmlns:components1="com.gazuntite.controls.extended.components.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.gazuntite.skins.chrome.containerSkins.blackBGContainer;
+			import com.adobe.gazuntite.skins.chrome.containerSkins.gradientBlackBGContainer;
+			import com.adobe.gazuntite.skins.chrome.containerSkins.greyishWhiteBGContainer;
+			
+			import mx.controls.Label;
+			import mx.events.CollectionEvent;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+		
+			private function doAllowCommunication(item:Object, column:DataGridColumn):String
+			{
+				var result:String = '';
+				if(item.AllowCommunication == true)
+					result = 'Yes';
+						
+				if(item.AllowCommunication == false)
+					result = 'No';
+					
+				return result;
+			}
+			private function getPhoneNo(item:Object, column:DataGridColumn):String
+			{
+				var result:String = '';
+				if(item.EmergencyPhone.PhoneNumber)
+					result = ValidationUtils.setPhoneNumberMasking(item.EmergencyPhone.PhoneNumber);
+						
+					
+				return result;
+			}
+		]]>
+	</fx:Script>
+	
+	<components1:layout>
+		<s:VerticalLayout verticalAlign="middle" paddingBottom="5" paddingLeft="5" paddingRight="5"  paddingTop="5" />
+	</components1:layout>
+	<s:Label text="There are no entries/data" fontFamily="Calibri" fontSize="13"  fontWeight="bold" verticalAlign="top" visible="{model.patientProfileDTO.PatientEmergencyContactList.length>0? false:true}" includeInLayout="{model.patientProfileDTO.PatientEmergencyContactList.length>0? false:true}"/>
+	<components1:LabelDataGrid id="id_EmergencyContactGrid" width="100%"  
+							  dataProvider="{model.patientProfileDTO.PatientEmergencyContactList}"
+							  visible="{model.patientProfileDTO.PatientEmergencyContactList.length>0? true:false}" 
+							  includeInLayout="{id_EmergencyContactGrid.visible}"
+				 			  rowHeight="23" rowCount="{id_EmergencyContactGrid.dataProvider.length+1}"
+				              sortableColumns="false" horizontalScrollPolicy="off" verticalScrollPolicy="off"
+				              columnWidths="{['20%','15%', '13%', '13%','12%', '15%', '12%']}">
+		<components1:columns>
+			<mx:DataGridColumn dataField="FirstName" headerText="Name"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn dataField="EmergencyEmail" headerText="Email"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn dataField="EmergencyPhone.PhoneNumber" labelFunction="getPhoneNo" headerText="Phone"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>					
+			<mx:DataGridColumn dataField="EmergencyPhone.Extension" headerText="Ext"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn dataField="EmergencyPhone.NumberTypeName" headerText="Phone Type"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn dataField="RelationShipType.RelationshipName" headerText="Relation" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Allow Msg."  labelFunction="doAllowCommunication" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+		</components1:columns>
+	</components1:LabelDataGrid>
+</components1:CollapsiblePanel>

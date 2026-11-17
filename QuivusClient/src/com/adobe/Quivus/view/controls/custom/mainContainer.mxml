@@ -1,0 +1,1706 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx"
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+					  xmlns:panel="com.adobe.Quivus.view.controls.panel.*" 
+					  xmlns:extended="com.adobe.Quivus.view.controls.extended.*"
+					  xmlns:components="com.gazuntite.controls.extended.components.*"
+					  xmlns:topBarView="com.adobe.Quivus.view.controls.custom.topBarView.*" 
+					  xmlns:loginView="com.adobe.Quivus.view.controls.custom.loginView.*" 
+					  xmlns:profile="com.adobe.Quivus.view.controls.custom.patientExamView.profile.*" 
+					  xmlns:components1="com.adobe.Quivus.view.controls.skins.components.*" 
+					  xmlns:videochat="com.adobe.Quivus.view.controls.custom.communication.videochat.*" 
+					  xmlns:quickInput="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.*"
+					  xmlns:commons="com.gazuntite.patient.visit.view.commons.*" 
+					  xmlns:view="com.gazuntite.patient.visit.view.*" 
+					  creationComplete="creComp()" 
+					  >
+
+	<fx:Metadata>
+		[Event(name="AcceptVideoCallEvent", type="com.adobe.Quivus.events.communication.videochat.VideoCallAcceptCallEvent")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.appController.AppController;
+			import com.adobe.Quivus.events.LoadUserMostRecentPatientEvent;
+			import com.adobe.Quivus.events.authenticate.UpdateUserSessionStatusEvent;
+			import com.adobe.Quivus.events.communication.GetClinicUserIDEvent;
+			import com.adobe.Quivus.events.communication.videochat.GetIncomingVideoChatSessionEvent;
+			import com.adobe.Quivus.events.communication.videochat.VideoCallAcceptCallEvent;
+			import com.adobe.Quivus.events.communication.videochat.VideoCallRejectEvent;
+			import com.adobe.Quivus.events.quickLink.LoadUserQuickLinksEvent;
+			import com.adobe.Quivus.events.search.searchEngine.LoadUserSearchEngineEvent;
+			import com.adobe.Quivus.events.security.LoadClinicGeneralSettingMainEvent;
+			import com.adobe.Quivus.events.security.LoadUserAccessRightEvent;
+			import com.adobe.Quivus.events.staticData.patientsData.LoadCurrentDayAddedPatientsEvent;
+			import com.adobe.Quivus.events.visit.LoadPatientVisitsByProviderIDEvent;
+			import com.adobe.Quivus.logging.LoggingUtil;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppEventStrings;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.DTOInitializationUtility;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.utils.QuivusCombineEventDispatcher;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.Billing.ReportPanel;
+			import com.adobe.Quivus.view.controls.custom.communication.CommunicationPanel;
+			import com.adobe.Quivus.view.controls.custom.communication.SMSPanel;
+			import com.adobe.Quivus.view.controls.custom.communication.videochat.TestVideoChatPanel;
+			import com.adobe.Quivus.view.controls.custom.loginView.ConfidentialityWindow;
+			import com.adobe.Quivus.view.controls.custom.loginView.InActiveLockWindow;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.recentPatient.CurrentDayRecentPatientView;
+			import com.adobe.Quivus.view.controls.custom.quivusWeb.QuivusWebsitePanel;
+			import com.adobe.Quivus.view.controls.custom.topBarView.ContactList;
+			import com.adobe.Quivus.view.controls.custom.topBarView.WebSearchOptions;
+			import com.adobe.Quivus.view.controls.documentViewer.DocumentLoader;
+			import com.adobe.Quivus.view.controls.panel.ComingSoonPanel;
+			import com.adobe.Quivus.view.controls.panel.EditProfilePanel;
+			import com.adobe.Quivus.view.controls.panel.LabPanel;
+			import com.adobe.Quivus.view.controls.panel.NotificationPanel;
+			import com.adobe.Quivus.view.controls.panel.QLEPrescriptionView;
+			import com.adobe.Quivus.view.controls.panel.QLEncounterView;
+			import com.adobe.Quivus.view.controls.panel.RefillPanel;
+			import com.adobe.Quivus.view.controls.panel.UserRegisterationPanel;
+			import com.adobe.Quivus.view.controls.panel.WebSearchPanel;
+			import com.adobe.Quivus.view.controls.skins.components.MainBGPanel;
+			import com.adobe.Quivus.view.events.ComingSoonEvent;
+			import com.adobe.Quivus.view.events.UserSignOutEvent;
+			import com.adobe.Quivus.view.events.WebSearchEvent;
+			import com.adobe.Quivus.view.events.mailClickEvent;
+			import com.adobe.Quivus.view.events.smsClickEvent;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.event.GetPatientGaxenIdEvent;
+			import com.gazuntite.common.event.LoadPatientMedEvent;
+			import com.gazuntite.common.view.events.OpenFileOrWithNativeAppEvent;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.controls.extended.components.PopupWindow;
+			import com.gazuntite.dataBridge.controller.LiveServicesController;
+			import com.gazuntite.patient.visit.dto.visit.VisitDTO;
+			import com.gazuntite.patient.visit.event.visit.CreateVisitEvent;
+			import com.gazuntite.patient.visit.event.visit.LoadPhysiciansbyClinicBranchIDEvent;
+			import com.gazuntite.patient.visit.model.QIModelLocator;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			import com.gazuntite.patient.visit.view.event.EditVisitEvent;
+			import com.gazuntite.patient.visit.view.events.SyncPatientGaxenIDEvent;
+			import com.gazuntite.provider.eprescription.services.patient.event.EPrescriptionUpdateEvent;
+			import com.gazuntite.provider.live.services.administration.event.AdminActionsEvent;
+			import com.gazuntite.provider.live.services.billing.view.event.LoadReportPanelEvent;
+			import com.gazuntite.provider.live.services.documentMgmt.util.DMEventStrings;
+			import com.gazuntite.provider.live.services.waitingRoom.view.event.LoadPatientEvent;
+			import com.gazuntite.provider.search.services.patient.event.SearchPatientInLocalDBEvent;
+			import com.gazuntite.provider.services.sms.util.CommunicationConstant;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.core.IVisualElement;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.logging.ILogger;
+			import mx.managers.PopUpManager;
+			
+			import spark.components.Group;
+			import spark.effects.Wipe;
+			
+			import valueObjects.PageDTO;
+			
+			//public var chUtil:ChromeUtil = new ChromeUtil();
+			//private var dummyContainer:Group;
+			
+			
+			[Bindable]
+			private var model : AppModelLocator 		= AppModelLocator.getInstance();
+			private var cl:ContactList;
+			private var wso:WebSearchOptions;		
+			public var mainPanelHeight:Number;
+			private var m_oCurrentSlideOut:SlideOutPanel;
+			private var m_oCurrentExpandedPanel:SlideOutPanel;
+			private var logger : ILogger 				= LoggingUtil.getLogger( this );
+			private var documentLoader:DocumentLoader 	= new DocumentLoader();
+			private var isUserLogedIn:Boolean 			= false;
+			private var isApplicationSync:Boolean; 					// this is for update change ....
+			private var isApplicationInActivityLock:Boolean; 		// this is for lock application ....
+			private var soundfile:Sound;
+			private var soundch:SoundChannel;
+			private var registerationPanel:UserRegisterationPanel;
+			private var qiEncounterView:QLEncounterView;
+			private var qiEprescriptionView:QLEPrescriptionView;
+			private var objTest:TestVideoChatPanel=null;
+			private var comingSoonPanel:EditProfilePanel;
+			private var comingSoonPanel2:ComingSoonPanel;
+			private var isConfidentialityRule:Boolean;
+			private var ticker:Timer;
+			private var lockWindow:InActiveLockWindow;
+			private var _ConfidentialityWindow:ConfidentialityWindow;
+			private var mailpanel:CommunicationPanel;
+			private var searchPanel:WebSearchPanel;
+			
+			public function get currentExpandedPanel():SlideOutPanel {
+				return m_oCurrentExpandedPanel;
+			}
+			
+			public function set currentExpandedPanel(value:SlideOutPanel):void {
+				m_oCurrentExpandedPanel = value;
+			}
+			
+			public function get currentSlideOut():SlideOutPanel {
+				return m_oCurrentSlideOut;
+			}
+			
+			public function set currentSlideOut(value:SlideOutPanel):void {
+				m_oCurrentSlideOut = value;
+				if( value )	{
+					m_oCurrentSlideOut.addEventListener( AppEventStrings.QS_VIEW_STATE_CHANGE, QSViewStateChangeHandler );
+					m_oCurrentSlideOut.ExpandedView = true;
+				}
+			}
+			//------------------------ creation complete ----------------------------------------
+			private function creComp():void
+			{
+				if( vs.selectedIndex == 0 )
+				{
+					id_topBar.showSearchControl( false );
+					id_topBar.showUserControl( false );
+				}
+				
+				CairngormEventDispatcher.getInstance().addEventListener( AppController.SET_DEFAULT_SEARCH_ENGINE_EVENT, function(event:Event):void
+				{
+					browser( "Search" );
+				});
+				
+				id_topBar.id_contacts.addEventListener(MouseEvent.CLICK, function ():void
+				{
+					//removeCurrentSlideOut();
+					if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.CONTACT_SEARCH ) )
+					{
+						if( id_topBar.id_contacts.selected )
+						{
+							id_topBar.id_WebSearchOptions.id_web.selected = false;
+							id_topBar.id_WebSearchOptions.id_searchEnginesList.selected = false;
+							id_topBar.id_WebSearchOptions.id_searchEnginesList.visible = false;
+							//mailClick( null );
+							addCommunicationPanel();
+						}
+						else
+						{
+							removeCurrentSlideOut();
+						}
+					}
+					
+					//id_topBar.id_WebSearchOptions.id_BGRect.visible = false;
+				});
+				
+				id_topBar.id_QuickLinks.addEventListener( AppEventStrings.REGISTER_USER, function (event:Event):void
+				{
+					QuivusCombineEventDispatcher.loadRegistrationStaticData();
+					
+					removeCurrentSlideOut();
+					registerationPanel = new UserRegisterationPanel();
+					currentSlideOut 				= registerationPanel; 
+					currentSlideOut.percentWidth 	= 100;
+					id_mainArea.addElementAt( currentSlideOut, 0 );
+					
+					registerationPanel.addEventListener(CloseEvent.CLOSE, closeHandler);
+					registerationPanel.id_userRegistrationForm.id_BasicScroller.height 	= 250;
+					//	registerationPanel.id_HgScroll.visible 				= false;
+					//	registerationPanel.id_HgScroll.includeInLayout 		= false; 
+					
+					id_mainBGQLPanel.addElementAt( currentSlideOut, 0 );
+					
+					id_mainBGQLPanel.visible 			= true;
+					id_mainBGQLPanel.includeInLayout 	= true;
+					//collaps the LPS if expanded
+					if(id_LiveServicesPanel)
+					{
+						if(id_LiveServicesPanel.ExpandedView)
+							id_LiveServicesPanel.ExpandedView = false;
+					}
+					
+				});
+				//Tahir Alvi - Patient Encounter in Quicklinks 
+				id_topBar.id_QuickLinks.addEventListener( AppEventStrings.PATIENT_ENCOUNTER, function (event:Event):void
+				{
+					var pageDto:PageDTO 	= new PageDTO();
+					pageDto.fromDate 		= Constants.NULL_DATE;
+					pageDto.toDate 	 		= Constants.NULL_DATE;
+					pageDto.pageSize 		= 0;
+					pageDto.pageNumber 		= 1;
+					pageDto.LastVisitNumber = 1;
+					
+					var ql:LoadPatientVisitsByProviderIDEvent = new LoadPatientVisitsByProviderIDEvent(pageDto,	
+						model.loggedInUserDTO.UserId.toString(),	
+						model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchIdSeq.toString(),
+						'false');
+					CairngormEventDispatcher.getInstance().dispatchEvent( ql );
+					
+					removeCurrentSlideOut();
+					qiEncounterView = new QLEncounterView();
+					currentSlideOut 				= qiEncounterView; 
+					currentSlideOut.percentWidth 	= 100;
+					id_mainArea.addElementAt( currentSlideOut, 0 );
+					
+					qiEncounterView.addEventListener(CloseEvent.CLOSE, closeHandler);
+					
+					id_mainBGQLPanel.addElementAt( currentSlideOut, 0 );
+					
+					id_mainBGQLPanel.visible 			= true;
+					id_mainBGQLPanel.includeInLayout 	= true;
+					//collaps the LPS if expanded
+					if(id_LiveServicesPanel)
+					{
+						if(id_LiveServicesPanel.ExpandedView)
+							id_LiveServicesPanel.ExpandedView = false;
+					}
+				});
+				//Tahir Alvi - E Prescription in Quicklinks 
+				id_topBar.id_QuickLinks.addEventListener( AppEventStrings.E_PRESCRIPTION_EVENT, function (event:Event):void
+				{
+					removeCurrentSlideOut();
+					qiEprescriptionView = new QLEPrescriptionView();
+					currentSlideOut 				= qiEprescriptionView; 
+					currentSlideOut.percentWidth 	= 100;
+					id_mainArea.addElementAt( currentSlideOut, 0 );
+					
+					qiEprescriptionView.addEventListener(CloseEvent.CLOSE, closeHandler);
+					
+					id_mainBGQLPanel.addElementAt( currentSlideOut, 0 );
+					
+					id_mainBGQLPanel.visible 			= true;
+					id_mainBGQLPanel.includeInLayout 	= true;
+					//collaps the LPS if expanded
+					if(id_LiveServicesPanel)
+					{
+						if(id_LiveServicesPanel.ExpandedView)
+							id_LiveServicesPanel.ExpandedView = false;
+					}
+					
+				});
+				
+				id_topBar.id_QuickLinks.id_currentDayList.addEventListener(MouseEvent.CLICK, function(evt:MouseEvent):void
+				{
+					if(id_topBar.id_QuickLinks.id_currentDayList.selected == false)
+					{
+						/* id_mainBGQLPanel.removeElement( currentSlideOut );
+						id_mainBGQLPanel.visible 			= false;
+						id_mainBGQLPanel.includeInLayout 	= false; */
+						removeCurrentSlideOut();
+						return;
+					}
+					
+					removeCurrentSlideOut();
+					
+					var cdEvent : LoadCurrentDayAddedPatientsEvent = new LoadCurrentDayAddedPatientsEvent(1);
+					CairngormEventDispatcher.getInstance().dispatchEvent( cdEvent );
+					
+					var comingSoonPanel:CurrentDayRecentPatientView = new CurrentDayRecentPatientView();
+					
+					comingSoonPanel.headerLabel 	= "Patients added in last 24 hours";	
+					comingSoonPanel.allowSlideOut 	= false;
+					currentSlideOut 				= comingSoonPanel;
+					currentSlideOut.percentWidth 	= 100;
+					currentSlideOut.percentHeight   = 100;
+					
+					id_mainBGQLPanel.addElementAt( currentSlideOut, 0 );																			
+					id_mainBGQLPanel.visible 			= true;
+					id_mainBGQLPanel.includeInLayout 	= true;
+					
+					comingSoonPanel.addEventListener(CloseEvent.CLOSE, function(e:CloseEvent):void
+					{
+						id_mainBGQLPanel.removeElement( currentSlideOut );
+						id_mainBGQLPanel.visible 			= false;
+						id_mainBGQLPanel.includeInLayout 	= false;
+						id_topBar.id_QuickLinks.id_currentDayList.selected = false;
+					});
+				});
+				
+				/* public  function loadData(val:* = null):void
+				{
+				
+				popGroupCurrenDay = new Group();
+				
+				var list:CurrentDayRecentPatientView 		= new CurrentDayRecentPatientView();
+				
+				list.y = id_linkbtn.y - 31;
+				list.x = id_linkbtn.x;
+				
+				list.width = 500;
+				list.height = 155;
+				
+				
+				popGroupCurrenDay.addElement( list );
+				
+				PopUpManager.addPopUp( popGroupCurrenDay, FlexGlobals.topLevelApplication as DisplayObject );
+				
+				popGroupCurrenDay.x = this.x; //+ (this.width - 15);
+				popGroupCurrenDay.y = this.y + this.height - 4; 
+				} */
+				
+				
+				id_topBar.id_QuickLinks.addEventListener( AppEventStrings.SHOW_COMING_SOON_EVENT, function (event:ComingSoonEvent):void
+				{
+					showComingSoonPageConnected(event.HeaderLabel);
+				});
+				
+				id_topBar.id_userView.id_userPic.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					/* if( ! id_topBar.id_userView.id_connectorPic.visible &&
+					currentSlideOut is EditProfilePanel )
+					{ */
+					if(	currentSlideOut is EditProfilePanel )
+					{
+						if ((currentSlideOut as EditProfilePanel).id_editprofileview.id_viewmodePersonal.visible == false)
+						{
+							Alert.show("Unsaved changes will be lost, do you want to exit?",	"Are you sure?", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, function( event:CloseEvent):void
+							{
+								if( event.detail == Alert.YES )
+								{							
+									removeCurrentSlideOut();
+									id_topBar.id_userView.id_connectorPic.visible = false;
+									return;
+								}
+								else if( event.detail == Alert.NO )
+								{
+									//onNo.call( noParams );
+								}
+							});
+							
+						}else 
+						{
+							removeCurrentSlideOut();
+							id_topBar.id_userView.id_connectorPic.visible = false;
+							return;
+						}
+					}
+					
+					if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.USER_PROFILE_PANEL ) )
+					{
+						EditProfilePage("EDIT PROFILE");
+					}
+					
+					id_topBar.id_userView.id_connectorPic.visible = true;
+					
+				});
+				
+				/* 	id_topBar.id_userView.id_userNotificationBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+				showComingSoonPage("NOTIFICATIONS");
+				});
+				
+				id_topBar.id_userView.id_userLabsBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+				showComingSoonPage("LAB RESULTS");
+				}); */
+				
+				/* id_topBar.id_userView.id_userRefillReqBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+				if(currentSlideOut is RefillPanel)
+				{
+				removeCurrentSlideOut();
+				return;
+				}
+				RefillPage("REFILL REQUEST");
+				id_topBar.id_userView.id_userRefillReqBtn.selected = true;
+				});
+				
+				id_topBar.id_userView.id_userNotificationBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+				if(currentSlideOut is NotificationPanel)
+				{
+				removeCurrentSlideOut();
+				return;
+				}
+				NotificationPage("USER NOTIFICATION");
+				id_topBar.id_userView.id_userNotificationBtn.selected = true;
+				});
+				
+				id_topBar.id_userView.id_userLabsBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+				if(currentSlideOut is LabPanel)
+				{
+				removeCurrentSlideOut();
+				return;
+				}
+				LabPage("LAB RESULTS");
+				id_topBar.id_userView.id_userLabsBtn.selected = true;
+				}); */
+				id_topBar.id_logo.id_logoImg.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.QUIVUS_WEB ) )
+					{
+						if( model.UserLoggedIn )
+							showQuivusWebsitePage("GAZUNTITE WEBSITE");
+						else
+							closeConnectors();
+						
+						if( ! id_topBar.id_logo.id_logoImg.selected &&
+							currentSlideOut is QuivusWebsitePanel)
+						{
+							removeCurrentSlideOut();
+							return;
+						}
+					}
+				});
+				
+				/* addEventListener("CloseQIPanel", function(event:Event):void
+				{
+				id_QIPanel.quickInputCloseHandler();
+				}); */
+				
+				addEventListenerMthods();
+			}
+			//-------- add all event listner at creation complete ---------------------------
+			protected function addEventListenerMthods():void
+			{
+				addEventListener( DMEventStrings.VIEW_DOCUMENT, onViewDocument );
+				addEventListener( DMEventStrings.SCAN_DOCUMENT, StartNativeProcess );
+				addEventListener( AppEventStrings.USER_SIGN_OUT_EVENT, signOutHandler );
+				addEventListener( AdminActionsEvent.UPDATE_ACCESS_RIGHTS, onUpdateAccesRights );			//Tahir Alvi - security impl
+				addEventListener( AdminActionsEvent.GENERAL_SETTING_UPDATE, onUpdateGeneralSetting);		//Tahir Alvi - security impl
+				addEventListener( EPrescriptionUpdateEvent.EPRESCRIPTION_UPDATE, onUpdateEprescription);	//Tahir Alvi - E-Prescription impl
+				addEventListener( 'updateUserProfileEvent', onUpdateUserProfileEvent);						//Tahir Alvi - User Profile image update event impl
+				addEventListener('expandQuickLinkViewEvent', onExpandQuickLinkViewEvent);					//Tahir Alvi - Resize or Collaps the LPS when Rapid Access is expanded
+				addEventListener('updateVBPatientEncounerList', onUpdateVBPatientEncounerList);				//Tahir Alvi - After Close Quick Input Update the VB Encounter List
+				addEventListener(EditVisitEvent.EDIT_VISIT_EVENT, onEditVisitEvent);						// disptach from VB Encounter 
+				//addEventListener( AppEventStrings.CREATE_PATIENT_VISIT_EVENT, ViewBackgroundPanel_CreateVisitUIHandler );
+			}
+			//---------- on updateVBPatientEncounerList --------------------------------------
+			private function onUpdateVBPatientEncounerList(event:Event):void
+			{
+				id_patientExamPanel.ViewbackgroundPanel.id_viewBackgroundBody.updateSummaryAndEncounterList();
+			}
+			
+			// By Moeen , to bind the values to the newQI
+			public function CreateVisit(createDate:Date):void
+			{
+				var visit:VisitDTO = new VisitDTO(	model.patientDTO.PatientId,
+					model.loggedInUserDTO.UserId,
+					model.userSelectedRoleDTO.UserTypeRole.UserTypeId,
+					0,
+					0,
+					model.userSelectedStationDTO.StationID,
+					model.placeOfServiceID ,
+					model.loggedInUserDTO.UserId,
+					createDate,
+					createDate,model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchIdSeq);
+				var cve:CreateVisitEvent = new CreateVisitEvent(visit);
+				CairngormEventDispatcher.getInstance().dispatchEvent( cve );
+			}
+			// on EditVisitEvent from Viewbackground
+			private function onEditVisitEvent(event:EditVisitEvent):void
+			{
+				QIModelLocator.getInstance().patientID 						= event.patientID;
+				QIModelLocator.getInstance().ClinicBranchIdSeq 				= event.ClinicBranchIdSeq;
+				QIModelLocator.getInstance().VisitID 						= event.visitId;
+				QIModelLocator.getInstance().VisitDate 						= event.VisitDate;
+				QIModelLocator.getInstance().canCoSign 						= event.canCoSign;
+				QIModelLocator.getInstance().PlaceOfServiceTypeID 			= event.PlaceOfServiceTypeID;
+				QIModelLocator.getInstance().PlaceOfServiceTypeName 		= event.PlaceOfServiceTypeName;
+				QIModelLocator.getInstance().LoggedInUserSelectedStationID 	= event.LoggedInUserSelectedStationID;
+				QIModelLocator.getInstance().EncounterTypeName 				= event.EncounterTypeName;
+				
+				var lphys:LoadPhysiciansbyClinicBranchIDEvent = new LoadPhysiciansbyClinicBranchIDEvent(model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchIdSeq,
+																event.visitId, event.patientID, 'true', model.loggedInUserDTO.UserId)
+				CairngormEventDispatcher.getInstance().dispatchEvent( lphys );
+			
+			}
+			private function isFemale():Boolean
+			{
+				if(model.loggedInUserDTO.Gender == 'Female' || model.loggedInUserDTO.Gender.toLowerCase() == 'female')
+					return true;
+				else 
+					return false;
+			}
+			// Tahir Alvi - on updating first tab or on save all of user profile, update the top bar image
+			private function onUpdateUserProfileEvent(event:Event):void
+			{
+				var getClinicUserIDEvent:GetClinicUserIDEvent = new GetClinicUserIDEvent(model.loggedInUserDTO.UserId, model.userSelectedStationDTO.ClinicBranchID, true, null);
+				CairngormEventDispatcher.getInstance().dispatchEvent( getClinicUserIDEvent );
+			}
+			//Tahir Alvi - on expanding the top bar or Quick Links view/window hide the LPS
+			protected function onExpandQuickLinkViewEvent(e:Event):void
+			{
+				//collaps the LPS if expanded
+				if(id_LiveServicesPanel)
+				{
+					if(id_LiveServicesPanel.ExpandedView)
+						id_LiveServicesPanel.ExpandedView = false;
+				}
+			}
+			//Tahir Alvi - Update Eprescription after adding a record impl
+			private function onUpdateEprescription(event:Event):void
+			{
+				var securityHeaderXML:XML;
+				securityHeaderXML	 			= <Header />;					
+				securityHeaderXML.@EUserName	= "TESTUSER";
+				securityHeaderXML.@EPassword	= "TESTPASS";
+				securityHeaderXML.@ClinicID		= "sad";
+				
+				if(model.gaxenID.length > 0 && model.gaxenID != "" && model.gaxenID != "0")
+				{
+					var loadPatientPrescriptionEvent: LoadPatientMedEvent = new LoadPatientMedEvent("0", model.gaxenID, PrescriptionLoaded);				
+					loadPatientPrescriptionEvent.data = securityHeaderXML; 				
+					CairngormEventDispatcher.getInstance().dispatchEvent(loadPatientPrescriptionEvent);
+					QIModelLocator.getInstance().gaxenID = model.gaxenID; //send Same Gaxen ID to Quick input Model for preview Soap Note
+					VBModelLocator.getInstance().gaxenID = model.gaxenID;//send same Gaxen ID to VB model for loading allergies, chronic medication and pescription
+ 				}
+				else //In case when patient is loaded without GaxenID and Prescription/Medication is added from NEW RX LPS
+				{
+					var lgid:GetPatientGaxenIdEvent = new GetPatientGaxenIdEvent(model.patientDTO.UserId.toString(), function(response:XML):void
+					{
+						model.gaxenID					= response.toString();
+						if(model.gaxenID.length > 0 && model.gaxenID != "" && model.gaxenID != "0")
+						{
+							model.gaxenIDSaved 				= true;
+							var loadPatientPrescriptionEvent: LoadPatientMedEvent = new LoadPatientMedEvent("0", model.gaxenID, PrescriptionLoaded);				
+							loadPatientPrescriptionEvent.data = securityHeaderXML; 				
+							CairngormEventDispatcher.getInstance().dispatchEvent(loadPatientPrescriptionEvent);
+							QIModelLocator.getInstance().gaxenID = model.gaxenID;//send Same Gaxen ID to Quick input Model for preview Soap Note.
+							QIModelLocator.getInstance().patientDTO.GAXENID = model.gaxenID;//send Same Gaxen ID to Quick input Model for other NEW RX Form.
+							VBModelLocator.getInstance().gaxenID = model.gaxenID;//send same Gaxen ID to VB model for loading allergies, chronic medication and pescription
+						}
+					});
+					CairngormEventDispatcher.getInstance().dispatchEvent(lgid);
+				}
+			}
+			
+			// call back method of LoadPatientPrescriptionEvent
+			public function PrescriptionLoaded(patientMedAC:ArrayCollection, patientChronicMedAC:ArrayCollection, patientMedAC_inactive:ArrayCollection, patientChronicMedAC_inactive:ArrayCollection):void
+			{
+				if(model.patientMedACList)
+					model.patientMedACList.removeAll();
+				else
+					model.patientMedACList = new ArrayCollection();
+				
+				if(model.patientMedAC_inactiveList)
+					model.patientMedAC_inactiveList.removeAll();
+				else
+					model.patientMedAC_inactiveList = new ArrayCollection();
+				
+				if(model.patientChronicMedAC_inactiveList)
+					model.patientChronicMedAC_inactiveList.removeAll();
+				else
+					model.patientChronicMedAC_inactiveList = new ArrayCollection();
+				
+				if(model.patientChronicMedACList)
+					model.patientChronicMedACList.removeAll();
+				else
+					model.patientChronicMedACList = new ArrayCollection();
+				
+				model.patientMedACList 						= patientMedAC;//prescription list
+				model.patientChronicMedACList 				= patientChronicMedAC;//medication list
+				model.patientMedAC_inactiveList			 	= patientMedAC_inactive;
+				model.patientChronicMedAC_inactiveList	 	= patientChronicMedAC_inactive;
+				
+				//For QI load
+				if(model.chMedicationDTOList)
+					model.chMedicationDTOList.removeAll();
+				else
+					model.chMedicationDTOList = new ArrayCollection();
+				
+				if(model.prescriptionDToList)
+					model.prescriptionDToList.removeAll();
+				else
+					model.prescriptionDToList = new ArrayCollection();
+				
+				model.chMedicationDTOList = patientChronicMedAC;
+				model.prescriptionDToList = patientMedAC;
+				
+				if(model.chMedicationDTOList.length)//for QI Chronic Medication
+				{
+					if(null == QIModelLocator.getInstance().medicationDTOList)
+						QIModelLocator.getInstance().medicationDTOList = new ArrayCollection();
+					else
+						QIModelLocator.getInstance().medicationDTOList.removeAll();
+					
+					QIModelLocator.getInstance().medicationDTOList.addAll(model.chMedicationDTOList);
+				}
+				
+				if(model.prescriptionDToList.length) // For QI Eprescription
+				{
+					if(null == QIModelLocator.getInstance().prescriptionDToList)
+						QIModelLocator.getInstance().prescriptionDToList = new ArrayCollection();
+					else
+						QIModelLocator.getInstance().prescriptionDToList.removeAll();
+						
+					QIModelLocator.getInstance().prescriptionDToList.addAll(model.prescriptionDToList);
+				}
+			}
+			//Tahir Alvi - security impl
+			private function onUpdateGeneralSetting(event:Event):void
+			{
+				var ligsEvt : LoadClinicGeneralSettingMainEvent = new LoadClinicGeneralSettingMainEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( ligsEvt );
+			}
+			//Tahir Alvi - security impl
+			private function onUpdateAccesRights(event:Event):void
+			{
+				var luiEvent : LoadUserAccessRightEvent = new LoadUserAccessRightEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( luiEvent );
+			}
+			
+			/// Method added by zahid
+			private function getVideoCallDetailsDetails(val:* = null):void
+			{
+				if(model.m_ovideoCallInfo != null && model.m_ovideoCallInfo != "" && model.m_ovideoCallInfo != "Call Dropped" && model.m_ovideoCallInfo != "Call Rejected")
+				{
+					/* var mailpanel:CommunicationPanel = new CommunicationPanel();
+					mailpanel.isVideoChat = true;
+					PopUpManager.addPopUp(mailpanel,this,true); */
+					
+					/*  var objnotification:VideoCallNotification=new VideoCallNotification();
+					objnotification.addEventListener(MouseEvent.CLICK,onEndCallClick);
+					
+					var userSessionInfo:Array =model.m_ovideoCallInfo.split('^');
+					
+					objnotification.opentoksession= userSessionInfo[0];
+					objnotification.videochatInitiatorID = userSessionInfo[1];
+					objnotification.videoChatID = userSessionInfo[2];
+					objnotification.videoChatTokenID = userSessionInfo[3];
+					
+					PopUpManager.addPopUp(objnotification,this,true);  */
+					
+					var oldWidth:Number 	= Alert.buttonWidth;
+					var oldYesLabel:String	= Alert.yesLabel;
+					var oldNoLabel:String	= Alert.noLabel;
+					Alert.yesLabel 			= "Accept Call";
+					Alert.noLabel 			= "Reject Call";
+					Alert.buttonWidth 		= 150;
+					///  Sound Playing ******************** 5 March ********************** ////
+					
+					var request:URLRequest =new URLRequest(Constants.VIDEO_CHAT_INCOMING_CALL_FILE_URL);
+					soundfile =new Sound(request);
+					soundch= soundfile.play();
+					
+					/////////////////////////////// End of Sound Playing **********************
+					var userSessionInfo:Array = model.m_ovideoCallInfo.split('^');
+					
+					Alert.show("Incoming Video Call from "+userSessionInfo[4], "Call Alert!", Alert.YES|Alert.NO, this, 
+						function( event:CloseEvent):void
+						{
+							
+							if( event.detail == Alert.YES )//Alert.yesLabel="Accept Call";
+							{
+								soundch.stop();
+								
+								objTest= new TestVideoChatPanel();
+								//objTest.btnClose.addEventListener(MouseEvent.CLICK,onEndCallClick);
+								/* idVideoChat.currentLoggedInUserID = model.loggedInUserDTO.UserId;
+								idVideoChat.clinicBranchID = parseInt(clinicBranchID);
+								idVideoChat.token = token;
+								idVideoChat.opentoksession = opentoksession; */
+								
+								var videochatSessionID:String = userSessionInfo[0];
+								var videochatInitiatorID:String = userSessionInfo[1];
+								var videoChatID:String = userSessionInfo[2];
+								var videoChatTokenID:String = userSessionInfo[3];
+								objTest.currentLoggedInUserID = model.loggedInUserDTO.UserId;
+								objTest.clinicBranchID = model.userSelectedStationDTO.StationID;
+								objTest.token = videoChatTokenID;
+								objTest.opentoksession = videochatSessionID;
+								
+								////////
+								if(model.m_ovideoCallInfo != null)
+								{
+									objTest.opentoksession = userSessionInfo[0];
+									/* objnotification.videochatInitiatorID = userSessionInfo[1];
+									objnotification.videoChatID = userSessionInfo[2]; */
+									objTest.token = userSessionInfo[3];
+									objTest.providerName =userSessionInfo[4];
+								}
+								
+								var win:PopupWindow = new PopupWindow();
+								win.addElement( objTest );
+								win.title ="Video Chat";
+								win.width = 500;
+								win.height = 470;
+								win.ShowPopup( ChromeUtil.topLevelMainContainer );
+								win.move(Capabilities.screenResolutionX/2 + 20,60);
+								win.addEventListener(CloseEvent.CLOSE,onVideoClose);
+								objTest.isNewCall = false;
+								
+								CommunicationConstant.ISVIDEOCALL_ACTIVE = true;
+
+								var acceptCallEvent:VideoCallAcceptCallEvent=new VideoCallAcceptCallEvent(parseInt(videoChatID));
+								CairngormEventDispatcher.getInstance().dispatchEvent(acceptCallEvent);
+								
+							}
+							else if( event.detail == Alert.NO )//Alert.noLabel="Reject Call";
+							{
+								soundch.stop();
+								//var userSessionInfo:Array = model.m_ovideoCallInfo.split('^');
+								var videoChatID:String;
+								if(userSessionInfo.length > 0)
+								{
+									var videochatSessionID:String = userSessionInfo[0];
+									var videochatInitiatorID:String = userSessionInfo[1];
+									videoChatID = userSessionInfo[2];
+									var videoChatTokenID:String = userSessionInfo[3];
+								}
+								var videoCallRejectEvent:VideoCallRejectEvent =new VideoCallRejectEvent(model.loggedInUserDTO.UserId,model.userSelectedStationDTO.ClinicBranchID,parseInt(videoChatID) ,getVideoCallDetailsDetails);
+								CairngormEventDispatcher.getInstance().dispatchEvent(videoCallRejectEvent);
+								
+								/* 	var getSessionEvent:GetIncomingVideoChatSessionEvent=new GetIncomingVideoChatSessionEvent(model.loggedInUserDTO.UserId,model.userSelectedStationDTO.ClinicBranchID,getVideoCallDetailsDetails);
+								CairngormEventDispatcher.getInstance().dispatchEvent(getSessionEvent); */
+							}
+							
+							//restore old AlertBox setting
+							Alert.buttonWidth = oldWidth;
+							Alert.yesLabel = oldYesLabel;
+							Alert.noLabel = oldNoLabel;
+						});
+					
+					Alert.buttonWidth = oldWidth;
+					Alert.yesLabel = oldYesLabel;
+					Alert.noLabel = oldNoLabel;
+				}
+				else
+				{
+					if(model.UserLoggedIn)
+					{
+						var getSessionEvent:GetIncomingVideoChatSessionEvent=new GetIncomingVideoChatSessionEvent(model.loggedInUserDTO.UserId,model.userSelectedStationDTO.ClinicBranchID,getVideoCallDetailsDetails);
+						CairngormEventDispatcher.getInstance().dispatchEvent(getSessionEvent);
+					}
+				}
+			}
+			
+			private function onVideoClose(event:CloseEvent):void
+			{
+				//var objTest:TestVideoChatPanel= new TestVideoChatPanel();
+				if(objTest.id_html != null)
+					objTest.id_html.location  = Constants.VIDEO_CHAT_OUTGOING_URL+"?InitiatorID="+model.loggedInUserDTO.UserId+"&RecieverID=00&videoChatID=000&EndsessionID=00";
+				
+				CommunicationConstant.ISVIDEOCALL_ACTIVE = false;
+				var getSessionEvent:GetIncomingVideoChatSessionEvent=new GetIncomingVideoChatSessionEvent(model.loggedInUserDTO.UserId,model.userSelectedStationDTO.ClinicBranchID,getVideoCallDetailsDetails);
+				CairngormEventDispatcher.getInstance().dispatchEvent(getSessionEvent); 
+			}
+			
+			private function onEndCallClick(event:MouseEvent):void
+			{	
+				var getSessionEvent:GetIncomingVideoChatSessionEvent=new GetIncomingVideoChatSessionEvent(model.loggedInUserDTO.UserId,model.userSelectedStationDTO.ClinicBranchID,getVideoCallDetailsDetails);
+				CairngormEventDispatcher.getInstance().dispatchEvent(getSessionEvent); 
+			}
+			// End of zahid Changes
+			
+			private function onViewDocument(event:OpenFileOrWithNativeAppEvent):void
+			{
+				try
+				{
+					documentLoader.load( event.FileName, event.FileURL );
+				}
+				catch(error:Error)
+				{
+					Alert.show("unable to open file \"" + event.FileName + "\" form \"" + event.FileURL + "\"", "File Download Error" );
+					cursorManager.removeBusyCursor();
+				}
+			}
+			
+			[Bindable]
+			public function get ApplicationSync():Boolean
+			{
+				return isApplicationSync;
+			}
+			
+			public function set ApplicationSync(value:Boolean):void
+			{
+				if( value )
+				{
+					vs.selectedIndex = 2;
+					isApplicationSync = value;
+				}
+			}
+			
+			[Bindable]
+			public function set userLoggedIn(value:Boolean):void
+			{
+				if( value )
+				{
+					InitComponents();
+				}
+				else
+				{
+					id_login.id_password.text = "";
+				}
+				
+				isUserLogedIn = value;
+			}
+			
+			public function get userLoggedIn():Boolean
+			{
+				return isUserLogedIn;
+			}
+			
+			private function removeCurrentSlideOut():void
+			{
+				if( currentSlideOut )
+				{
+					closeConnectors();
+					
+					if( id_mainBGPanel.contains( currentSlideOut ) )
+					{
+						id_mainBGPanel.removeElement( currentSlideOut );
+						id_mainBGPanel.visible 			= false;
+						id_mainBGPanel.includeInLayout 	= false;
+						resetHeights();
+					}
+					else if( id_mainBGQLPanel.contains( currentSlideOut ) )
+					{
+						id_mainBGQLPanel.removeElement( currentSlideOut );
+						id_mainBGQLPanel.visible 			= false;
+						id_mainBGQLPanel.includeInLayout 	= false;
+						resetHeights();
+					}
+					else if( id_mainArea.contains( currentSlideOut ) )
+					{
+						id_mainArea.removeElement( currentSlideOut );
+					}
+					currentSlideOut = null;					
+				}
+			}
+			private function showQuivusWebsitePage(headerLabel:String):void
+			{
+				removeCurrentSlideOut();
+				var quivusWebPanel:QuivusWebsitePanel= new QuivusWebsitePanel();
+				quivusWebPanel.headerLabel 	= headerLabel;
+				quivusWebPanel.allowSlideOut = false;
+				currentSlideOut 				= quivusWebPanel;
+				currentSlideOut.percentWidth 	= 100;
+				//id_mainArea.addElementAt( currentSlideOut, 0 );
+				
+				id_mainBGPanel.addElementAt( currentSlideOut, 0 );
+				id_mainBGPanel.visible			= true;
+				id_mainBGPanel.includeInLayout	= true;
+				mainSpacer.includeInLayout = false;
+				checkHeight();
+				//	id_mainBGPanel.height = 270;
+				quivusWebPanel.addEventListener( CloseEvent.CLOSE, closeHandler);
+				
+			}
+			private function LabPage(headerLabel:String):void
+			{
+				removeCurrentSlideOut();
+				var comingSoonPanel:LabPanel = new LabPanel();
+				comingSoonPanel.headerLabel 	= headerLabel;		
+				comingSoonPanel.allowSlideOut 	= false;
+				currentSlideOut 				= comingSoonPanel;
+				currentSlideOut.percentWidth 	= 100;
+				//id_mainArea.addElementAt( currentSlideOut, 0 );
+				
+				id_mainBGPanel.addElementAt( currentSlideOut, 0 );
+				id_mainBGPanel.visible			= true;
+				id_mainBGPanel.includeInLayout	= true;
+				mainSpacer.includeInLayout = false;
+				checkHeight();
+				//				id_mainBGPanel.height = 270;
+				comingSoonPanel.addEventListener( CloseEvent.CLOSE, closeHandler);			
+			}
+			private function RefillPage(headerLabel:String):void
+			{
+				removeCurrentSlideOut();
+				var comingSoonPanel:RefillPanel = new RefillPanel();
+				comingSoonPanel.headerLabel 	= headerLabel;	
+				comingSoonPanel.allowSlideOut 	= false;
+				currentSlideOut 				= comingSoonPanel;
+				currentSlideOut.percentWidth 	= 100;
+				//id_mainArea.addElementAt( currentSlideOut, 0 );
+				id_mainBGPanel.addElementAt( currentSlideOut, 0 );
+				id_mainBGPanel.visible			= true;
+				id_mainBGPanel.includeInLayout	= true;
+				mainSpacer.includeInLayout = false;
+				checkHeight();
+				
+				//				id_mainBGPanel.height = 270;
+				comingSoonPanel.addEventListener( CloseEvent.CLOSE, closeHandler);			
+			}
+			private function NotificationPage(headerLabel:String):void
+			{
+				removeCurrentSlideOut();
+				var comingSoonPanel:NotificationPanel = new NotificationPanel();
+				comingSoonPanel.headerLabel 	= headerLabel;	
+				comingSoonPanel.allowSlideOut	= false;
+				currentSlideOut 				= comingSoonPanel;
+				currentSlideOut.percentWidth 	= 100;
+				//id_mainArea.addElementAt( currentSlideOut, 0 );
+				
+				id_mainBGPanel.addElementAt( currentSlideOut, 0 );
+				id_mainBGPanel.visible			= true;
+				id_mainBGPanel.includeInLayout	= true;
+				mainSpacer.includeInLayout = false;
+				checkHeight();
+				
+				//id_mainBGPanel.height = 270;
+				comingSoonPanel.addEventListener( CloseEvent.CLOSE, closeHandler);			
+			}
+			
+			private function EditProfilePage(headerLabel:String):void
+			{
+				removeCurrentSlideOut();
+				comingSoonPanel = new EditProfilePanel();
+				comingSoonPanel.headerLabel 	= headerLabel;	
+				comingSoonPanel.allowSlideOut 	= false;
+				currentSlideOut 				= comingSoonPanel;
+				currentSlideOut.percentWidth 	= 100;
+				//id_mainArea.addElementAt( currentSlideOut, 0 );
+				id_mainBGPanel.addElementAt( currentSlideOut, 0 );
+				id_mainBGPanel.visible			= true;
+				id_mainBGPanel.includeInLayout	= true;
+				mainSpacer.includeInLayout = false;
+				checkHeight();
+				
+				//				id_mainBGPanel.height = 270;
+				comingSoonPanel.addEventListener( CloseEvent.CLOSE, closeHandler);			
+			}			
+			 
+			private function showComingSoonPage(headerLabel:String):void
+			{
+				removeCurrentSlideOut();
+				comingSoonPanel2 = new ComingSoonPanel();
+				comingSoonPanel2.headerLabel 	= headerLabel;	
+				comingSoonPanel2.allowSlideOut 	= false;
+				currentSlideOut 				= comingSoonPanel2;
+				currentSlideOut.percentWidth 	= 100;
+				//id_mainArea.addElementAt( currentSlideOut, 0 );
+				id_mainBGPanel.addElementAt( currentSlideOut, 0 );
+				id_mainBGPanel.visible			= true;
+				id_mainBGPanel.includeInLayout	= true;
+				mainSpacer.includeInLayout = false;
+				//				id_mainBGPanel.height = 270;
+				comingSoonPanel2.addEventListener( CloseEvent.CLOSE, closeHandler);
+			}
+			
+			private function showComingSoonPageConnected(headerLabel:String):void
+			{
+				removeCurrentSlideOut();
+				var comingSoonPanel:ComingSoonPanel = new ComingSoonPanel();
+				comingSoonPanel.headerLabel 	= headerLabel;	
+				comingSoonPanel.allowSlideOut 	= false;
+				currentSlideOut 				= comingSoonPanel;
+				currentSlideOut.percentWidth 	= 100;
+				//id_mainArea.addElementAt( currentSlideOut, 0 );
+				id_mainBGQLPanel.addElementAt( currentSlideOut, 0 );
+				id_mainBGQLPanel.visible			= true;
+				id_mainBGQLPanel.includeInLayout	= true;
+				mainSpacer.includeInLayout = false;
+				
+				//				id_mainBGQIPanel.height = 270;
+				comingSoonPanel.addEventListener( CloseEvent.CLOSE, closeHandler);
+			}
+			
+			private function mailClick(event:mailClickEvent ):void
+			{
+				// use communication panel instead... see addCommunicationPanel();
+			}
+			
+			private function addCommunicationPanel():void
+			{
+				removeCurrentSlideOut();
+				//var mailpanel:CommunicationPanel = new CommunicationPanel();
+				mailpanel = new CommunicationPanel();
+				mailpanel.ExpandedView			= true;
+				mailpanel.allowSlideOut 		= false;
+				//mailpanel.EmailAddress 			= event.ContactDTO.UserEmail;
+				//mailpanel.userID= event.ContactDTO.UserId;
+				//mailpanel.ShowAttachButton		= false;
+				//mailpanel.clinicBranchID = model.userSelectedClinicBranchDTO. . userSelectedStationDTO.StationID.toString();
+				mailpanel.userID = model.loggedInUserDTO.UserId;
+				currentSlideOut 				= mailpanel;
+				currentSlideOut.percentWidth 	= 100;
+				currentSlideOut.percentHeight 	= 100; 
+				id_mainArea.addElementAt( currentSlideOut, 0 );						
+				mailpanel.addEventListener(CloseEvent.CLOSE, closeHandler);
+				
+				id_mainBGPanel.addElementAt( currentSlideOut, 0 );
+				
+				id_mainBGPanel.visible 			= true;
+				id_mainBGPanel.includeInLayout 	= true;
+				mainSpacer.includeInLayout = false;
+				checkHeight();
+				
+				id_mainArea.addElementAt( id_mainBGPanel, 0 );
+				id_mainBGPanel.percentWidth		= 100;
+				//mainBGPanel.percentHeight		= 100;
+				//				id_mainBGPanel.percentHeight 	= 100;
+				
+				//id_topBar.id_BGRectContact.visible = true;
+				//For stop LPS to go beyound bottom of application
+				if(id_LiveServicesPanel)
+				{
+					if(id_LiveServicesPanel.ExpandedView)
+						id_LiveServicesPanel.ExpandedView = false;
+				}
+			}
+			
+			private function smsClick(event:smsClickEvent ):void
+			{
+				removeCurrentSlideOut();
+				var smspanel:SMSPanel = new SMSPanel();
+				smspanel.ExpandedView			= true;
+				smspanel.allowSlideOut 		= false;
+				//mailpanel.EmailAddress 			= event.ContactDTO.UserEmail;
+				//mailpanel.ShowAttachButton		= false;
+				currentSlideOut 				= smspanel;
+				currentSlideOut.percentWidth 	= 100;
+				currentSlideOut.percentHeight 	= 100; 
+				id_mainArea.addElementAt( currentSlideOut, 0 );						
+				smspanel.addEventListener(CloseEvent.CLOSE, closeHandler);
+				
+				id_mainBGPanel.addElementAt( currentSlideOut, 0 );
+				
+				id_mainBGPanel.visible 			= true;
+				id_mainBGPanel.includeInLayout 	= true;
+				mainSpacer.includeInLayout = false;
+				checkHeight();
+				
+				id_mainArea.addElementAt( id_mainBGPanel, 0 );
+				id_mainBGPanel.percentWidth		= 100;
+				//mainBGPanel.percentHeight		= 100;
+				//				id_mainBGPanel.percentHeight 	= 100;
+				
+				//id_topBar.id_BGRectContact.visible = true;
+				
+				/*
+				removeCurrentSlideOut();
+				var smspanel:SMSView 		= new SMSView();
+				
+				smspanel.addEventListener(CloseEvent.CLOSE, closeHandler);
+				
+				id_mainBGPanel.addElementAt( smspanel, 0 );
+				
+				id_mainBGPanel.visible 			= true;
+				id_mainBGPanel.includeInLayout 	= true;
+				mainSpacer.includeInLayout = false;
+				checkHeight();
+				
+				
+				id_mainArea.addElementAt( id_mainBGPanel, 0 );
+				id_mainBGPanel.percentWidth		= 100;
+				//mainBGPanel.percentHeight		= 100;
+				//				id_mainBGPanel.percentHeight 	= 100;
+				
+				id_topBar.id_SearchArea.id_BGRectContact.visible = true;
+				*/
+			}
+			
+			/* private function mailClick(event:mailClickEvent ):void
+			{
+			removeCurrentSlideOut();
+			var mailpanel:emailPanel 		= new emailPanel();
+			mailpanel.ExpandedView			= true;
+			mailpanel.allowSlideOut 		= false;
+			mailpanel.EmailAddress 			= event.ContactDTO.UserEmail;
+			mailpanel.ShowAttachButton		= false;
+			currentSlideOut 				= mailpanel;
+			currentSlideOut.percentWidth 	= 100;
+			currentSlideOut.percentHeight 	= 100; 
+			id_mainArea.addElementAt( currentSlideOut, 0 );						
+			mailpanel.addEventListener(CloseEvent.CLOSE, closeHandler);
+			
+			id_mainBGPanel.addElementAt( currentSlideOut, 0 );
+			
+			id_mainBGPanel.visible 			= true;
+			id_mainBGPanel.includeInLayout 	= true;
+			mainSpacer.includeInLayout = false;
+			checkHeight();
+			
+			id_mainArea.addElementAt( id_mainBGPanel, 0 );
+			id_mainBGPanel.percentWidth		= 100;
+			//mainBGPanel.percentHeight		= 100;
+			//				id_mainBGPanel.percentHeight 	= 100;
+			
+			id_topBar.id_SearchArea.id_BGRectContact.visible = true;
+			
+			} */
+			
+			private function closeConnectors():void
+			{
+				id_topBar.id_QuickLinks.id_linkbtn.selected = false;
+				id_topBar.id_QuickLinks.RemoveConnectionSkin();
+				
+				if(id_topBar.id_userView.id_connectorPic.visible)
+				{
+					id_topBar.id_userView.id_connectorPic.visible = false;
+					id_topBar.id_userView.id_userRollOver2.visible = false;
+				}
+				/* if(id_topBar.id_userView.id_bgRect.visible)
+				{
+				id_topBar.id_userView.id_bgRect.visible = false;
+				} */
+				/* if(id_topBar.id_userRefillReqBtn.selected)
+				{
+				id_topBar.id_userView.id_userRefillReqBtn.selected = false;
+				}
+				if(id_topBar.id_userView.id_userNotificationBtn.selected)
+				{
+				id_topBar.id_userView.id_userNotificationBtn.selected = false;
+				}
+				if(id_topBar.id_userView.id_userLabsBtn.selected)
+				{
+				id_topBar.id_userView.id_userLabsBtn.selected = false;
+				} */
+				
+				
+				/* if(id_topBar.id_BGRectContact.visible)
+				{
+				id_topBar.id_BGRectContact.visible = false;
+				}
+				
+				if(id_topBar.id_WebSearchOptions.id_BGRect.visible)
+				{
+				id_topBar.id_WebSearchOptions.id_BGRect.visible = false;
+				} */
+				
+				if(id_topBar.id_logo.id_connectionLogo.visible)
+				{
+					id_topBar.id_logo.id_connectionLogo.visible = false;
+					id_topBar.id_logo.id_logoImg.selected = false;
+				}
+			}
+			
+			private function closeHandler(e:CloseEvent):void
+			{
+				if(e.currentTarget == currentSlideOut)
+				{
+					removeCurrentSlideOut();
+				}
+				id_topBar.id_contacts.selected = false;
+				id_topBar.id_WebSearchOptions.id_web.selected = false;
+				id_topBar.id_WebSearchOptions.id_searchEnginesList.selected = false;
+				
+				id_topBar.id_WebSearchOptions.id_searchEnginesList.visible = false;
+			}
+			
+			private function browser(query:String):void
+			{		
+				if(model.userPrefferedSearchEngineDTO!=null)
+				{
+					var urlReq:URLRequest = new URLRequest(model.userPrefferedSearchEngineDTO.URL /* + "/search?q=" */ + query);
+					removeCurrentSlideOut();
+					searchPanel 	= new WebSearchPanel();
+					currentSlideOut				 	=  searchPanel;
+					currentSlideOut.percentWidth	= 100;
+					//id_mainArea.addElementAt( currentSlideOut, 0 );
+					id_mainBGPanel.addElementAt( currentSlideOut, 0 );
+					searchPanel.UrlRequest = urlReq;				
+					searchPanel.addEventListener(CloseEvent.CLOSE, closeHandler);
+					id_mainBGPanel.visible 			= true;
+					id_mainBGPanel.includeInLayout 	= true;
+					mainSpacer.includeInLayout = false;
+					
+					//id_patientExamPanel.ExpandedView =  false;
+					checkHeight();
+					//id_topBar.id_SearchArea.id_WebSearchOptions.id_web.selected = true;
+					
+					/* if(!id_topBar.id_WebSearchOptions.id_BGRect.visible)
+					{
+					id_topBar.id_WebSearchOptions.id_BGRect.visible = true;
+					} */
+					if(id_LiveServicesPanel)
+					{
+						if(id_LiveServicesPanel.ExpandedView)
+							id_LiveServicesPanel.ExpandedView = false;
+					}
+				}
+			}
+			
+			private function showHideElement(elem:IVisualElement):void
+			{
+				elem.includeInLayout = !elem.includeInLayout;
+				elem.visible		 = !elem.visible;
+			}
+			
+			private function InitComponents():void
+			{
+				vs.selectedIndex = 1;
+				//id_topBar.showSearchControl( false );
+				//	id_topBar.showUserControl( false);
+				id_topBar.showSearchControl( true );
+				id_topBar.showUserControl( true);
+				//StartNativeProcess();
+				// changes by zahid on 8 Feb
+				trace("MainContainer: InitComponents");
+				var getSessionEvent:GetIncomingVideoChatSessionEvent=new GetIncomingVideoChatSessionEvent(model.loggedInUserDTO.UserId,model.userSelectedStationDTO.ClinicBranchID,getVideoCallDetailsDetails);
+				CairngormEventDispatcher.getInstance().dispatchEvent(getSessionEvent);
+				/// end changes
+				
+			}
+			
+			protected function id_topBar_searchWebHandler(event:WebSearchEvent):void
+			{
+				//implement web search here --- tamjeed
+				if(currentSlideOut is WebSearchPanel)
+				{
+					removeCurrentSlideOut();
+					return;
+				}
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.WEB_SEARCH_PANEL ) )
+				{
+					browser( event.Query );
+				}
+			}
+			
+			public function signOutHandler(event:UserSignOutEvent):void
+			{
+				if( event.forceSilent )
+					SignOutApplication();
+				else
+					UtilityFunctions.AskMessage( "Do you really want to signout?", SignOutApplication);
+			}
+
+			public function SignOutApplication():void
+			{
+				userLoggedIn = false;
+				DTOInitializationUtility.reinitializeInstance();
+				vs.selectedIndex = 0;
+				id_topBar.showSearchControl( false );
+				id_topBar.showUserControl( false );
+				//	id_topBar.id_QuickLinks.id_linkbtn.setStyle("skinClass", topBarQIbutton);
+				id_topBar.id_QuickLinks.id_linkbtn.selected = false;
+				removeCurrentSlideOut();
+				
+				// Added by Zahid   --> On signout user status will be set to offline
+				model.sessionDTO.UserSessionStatusID = 5;
+				var updateSessionStatus:UpdateUserSessionStatusEvent =new UpdateUserSessionStatusEvent(model.sessionDTO);
+				CairngormEventDispatcher.getInstance().dispatchEvent(updateSessionStatus);
+				//Commented temporarily
+				id_patientExamPanel.removeConnectors();
+				id_patientExamPanel.removeAllPopups(); 
+				QSUtilityFunctions.signOut();	
+				//id_login.ClearForm();
+				//remove patient label 
+				id_patientExamPanel.lbl_PatientName.text = "";
+				LoadUserMostRecentPatientEvent.isAlreadyLoaded= false;
+				LoadUserQuickLinksEvent.isAlreadyLoaded = false;
+				LoadUserSearchEngineEvent.isAlreadyLoaded = false;
+				//id_login.ClearForm();
+				documentLoader.closeWindow();
+				//Start Live Services Panel Clean up
+				id_LiveServicesPanel.ClearUIOnLogout();
+				LiveServicesController.getInstance().reinitializeOnLogOut();
+				
+				//End Live Services Panel Clean up
+				//remove any progress window in process..
+				//id_patientExamPanel.RemoveProgressWindow();
+				model.isUserLoginSuccessfully = false;
+				model.isConfidentialityNotificationRule = false;
+				model.isSessionInActivityLockRule = false;
+			}
+			
+			protected function QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( currentExpandedPanel && currentExpandedPanel != event.currentTarget && event.viewState == QSViewStateEvent.EXPANDED_VIEW &&
+					!currentExpandedPanel.isSlideOut )
+				{
+					//collapse Live Services Panel
+					id_LiveServicesPanel.ExpandedView = false;  //commented requirment change --- 10/22/2011 ---Tj
+					
+					//collapse All Expanded Panel child Panels
+					
+					if ( currentExpandedPanel is patientExamPanel )
+					{
+						//id_patientExamPanel.collapseAllSlideOutPanels(); //commented requirment change --- 10/22/2011 ---Tj
+					}
+					else
+					{
+						currentExpandedPanel.ExpandedView = false;
+					} 
+				}
+				currentExpandedPanel = event.currentTarget as SlideOutPanel;
+			}
+			
+			protected function patientexampanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				currentExpandedPanel = event.currentTarget as SlideOutPanel;
+				currentExpandedPanel.ExpandedView = false;
+				addEventListener( LoadPatientEvent.LOAD_PATIENT_EVENT, id_patientExamPanel.loadRequestedpatient );
+				addEventListener( LoadReportPanelEvent.LOAD_REPORT_PANEL_EVENT, openReportPanelWindow); 
+				addEventListener( SyncPatientGaxenIDEvent.SYNC_PATIENT_GAXEN_ID_EVENT, syncPatientGaxenIDEvent); 
+				//Tahir Alvi -  for local patients search
+				addEventListener( SearchPatientInLocalDBEvent.SEARCH_PATIENT_IN_LOCAL_DB_EVENT, id_patientExamPanel.serachInLocalDB );
+				
+				// Loading counter for recently added patients..
+				var cdEvent : LoadCurrentDayAddedPatientsEvent = new LoadCurrentDayAddedPatientsEvent(1, patientLoaded);
+				CairngormEventDispatcher.getInstance().dispatchEvent( cdEvent );
+			}
+			
+			private function syncPatientGaxenIDEvent(event:SyncPatientGaxenIDEvent):void
+			{
+				model.gaxenID		=  event.GaxenID;
+				model.gaxenIDSaved  = true;
+			}
+			private function patientLoaded():void
+			{
+				var counterPatients:String = model.totalRecords_CDP.toString();
+			}
+			
+			private function openReportPanelWindow(event:LoadReportPanelEvent):void
+			{
+				var reportPanel:ReportPanel = new ReportPanel();
+				/* reportPanel.ShowPopup( this,true ) */
+				reportPanel.title  = "Summary";
+				reportPanel.height = Capabilities.screenResolutionY - 110;;
+				reportPanel.width  = 600;
+				reportPanel.ShowPopup(FlexGlobals.topLevelApplication.mainContainer, true);
+				//reportPanel.move(reportPanel.x , reportPanel.y );
+			}
+			
+			protected function id_topBar_mouseDownHandler(event:MouseEvent):void
+			{
+				//	if( ! SlideOutPanel.isSlideOut_Global )
+				ChromeUtil.moveWindow();
+			}
+			
+			private function set MaxReqHeightIfMainBG(value:Boolean):void
+			{
+				var totalHeight:Number = Capabilities.screenResolutionY - 220;//ChromeUtil.topLevelMainContainer.height - 98;
+				
+				if( value )
+				{
+					id_patientExamPanel.percentHeight = 100;//55;
+					//id_patientExamPanel.maxHeight = totalHeight - id_mainBGPanel.height;
+					//	id_patientExamPanel.id_contents.percentHeight = 100;
+					//	id_patientExamPanel.id_contents.maxHeight = id_patientExamPanel.id_contents.maxHeight - id_mainBGPanel.height;//295;
+				}
+				else if( id_patientExamPanel )
+				{
+					id_patientExamPanel.percentHeight = 100;
+					//id_patientExamPanel.maxHeight = totalHeight - id_mainBGPanel.height;
+					//	id_patientExamPanel.id_contents.percentHeight = 100;
+					//id_patientExamPanel.id_contents.maxHeight = id_patientExamPanel.maxHeight - 75;
+					//id_patientExamPanel.id_contents.maxHeight -= 75;
+				}
+			}
+			
+			private function set MaxReqHeightIfMainBGQL(value:Boolean):void
+			{
+				var totalHeight:Number = Capabilities.screenResolutionY - 220;//ChromeUtil.topLevelMainContainer.height - 98;
+				if( value )
+				{
+					id_patientExamPanel.percentHeight = 100;//55;
+					//id_patientExamPanel.maxHeight = totalHeight - id_mainBGQLPanel.height;
+					//id_patientExamPanel.id_contents.percentHeight = 100;
+					//id_patientExamPanel.id_contents.maxHeight = id_patientExamPanel.id_contents.maxHeight - id_mainBGQLPanel.height;//295;
+				}
+				else if( id_patientExamPanel )
+				{
+					id_patientExamPanel.percentHeight = 100;
+					//id_patientExamPanel.maxHeight = totalHeight - id_mainBGQLPanel.height;
+					//id_patientExamPanel.id_contents.percentHeight = 100;
+					//id_patientExamPanel.id_contents.maxHeight = id_patientExamPanel.maxHeight - 75;
+					//id_patientExamPanel.id_contents.maxHeight -= 75;
+				}
+			}
+			
+			private function resetHeights():void
+			{
+				var totalHeight:Number = Capabilities.screenResolutionY - 220;//ChromeUtil.topLevelMainContainer.height - 98;
+				id_mainArea.percentHeight = 100;
+				mainSpacer.includeInLayout = true;
+				mainSpacer.percentHeight = 100;
+				//id_mainPanel.height = this.height - id_topBar.height - 28 - 10;
+				//id_patientExamPanel.maxHeight = totalHeight;				
+				id_patientExamPanel.maxHeight = this.height - id_topBar.height - 28 - 10;
+				//id_patientExamPanel.height = id_mainPanel.height;
+				id_patientExamPanel.percentHeight = 100;
+				//id_patientExamPanel.id_contents.height = id_mainPanel.height - 26;
+				//id_patientExamPanel.id_contents.percentHeight = 100;
+				//id_patientExamPanel.id_contents.maxHeight = id_mainPanel.height - 28;
+			}
+			
+			private function StartNativeProcess (event:Event = null):void
+			{
+				try
+				{
+					if(NativeProcess.isSupported)
+					{
+						var file:File = new File();//File.desktopDirectory;
+						file = File.applicationDirectory.resolvePath( "etc/TwainGui.exe" );//file.resolvePath( Constants.FTP_UTIL);
+						var filePath:String = file.nativePath;
+						
+						var nativeProcessStartupInfo:NativeProcessStartupInfo = new NativeProcessStartupInfo();
+						nativeProcessStartupInfo.executable = file;
+						var process:NativeProcess = new NativeProcess();
+						
+						process.start(nativeProcessStartupInfo);
+						process.addEventListener(ProgressEvent.STANDARD_OUTPUT_DATA, onOutputData);
+						process.addEventListener(ProgressEvent.STANDARD_ERROR_DATA, onErrorData);
+						process.addEventListener(NativeProcessExitEvent.EXIT, onExit);
+						process.addEventListener(IOErrorEvent.STANDARD_OUTPUT_IO_ERROR, onIOError);
+						process.addEventListener(IOErrorEvent.STANDARD_ERROR_IO_ERROR, onIOError);
+					}
+				}
+				catch(e:Error)
+				{
+					Alert.show("unable to StartNativeProcess [ " + Constants.FTP_UTIL + " ]", "No Installed Program found");
+				}
+			} 
+			
+			public function onOutputData(event:ProgressEvent):void
+			{
+				Alert.show("Process onOutputData \n" + event.toString() );
+			}
+			
+			public function onErrorData(event:ProgressEvent):void
+			{
+				Alert.show("Process ErrorData \n" + event.toString() );
+			}
+			
+			public function onExit(event:NativeProcessExitEvent):void
+			{
+				//Alert.show( "Process exited with " +  event.exitCode );
+			}
+			
+			public function onIOError(event:IOErrorEvent):void
+			{
+				Alert.show( event.toString(), "IOError" );
+			}
+			
+			public function checkHeight():void
+			{
+				//mainPanelHeight = id_mainPanel.height;
+				var diff:Number;
+				if(id_mainBGPanel.height + id_patientExamPanel.height > this.height-55-28)
+				{
+					diff = id_mainBGPanel.height + id_patientExamPanel.height - (this.height-55-28);
+					id_patientExamPanel.height = id_patientExamPanel.height - diff; 
+				}
+			}
+			
+			protected function id_LiveServicesPanel_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( event.viewState == QSViewStateEvent.EXPANDED_VIEW  &&  SlideOutPanel.allowSlideOut_Global )
+				{
+					id_LiveServicesPanel.x = 25;
+				}
+				else
+				{
+					id_LiveServicesPanel.x = 0;
+				}
+				
+				/* if(id_LiveServicesPanel.ExpandedView == true)
+				{
+				Alert.show("adasd", "ASDASDASD");
+				removeCurrentSlideOut();
+				} */
+			}
+			
+			private function set adjustLiveServicesPanel(value:Boolean):void
+			{
+				if( value && id_LiveServicesPanel.ExpandedView )
+				{
+					id_LiveServicesPanel.x = 25;
+				}
+				else
+				{
+					id_LiveServicesPanel.x = 0;
+				}
+			}
+			
+			protected function id_LiveServicesPanel_QSSlideStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( id_LiveServicesPanel.isSlideOut)
+				{
+					id_LiveServicesPanel.x = 0;
+				}
+				else
+				{
+					id_LiveServicesPanel.x = 25;
+				}
+			}
+			
+			//***************************************
+			//Tahir Alvi - General Setting impl.........
+			//***************************************
+			[Bindable]
+			public function get ApplicationInActivityLock():Boolean
+			{
+				return isApplicationInActivityLock;
+			}
+			
+			public function set ApplicationInActivityLock(value:Boolean):void
+			{
+				isApplicationInActivityLock = value;
+				if(value)
+				{
+					systemManager.addEventListener(FlexEvent.IDLE, userIdle);
+				}
+			}
+			
+			private function userIdle(e:FlexEvent):void
+			{
+				var idleCounter:int = 600 * model.isSessionInActivityTime;
+				if(idleCounter > 0)
+				{
+					if(e.currentTarget.mx_internal::idleCounter == idleCounter && !model.isActivityWindow && !vs.selectedIndex == 0 && model.isSessionInActivityLockRule)
+					{ 
+						lockWindow = PopUpManager.createPopUp(this,InActiveLockWindow,true) as InActiveLockWindow;
+						lockWindow.width = width;
+						lockWindow.height = height;
+						PopUpManager.centerPopUp(lockWindow);
+						lockWindow.addEventListener('hideLockWindowEvent', onHideLockWindow);
+						model.isActivityWindow = true;
+					}
+				}
+			}
+			
+			private function onHideLockWindow(event:Event):void
+			{
+				model.hideSessionInActivityWindow = false;
+				lockWindow.removeEventListener('hideLockWindowEvent', onHideLockWindow);
+				PopUpManager.removePopUp(lockWindow);
+				model.isActivityWindow = false;
+			}
+			//********************* ConfidentialityTextRule***********************
+			[Bindable]
+			public function get ConfidentialityRule():Boolean
+			{
+				return isConfidentialityRule;
+			}
+			
+			public function set ConfidentialityRule(value:Boolean):void
+			{
+				isConfidentialityRule = value;
+				if(value)
+				{
+					//vs.selectedIndex = 3;
+					//Show Confidentiality popup
+					_ConfidentialityWindow = new ConfidentialityWindow();
+					//PopUpManager.addPopUp(_ConfidentialityWindow, ConfidentialityWindow, true);
+					PopUpManager.addPopUp(_ConfidentialityWindow, this, true);
+					PopUpManager.centerPopUp(_ConfidentialityWindow);
+					
+					ticker = new Timer(10 * 1000,1); // 10 Sec
+					ticker.addEventListener(TimerEvent.TIMER_COMPLETE,onTimerComplete);
+					ticker.start();
+				}
+			}
+			//On complete timer hide the Confidentiality window
+			public function onTimerComplete(event:TimerEvent):void
+			{
+				ticker.start();
+				ticker.reset();
+				//vs.selectedIndex = 1;
+				PopUpManager.removePopUp(_ConfidentialityWindow);
+				
+			} 
+			//Collaps All top panel so that LPS(Live Provider Service) is hsown within application Height
+			protected function id_LiveServicesPanel_clickHandler(event:MouseEvent):void
+			{
+				if(mailpanel)//collaps communication panel.
+					mailpanel.ExpandedView = false;
+				if(searchPanel)//collaps web serach panel.
+					searchPanel.ExpandedView = false;
+				if(registerationPanel)//Registration panel
+					registerationPanel.ExpandedView = false;
+				if(comingSoonPanel)//User edit panel
+					comingSoonPanel.ExpandedView = false;
+				if(comingSoonPanel2)//User edit panel
+					comingSoonPanel2.ExpandedView = false;
+				if(qiEncounterView)//Un Signed Encounter Panel
+					qiEncounterView.ExpandedView = false;
+				if(qiEprescriptionView)//E-Prescription Panel
+					qiEprescriptionView.ExpandedView = false;
+			}
+			
+			/* protected function id_NewQuickInputPanel_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_QIPanel.quickInputCloseHandler(); // after creating QuickInput , hide it & empty all grids.
+			} */
+			
+		]]>
+	</fx:Script>
+	
+	
+	<fx:Declarations>
+		<s:Move id="show_effect" xFrom="-400" xTo="0" duration="800"/>
+		<s:Move id="hide_effect" xFrom="0" xTo="-400" duration="800"/>
+		<s:Wipe id="show_effect2" direction="right" duration="800"/>
+		<s:Wipe id="hide_effect2" direction="left" duration="800"/>
+	</fx:Declarations>
+	
+	<fx:Binding source="model.UserLoggedIn" destination="userLoggedIn" twoWay="true" /> 
+	<fx:Binding source="model.SyncingApplication" destination="ApplicationSync"  /> 
+	
+	<fx:Binding source="SlideOutPanel.allowSlideOut_Global" destination="adjustLiveServicesPanel" />
+	
+	<fx:Binding source="id_mainBGPanel.includeInLayout" destination="MaxReqHeightIfMainBG" /> 
+	<fx:Binding source="id_mainBGQLPanel.includeInLayout" destination="MaxReqHeightIfMainBGQL" /> 
+	
+	<fx:Binding source="model.isSessionInActivityLockRule" destination="ApplicationInActivityLock" /> 
+	<fx:Binding source="model.isConfidentialityNotificationRule" destination="ConfidentialityRule" />
+	
+	<!-- remove width and height for resizing issue -->
+	<s:Group width="{this.width}" height="{this.height}" >
+		<s:layout>
+			
+			<s:VerticalLayout id="bodyLayout" horizontalAlign="center" verticalAlign="middle" gap="4" 
+							  paddingBottom="4" paddingLeft="6" paddingRight="6" paddingTop="4"/>
+		</s:layout>
+		
+		<topBarView:TopBar id="id_topBar" mouseDown="id_topBar_mouseDownHandler(event)" searchWeb="id_topBar_searchWebHandler(event)" 
+						   mailClick="mailClick(event)" smsClick="smsClick(event)"
+						   width="{this.width}" height="55"  /> 
+		<mx:ViewStack id="vs"  width="100%" height="100%" selectedIndex="0"  >			
+			
+			
+			<s:NavigatorContent  width="100%" height="100%"  >
+				<loginView:loginView id="id_login" width="100%" height="100%" />
+			</s:NavigatorContent>
+			
+			<s:NavigatorContent id="id_mainArea"  width="100%" height="100%" creationPolicy="auto">
+				<s:layout>
+					<s:VerticalLayout id="mainLayout" horizontalAlign="left" verticalAlign="top" gap="0"  paddingBottom="3" paddingLeft="-4" paddingTop="1" paddingRight="0"/>
+				</s:layout>
+				
+				<!--<s:HGroup id="id_mainBGPanel" width="100%" visible="false" includeInLayout="false" />-->
+				<components1:MainBGPanel id="id_mainBGPanel" width="100%" visible="false" includeInLayout="false" />
+				<components1:MainBGQIPanel id="id_mainBGQLPanel" width="100%" visible="false" includeInLayout="false" />
+				
+				<!--<panel:UserRegisterationPanel width="100%" />-->
+				
+				<!--	<s:Rect id="id_patientExamPanel" />-->
+				<s:VGroup id="id_mainPanel" width="100%" height="100%">
+					<s:BorderContainer width="100%" height="100%" backgroundColor="#ff0000" borderColor="#00ff00" 
+									   borderAlpha="0" backgroundAlpha="0" creationPolicy="all">
+						
+						<panel:patientExamPanel id="id_patientExamPanel" width="100%" ExpandedView="false" allowSlideOut="true"
+												creationComplete="patientexampanel1_creationCompleteHandler(event)"
+												QSViewStateChange="QSViewStateChangeHandler(event)" 
+												maxHeight="{id_mainPanel.height}" slideoutPanelName="Patient Exam">
+							
+							<panel:filters>
+								<s:DropShadowFilter alpha="0.5" angle="90" blurX="4.0" blurY="4.0" color="0x000000" distance="4" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+							</panel:filters>
+						</panel:patientExamPanel>
+						
+						<mx:Spacer id="mainSpacer" height="100%" />
+					</s:BorderContainer>
+					
+					
+					
+					<!--NEW QUICK INPUTVIEW-->
+					<!--<view:QuickInputPanel creationComplete="id_NewQuickInputPanel_creationCompleteHandler(event)" height="100%"  width="100%" id="id_QIPanel"  />-->
+										
+				</s:VGroup>
+				<panel:LiveServicesPanel id="id_LiveServicesPanel" userID="{model.loggedInUserDTO.UserId}" clinicBranchID="{model.userSelectedStationDTO.ClinicBranchID}"  width="100%" x="0" allowSlideOut="false" ExpandedView="false" allowExpandedView="true" click="id_LiveServicesPanel_clickHandler(event)"/>
+				
+			</s:NavigatorContent>
+			
+			<s:NavigatorContent  width="100%" height="100%"  >
+				<loginView:SyncingApplicationView width="100%" height="100%"  />
+			</s:NavigatorContent>
+		</mx:ViewStack>
+	</s:Group>
+	
+	<s:Button id="id_ResizeBtnBottom" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.resizeButton" mouseDown="ChromeUtil.resizeWindow();" right="4" bottom="4"
+			  mouseOver="id_ResizeBtnBottom.alpha = 0.9"
+			  mouseOut="id_ResizeBtnBottom.alpha = 0.4"
+			  alpha="0.4" rotation="90"
+			  toolTip="Resize" visible="true" />
+	
+	<s:filters>
+		<s:DropShadowFilter blurX="10" blurY="10" distance="0" hideObject="false" color="#000000" inner="false" strength="1" alpha="0.8" quality="2" knockout="false" angle="90" />
+	</s:filters>
+	
+</s:SkinnableContainer>

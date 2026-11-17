@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 
+		 >	
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.view.controls.skins.checkBoxSkins.checkBoxSkin;
+			
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			private var fileToOpen:File = new File();
+			//private var attachmentName:String;
+			private var m_oAttachmentContent:ByteArray;
+			
+			public function get Content():ByteArray
+			{
+				return m_oAttachmentContent;
+			}
+
+			public function set Content(value:ByteArray):void
+			{
+				m_oAttachmentContent = value;
+			}
+			
+			public function get FileName():String
+			{
+				return fileToOpen.name;
+			}
+
+			private function fileSelected(event:Event):void
+			{
+				var stream:FileStream = new FileStream(); // open filestream
+				stream.open(fileToOpen, FileMode.READ); // open the file
+				m_oAttachmentContent = new ByteArray();
+				stream.readBytes( m_oAttachmentContent, 0, stream.bytesAvailable ); // read file
+				
+				stream.close(); // close file
+				
+				id_FilePathtxt.text = fileToOpen.nativePath;
+			} 
+			
+			
+			protected function BrowseBtn_clickHandler(event:MouseEvent):void
+			{
+				fileToOpen.browse();
+				fileToOpen.addEventListener(Event.SELECT, fileSelected);
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<!--<s:BorderContainer borderAlpha="1" borderColor="0x999CCC" borderWeight="2"
+					   backgroundAlpha="1" backgroundColor="0xDDDDDD"
+					   >
+		<s:layout>
+			<s:VerticalLayout horizontalAlign="center" verticalAlign="top"/>
+		</s:layout>
+		<s:Button id="id_CloseButton" label="x" />
+		<s:BorderContainer width="100%" height="20" borderAlpha="1" borderColor="0xDDDDDD" borderWeight="2"
+						   backgroundAlpha="1" backgroundColor="0xa1a1a1"
+						   >
+			
+		</s:BorderContainer>
+	
+		<mx:HBox width="100%" >
+			<s:TextInput id="id_FilePathtxt" width="90%" />
+			<s:Button id="id_BrowseBtn" label="Browse" click="BrowseBtn_clickHandler(event)"/>
+		</mx:HBox>
+		
+	</s:BorderContainer>
+	-->
+	<s:Rect height="209" id="rect2" radiusX="1.99986" radiusY="1.99986" width="222" x="17" y="19">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#585858" joints="miter" miterLimit="4" weight="2"/>
+		</s:stroke>
+		<s:filters>
+			<s:DropShadowFilter alpha="1" angle="0" blurX="5" blurY="5" color="0x000000" distance="0" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Path data="M 0 0 L 169.5 0 C 170.604 0 171.5 0.896 171.5 2 L 171.5 164 C 171.5 165.104 170.604 166 170.5 166 L 0 166" height="209" id="path2" width="221.5" winding="nonZero" x="19.001" y="17.961">
+		<s:fill>
+			<s:LinearGradient scaleX="221.5" x="0" y="104.5">
+				<s:GradientEntry color="#242424" ratio="0"/>
+				<s:GradientEntry color="#525252" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Path>
+	<s:Path data="M 1 1 L 1.099 229.33 L 10.602 236.961 L 19.106 229.33 L 19.094 1 L 1 1 Z" id="path3" winding="nonZero" x="238" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="90" scaleX="235.961" x="10.053" y="1">
+				<s:GradientEntry color="#484848" ratio="0"/>
+				<s:GradientEntry color="#A5A6BB" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#585858" joints="miter" miterLimit="4" weight="2"/>
+		</s:stroke>
+	</s:Path>
+	<s:TextInput id="id_FilePathtxt" text="Attach" x="25" y="49"/>
+	<s:Button id="id_Browse" buttonMode="true" x="181" y="48" label="Browse" click="BrowseBtn_clickHandler(event)"
+			  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.blueButtonSkin" />
+	<s:Button id="id_Attach" buttonMode="true" x="127" y="203" label="Attach"
+			  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.blueButtonSkin"/>
+	<s:Button id="id_CloseButton"  buttonMode="true" x="181" y="203" label="Cancel" 
+			  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.blueButtonSkin"/>
+	<s:RichText color="#d6d6db" fontFamily="Calibri" fontSize="12" id="richtext20" kerning="off" lineHeight="150%" whiteSpaceCollapse="preserve" x="36" y="72">
+		<s:content><s:p><s:span>PMH</s:span></s:p><s:p><s:span>Physical</s:span></s:p><s:p/><s:p/><s:p/><s:p/><s:p><s:span>Assessment</s:span></s:p></s:content>
+	</s:RichText>
+	<fx:DesignLayer >
+		<s:CheckBox id="checkbox1" skinClass="com.adobe.Quivus.view.controls.skins.checkBoxSkins.checkBoxSkin" x="219" y="71"/>
+		<s:CheckBox id="checkbox0" skinClass="com.adobe.Quivus.view.controls.skins.checkBoxSkins.checkBoxSkin" x="219" y="90"/>
+		<s:CheckBox id="checkbox2" skinClass="com.adobe.Quivus.view.controls.skins.checkBoxSkins.checkBoxSkin" x="219" y="108"/>
+		<s:CheckBox id="checkbox3" skinClass="com.adobe.Quivus.view.controls.skins.checkBoxSkins.checkBoxSkin" x="219" y="108"/>
+		<s:CheckBox id="checkbox4" skinClass="com.adobe.Quivus.view.controls.skins.checkBoxSkins.checkBoxSkin" x="219" y="121"/>
+		<s:CheckBox id="checkbox5" skinClass="com.adobe.Quivus.view.controls.skins.checkBoxSkins.checkBoxSkin" x="219" y="134"/>
+		<s:CheckBox id="checkbox6" skinClass="com.adobe.Quivus.view.controls.skins.checkBoxSkins.checkBoxSkin" x="219" y="147"/>
+		<s:CheckBox id="checkbox7" skinClass="com.adobe.Quivus.view.controls.skins.checkBoxSkins.checkBoxSkin" x="219" y="160"/>
+		<s:CheckBox id="checkbox8" skinClass="com.adobe.Quivus.view.controls.skins.checkBoxSkins.checkBoxSkin" x="219" y="181"/>
+		<s:CheckBox id="checkbox9" skinClass="com.adobe.Quivus.view.controls.skins.checkBoxSkins.checkBoxSkin" x="24" y="206"/>
+	</fx:DesignLayer>
+	<s:RichText color="#d2dfe4" fontFamily="Calibri" fontSize="12" id="richtext19" kerning="off" lineHeight="150%" whiteSpaceCollapse="preserve" x="41" y="207" fontWeight="bold">
+		<s:content><s:p><s:span>Hide PHI?</s:span></s:p></s:content>
+	</s:RichText>
+	<s:BitmapImage id="bitmapimage104" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/emailAttachment/Shape_12.png')" x="41" y="112">
+		<s:mask>
+			<s:Group x="0" y="0">
+				<s:Path data="M 5.3 2.15 C 5.4 2.25 5.4 2.45 5.3 2.5 L 3.15 4.65 C 3.05 4.75 2.9 4.75 2.8 4.65 L 0.7 2.5 C 0.6 2.45 0.6 2.25 0.7 2.15 L 2.8 0.05 C 2.9 0 3.05 0 3.15 0.05 L 5.3 2.15" winding="evenOdd">
+					<s:fill>
+						<s:SolidColor color="#ff0000"/>
+					</s:fill>
+				</s:Path>
+			</s:Group>
+		</s:mask>
+	</s:BitmapImage>
+	<s:BitmapImage id="bitmapimage98" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/emailAttachment/Shape_12_copy_4.png')" x="41" y="125">
+		<s:mask>
+			<s:Group x="0" y="0">
+				<s:Path data="M 5.3 2.15 C 5.4 2.25 5.4 2.45 5.3 2.5 L 3.15 4.65 C 3.05 4.75 2.9 4.75 2.8 4.65 L 0.7 2.5 C 0.6 2.45 0.6 2.25 0.7 2.15 L 2.8 0.05 C 2.9 0 3.05 0 3.15 0.05 L 5.3 2.15" winding="evenOdd">
+					<s:fill>
+						<s:SolidColor color="#ff0000"/>
+					</s:fill>
+				</s:Path>
+			</s:Group>
+		</s:mask>
+	</s:BitmapImage>
+	<s:BitmapImage id="bitmapimage89" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/emailAttachment/Shape_12_copy_4.png')" x="41" y="138">
+		<s:mask>
+			<s:Group x="0" y="0">
+				<s:Path data="M 5.3 2.15 C 5.4 2.25 5.4 2.45 5.3 2.5 L 3.15 4.65 C 3.05 4.75 2.9 4.75 2.8 4.65 L 0.7 2.5 C 0.6 2.45 0.6 2.25 0.7 2.15 L 2.8 0.05 C 2.9 0 3.05 0 3.15 0.05 L 5.3 2.15" winding="evenOdd">
+					<s:fill>
+						<s:SolidColor color="#ff0000"/>
+					</s:fill>
+				</s:Path>
+			</s:Group>
+		</s:mask>
+	</s:BitmapImage>
+	<s:BitmapImage id="bitmapimage85" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/emailAttachment/Shape_12_copy_5.png')" x="41" y="151">
+		<s:mask>
+			<s:Group x="0" y="0">
+				<s:Path data="M 5.3 2.15 C 5.4 2.25 5.4 2.45 5.3 2.5 L 3.15 4.65 C 3.05 4.75 2.9 4.75 2.8 4.65 L 0.7 2.5 C 0.6 2.45 0.6 2.25 0.7 2.15 L 2.8 0.05 C 2.9 0 3.05 0 3.15 0.05 L 5.3 2.15" winding="evenOdd">
+					<s:fill>
+						<s:SolidColor color="#ff0000"/>
+					</s:fill>
+				</s:Path>
+			</s:Group>
+		</s:mask>
+	</s:BitmapImage>
+	<s:BitmapImage id="bitmapimage70" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/emailAttachment/Shape_12_copy_4.png')" x="41" y="164">
+		<s:mask>
+			<s:Group x="0" y="0">
+				<s:Path data="M 5.3 2.15 C 5.4 2.25 5.4 2.45 5.3 2.5 L 3.15 4.65 C 3.05 4.75 2.9 4.75 2.8 4.65 L 0.7 2.5 C 0.6 2.45 0.6 2.25 0.7 2.15 L 2.8 0.05 C 2.9 0 3.05 0 3.15 0.05 L 5.3 2.15" winding="evenOdd">
+					<s:fill>
+						<s:SolidColor color="#ff0000"/>
+					</s:fill>
+				</s:Path>
+			</s:Group>
+		</s:mask>
+	</s:BitmapImage>
+	<s:BitmapImage id="bitmapimage95" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/emailAttachment/Shape_24.png')" x="24" y="73">
+		<s:mask>
+			<s:Group x="0" y="0">
+				<s:Path data="M 4.7 8.5 C 2.4 8.5 0.45 6.55 0.45 4.2 C 0.45 1.9 2.4 0 4.7 0 C 7.05 0 9 1.9 9 4.2 C 9 6.55 7.05 8.5 4.7 8.5 M 4.7 0.35 C 2.6 0.35 0.85 2.1 0.85 4.2 C 0.85 6.35 2.6 8.1 4.7 8.1 C 6.85 8.1 8.6 6.35 8.6 4.2 C 8.6 2.1 6.85 0.35 4.7 0.35 M 5.25 6.55 L 4.2 6.55 L 4.2 4.75 L 2.4 4.75 L 2.4 3.7 L 4.2 3.7 L 4.2 1.9 L 5.25 1.9 L 5.25 3.7 L 7.05 3.7 L 7.05 4.75 L 5.25 4.75 L 5.25 6.55" winding="evenOdd">
+					<s:fill>
+						<s:SolidColor color="#ff0000"/>
+					</s:fill>
+				</s:Path>
+			</s:Group>
+		</s:mask>
+	</s:BitmapImage>
+	<s:BitmapImage id="bitmapimage102" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/emailAttachment/Shape_12_copy_4.png')" x="24" y="181">
+		<s:mask>
+			<s:Group x="0" y="0">
+				<s:Path data="M 4.7 8.5 C 2.4 8.5 0.45 6.55 0.45 4.2 C 0.45 1.9 2.4 0 4.7 0 C 7.05 0 9 1.9 9 4.2 C 9 6.55 7.05 8.5 4.7 8.5 M 4.7 0.35 C 2.6 0.35 0.85 2.1 0.85 4.2 C 0.85 6.35 2.6 8.1 4.7 8.1 C 6.85 8.1 8.6 6.35 8.6 4.2 C 8.6 2.1 6.85 0.35 4.7 0.35 M 5.25 6.55 L 4.2 6.55 L 4.2 4.75 L 2.4 4.75 L 2.4 3.7 L 4.2 3.7 L 4.2 1.9 L 5.25 1.9 L 5.25 3.7 L 7.05 3.7 L 7.05 4.75 L 5.25 4.75 L 5.25 6.55" winding="evenOdd">
+					<s:fill>
+						<s:SolidColor color="#ff0000"/>
+					</s:fill>
+				</s:Path>
+			</s:Group>
+		</s:mask>
+	</s:BitmapImage>
+	<s:BitmapImage id="bitmapimage107" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/emailAttachment/Shape_25.png')" x="24" y="90">
+		<s:mask>
+			<s:Group x="0" y="0">
+				<s:Path data="M 4.95 9.5 C 2.5 9.5 0.45 7.45 0.45 4.95 C 0.45 2.5 2.5 0.45 4.95 0.45 C 7.45 0.45 9.5 2.5 9.5 4.95 C 9.5 7.45 7.45 9.5 4.95 9.5 M 4.95 0.9 C 2.7 0.9 0.9 2.7 0.9 4.95 C 0.9 7.25 2.7 9.05 4.95 9.05 C 7.25 9.05 9.05 7.25 9.05 4.95 C 9.05 2.7 7.25 0.9 4.95 0.9 M 2.5 4.45 L 7.45 4.45 L 7.45 5.5 L 2.5 5.5 L 2.5 4.45" winding="evenOdd">
+					<s:fill>
+						<s:SolidColor color="#ff0000"/>
+					</s:fill>
+				</s:Path>
+			</s:Group>
+		</s:mask>
+	</s:BitmapImage>
+	<s:RichText color="#d8d8dd" fontFamily="Calibri" fontSize="11" id="richtext24" kerning="off" lineHeight="118.2%" whiteSpaceCollapse="preserve" x="51" y="110">
+		<s:content><s:p><s:span>Vital</s:span></s:p><s:p><s:span>Chief Complaint/HPI</s:span></s:p><s:p><s:span>Review of System</s:span></s:p><s:p><s:span>Physical</s:span></s:p><s:p><s:span>Labs</s:span></s:p></s:content>
+	</s:RichText>
+	<s:BitmapImage id="bitmapimage105" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/emailAttachment/Shape_27.png')" x="23" y="23"/>
+	<s:RichText color="#d6d6db" fontFamily="Calibri" fontSize="11" id="richtext16" kerning="off" lineHeight="163.65%"  whiteSpaceCollapse="preserve" x="28" y="26">
+		<s:content><s:p><s:span>20987</s:span></s:p></s:content>
+	</s:RichText>
+	<s:RichText color="#b8bcff" fontFamily="Calibri" fontSize="12" id="richtext23" kerning="off" lineHeight="150%" whiteSpaceCollapse="preserve" x="66" y="25">
+		<s:content><s:p><s:span>Jane Doe</s:span></s:p></s:content>
+	</s:RichText>
+	<s:RichText color="#d6d6db" fontFamily="Calibri" fontSize="11" id="richtext22" kerning="off" lineHeight="163.65%" whiteSpaceCollapse="preserve" x="142" y="26">
+		<s:content><s:p><s:span>Fem.</s:span></s:p></s:content>
+	</s:RichText>
+	<s:BitmapImage id="bitmapimage73" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/emailAttachment/Shape_60_copy_4.png')" x="169" y="23">
+		<s:mask>
+			<s:Group x="0" y="0">
+				<s:Path data="M 0 0 L 0.95 0 L 0.95 13.9 L 0 13.9 L 0 0" winding="evenOdd">
+					<s:fill>
+						<s:SolidColor color="#ff0000"/>
+					</s:fill>
+				</s:Path>
+			</s:Group>
+		</s:mask>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="0" blurX="0" blurY="0" color="#CCCCCC" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:BitmapImage>
+	<s:RichText color="#d6d6db" fontFamily="Calibri" fontSize="11" id="richtext18" kerning="off" lineHeight="163.65%" whiteSpaceCollapse="preserve" x="175" y="26">
+		<s:content><s:p><s:span>06-21-1985</s:span></s:p></s:content>
+	</s:RichText>
+	<s:Path data="M 10.10 8.77 L 0.00 8.77 5.05 0.02 Z " height="3.983" id="path0" rotation="180" width="7.779" x="252.77899" y="9.979">
+		<s:fill>
+			<s:SolidColor color="#FFFFFF"/>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="1" angle="270" blurX="0" blurY="0" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Path>
+	<s:BitmapImage id="bitmapimage0" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/emailAttachment/Shape_60_copy_4.png')" x="137" y="23">
+		<s:mask>
+			<s:Group x="0" y="0">
+				<s:Path data="M 0 0 L 0.95 0 L 0.95 13.9 L 0 13.9 L 0 0" winding="evenOdd">
+					<s:fill>
+						<s:SolidColor color="#ff0000"/>
+					</s:fill>
+				</s:Path>
+			</s:Group>
+		</s:mask>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="0" blurX="0" blurY="0" color="#CCCCCC" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:BitmapImage>
+	<s:BitmapImage id="bitmapimage91" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/emailAttachment/Shape_10_copy_15.png')" x="20" y="85">
+		<s:mask>
+			<s:Group x="0" y="0">
+				<s:Path data="M 0.1 0.85 L 0.1 0.1 L 209.85 0.1 L 209.85 0.85 L 0.1 0.85" winding="evenOdd">
+					<s:fill>
+						<s:SolidColor color="#ff0000"/>
+					</s:fill>
+				</s:Path>
+			</s:Group>
+		</s:mask>
+	</s:BitmapImage>
+	<s:BitmapImage id="bitmapimage1" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/emailAttachment/Shape_10_copy_15.png')" x="20" y="104">
+		<s:mask>
+			<s:Group x="0" y="0">
+				<s:Path data="M 0.1 0.85 L 0.1 0.1 L 209.85 0.1 L 209.85 0.85 L 0.1 0.85" winding="evenOdd">
+									
+					<s:fill>
+						<s:SolidColor color="#ff0000"/>
+					</s:fill>
+				</s:Path>
+			</s:Group>
+		</s:mask>
+	</s:BitmapImage>
+	<s:BitmapImage id="bitmapimage2" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/emailAttachment/Shape_10_copy_15.png')" x="20" y="176">
+		<s:mask>
+			<s:Group x="0" y="0">
+				<s:Path data="M 0.1 0.85 L 0.1 0.1 L 209.85 0.1 L 209.85 0.85 L 0.1 0.85" winding="evenOdd">
+					<s:fill>
+						<s:SolidColor color="#ff0000"/>
+					</s:fill>
+				</s:Path>
+			</s:Group>
+		</s:mask>
+	</s:BitmapImage>
+	<s:BitmapImage id="bitmapimage3" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/emailAttachment/Shape_10_copy_15.png')" x="20" y="197">
+		<s:mask>
+			<s:Group x="0" y="0">
+				<s:Path data="M 0.1 0.85 L 0.1 0.1 L 209.85 0.1 L 209.85 0.85 L 0.1 0.85" winding="evenOdd">
+					<s:fill>
+						<s:SolidColor color="#ff0000"/>
+					</s:fill>
+				</s:Path>
+			</s:Group>
+		</s:mask>
+	</s:BitmapImage>
+	
+</s:Group>

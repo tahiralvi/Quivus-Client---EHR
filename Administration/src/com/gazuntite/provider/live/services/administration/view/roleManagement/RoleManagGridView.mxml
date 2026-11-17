@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:document="com.zigron.provider.live.services.documentMgmt.view.document.*"
+		 xmlns:LiveGridView="com.gazuntite.common.view.LiveGridView.*" 
+		 width="100%" height="100%"
+		 xmlns:roleManagement="com.gazuntite.provider.live.services.administration.view.roleManagement.*" 
+		 xmlns:components="com.gazuntite.controls.extended.components.*"
+		 creationComplete="group1_creationCompleteHandler(event)" xmlns:components1="com.gazuntite.controls.extended.components.*" 
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.provider.live.services.administration.event.AdminActionsEvent;
+			import com.gazuntite.provider.live.services.administration.event.roleManagement.LoadRoleAccessRightEvent;
+			import com.gazuntite.provider.live.services.administration.event.roleManagement.ManageRoleAccessRightEvent;
+			import com.gazuntite.provider.live.services.administration.model.AdminAppModelLocator;
+			import com.gazuntite.provider.live.services.administration.view.itemRenderer.EditRoleRightRenderer;
+			
+			import mx.events.FlexEvent;
+			import mx.managers.CursorManager;
+			
+			[Bindable]
+			public var model : AdminAppModelLocator = AdminAppModelLocator.getInstance();
+			[Bindable]private var roleTitle:String;
+			
+			
+			protected function ListOnlyHandler(event:Event):void
+			{
+				// TODO Auto-generated method stub
+			}
+			
+			protected function GoToPageHandler(event:Event):void
+			{
+				// TODO Auto-generated method stub
+			}
+			
+			protected function RefreshViewHandler(event:Event):void
+			{
+				// TODO Auto-generated method stub
+			}
+			
+			//Creation complete
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_LabsGridView.addEventListener(AdminActionsEvent.EDIT_RECORD_CLICK, onEditClick, false, 0, true);
+			}
+			//On Edit item click
+			public function onEditClick(event:AdminActionsEvent):void
+			{
+				
+				id_roleManagementGridView_viewStack.selectedIndex = 1;				
+				
+				var dto:Object = id_LabsGridView.selectedItem;
+				
+				var id:int = dto.UserTypeId;
+				roleTitle = 'Edit Default Access Rights for '+dto.UserTypeName+"'s Role";
+				
+				var eve:LoadRoleAccessRightEvent = new LoadRoleAccessRightEvent(id);
+				CairngormEventDispatcher.getInstance().dispatchEvent( eve );	
+				CursorManager.setBusyCursor();
+				
+			}
+			//on close button click			
+			protected function is_closeBtn_clickHandler(event:MouseEvent):void
+			{
+				id_roleManagementGridView_viewStack.selectedIndex = 0;		
+			}
+			// on clikc on save the edit role
+			protected function is_updateBtn_clickHandler(event:MouseEvent):void
+			{
+				var dto:Object = id_LabsGridView.selectedItem;
+				
+				var id:int = dto.UserTypeId;
+				var eve:ManageRoleAccessRightEvent = new ManageRoleAccessRightEvent(model.loggedInUserId, callback);
+				CairngormEventDispatcher.getInstance().dispatchEvent( eve );	
+				CursorManager.setBusyCursor();
+			}
+			//On success of manage call result
+			private function callback(val:*=null):void
+			{
+				id_roleManagementGridView_viewStack.selectedIndex = 0;
+				
+				dispatchEvent( new Event(AdminActionsEvent.UPDATE_ACCESS_RIGHTS, true, true ));
+			}
+			//display row no for datagrid
+			public function displayRowNum(oItem:Object,iCol:int):String
+			{
+				var rowNumber:int = id_LabsGridView.dataProvider.getItemIndex(oItem) + 1;
+				return String(rowNumber);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+		<s:VerticalLayout gap="5" paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5"   />
+	</s:layout>
+	<mx:ViewStack id="id_roleManagementGridView_viewStack" width="100%" height="100%">
+		
+		<s:NavigatorContent>
+			<s:layout>
+				<s:VerticalLayout gap="1" paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5"   />
+			</s:layout>
+			
+			<!--<LiveGridView:FilterViewForGrid width="100%"
+			ListOnly="ListOnlyHandler(event)"
+			GoToFirstPage="GoToPageHandler(event)"
+			GoToLastPage="GoToPageHandler(event)"
+			GoToNextPage="GoToPageHandler(event)"
+			GoToPreviousPage="GoToPageHandler(event)"
+			RefreshView="RefreshViewHandler(event)"
+			/>-->
+			
+			<components1:LabelDataGrid id="id_LabsGridView" width="100%" height="100%" variableRowHeight="true" sortableColumns="false"
+									  dataProvider="{model.UserRoleList}"  verticalScrollBarStyleName="VScrollBar" columnWidths="{[30,'90%', 45]}">  
+				<components:columns>
+					<mx:DataGridColumn headerText="Sr.#" headerWordWrap="true" wordWrap="true" editable="false" labelFunction="displayRowNum"  />
+					<mx:DataGridColumn dataField="UserTypeName" 	headerText="Role Name" />
+					<mx:DataGridColumn headerText="Action" itemRenderer="com.gazuntite.provider.live.services.administration.view.itemRenderer.EditRoleRightRenderer" />
+				</components:columns>
+				
+			</components1:LabelDataGrid>
+		</s:NavigatorContent>
+		<s:NavigatorContent>
+			<s:layout>
+				<s:VerticalLayout gap="1" paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5"   />
+			</s:layout>
+			
+			<s:VGroup width="100%" height="100%">
+				<s:Panel width="100%" title="{roleTitle}" height="90%" skinClass="com.adobe.gazuntite.skins.chrome.containerSkins.SimplePanelSkin">
+						<mx:Tree width="100%" height="100%" dataProvider="{model.AccessRightDTOList}"  alternatingItemColors="[#E0E8EF,#FFFFFF]" verticalScrollBarStyleName="VScrollBar"
+								 itemRenderer="com.gazuntite.provider.live.services.administration.view.itemRenderer.RoleRightTreeItemRenderer" fontFamily="Calibri" fontSize="12" />
+				</s:Panel>
+				
+				<s:Group width="100%" height="10%">
+					<s:Button label="Go Back" id="is_goBackBtn" click="is_closeBtn_clickHandler(event)" toolTip="Go Back" 
+							  useHandCursor="true" buttonMode="true"   styleName="blackButtonSkin" width="60" left="10"/>
+					<s:Button label="Save" id="is_updateBtn" toolTip="Save" 
+							  useHandCursor="true" buttonMode="true"  click="is_updateBtn_clickHandler(event)"  styleName="blackButtonSkin" width="60" right="80"/>
+					<s:Button label="Close" id="is_closeBtn" click="is_closeBtn_clickHandler(event)"  styleName="blackButtonSkin" width="60" right="10"
+							  toolTip="Close" useHandCursor="true" buttonMode="true" />
+				</s:Group>
+			</s:VGroup>
+			
+		</s:NavigatorContent>
+	</mx:ViewStack>
+	
+	
+</s:Group>

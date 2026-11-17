@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		xmlns:mx="library://ns.adobe.com/flex/mx">
+	<!-- host component -->
+	<fx:Metadata>
+		[HostComponent("spark.components.BorderContainer")]
+	</fx:Metadata>
+	
+	<!-- states -->
+	<s:states>
+		<s:State name="disabled" />
+		<s:State name="normal" />
+	</s:states>
+	
+	<!--<s:Rect left="0" right="0" top="0" bottom="0"  >
+	<s:stroke>
+	<s:SolidColorStroke color="0xA0521C" weight="2"/>
+	</s:stroke>
+	
+	<s:fill>
+	<s:LinearGradient rotation="270">
+	<s:GradientEntry alpha="1.0" color="#BCC3CF" ratio="0"/>
+	<s:GradientEntry alpha="1.0" color="#888F99" ratio="0.5254901960784314"/>
+	<s:GradientEntry alpha="1.0" color="#B3BAC4" ratio="1"/>
+	</s:LinearGradient>
+	</s:fill>
+	
+	</s:Rect>-->
+	<s:Rect height="25" left="0" right="0" top="0" bottom="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Group id="contentGroup" left="3" right="3" top="3" bottom="3">
+		
+		<s:layout>
+			<s:BasicLayout/>
+		</s:layout> 
+		
+	</s:Group> 
+</s:Skin>

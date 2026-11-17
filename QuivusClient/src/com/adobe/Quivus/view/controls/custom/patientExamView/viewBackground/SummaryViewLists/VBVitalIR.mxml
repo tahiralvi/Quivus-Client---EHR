@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true">
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="center" gap="1" paddingBottom="1" />
+	</s:layout>
+	<fx:Script>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YY" />
+	</fx:Declarations>
+	<s:SkinnableContainer width="100%" maxWidth="{parent.width}" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VB_VisitDate_BG">
+		<s:layout>
+			<s:HorizontalLayout horizontalAlign="center" verticalAlign="middle" />
+		</s:layout>		
+		<s:Label text="{formatDateTime.format(data.VisitDate)}" textAlign="center" fontFamily="Calibri" fontSize="10" color="#ffffff"/>
+	</s:SkinnableContainer>		
+	
+	<s:VGroup width="100%" horizontalAlign="center" gap="1" paddingBottom="2" includeInLayout="{data.Height?true:false}">		
+		<s:HGroup width="100%">
+			
+			<s:HGroup width="130">
+				<s:Label text="Height" width="100%" maxWidth="130" fontFamily="Calibri" fontSize="11" color="#333333"/>
+			</s:HGroup>		
+			<s:Label text="{data.Height}"  maxDisplayedLines="1" width="100%" maxWidth="40" fontFamily="Calibri" fontSize="11"/>
+		</s:HGroup>	
+		<s:Line x="1" xTo="{this.width-20}">
+			<s:stroke>
+				<s:SolidColorStroke caps="none" color="#CCCCCC" joints="miter" miterLimit="4" weight="1"/>
+			</s:stroke>
+		</s:Line>
+	</s:VGroup>
+	
+	
+	<s:VGroup width="100%" horizontalAlign="center" gap="1" paddingBottom="2" includeInLayout="{data.Weight?true:false}">		
+		<s:HGroup width="100%">
+			
+			<s:HGroup width="130">
+				<s:Label text="Weight" width="100%" maxWidth="130" fontFamily="Calibri" fontSize="11" color="#333333"/>
+			</s:HGroup>		
+			<s:Label text="{data.Weight}"  maxDisplayedLines="1" width="100%" maxWidth="40" fontFamily="Calibri" fontSize="11"/>
+		</s:HGroup>	
+		<s:Line x="1" xTo="{this.width-20}">
+			<s:stroke>
+				<s:SolidColorStroke caps="none" color="#CCCCCC" joints="miter" miterLimit="4" weight="1"/>
+			</s:stroke>
+		</s:Line>
+	</s:VGroup>
+	
+	<s:VGroup width="100%" horizontalAlign="center" gap="1" paddingBottom="2" includeInLayout="{data.Temperature?true:false}">		
+		<s:HGroup width="100%">
+			
+			<s:HGroup width="130">
+				<s:Label text="Temperature" width="100%" maxWidth="130" fontFamily="Calibri" fontSize="11" color="#333333"/>
+			</s:HGroup>		
+			<s:Label text="{data.Temperature}"  maxDisplayedLines="1" width="100%" maxWidth="40" fontFamily="Calibri" fontSize="11"/>
+		</s:HGroup>	
+		<s:Line x="1" xTo="{this.width-20}">
+			<s:stroke>
+				<s:SolidColorStroke caps="none" color="#CCCCCC" joints="miter" miterLimit="4" weight="1"/>
+			</s:stroke>
+		</s:Line>
+	</s:VGroup>
+	
+	<s:VGroup width="100%" horizontalAlign="center" gap="1" paddingBottom="2" includeInLayout="{data.Pulse?true:false}">		
+		<s:HGroup width="100%">
+			
+			<s:HGroup width="130">
+				<s:Label text="Pulse" width="100%" maxWidth="130" fontFamily="Calibri" fontSize="11" color="#333333"/>
+			</s:HGroup>
+			
+			<s:Label text="{data.Pulse}"  maxDisplayedLines="1" width="100%" maxWidth="40" fontFamily="Calibri" fontSize="11"/>
+		</s:HGroup>
+		<s:Line x="1" xTo="{this.width-20}">
+			<s:stroke>
+				<s:SolidColorStroke caps="none" color="#CCCCCC" joints="miter" miterLimit="4" weight="1"/>
+			</s:stroke>
+		</s:Line>
+	</s:VGroup>
+	
+	
+	<s:VGroup width="100%" horizontalAlign="center" gap="1" paddingBottom="2" includeInLayout="{data.Respiration?true:false}">
+		<s:HGroup width="100%">
+			
+			<s:HGroup width="130">
+				<s:Label text="Respiration" width="100%" maxWidth="130" fontFamily="Calibri" fontSize="11" color="#333333"/>
+			</s:HGroup>
+			
+			<s:Label text="{data.Respiration}"  maxDisplayedLines="1" width="100%" maxWidth="40" fontFamily="Calibri" fontSize="11"/>
+		</s:HGroup>
+		<s:Line x="1" xTo="{this.width-20}">
+			<s:stroke>
+				<s:SolidColorStroke caps="none" color="#CCCCCC" joints="miter" miterLimit="4" weight="1"/>
+			</s:stroke>
+		</s:Line>
+	</s:VGroup>
+		
+	
+	<s:VGroup width="100%" horizontalAlign="center" gap="1" paddingBottom="2" includeInLayout="{data.Oxygen?true:false}">		
+		<s:HGroup width="100%">
+			
+			<s:HGroup width="130">
+				<s:Label text="Oxygen" width="100%" maxWidth="130" fontFamily="Calibri" fontSize="11" color="#333333"/>
+			</s:HGroup>		
+			<s:Label text="{data.Oxygen}"  maxDisplayedLines="1" width="100%" maxWidth="40" fontFamily="Calibri" fontSize="11"/>
+		</s:HGroup>	
+		<s:Line x="1" xTo="{this.width-20}">
+			<s:stroke>
+				<s:SolidColorStroke caps="none" color="#CCCCCC" joints="miter" miterLimit="4" weight="1"/>
+			</s:stroke>
+		</s:Line>
+	</s:VGroup>
+	
+	
+	
+	
+	
+	<s:VGroup width="100%" horizontalAlign="center" gap="1" paddingBottom="2" includeInLayout="{data.BPSys?true:false}">		
+		<s:HGroup width="100%">
+			
+			<s:HGroup width="130">
+				<s:Label text="BP (Sys)" width="100%" maxWidth="130" fontFamily="Calibri" fontSize="11" color="#333333"/>
+			</s:HGroup>		
+			<s:Label text="{data.BPSys}"  maxDisplayedLines="1" width="100%" maxWidth="40" fontFamily="Calibri" fontSize="11"/>
+		</s:HGroup>	
+		<s:Line x="1" xTo="{this.width-20}">
+			<s:stroke>
+				<s:SolidColorStroke caps="none" color="#CCCCCC" joints="miter" miterLimit="4" weight="1"/>
+			</s:stroke>
+		</s:Line>
+	</s:VGroup>
+	
+	<s:VGroup width="100%" horizontalAlign="center" gap="1" paddingBottom="2" includeInLayout="{data.BPDys?true:false}">		
+		<s:HGroup width="100%">
+			
+			<s:HGroup width="130">
+				<s:Label text="BP (Dys)" width="100%" maxWidth="130" fontFamily="Calibri" fontSize="11" color="#333333"/>
+			</s:HGroup>		
+			<s:Label text="{data.BPDys}"  maxDisplayedLines="1" width="100%" maxWidth="40" fontFamily="Calibri" fontSize="11"/>
+		</s:HGroup>	
+		<s:Line x="1" xTo="{this.width-20}">
+			<s:stroke>
+				<s:SolidColorStroke caps="none" color="#CCCCCC" joints="miter" miterLimit="4" weight="1"/>
+			</s:stroke>
+		</s:Line>
+	</s:VGroup>
+	
+	
+	<s:Line x="1" xTo="{this.width-20}">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#dddddd" joints="miter" miterLimit="4" weight="2"/>
+		</s:stroke>
+	</s:Line>
+
+</s:ItemRenderer>

@@ -1,0 +1,649 @@
+<?xml version="1.0" encoding="utf-8"?>
+<common:VBCollapsibleView xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx"
+					  creationComplete="cc()"
+					  xmlns:validators="com.gazuntite.common.util.validators.*" 
+					  xmlns:components="com.gazuntite.controls.extended.components.*" xmlns:itemEditors="com.gazuntite.common.view.itemEditors.*" 
+					  xmlns:grid="com.gazuntite.common.view.components.grid.*" xmlns:paging="com.gazuntite.patient.visit.view.vbViews.paging.*" 
+					  xmlns:diagnosis="com.gazuntite.patient.visit.view.vbViews.vbTabSection.vbAssessment.diagnosis.*" 
+					  xmlns:viewBackground="com.gazuntite.patient.visit.view.vbViews.*"
+					  xmlns:common="com.gazuntite.patient.visit.view.common.*">
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.VBdictationBtnSelected;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.VBnotesBtnSelected;
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.VBIconsBlackButton;
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.VBIconsButton;
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.VBIconsButtonFilled;
+			import com.gazuntite.common.util.QSAppUtils;
+			import com.gazuntite.common.util.QSConstants;
+			import com.gazuntite.common.view.events.DataGridActionsEvent;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.common.view.itemEditors.DateFieldEditor;
+			import com.gazuntite.common.view.itemEditors.SparkComboBoxItemEditor;
+			import com.gazuntite.common.view.itemEditors.YesNoItemEditor;
+			import com.gazuntite.controls.extended.components.LabelComboBox;
+			import com.gazuntite.controls.extended.components.LabelDataGrid;
+			import com.gazuntite.patient.visit.dto.PageDTO;
+			import com.gazuntite.patient.visit.event.diagnosis.LoadAcuteDiagnosisByPatientIdPagedEvent;
+			import com.gazuntite.patient.visit.event.diagnosis.LoadChronicDiagnosisByPatientIdPagedEvent;
+			import com.gazuntite.patient.visit.event.diagnosis.LoadResolvedDiagnosisByPatientIdPagedEvent;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			import com.gazuntite.patient.visit.utlis.VBGridController;
+			import com.gazuntite.patient.visit.utlis.VBUtilityFunctions;
+			import com.gazuntite.patient.visit.view.vbViews.VBSectionDictation;
+			import com.gazuntite.patient.visit.view.vbViews.VBSectionNotes;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Label;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.DataGridEvent;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.events.ValidationResultEvent;
+			
+			import spark.components.ComboBox;
+			
+			[Bindable]
+			public var model:VBModelLocator = VBModelLocator.getInstance();
+			private var moduleConstantName:String = QSConstants.DIAGNOSIS_MODULE_NAME;
+			
+			[Bindable]
+			public var deleteColumnData:Object;
+			
+			private var dictationGridPanel:VBSectionDictation;
+			private var notesGridPanel:VBSectionNotes;
+			
+			private var vb_IsModelUpdated:Boolean;
+			private var m_oNotesDTOList:ArrayCollection;
+			
+			private var vbGridController:VBGridController;
+			
+			private var isAlertVisible:Boolean;
+			
+			private function cc():void
+			{
+				if (this.expandedView)
+				{
+					id_header.HeadingLable = id_header.HeadingLable.toUpperCase();
+				}
+				else
+				{
+					id_header.HeadingLable = id_header.HeadingLable.toLowerCase();
+				}
+				
+				id_header.id_OptionPopUp.displayPopUp = true;
+				
+				/* var notesDTOList:ArrayCollection = UtilityFunctions.getModuleNoteListForViewBackGround( Constants.DIAGNOSIS_MODULE_NAME );
+				var dictationDTOList:ArrayCollection = UtilityFunctions.getModuleDictationListForViewBackGround(Constants.DIAGNOSIS_MODULE_NAME); */
+				
+				id_header.id_OptionPopUp.displayPopUp = true;
+				id_header.id_iconButtons.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					//if(id_Area.visible)
+					{
+						
+						if (id_header.id_OptionPopUp.displayPopUp)
+						{
+							id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						}
+						else
+						{
+							id_header.id_iconButtons.setStyle("skinClass", VBIconsButton);	
+						}
+					}
+				});	
+				
+				id_header.id_Voice.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					var notesDTOList:ArrayCollection = new ArrayCollection();//QSUtilityFunctions.getModuleNoteListForViewBackGround(moduleConstantName);
+					var dictationDTOList:ArrayCollection = new ArrayCollection();//QSUtilityFunctions.getModuleDictationListForViewBackGround(moduleConstantName);
+					
+					id_notesDictation.notesDTOList = notesDTOList;
+					id_notesDictation.DictationDTOList = dictationDTOList;
+					id_notesDictation.id_Area.visible 		= true;
+					id_notesDictation.id_Area.includeInLayout = true;
+					//id_notesDictation.id_VBViews.selectedIndex = 1;						
+					id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+					id_header.id_iconButtons.selected = false;
+					id_header.id_OptionPopUp.displayPopUp = false;
+					
+					if (this.expandedView)
+					{
+						event.stopImmediatePropagation();
+					}
+				});
+				
+				id_header.id_NotesBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					var notesDTOList:ArrayCollection = new ArrayCollection();//QSUtilityFunctions.getModuleNoteListForViewBackGround(moduleConstantName);
+					var dictationDTOList:ArrayCollection = new ArrayCollection();//QSUtilityFunctions.getModuleDictationListForViewBackGround(moduleConstantName);
+					
+					id_notesDictation.notesDTOList = notesDTOList;
+					id_notesDictation.DictationDTOList = dictationDTOList;
+					{
+						id_notesDictation.id_Area.visible 		= true;
+						id_notesDictation.id_Area.includeInLayout = true;						
+						//id_notesDictation.id_VBViews.selectedIndex = 0;
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						id_header.id_iconButtons.selected = false;
+						id_header.id_OptionPopUp.displayPopUp = false;
+						
+					}
+					
+					if (this.expandedView)
+					{
+						event.stopImmediatePropagation();
+					}
+				});
+				
+				id_header.id_OptionPopUp.displayPopUp = false;
+				
+				vbGridController = new VBGridController();
+				vbGridController.dataGrid = acuteGrid.id_DiagnosisAcuteGrid;
+				
+				vbGridController.firstEditableColIdx = 2;
+				vbGridController.firstEditablePropertyName = "OnSet";
+				
+				vbGridController.sectionName = QSConstants.DIAGNOSIS_MODULE_NAME;
+				vbGridController.recordValidationCallBack = doValidateRecord;	
+			}
+			
+			private function button1_clickHandler(event:MouseEvent):void
+			{
+				if(model.diagnosisDTOListByPatientId!=null){
+					model.diagnosisDTOListByPatientId.filterFunction=myFilter;
+					model.diagnosisDTOListByPatientId.refresh();
+				}
+				
+				if(model.diagnosisDTOAcuteListByPatientId!=null)
+				{
+					model.diagnosisDTOAcuteListByPatientId.filterFunction=myFilter;
+					model.diagnosisDTOAcuteListByPatientId.refresh();
+				}
+				
+				if(model.diagnosisDTOChronicListByPatientId!=null)
+				{
+					model.diagnosisDTOChronicListByPatientId.filterFunction=myFilter;
+					model.diagnosisDTOChronicListByPatientId.refresh();
+				}
+				
+				if(model.diagnosisDTOResolvedListByPatientId!=null)
+				{
+					model.diagnosisDTOResolvedListByPatientId.filterFunction=myFilter;
+					model.diagnosisDTOResolvedListByPatientId.refresh();
+				}
+			}
+			
+			private function myFilter(obj:*):Boolean
+			{
+				
+				if(model.vbFilter == QSConstants.BY_VISIT)
+				{
+					if(model.vbVisitId == obj.VisitID)
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+				
+				return true;
+			}
+			
+			[Bindable]
+			public function get IsModelUpdated():Boolean
+			{
+				return vb_IsModelUpdated;
+			}
+			
+			public function set IsModelUpdated(value:Boolean):void{
+				
+				vb_IsModelUpdated = value;
+				
+				if(vb_IsModelUpdated )
+				{
+					var notesDTOList:ArrayCollection = new ArrayCollection();//QSUtilityFunctions.getModuleNoteListForViewBackGround(moduleConstantName);
+					var dictationDTOList:ArrayCollection = new ArrayCollection();//QSUtilityFunctions.getModuleDictationListForViewBackGround(moduleConstantName);
+					
+					if(dictationDTOList && dictationDTOList.length > 0)
+					{
+						id_header.id_Voice.setStyle("skinClass", VBdictationBtnSelected);
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+					}
+					
+					if(notesDTOList && notesDTOList.length > 0)
+					{
+						id_header.id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected);
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+					}		
+					
+				}
+			}
+			
+			public function get notesDTOList():ArrayCollection
+			{
+				return m_oNotesDTOList;
+			}
+			
+			public function set notesDTOList(value:ArrayCollection):void
+			{
+				m_oNotesDTOList = value;
+			}
+			
+			private function id_VBViews_changeHandler(event:IndexChangedEvent):void
+			{	
+				switch (event.newIndex)
+				{
+					case 0:
+						
+						vbGridController.dataGrid = acuteGrid.id_DiagnosisAcuteGrid;
+						
+						break;
+					
+					case 1:
+						
+						vbGridController.dataGrid = chronicGrid.id_DiagnosisChronicGrid;
+						
+						break;
+					
+					case 2:
+						
+						vbGridController.dataGrid = resolvedGrid.id_DiagnosisResolvedGrid;
+						
+						break;
+				}
+			}
+			
+			public function doValidateRecord(event:DataGridEvent):void
+			{
+				if (!event.currentTarget)
+					return;
+			
+				var dataGrid:LabelDataGrid;
+				
+				if (event.currentTarget is LabelDataGrid)
+					dataGrid = event.currentTarget as LabelDataGrid;
+				
+				if (!dataGrid)
+					return;
+					
+				var validationRes:ValidationResultEvent;
+				
+				var dateEditor:DateFieldEditor;
+				var comboEditor:LabelComboBox;
+				var yesNoEditor:YesNoItemEditor;
+				
+				if (event.dataField == "OnSet")
+				{
+					dateEditor = event.target.itemEditorInstance as DateFieldEditor;
+					
+					if (dateEditor && event.itemRenderer && event.itemRenderer.data && event.itemRenderer.data.hasOwnProperty("OnSet"))
+					{
+						event.itemRenderer.data.OnSet = dateEditor.text;
+					}
+					
+					event.itemRenderer.data.IsDirty = true;
+				}
+				
+				else if (event.dataField == "IcdDto.IcdCodeName" || event.dataField == "IcdDto.IcdCodeDescription")
+				{
+					comboEditor = SparkComboBoxItemEditor(dataGrid.itemEditorInstance).id_ComboEditor;
+					
+					comboValidator.error = "Invalid diagnosis";
+					comboValidator.source = comboEditor;
+					comboValidator.property = "selectedItem";
+					
+					validationRes = comboValidator.validate(comboEditor.selectedItem);
+					
+					if (validationRes && !validationRes.results)
+					{
+						event.itemRenderer.data.IcdDto = comboEditor.selectedItem;
+						event.itemRenderer.data.IcdDto.IcdCodeName = comboEditor.selectedItem.IcdCodeName;
+						event.itemRenderer.data.IsDirty = true;
+					}
+				}
+				
+				else if (event.dataField == "IsChronic" || event.dataField == "IsActive")
+				{
+					yesNoEditor = dataGrid.itemEditorInstance as YesNoItemEditor;
+					
+					if (!yesNoEditor)
+						return;
+					
+					var isYes:Boolean = (yesNoEditor.isYes == QSConstants.STRING_TRUE) ? true : false;
+					
+					if (event.dataField == "IsChronic")
+						changeDiagnosisType(isYes, dataGrid, event);
+					
+					else
+						changeDiagnosisStatus(isYes, dataGrid, event);
+						
+				}
+			}
+			
+			private function changeDiagnosisType(isYes:Boolean, dataGrid:LabelDataGrid, event:DataGridEvent):void
+			{
+				if (!dataGrid || !event)
+					return;
+				
+				switch (isYes)
+				{
+					case true:
+						
+						if (dataGrid.id == "id_DiagnosisChronicGrid")
+						{
+							event.itemRenderer.data.IsChronic = true;
+							event.itemRenderer.data.IsDirty = true;
+						}
+						
+						else if (dataGrid.id == "id_DiagnosisAcuteGrid")
+						{
+							if (isAlertVisible)
+								return;
+							
+							isAlertVisible = true;
+							
+							Alert.show("Are you sure want to change diagnosis type  to chronic", "Diagnosis change type confirmation", 
+								Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, function(evt:CloseEvent):void
+								{
+									event.itemRenderer.data.IsDirty = true;
+									
+									switch (evt.detail)
+									{
+										case Alert.YES:
+											
+											event.itemRenderer.data.IsChronic = true;
+											
+											break;
+										
+										case Alert.NO:
+											
+											event.itemRenderer.data.IsChronic = false;
+											
+											break;
+									}
+									
+									return;
+								});
+						}
+						
+						break;
+					
+					case false:
+						
+						if (dataGrid.id == "id_DiagnosisChronicGrid")
+						{
+							if (isAlertVisible)
+								return;
+							
+							isAlertVisible = true;
+							
+							Alert.show("Are you sure want to change diagnosis type  to acute", "Diagnosis change type confirmation", 
+								Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, function(evt:CloseEvent):void
+								{
+									event.itemRenderer.data.IsDirty = true;
+									
+									switch (evt.detail)
+									{
+										case Alert.YES:
+											
+											event.itemRenderer.data.IsChronic = false;
+											
+											break;
+										
+										case Alert.NO:
+											
+											event.itemRenderer.data.IsChronic = true;
+											
+											break;
+									}
+									
+									return;
+								});
+						}
+						
+						else if (dataGrid.id == "id_DiagnosisAcuteGrid")
+						{
+							event.itemRenderer.data.IsChronic = false;
+							event.itemRenderer.data.IsDirty = true;
+						}
+						
+						break;
+				}
+			}
+			
+			private function changeDiagnosisStatus(isYes:Boolean, dataGrid:LabelDataGrid, event:DataGridEvent):void
+			{
+				switch (isYes)
+				{
+					case true:
+						
+						if (dataGrid.id == "id_DiagnosisResolvedGrid")
+						{
+							if (isAlertVisible)
+								return;
+							
+							isAlertVisible = true;
+							
+							Alert.show("Are you sure want to change diagnosis status to inactive", "Diagnosis change status confirmation", 
+								Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, function(evt:CloseEvent):void
+								{
+									switch (evt.detail)
+									{
+										case Alert.YES:
+											
+											event.itemRenderer.data.IsActive = true;
+											event.itemRenderer.data.IsDirty = true;
+											
+											break;
+										
+										case Alert.NO:
+											
+											event.itemRenderer.data.IsActive = false;
+											event.itemRenderer.data.IsDirty = true;
+											
+											break;	
+									}
+									
+									return;
+								});
+						}
+						else
+						{
+							event.itemRenderer.data.IsActive = true;
+							event.itemRenderer.data.IsDirty = true;
+						}
+						
+						break;
+					
+					case false:
+						
+						if (dataGrid.id == "id_DiagnosisResolvedGrid")
+						{
+							event.itemRenderer.data.IsActive = false;
+							event.itemRenderer.data.IsDirty = true;
+						}
+						else
+						{
+							if (isAlertVisible)
+								return;
+							
+							isAlertVisible = true;
+							
+							Alert.show("Are you sure want to change diagnosis status to inactive", "Diagnosis change status confirmation", 
+								Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, function(evt:CloseEvent):void
+								{
+									switch (evt.detail)
+									{
+										case Alert.YES:
+											
+											event.itemRenderer.data.IsActive = false;
+											event.itemRenderer.data.IsDirty = true;
+											
+											break;
+										
+										case Alert.NO:
+											
+											event.itemRenderer.data.IsActive = true;
+											event.itemRenderer.data.IsDirty = true;
+											
+											break;
+									}
+									
+									return;
+								});
+						}
+						
+						break;
+				}
+			}
+			
+			private function switchPageForGridView4Acute(event:Event):void
+			{	
+				if (VBUtilityFunctions.isNullOrEmptyPage(model.diagnosisAcuteCurrentPageByPatient))
+					model.diagnosisAcuteCurrentPageByPatient = VBUtilityFunctions.getNewPageDTOWithDefaultValues();
+				
+				var lda:LoadAcuteDiagnosisByPatientIdPagedEvent = new LoadAcuteDiagnosisByPatientIdPagedEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent(lda); 
+			}
+			
+			private function switchPageForGridView4Chronic(event:Event):void
+			{
+				
+				if (VBUtilityFunctions.isNullOrEmptyPage(model.diagnosisChronicCurrentPageByPatient))
+					model.diagnosisChronicCurrentPageByPatient = VBUtilityFunctions.getNewPageDTOWithDefaultValues();
+				
+				var ldc:LoadChronicDiagnosisByPatientIdPagedEvent = new LoadChronicDiagnosisByPatientIdPagedEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent(ldc);
+			}
+			
+			private function switchPageForGridView4Resolved(event:Event):void
+			{
+				
+				if (VBUtilityFunctions.isNullOrEmptyPage(model.diagnosisResolvedCurrentPageByPatient))
+					model.diagnosisResolvedCurrentPageByPatient = VBUtilityFunctions.getNewPageDTOWithDefaultValues();
+				
+				var ldr:LoadResolvedDiagnosisByPatientIdPagedEvent = new LoadResolvedDiagnosisByPatientIdPagedEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent(ldr);
+			}
+			
+			private function id_PaginationFilterView4Acute_RefreshViewHandler(event:Event):void
+			{
+				if (!VBUtilityFunctions.isNullOrEmptyPage(id_PaginationFilterView4Acute.page))
+					model.diagnosisAcuteCurrentPageByPatient = id_PaginationFilterView4Acute.page;
+				
+				var lda:LoadAcuteDiagnosisByPatientIdPagedEvent = new LoadAcuteDiagnosisByPatientIdPagedEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent(lda); 
+			}
+			
+			private function id_PaginationFilterView4Chronic_RefreshViewHandler(event:Event):void
+			{
+				if (!VBUtilityFunctions.isNullOrEmptyPage(id_PaginationFilterView4Chronic.page))
+					model.diagnosisChronicCurrentPageByPatient = id_PaginationFilterView4Chronic.page;
+				
+				var ldc:LoadChronicDiagnosisByPatientIdPagedEvent = new LoadChronicDiagnosisByPatientIdPagedEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent(ldc);
+			}
+			
+			private function id_PaginationFilterView4Resolved_RefreshViewHandler(event:Event):void
+			{
+				if (!VBUtilityFunctions.isNullOrEmptyPage(id_PaginationFilterView4Resolved.page))
+					model.diagnosisResolvedCurrentPageByPatient = id_PaginationFilterView4Resolved.page;
+				
+				var ldr:LoadResolvedDiagnosisByPatientIdPagedEvent = new LoadResolvedDiagnosisByPatientIdPagedEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent(ldr);
+			}
+		]]>
+	</fx:Script>
+	<fx:Binding source="model.vbDataLoadedFlag" destination="IsModelUpdated" />
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YY" />
+		<validators:ComboValidator id="comboValidator" property="selectedItem"/>
+		<!--<validators:PastDateValidator id="onSetValidator"   property="text"/>-->
+	</fx:Declarations>
+	
+	<common:headerContents>
+		<s:Group id="id_mainHeader" width="100%" height="24"><!-- minWidth="{ChromeUtil.topLevelMainContainer.width - 70}">-->
+			<s:layout>
+				<s:VerticalLayout verticalAlign="bottom" horizontalAlign="center" />
+			</s:layout>
+			<viewBackground:VBSectionHeader id="id_header" width="{id_mainHeader.width - 8}" HeadingLable="{QSConstants.VB_SECTION_NAME_DIAGNOSIS}" 
+											Skin="com.adobe.gazuntite.skins.viewBackground.skinnableContainers.VBDiagnosisPanelSkin"/>	<!-- SectionNameID="{QSSecurityUtil.VB_DIAGNOSIS}"	-->				   
+		</s:Group>
+	</common:headerContents>
+	<!--<custom:Contents>-->
+		<s:SkinnableContainer id="id_contents" width="100%" height="100%" skinClass="com.adobe.gazuntite.skins.viewBackground.skinnableContainers.TransparentGridPanelSkin">
+			<s:layout>
+				<s:VerticalLayout horizontalAlign="left" verticalAlign="top" gap="-1" paddingLeft="4" paddingRight="4" paddingBottom="4" paddingTop="0" />
+			</s:layout>
+			
+			<viewBackground:VBSectionLevelNotesDictation id="id_notesDictation" width="100%" />
+			
+			<s:Button label="Filter" click="button1_clickHandler(event)" visible="false" includeInLayout="false" id="id_applyFiler"/>
+			
+			<s:VGroup width="100%" gap="-4" paddingTop="8">		
+				<s:TabBar id="id_TabBar2" dataProvider="{id_VBViews2}" skinClass="com.adobe.gazuntite.skins.chrome.tabBarSkins.VBrecordingsTabBar" />
+				<s:SkinnableContainer width="100%" skinClass="com.adobe.gazuntite.skins.viewBackground.skinnableContainers.VBrecordingsSkin">
+					<s:layout>
+						<s:VerticalLayout paddingBottom="3" paddingLeft="3" paddingRight="3" paddingTop="3" />
+					</s:layout>
+					
+					<mx:ViewStack width="100%" minWidth="500" resizeToContent="true" selectedIndex="{id_VBViews2.selectedIndex}">
+						<s:NavigatorContent width="100%" label="Acute History Paging and Filtering" minWidth="500" >
+							<paging:PaginationFilterView id="id_PaginationFilterView4Acute" width="100%" page="{model.diagnosisAcuteCurrentPageByPatient}"
+														 GoToFirstPage="switchPageForGridView4Acute(event)" GoToNextPage="switchPageForGridView4Acute(event)" 
+														 GoToPreviousPage="switchPageForGridView4Acute(event)" GoToLastPage="switchPageForGridView4Acute(event)"
+														 RefreshView="id_PaginationFilterView4Acute_RefreshViewHandler(event)"/>
+						</s:NavigatorContent>
+						
+						<s:NavigatorContent width="100%" label="Chronic Paging and Filtering" >											
+							<paging:PaginationFilterView id="id_PaginationFilterView4Chronic" width="100%" page="{model.diagnosisChronicCurrentPageByPatient}"
+														 GoToFirstPage="switchPageForGridView4Chronic(event)" GoToNextPage="switchPageForGridView4Chronic(event)" 
+														 GoToPreviousPage="switchPageForGridView4Chronic(event)" GoToLastPage="switchPageForGridView4Chronic(event)"
+														 RefreshView="id_PaginationFilterView4Chronic_RefreshViewHandler(event)"
+														 />
+						</s:NavigatorContent>
+						
+						<s:NavigatorContent width="100%" label="Resolved Paging and Filtering" >	
+							<paging:PaginationFilterView id="id_PaginationFilterView4Resolved" width="100%" page="{model.diagnosisResolvedCurrentPageByPatient}"
+														 GoToFirstPage="switchPageForGridView4Resolved(event)" GoToNextPage="switchPageForGridView4Resolved(event)" 
+														 GoToPreviousPage="switchPageForGridView4Resolved(event)" GoToLastPage="switchPageForGridView4Resolved(event)"
+														 RefreshView="id_PaginationFilterView4Resolved_RefreshViewHandler(event)"
+														 />
+						</s:NavigatorContent>
+					</mx:ViewStack>	
+					<mx:ViewStack id="id_VBViews2" width="100%" minWidth="500" resizeToContent="true" creationPolicy="all" change="id_VBViews_changeHandler(event)" >
+						<s:NavigatorContent width="100%" label="Acute" minWidth="500" >
+							
+							<diagnosis:vbAcuteGridView id="acuteGrid" width="100%" height="100%" />
+							
+						</s:NavigatorContent>
+						<s:NavigatorContent width="100%" label="Chronic" >											
+							
+							<diagnosis:vbChronicGridView id="chronicGrid" width="100%" height="100%" />
+							
+						</s:NavigatorContent>
+						
+						<s:NavigatorContent width="100%" label="Resolved" >
+							
+							<diagnosis:vbResolvedGridView id="resolvedGrid" width="100%" height="100%" />
+							
+						</s:NavigatorContent>
+					</mx:ViewStack>
+				</s:SkinnableContainer>
+			</s:VGroup>
+			<!--<mx:Spacer height="2" />-->
+		</s:SkinnableContainer>
+	<!--</custom:Contents>-->
+</common:VBCollapsibleView>

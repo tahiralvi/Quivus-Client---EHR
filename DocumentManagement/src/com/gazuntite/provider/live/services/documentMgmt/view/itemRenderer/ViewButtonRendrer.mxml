@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:MXAdvancedDataGridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+								  xmlns:s="library://ns.adobe.com/flex/spark" 
+								  xmlns:mx="library://ns.adobe.com/flex/mx" 
+								  focusEnabled="true">
+
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.common.dto.PatientDocumentDTO;
+			import com.gazuntite.common.view.events.OpenFileOrWithNativeAppEvent;
+			import com.gazuntite.provider.live.services.documentMgmt.util.DMEventStrings;
+
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				var dto:PatientDocumentDTO = data as PatientDocumentDTO;
+				var e:OpenFileOrWithNativeAppEvent = new OpenFileOrWithNativeAppEvent(true);
+				e.FileName = dto.DocumentName;
+				e.FileURL  = dto.ServerFilePath
+				
+				dispatchEvent( e );//new Event( DMEventStrings.VIEW_DOCUMENT, true ) );
+			}
+			
+			public override function set data(value:Object):void
+			{
+				super.data = value;
+				if( data && data.DocumentName && data.DocumentName != '' )
+				{
+					id_ViewBtn.visible = true;
+				}
+				else
+				{
+					id_ViewBtn.visible = false;
+				}
+					
+			}
+		]]>
+	</fx:Script>
+
+	
+	<!--<s:Label id="lblData" top="0" left="0" right="0" bottom="0" text="{listData.label}" />-->
+	
+	<s:Button id="id_ViewBtn" label="View" click="button1_clickHandler(event)" includeInLayout="{id_ViewBtn.visible}"
+ 			styleName="orangeViewButtonSkin"
+			 
+			  />
+	
+</s:MXAdvancedDataGridItemRenderer>

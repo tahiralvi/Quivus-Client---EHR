@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace extended "com.adobe.Quivus.view.controls.extended.*";
+		@namespace components "com.zigron.controls.extended.components.*";
+  
+		/* @font-face {  			
+		fontFamily: CalibriBold;
+		src: url("../../../../../../assets/fonts/CALIBRIB.TTF");   
+		cff: false;  
+		}  
+		*/
+		
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.view.controls.skins.dataGridSkins.DataGridHeaderBlueSkin;
+			
+			import flashx.textLayout.container.ScrollPolicy;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.DataGrid;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			import spark.components.IItemRenderer;
+			private var _label:String;
+			private var _labelChanged:Boolean;
+			
+			private var _dataProvider:ArrayCollection;
+			private var _dataProviderChanged:Boolean;
+			private var _columns:ArrayCollection;
+			private var _columnsChanged:Boolean;
+			
+			private var _includeInLayout:Boolean;
+			
+			private var grids:Array;
+			public function get label():String
+			{
+				return _label;
+			}
+
+			public function set label(value:String):void
+			{
+				_label = value;
+				_labelChanged = true;
+				
+				invalidateProperties();
+			}
+
+			public function get dataProvider():ArrayCollection
+			{
+				return _dataProvider;
+			}
+
+			public function set dataProvider(value:ArrayCollection):void
+			{
+				_dataProvider = value;
+				_dataProviderChanged = true;
+				
+				invalidateProperties();
+			}
+
+			public function get columns():ArrayCollection
+			{
+				return _columns;
+			}
+
+			public function set columns(value:ArrayCollection):void
+			{
+				_columns = value;
+				_columnsChanged = true;
+				
+				invalidateProperties();
+			}
+			
+			[Bindable]
+			override public function get includeInLayout():Boolean
+			{
+				return _includeInLayout;
+			}
+			
+			override public function set includeInLayout(value:Boolean):void
+			{
+				_includeInLayout = value;
+			}
+
+			
+			private function createGrid(dataPrvdr:ArrayCollection, columnsValue:Array /*of Objects*/ = null):void
+			{
+				if (dataPrvdr && dataPrvdr.length)
+				{
+					includeInLayout = true;
+					var grid:DataGrid = new DataGrid();
+					
+					if (columnsValue)
+					{
+						var cols:Array = grid.columns;
+						for (var i:int = 0; i < columnsValue.length; i++)
+						{
+							for (var prop:String in columnsValue[i])
+							{
+								//addDataGridColumn(prop, columnsValue[i][prop], grid);
+								cols.push(DataGridColumn(columnsValue[i][prop]));
+							}
+						}
+						
+						grid.columns = cols;
+					}
+					
+					grid.dataProvider = dataPrvdr;
+					grid.percentWidth = 99;
+					grid.styleName = "dataGridReport";	
+					grid.setStyle("headerBackgroundSkin",DataGridHeaderBlueSkin); 
+					
+					grid.sortableColumns = false;
+					grid.editable = false;
+					grid.variableRowHeight = true;
+					grid.resizableColumns = false;
+					
+				//	grid.rowCount = grid.dataProvider.length;
+					grid.headerHeight = 20;
+				//	grid.rowHeight = 16;
+					grid.verticalScrollPolicy = ScrollPolicy.OFF;
+			// Tahir Alvi -  Modify for removing extra line after generating rows
+					grid.height = grid.dataProvider.length * grid.rowHeight + grid.headerHeight;
+					addElement(grid);
+					
+					if (!grids)
+						grids = [];
+					
+					grids.push(grid);
+					grid.addEventListener("multiLineLabelItemRendererHeightChanged", rendererHeightChanged, false, 0, true);
+					grid.addEventListener(FlexEvent.CREATION_COMPLETE, function (event:FlexEvent):void
+					{
+						grid.invalidateSize();
+					}, false, 0, true);
+				}
+			}
+			
+			private function rendererHeightChanged(event:Event):void
+			{
+				resizeDataGrid(event.currentTarget as DataGrid);
+				invalidateSize();
+			}
+			
+			private function resizeDataGrid(grid:DataGrid):void
+			{
+				if (grid && grid.dataProvider)
+				{
+					var hh:Number = grid.measureHeightOfItems(0, grid.dataProvider.length) + grid.headerHeight;
+					
+					if (grid.height != hh)
+						grid.height = hh;
+				}
+			}
+			
+			private function addDataGridColumn(dataField:String, headingLabel:String = "", dataGrid:DataGrid = null):void
+			{
+				var cols:Array = dataGrid.columns;
+				
+				for (var i:int = 0; i < cols.length; i++)
+				{
+					if (cols[i].dataField == dataField)
+						break;
+				}
+				
+				if (i >= cols.length)
+				{
+					var dataGridColumn:DataGridColumn = new DataGridColumn(dataField);
+					
+					if (headingLabel)
+						dataGridColumn.headerText = headingLabel;
+					
+					cols.push(dataGridColumn);
+					dataGrid.columns = cols;
+				}
+			}
+			
+			override protected function commitProperties():void
+			{
+				super.commitProperties();
+				
+				if (_labelChanged)
+				{
+					_labelChanged = false;
+					id_Label.text = _label;
+				}
+				
+				if (_dataProviderChanged || _columnsChanged)
+				{
+					if (_dataProviderChanged)
+						_dataProviderChanged = false;
+					
+					if (_columnsChanged)
+						_columnsChanged = false;
+					
+					if (_dataProvider && _dataProvider.length)
+					{
+						for (var i:int = 0; i < _dataProvider.length; i++)
+						{
+							var dataProviderForGrid:ArrayCollection;
+							
+							if (_dataProvider[i].hasOwnProperty("subDataProvider") && _dataProvider[i].subDataProvider)
+								dataProviderForGrid = _dataProvider[i].subDataProvider;
+							
+							if (dataProviderForGrid)
+							{
+								if (_columns && i < _columns.length)
+								{
+									if (_columns[i].hasOwnProperty("subColumns") && _columns[i].subColumns)
+										createGrid(dataProviderForGrid, _columns[i].subColumns);
+								}
+								else
+									createGrid(dataProviderForGrid);
+							}
+						}
+					}
+				}
+			}
+			
+			override protected function measure():void
+			{	
+				if (grids)
+				{
+					for (var i:int = 0; i < grids.length; i++)
+					{
+						var grid:DataGrid = DataGrid(grids[i]);
+						resizeDataGrid(grid);
+					}
+				}
+				
+				super.measure();
+			}
+		]]>
+	</fx:Script>
+	<s:layout>
+		<s:VerticalLayout gap="0" paddingLeft="8" paddingRight="8" paddingTop="4" paddingBottom="4"/>
+	</s:layout>
+	<s:Label id="id_Label" width="100%" fontFamily="Calibri Bold" fontSize="11" visible="{includeInLayout}" typographicCase="uppercase"/>
+	<!--<mx:DataGrid id="id_Grid" width="100%" editable="false" sortableColumns="false" rowCount="{id_Grid.dataProvider.length}" includeInLayout="{includeInLayout}" visible="{includeInLayout}"/>-->
+</s:Group>

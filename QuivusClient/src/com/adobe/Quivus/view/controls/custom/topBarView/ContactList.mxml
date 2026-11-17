@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:extended="com.adobe.Quivus.view.controls.extended.*" 
+		 creationComplete="popupgroup1_creationCompleteHandler(event)" 
+		 xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.closeBtnSkin;
+		]]>
+	</fx:Script>
+	<components1:layout>
+		<s:VerticalLayout gap="-1" paddingLeft="40" paddingTop="12" verticalAlign="top" horizontalAlign="center" />
+	</components1:layout>
+	<fx:Metadata>
+		/* [Event(name="close", type="mx.events.CloseEvent")] */
+		[Event(name="mailClick", type="com.adobe.Quivus.view.events.mailClickEvent")]
+		[Event(name="smsClick", type="com.adobe.Quivus.view.events.smsClickEvent")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.view.events.smsClickEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.view.events.mailClickEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			import valueObjects.ContactSearchDTO;
+
+			private var m_sFilterString:String
+			private var m_acDataprovider:ArrayCollection;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var m_sSearchString:String
+			
+			
+			public function get SearchString():String
+			{
+				return m_sSearchString;
+			}
+			
+			public function set SearchString(value:String):void
+			{
+				m_sSearchString = value;
+			}
+			
+			public function CloseHandler():void
+			{
+				this.removePopup();
+			}
+			
+			/* public var searchField:searchArea = new searchArea(); */
+			
+			[Bindable]
+			public function get Dataprovider():ArrayCollection
+			{
+				return m_acDataprovider;
+				
+			}
+
+			public function set Dataprovider(value:ArrayCollection):void
+			{
+				m_acDataprovider = value;
+			}
+
+			/* public function get FilterString():String
+			{
+				return m_sFilterString;
+			}
+
+			public function set FilterString(value:String):void
+			{
+				m_sFilterString = value;
+			} */
+			
+			/* protected function CloseHandler(event:MouseEvent):void
+			{
+				dispatchEvent( new CloseEvent("close") );
+			} */
+			
+			
+			private function filterForData(item:Object):Boolean
+			{
+				/* var dto:PatientSearchDTO = item as PatientSearchDTO;
+				if( dto.FirstName.toLowerCase().search( SearchString.toLowerCase() ) != -1 )
+					return true;
+				if( dto.LastName.toLowerCase().search( SearchString.toLowerCase() ) != -1 )
+					return true;
+				if( dto.MiddleName.toLowerCase().search( SearchString.toLowerCase() ) != -1 )
+					return true;
+				if( dto.QuivusID.toLowerCase().search( SearchString.toLowerCase() ) != -1 )
+					return true; */
+				return false;      
+			}
+
+		
+			protected function contacts_clickHandler(event:MouseEvent):void
+			{
+				switch( event.target.id )
+				{
+					case "id_mail":
+						var dto:ContactSearchDTO = event.currentTarget.selectedItem as ContactSearchDTO; 
+						var ev:mailClickEvent = new mailClickEvent( mailClickEvent.NAME, dto, true, false, event.localX, event.localY, event.relatedObject, event.ctrlKey, event.altKey, event.shiftKey, event.buttonDown, event.delta, event.commandKey, event.controlKey, event.clickCount);
+						dispatchEvent( ev );
+						break;
+					case "id_Message":
+						var dto1:ContactSearchDTO = event.currentTarget.selectedItem as ContactSearchDTO;
+						var sce:smsClickEvent = new smsClickEvent( smsClickEvent.NAME, dto1, true, false, event.localX, event.localY, event.relatedObject, event.ctrlKey, event.altKey, event.shiftKey, event.buttonDown, event.delta, event.commandKey, event.controlKey, event.clickCount);
+						//var ev:mailClickEvent = new mailClickEvent( mailClickEvent.NAME, dto, true, false, event.localX, event.localY, event.relatedObject, event.ctrlKey, event.altKey, event.shiftKey, event.buttonDown, event.delta, event.commandKey, event.controlKey, event.clickCount);
+						dispatchEvent( sce );
+						break;
+				}
+				
+				//event.stopImmediatePropagation();
+				//Alert.show( event.currentTarget.name, event.target.id );
+			}
+
+			public function setListHeight():void
+			{
+				
+				if(contacts &&  contacts.dataProvider && contacts.dataProvider.length < 5)
+				{
+					trace( "list height: " + contacts.dataProvider.length * 20);
+					contacts.height= contacts.dataProvider.length * 20;
+				}
+				else
+				{
+					contacts.height= 110;
+				}
+			}
+			
+			protected function contacts_creationCompleteHandler(event:FlexEvent):void
+			{
+				//setListHeight();
+				
+				contacts.setStyle("useRollOver", true);
+				
+				
+				contacts.setStyle("backgroundColor", 0xFFFFFF );
+				contacts.setStyle( "rollOverColor", 0xF7C174 );
+				contacts.setStyle( "textRollOverColor", 0x333333 );
+				contacts.setStyle( "selectionColor", 0x7c632c );
+				contacts.setStyle( "borderColor", 0xcccccc );
+				contacts.setStyle( "borderAlpha", 0 );
+			}
+
+
+			protected function popupgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				FlexGlobals.topLevelApplication.mainContainer.addEventListener( MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					removePopup();
+				});
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	
+	
+		<!--<s:BorderContainer backgroundColor="#E2E2E2" borderVisible="false" borderAlpha="0"
+						   cornerRadius="4" width="250" height="127">-->
+	<s:SkinnableContainer width="254" height="120" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.contactlistbgSkin" >
+		
+	
+			<s:layout>
+				<s:VerticalLayout horizontalAlign="center" paddingLeft="2" paddingRight="2"   />								
+			</s:layout>
+			<s:HGroup horizontalAlign="center" verticalAlign="middle">
+							
+				<s:Label paddingTop="53" id="id_notFoundLbl" fontSize="15" fontFamily="Calibri" text="No Records Found" includeInLayout="{id_notFoundLbl.visible}" visible="false" />
+				
+			</s:HGroup>
+			<s:List id="contacts" visible="{id_notFoundLbl.visible?false: true}"  width="248" height="108" dataProvider="{Dataprovider}"
+					itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.ContactListItemRenderer" click="contacts_clickHandler(event)"
+					skinClass="com.adobe.Quivus.view.controls.skins.ListSkins.contactlistSkin"
+					creationComplete="contacts_creationCompleteHandler(event)"	
+					/>
+					
+
+
+	</s:SkinnableContainer>
+	
+	<s:Button skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.closeBtnSkin"
+			  click="CloseHandler()"
+			  useHandCursor="true" buttonMode="true" toolTip="Close Contact List" />
+	
+</components1:PopupGroup>

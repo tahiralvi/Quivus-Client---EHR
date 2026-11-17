@@ -1,0 +1,1619 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:PinableSlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							 xmlns:s="library://ns.adobe.com/flex/spark" 
+							 xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+							 xmlns:vitals="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.physical.vitals.*" 
+							 xmlns:components="com.zigron.controls.extended.components.*"
+							 xmlns:quickInput="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.*" 
+							 xmlns:numericStepper="com.zigron.controls.extended.components.numericStepper.*"
+							 xmlns:notes="com.adobe.Quivus.view.controls.custom.patientExamView.notes.*"
+							 xmlns:buttonSeparators="com.adobe.Quivus.view.controls.skins.buttonSeparators.*" 
+							 creationComplete="slideoutpanel1_creationCompleteHandler(event)"
+							 QSViewStateChange="pinableslideoutpanel1_QSViewStateChangeHandler(event)" xmlns:components1="com.gazuntite.controls.extended.components.*" 
+							 >
+	<fx:Declarations>
+		<mx:NumberFormatter id="numFormatter" rounding="up" precision="1"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+
+		<![CDATA[
+			import com.adobe.Quivus.events.viewBackground.vital.LoadPatientMostRecentVitalsEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.utils.converter.UnitConverter;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.DictationPopup;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPanel;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPopup;
+			import com.adobe.Quivus.view.controls.skins.QIinternalBarFocusSkin;
+			import com.adobe.Quivus.view.controls.skins.QIinternalBarSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridDictationButtonSelectedSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridDictationButtonSkin;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBIconsButton;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.writeNotesButton;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.writeNotesButtonSelected;
+			import com.adobe.Quivus.view.events.SelectSection;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.quivus.skins.chrome.buttonSkins.VBdictationBtnSelected;
+			import com.adobe.quivus.skins.chrome.buttonSkins.VBnotesBtnSelected;
+			import com.adobe.quivus.skins.chrome.containerSkins.VitalsToolTipBG;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.VBIconsBlackButton;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.VBIconsButtonFilled;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import flashx.textLayout.factory.TruncationOptions;
+			
+			import mx.binding.utils.ChangeWatcher;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.PropertyChangeEvent;
+			import mx.formatters.NumberBaseRoundType;
+			import mx.formatters.NumberFormatter;
+			import mx.managers.IFocusManagerComponent;
+			
+			import spark.components.NumericStepper;
+			import spark.events.TextOperationEvent;
+			
+			import valueObjects.ModuleDictationDTO;
+			import valueObjects.ModuleNoteDTO;
+			import valueObjects.PhysicalDTO;
+			import valueObjects.RecentVitalDTO;
+			import valueObjects.VitalDTO;
+			
+			private var _englishMode:Boolean;
+			private var importVitalsPanel:ImportVitalsPanel;
+			private var notesPanel:NotesPanel;
+			
+			private var dictationPanel:DictationPopup;
+			[Bindable]
+			private var selectedUnit:uint = 0;
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var m_bHasChange:Boolean;
+			
+			[Bindable]
+			public function get hasChange():Boolean
+			{
+				return m_bHasChange;
+			}
+			
+			public function set hasChange(value:Boolean):void
+			{
+				m_bHasChange = value;
+				
+				if( value )
+				{
+					id_Header.id_ChangeIndicator.visible		 = true;
+					id_Header.id_ChangeIndicator.includeInLayout = true;
+				}
+				else
+				{
+					id_Header.id_ChangeIndicator.visible		 = false;
+					id_Header.id_ChangeIndicator.includeInLayout = false;
+				}
+			}
+			
+			private var m_bIsModelUpdated:Boolean;
+			private var moduleConstantName:String = Constants.PATIENT_VITAL_MODULE_NAME;
+			public function get IsModelUpdated():Boolean
+			{
+				return m_bIsModelUpdated;
+			}
+			
+			public function set IsModelUpdated(value:Boolean):void
+			{
+				m_bIsModelUpdated = value;
+				
+				if( value )
+				{
+					
+					var module:ModuleDictationDTO = QSUtilityFunctions.getModuleDictationDTO(moduleConstantName);					
+					var noteDto:ModuleNoteDTO = QSUtilityFunctions.getModuleNoteDTO( moduleConstantName);
+					
+					if(module.DictationID && module.DictationID != Constants.GUID_FORMAT)
+					{
+						id_Header.id_Voice.setStyle("skinClass", VBdictationBtnSelected);
+						id_Header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+						//id_dictationIndicator.visible = true;
+					}
+					
+					if(noteDto.Note && noteDto.Note != "")
+					{
+						id_Header.id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected);
+						id_Header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+						//id_noteIndicator.visible = true;
+					}
+					
+					//init();
+					
+					LoadDataMode();
+				}
+			}
+			
+			private function UpdateChange():void
+			{
+				try
+				{
+					hasChange = model.quickInputDTO.Physical.Vitals != null;
+				}
+				catch( e:Error )
+				{
+					trace( "QIPhysical::Vital", e.message );
+				}
+			}
+			
+			
+			public override function set AllowOtherPopup(value:Boolean):void
+			{
+				super.AllowOtherPopup = value;
+				if( ! value && notesPanel)
+					notesPanel.removePopup();
+				
+				if( ! value && dictationPanel)
+					dictationPanel.removePopup();
+			}
+			
+			[Bindable]
+			private function get PhysicalHeight():Array
+			{
+				/* if(this.englishMode == true)
+				convertInMetricAgain();
+				else
+				convertInEnglishAgain(); */
+				
+				if(model.quickInputDTO.Physical==null)
+					model.quickInputDTO.Physical = new PhysicalDTO();
+				
+				if(model.quickInputDTO.Physical.Vitals==null)
+					model.quickInputDTO.Physical.Vitals = new VitalDTO();
+				
+				return [Number(model.quickInputDTO.Physical.Vitals.Height),0];
+			}
+			
+			private function set PhysicalHeight(value:Array):void
+			{	
+				model.quickInputDTO.Physical.Vitals.Height = value[0].toString();
+				
+				/* if(this.englishMode == true)
+				convertInMetricAgain();
+				else
+				convertInEnglishAgain(); */
+			}
+			
+			///Author Mansoor
+			///Date 15 Mar 2011
+			///get Weight
+			[Bindable]
+			private function get PhysicalWeight():Number
+			{
+				return Number( model.quickInputDTO.Physical.Vitals.Weight );
+			}
+			
+			///Author Mansoor
+			///Date 15 Mar 2011
+			///set Weight
+			private function set PhysicalWeight(value:Number):void
+			{
+				model.quickInputDTO.Physical.Vitals.Weight = value.toString();
+			}
+			
+			///Author Mansoor
+			///Date 15 Mar 2011
+			///get Temperature
+			[Bindable]
+			private function get PhysicalTemperature():Number
+			{
+				return Number( model.quickInputDTO.Physical.Vitals.Temperature );
+			}
+			
+			///Author Mansoor
+			///Date 15 Mar 2011
+			///set Temperature
+			private function set PhysicalTemperature(value:Number):void
+			{
+				model.quickInputDTO.Physical.Vitals.Temperature = value.toString();
+			}
+			
+			///Author Mansoor
+			///Date 15 Mar 2011		
+			///get Pulse
+			[Bindable]
+			private function get PhysicalPulse():Number
+			{
+				return Number( model.quickInputDTO.Physical.Vitals.Pulse );
+			}
+			
+			///Author Mansoor
+			///Date 15 Mar 2011
+			///set Pulse
+			private function set PhysicalPulse(value:Number):void
+			{
+				model.quickInputDTO.Physical.Vitals.Pulse = value.toString();
+			}
+			
+			///Author Mansoor
+			///Date 15 Mar 2011		
+			///get Respiration
+			[Bindable]
+			private function get PhysicalRespiration():Number
+			{
+				return Number(model.quickInputDTO.Physical.Vitals.Respiration);
+			}
+			
+			///Author Mansoor
+			///Date 15 Mar 2011
+			///set Respiration
+			private function set PhysicalRespiration(value:Number):void
+			{
+				model.quickInputDTO.Physical.Vitals.Respiration = value.toString();
+			}
+			
+			///Author Tahir Alvi
+			///Date 27 08 2011		
+			///get Oxygen
+			[Bindable]
+			private function get Oxygen():String
+			{
+				return (model.quickInputDTO.Physical.Vitals.Oxygen);
+			}
+			
+			///Author Tahir Alvi
+			///Date 27 08 2011		
+			///Set Oxygen
+			private function set Oxygen(value:String):void
+			{
+				model.quickInputDTO.Physical.Vitals.Oxygen = value.toString();
+			}
+			
+			
+			///Author Mansoor
+			///Date 15 Mar 2011		
+			///get BPSys
+			[Bindable]
+			private function get PhysicalBPSys():Number
+			{
+				return Number(model.quickInputDTO.Physical.Vitals.BPSys);
+			}
+			
+			///Author Mansoor
+			///Date 15 Mar 2011
+			///set BPSys
+			private function set PhysicalBPSys(value:Number):void
+			{
+				model.quickInputDTO.Physical.Vitals.BPSys = value.toString();
+			}
+			
+			///Author Mansoor
+			///Date 15 Mar 2011	
+			///get BPDys
+			[Bindable]
+			private function get PhysicalBPDys():Number
+			{	
+				return Number(model.quickInputDTO.Physical.Vitals.BPDys);
+			}
+			
+			///Author Mansoor
+			///Date 15 Mar 2011
+			///set BPDys
+			private function set PhysicalBPDys(value:Number):void
+			{
+				model.quickInputDTO.Physical.Vitals.BPDys = value.toString();				
+			}
+			
+			private var _bmi:Number = 0;
+			
+			[Bindable]
+			public function get bmi():Number
+			{
+				return _bmi;
+			}
+			
+			public function set bmi(value:Number):void
+			{
+				_bmi = value;
+			}
+			
+			[Bindable]
+			public function get englishMode():Boolean
+			{
+				return _englishMode;
+			}
+			
+			public function set englishMode(value:Boolean):void
+			{
+				if (value != _englishMode)
+				{
+					_englishMode = value;
+					
+					var hgtLbl:String = "Height ";
+					var wgtLbl:String = "Weight ";
+					var tempLbl:String = "Temp ";
+					
+					if (_englishMode)
+					{
+						//		id_Height.doubleModeOn 	= false;
+						//		id_Height.width 		= id_Height.doubleModeOn? 130 : 80;
+						/* id_Height.width         = 80;
+						*/						//	id_Height.maxValues 	= [269.99, 99.99];
+						//	id_Height.stepSizes 	= id_Height.doubleModeOn?[1]:[1];
+						
+						id_Weight.maxValues = [999.9];
+						
+						//	hgtLbl += id_Height.doubleModeOn? "(Feet/Inch)" : "(Inch)";
+						hgtLbl += "(Inch)";
+						wgtLbl += "(lbs)";
+						tempLbl += "(F)";
+						
+						convertInEnglishUnits();
+					}
+					else
+					{
+						//		id_Height.doubleModeOn = false;
+						/* id_Height.width = 70; */
+						
+						//	id_Height.stepSizes = [0.01,0];
+						//	id_Height.maxValues = [9999.99];
+						id_Weight.maxValues = [9999.99];
+						
+						hgtLbl += "(Cm)";
+						wgtLbl += "(Kg)";
+						tempLbl += "(C)";
+						
+						convertInMetricUnits();
+						
+					}
+					
+					id_Height.label = hgtLbl;
+					id_Weight.label = wgtLbl;
+					id_Temperature.label = tempLbl;
+				}
+			}
+			
+			public function LoadDataMode():void
+			{
+				if( model.quickInputDTO.Physical!=null && model.quickInputDTO.Physical.Vitals!=null)
+				{
+					id_Header.id_english.selected 	= !model.quickInputDTO.Physical.Vitals.IsMetricDisplaySelected;
+					id_Header.id_metric.selected 	=  model.quickInputDTO.Physical.Vitals.IsMetricDisplaySelected;
+					
+					var hgtLbl:String = "Height ";
+					var wgtLbl:String = "Weight ";
+					var tempLbl:String = "Temp ";
+					
+					if ( !model.quickInputDTO.Physical.Vitals.IsMetricDisplaySelected )
+					{
+						_englishMode = true;
+						
+						
+						if (_englishMode)
+						{
+							id_Weight.maxValues = [999.9];
+							
+							hgtLbl += "(Inch)";
+							wgtLbl += "(lbs)";
+							tempLbl += "(F)";
+							
+							//						convertInEnglishUnits();
+						}
+					}
+					else
+					{
+						_englishMode = false;
+						
+						id_Weight.maxValues = [9999.99];
+						
+						hgtLbl += "(Cm)";
+						wgtLbl += "(Kg)";
+						tempLbl += "(C)";
+						
+						//						convertInMetricUnits();
+						id_Height.label = hgtLbl;
+						id_Weight.label = wgtLbl;
+						id_Temperature.label = tempLbl;
+						
+					}
+					id_Height.values 		= [Number(model.quickInputDTO.Physical.Vitals.Height), 0];
+					id_Weight.values 		= [Number( model.quickInputDTO.Physical.Vitals.Weight ), 0];
+					id_Temperature.values 	= [Number( model.quickInputDTO.Physical.Vitals.Temperature ), 0];
+					id_Respiratory.values 	= [Number(model.quickInputDTO.Physical.Vitals.Respiration), 0];
+					id_Pulse.values 	  	= [Number( model.quickInputDTO.Physical.Vitals.Pulse ), 0];
+					id_BloodPressure.values = [Number(model.quickInputDTO.Physical.Vitals.BPSys), Number(model.quickInputDTO.Physical.Vitals.BPDys)];
+					id_oxygen.text	 		= (model.quickInputDTO.Physical.Vitals.Oxygen);
+				}
+			}
+			
+			private function init():void
+			{
+				
+				//M -- add a null check like this ....
+				id_Header.addEventListener(VitalsHeaderEvent.METRIC_UNIT_SELECTED, vitalHeaderClickHandler, false, 0, true);
+				id_Header.addEventListener(VitalsHeaderEvent.ENGLISH_UNIT_SELECTED, vitalHeaderClickHandler, false, 0, true);
+				id_Header.addEventListener(VitalsHeaderEvent.CLEAR_CLICKED, vitalHeaderClickHandler, false, 0, true);
+				id_Header.addEventListener(VitalsHeaderEvent.IMPORT_VITALS_CLICKED, vitalHeaderClickHandler, false, 0, true);
+				
+				id_Height.firstNumericStepper.addEventListener(Event.CHANGE, heightChangeEventHandler, false, 0, true);
+				id_Height.secondNumericStepper.addEventListener(Event.CHANGE, heightChangeEventHandler, false, 0, true);
+				
+				id_Weight.firstNumericStepper.addEventListener(Event.CHANGE, weightChangeEventHandler, false, 0, true);
+				
+				id_Temperature.firstNumericStepper.addEventListener(Event.CHANGE, temperatureChangeEventHandler, false, 0, true);
+				
+				id_Pulse.firstNumericStepper.addEventListener(Event.CHANGE, pulseChangeEventHandler, false, 0, true);
+				
+				id_Respiratory.firstNumericStepper.addEventListener(Event.CHANGE, respiratoryChangeEventHandler, false, 0, true);
+				
+				id_BloodPressure.firstNumericStepper.addEventListener(Event.CHANGE, bloodPressureChangeEventHandler, false, 0, true);
+				id_BloodPressure.secondNumericStepper.addEventListener(Event.CHANGE, bloodPressureChangeEventHandler, false, 0, true);	
+				
+				registerFocusOutHandlers();
+				convertInPreviousSystem();//Tahir Alvi - call on init;
+			}
+			
+			//Mansoor
+			//Date 19 Mar 2011
+			private function heightChangeEventHandler(event:Event):void
+			{
+				this.PhysicalHeight = id_Height.values;
+			}
+			
+			//Mansoor
+			//Date 19 Mar 2011
+			private function weightChangeEventHandler(event:Event):void
+			{
+				this.PhysicalWeight = id_Weight.values[0];
+			}
+			
+			//Mansoor
+			//Date 19 Mar 2011
+			private function temperatureChangeEventHandler(event:Event):void
+			{
+				this.PhysicalTemperature = id_Temperature.values[0];
+			}
+			
+			//Mansoor
+			//Date 19 Mar 2011
+			private function pulseChangeEventHandler(event:Event):void
+			{
+				this.PhysicalPulse = id_Pulse.values[0];
+			}
+			
+			//Mansoor
+			//Date 19 Mar 2011
+			private function respiratoryChangeEventHandler(event:Event):void
+			{
+				this.PhysicalRespiration = id_Respiratory.values[0];
+			}
+			
+			//Mansoor
+			//Date 19 Mar 2011
+			private function bloodPressureChangeEventHandler(event:Event):void
+			{
+				this.PhysicalBPSys = id_BloodPressure.values[0];
+				this.PhysicalBPDys = id_BloodPressure.values[1];
+			}
+			
+			private function vitalHeaderClickHandler(event:VitalsHeaderEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_VITALS ) )
+				{
+					
+					if (event.type == VitalsHeaderEvent.METRIC_UNIT_SELECTED)
+					{
+						englishMode = false;
+					}
+					else if (event.type == VitalsHeaderEvent.ENGLISH_UNIT_SELECTED)
+					{
+						englishMode = true;
+					}
+					else if (event.type == VitalsHeaderEvent.CLEAR_CLICKED)
+					{
+						(PhysicalHeight[0]   > 	 0 || PhysicalHeight[1] > 0) ||
+							PhysicalWeight 		 >	 0;
+						PhysicalTemperature  > 	 0;
+						PhysicalPulse 		 >   0;
+						PhysicalRespiration  >   0;
+						PhysicalBPSys 		 >   0.0;
+						PhysicalBPDys 		 >   0.0;
+						id_BMI.value 		 >   0.0;
+						id_oxygen.text 		 != "";
+						
+						
+						UtilityFunctions.AskMessage("Do You Want To Clear All Values?", function():void
+						{
+							id_Height.values 			= [0.0, 0.0];
+							id_Weight.values 			= [0.0, 0.0];
+							id_Temperature.values 		= [0.0, 0.0];
+							id_Pulse.values 			= [0.0, 0.0];
+							id_Respiratory.values 		= [0.0, 0.0];
+							id_BloodPressure.values 	= [0.0, 0.0];
+							
+							PhysicalHeight 			= [0.0, 0.0];
+							PhysicalWeight 			= 0.0;
+							PhysicalTemperature 	= 0.0;
+							PhysicalPulse 			= 0.0;
+							PhysicalRespiration 	= 0.0;
+							PhysicalBPSys 			= 0.0;
+							PhysicalBPDys 			= 0.0;
+							id_BMI.value 			= 0.0;
+							Oxygen 					= "";
+							id_oxygen.text 			= "";
+							
+							if (notesPanel && notesPanel.notesDTO)
+							{
+								notesPanel.notesDTO.Note = "";
+								notesPanel.notesDTO.NoteSubject = "";
+								notesPanel.id_body.id_subject.text = "";
+								notesPanel.id_body.id_message.text = "";
+							}
+						});
+					}
+					else if (event.type == VitalsHeaderEvent.IMPORT_VITALS_CLICKED)
+					{
+						var lmrV:LoadPatientMostRecentVitalsEvent = new LoadPatientMostRecentVitalsEvent();
+						CairngormEventDispatcher.getInstance().dispatchEvent(lmrV);
+						showImportVitalsPopup();
+					}
+					
+					//M
+					if(model.quickInputDTO){
+						if(model.quickInputDTO.Physical){
+							if(model.quickInputDTO.Physical.Vitals){
+								if(model.quickInputDTO.Physical.Vitals.IsMetricDisplaySelected){
+									model.quickInputDTO.Physical.Vitals.IsMetricDisplaySelected = !this.englishMode;
+								}
+							}
+						}
+					}
+					
+				}
+			}
+			
+			private function showImportVitalsPopup():void
+			{
+				/* 	if (importVitalsPanel)
+				importVitalsPanel.removePopup();
+				
+				importVitalsPanel = new ImportVitalsPanel();
+				importVitalsPanel.width = 550;
+				importVitalsPanel.height = 150;
+				
+				importVitalsPanel.ShowPopup(this); */
+				
+				//Remove notes panel if its open....
+				
+				
+				if( importVitalsPanel && id_NotesArea.contains( importVitalsPanel ) )
+				{
+					id_NotesArea.removeElement( importVitalsPanel );
+					id_Header.id_import.selected = false;
+					return;
+				}
+				
+				importVitalsPanel 				= new ImportVitalsPanel();
+				//importVitalsPanel.width			= 550;
+				importVitalsPanel.percentWidth		= 100;
+				importVitalsPanel.height			= 130;
+				
+				id_NotesArea.addElement( importVitalsPanel );
+				
+				//notesPanel.notesDTO	= UtilityFunctions.getModuleNoteDTO( Constants.PATIEN_TVITAL_MODULE_NAME );
+				
+				
+				importVitalsPanel.addEventListener(FlexEvent.CREATION_COMPLETE, function():void {	
+					
+					
+					importVitalsPanel.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						if( importVitalsPanel && id_NotesArea.contains( importVitalsPanel ) )
+						{
+							id_NotesArea.removeElement( importVitalsPanel );
+							id_Header.id_import.selected = false;
+						}
+					});
+					
+					
+					
+					
+					importVitalsPanel.id_importVitalsGrid.addEventListener("importVitalRecordClick", OnRecentVitalGridClick);
+					
+					
+				});
+				/* var pLoc:Point = new Point( id_Header.width , id_Header.y - 14 );
+				var loc:Point = id_Header.localToGlobal( pLoc );
+				
+				importVitalsPanel.move(loc.x, loc.y); */
+			}
+			
+			//Mansoor
+			//Date 19 Mar 2011
+			protected function OnRecentVitalGridClick(event:Event):void
+			{
+				var selectedItem:RecentVitalDTO = model.patientPreviousVitalsList[ event.currentTarget.selectedIndex ] as RecentVitalDTO;
+				//var selectedItem:VitalDTO = model.vitalDTOListByPatient[ event.currentTarget.selectedIndex ] as VitalDTO;
+				
+				this.englishMode = !selectedItem.IsMetricDisplaySelected;
+				
+				if (englishMode)
+					id_Header.id_english.selected = true;
+				else
+					id_Header.id_metric.selected = true;
+				
+				if(selectedItem.Height != null && selectedItem.Height != '')
+					this.PhysicalHeight = [selectedItem.Height, 0];
+				
+				if(selectedItem.Weight != null && selectedItem.Weight != '')
+					this.PhysicalWeight = Number(selectedItem.Weight);
+				
+				if(selectedItem.Temperature != null && selectedItem.Temperature != '')
+					this.PhysicalTemperature = Number(selectedItem.Temperature);
+				
+				if(selectedItem.Pulse != null && selectedItem.Pulse != '')
+					this.PhysicalPulse = Number(selectedItem.Pulse);
+				
+				if(selectedItem.Respiration != null && selectedItem.Respiration != '')
+					this.PhysicalRespiration = Number(selectedItem.Respiration);
+				
+				if(selectedItem.BPSys != null && selectedItem.BPSys != '')
+					this.PhysicalBPSys = Number(selectedItem.BPSys);		
+				
+				if(selectedItem.BPDys != null && selectedItem.BPDys != '')
+					this.PhysicalBPDys = Number(selectedItem.BPDys);
+				
+				// zahid
+				if(selectedItem.Oxygen != null && selectedItem.Oxygen != '')
+					this.Oxygen = selectedItem.Oxygen;
+				// zahid
+				
+				//close the import panel
+				if( importVitalsPanel && id_NotesArea.contains( importVitalsPanel ) )
+				{
+					id_NotesArea.removeElement( importVitalsPanel );
+					id_Header.id_import.selected = false;
+				}
+				
+				importVitalsPanel.removePopup();
+			}
+			
+			private function convertInEnglishUnits():void
+			{
+				if(model.quickInputDTO.Physical.Vitals == null)
+					return;
+				
+				var w:Number = UnitConverter.kilogramsToPounds(Number(model.quickInputDTO.Physical.Vitals.Weight));
+				var h:Number = UnitConverter.centimetersToInches(Number(model.quickInputDTO.Physical.Vitals.Height));
+				var t:Number = UnitConverter.celsiusToFahrenheit(Number(model.quickInputDTO.Physical.Vitals.Temperature));
+				
+				this.PhysicalWeight = w;
+				this.PhysicalHeight = [h];
+				this.PhysicalTemperature = t;
+				
+				id_Weight.values = [w];
+				id_Height.values = [h];
+				id_Temperature.values = [t];
+				convertInMetricAgain();//Tahir Alvi - For display previous selected System values
+			}
+			//Tahir Alvi -- for Showing previous system values 
+			private function convertInMetricAgain():void
+			{
+				if(model.quickInputDTO.Physical.Vitals == null)
+					return;
+				
+				var t:Number;
+				var h:Number;
+				var w:Number;
+				
+				if(Number(id_Temperature.values[0]) == 0){
+					t = 0;
+				}else{
+					t = UnitConverter.fahrenheitToCelsius(Number(id_Temperature.values[0]));
+				}
+				if(Number(id_Height.values[0])== 0){
+					h = 0;
+				}else{
+					h= UnitConverter.inchesToCentimeters(Number(id_Height.values[0]));
+				}
+				if(Number(id_Weight.values[0]) == 0){
+					w = 0;
+				}else{
+					w = UnitConverter.poundsToKilograms(Number(id_Weight.values[0]));
+				}
+				
+				lbl_Height.text			= 'Ht. (Cm): '  +  numFormatter.format(h).toString() ; 
+				lbl_Weight.text 		= 'Wt. (Kg): '  + numFormatter.format(w).toString() ; 
+				lbl_Temperature.text 	= 'Temp(C): '   + numFormatter.format(t).toString() ; 
+			}
+			private function convertInMetricUnits():void
+			{
+				if(model.quickInputDTO.Physical.Vitals == null)
+					return;
+				
+				var w:Number = UnitConverter.poundsToKilograms(Number(model.quickInputDTO.Physical.Vitals.Weight));
+				var h:Number = UnitConverter.inchesToCentimeters(Number(model.quickInputDTO.Physical.Vitals.Height));
+				var t:Number = UnitConverter.fahrenheitToCelsius(Number(model.quickInputDTO.Physical.Vitals.Temperature));
+				
+				this.PhysicalWeight = w;
+				this.PhysicalHeight = [h];
+				this.PhysicalTemperature = t;
+				
+				id_Weight.values = [w];
+				id_Height.values = [h];
+				id_Temperature.values = [t];
+				convertInEnglishAgain();//Tahir Alvi - For display previous selected System values
+			}
+			//Tahir Alvi -- for Showing previous system values 
+			private function convertInEnglishAgain():void
+			{
+				if(model.quickInputDTO.Physical.Vitals == null)
+					return;
+				
+				var t:Number;
+				var h:Number;
+				var w:Number
+				if(Number(id_Temperature.values[0]) == 0){
+					t = 0;
+				}else{
+					t = UnitConverter.celsiusToFahrenheit(Number(id_Temperature.values[0]));
+				}
+				if(Number(id_Height.values[0]) == 0){
+					h = 0;
+				}else{
+					h = UnitConverter.centimetersToInches(Number(id_Height.values[0]));
+				}
+				if(Number(id_Weight.values[0]) == 0){
+					w = 0;
+				}else{
+					w = UnitConverter.kilogramsToPounds(Number(id_Weight.values[0]));
+				}
+				
+				lbl_Height.text			= 'Ht. (Inch): ' 		+	numFormatter.format(h).toString() ; 
+				lbl_Weight.text 		= 'Wt. (lbs): ' 		+	numFormatter.format(w).toString() ; 
+				lbl_Temperature.text 	= 'Temp(F): ' 			+ 	numFormatter.format(t).toString() ; 
+			}
+			private function calculateBMI():void
+			{
+				
+				var hgt:Array = id_Height.values;
+				var wgt:Array = id_Weight.values;
+				
+				if (_englishMode)
+				{
+					if (hgt && hgt.length && wgt && wgt.length)
+					{
+						//var hgtInMeterSq1:Number = Math.pow(UnitConverter.centimetersToMeters(UnitConverter.feetToCentimeters(hgt[0]) + UnitConverter.inchesToCentimeters(hgt[1])), 2);
+						
+						var cm:Number 				= UnitConverter.inchesToCentimeters( hgt[0] );
+						var m:Number 				= UnitConverter.centimetersToMeters( cm );
+						var hgtInMeterSq1:Number 	= Math.pow( m, 2 );
+						var kg:Number				= UnitConverter.poundsToKilograms( wgt[0] );
+						
+						if (hgtInMeterSq1 > 0)
+						{
+							bmi =  int( ( kg / hgtInMeterSq1)* 100 ) / 100;
+						}
+						else
+							bmi = 0;
+					}
+					else
+						bmi = 0;
+				}
+				else
+				{
+					if (hgt && hgt.length && wgt && wgt.length)
+					{
+						var m:Number 				= UnitConverter.centimetersToMeters( hgt[0] );
+						
+						var hgtInMeterSq2:Number = Math.pow( m , 2);
+						
+						if (hgtInMeterSq2 > 0)
+							bmi = int(( wgt[0] / hgtInMeterSq2 ) * 100 ) / 100;
+							//							bmi = Math.round( wgt[0] / hgtInMeterSq2 );
+						else
+							bmi = 0;
+					}
+					else
+						bmi = 0;
+				}
+				
+				if (isNaN(bmi))
+					bmi = 0;
+			}
+			
+			private var hasFocus:IFocusManagerComponent;
+			
+			private function validateHeight(event:FocusEvent):void
+			{
+				var isNotValid:Boolean = false;
+				var value:Array = id_Height.values;
+				
+				var stepper:LabelNumericStepper2 = LabelNumericStepper2(event.target);
+				
+				if (value && value.length)
+				{
+					//if (id_Height.doubleModeOn && value.length > 1)
+					if (englishMode)
+					{
+						if( stepper.doubleModeOn )
+							isNotValid = ValidateHeightInFeet( event, stepper );
+						else
+							isNotValid = ValidateHeightInInches( event, stepper );
+					}
+					else
+					{
+						var cm:Number = value[0];
+						
+						if (cm != 0 && (cm < 38 || cm > 245))
+						{
+							isNotValid = true;
+							inputStepper = stepper.firstNumericStepper;
+						}
+					}
+					
+					calculateBMI();
+					
+					if (isNotValid)
+					{
+						unRegisterFocusOutHandlers();
+						hasFocus = focusManager.getFocus();
+						
+						vital = id_Height;
+						selectedUnit = 1;
+						Alert.show("Provided value for height does not occur in feasible range.\n Do you want to keep these values",
+							"Height out of Range error", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, alertsCloseHandler);
+					}
+				}
+			}
+			
+			private function ValidateHeightInInches(event:FocusEvent, stepper:LabelNumericStepper2):Boolean
+			{
+				var value:Array = id_Height.values;
+				var inches:Number = value[0];
+				
+				if (event.relatedObject == stepper.firstNumericStepper)
+				{
+					inputStepper = stepper.firstNumericStepper;
+					
+					if ( inches != 0 && ( inches < 15 || inches > 96 ) )
+					{
+						return true;
+					}
+				}
+				
+				return false
+			}
+			
+			private function ValidateHeightInFeet(event:FocusEvent, stepper:LabelNumericStepper2):Boolean
+			{
+				var value:Array = id_Height.values;
+				var ft:Number = value[0];
+				var inches:Number = value[1];
+				
+				
+				if (ft != 0 && (event.relatedObject == stepper.firstNumericStepper) )
+				{
+					inputStepper = stepper.firstNumericStepper;
+					
+					if (ft > 0 && ft < 1)
+					{
+						return true;
+					}
+					else if (ft > 8)
+					{
+						return true;
+					}
+				}
+					
+				else if (event.relatedObject == stepper.secondNumericStepper)
+				{
+					inputStepper = stepper.secondNumericStepper;
+					
+					if (ft == 1 && inches < 3)
+					{
+						return true;
+					}
+				}
+				
+				return false
+			}
+			
+			
+			private function validateWeight(event:FocusEvent):void
+			{
+				var isNotValid:Boolean = false;
+				var value:Array = id_Weight.values;
+				
+				var stepper:LabelNumericStepper2 = LabelNumericStepper2(event.target);
+				
+				if (value && value.length)
+				{
+					if (englishMode)
+					{
+						var lbs:Number = value[0];
+						
+						if (lbs != 0 && (lbs < 4 || lbs > 442 ))
+						{
+							isNotValid = true;
+							
+							inputStepper = stepper.firstNumericStepper;
+						}
+					}
+					else
+					{
+						var kgs:Number = value[0];
+						
+						if (kgs != 0 && (kgs < 2 || kgs > 200))
+						{
+							isNotValid = true;
+							
+							inputStepper = stepper.firstNumericStepper;
+						}
+					}
+					
+					calculateBMI();
+					
+					if (isNotValid)
+					{
+						unRegisterFocusOutHandlers();
+						hasFocus = focusManager.getFocus();
+						
+						vital = id_Weight;
+						selectedUnit = 2;
+						Alert.show("Provided value for weight does not occur in feasible range.\n Do you want to keep these values",
+							"Weight out of Range error", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, alertsCloseHandler);
+					}
+				}
+			}
+			
+			private function validateTemperature(event:FocusEvent):void
+			{
+				var isNotValid:Boolean = false;
+				var value:Array = id_Temperature.values;
+				
+				var stepper:LabelNumericStepper2 = LabelNumericStepper2(event.target);
+				
+				if (value && value.length)
+				{
+					if (englishMode == false)
+					{
+						var c:Number = value[0];
+						
+						if (c != 0 && (c < 35 || c > 40 ))
+						{
+							isNotValid = true;
+							
+							inputStepper = stepper.firstNumericStepper;
+						}
+					}
+					else
+					{
+						var f:Number = value[0];
+						
+						if (f != 0 && (f < 95.5 || f > 104.5))
+						{
+							isNotValid = true;
+							
+							inputStepper = stepper.firstNumericStepper;
+						}
+					}
+					
+					if (isNotValid)
+					{
+						unRegisterFocusOutHandlers();
+						hasFocus = focusManager.getFocus();
+						
+						vital = id_Temperature;
+						selectedUnit = 3;
+						Alert.show("Provided value for temperature does not occur in feasible range.\n Do you want to keep these values",
+							"Temperature out of Range error", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, alertsCloseHandler);
+					}
+				}
+			}
+			
+			private function validatePulse(event:FocusEvent):void
+			{
+				var isNotValid:Boolean = false;
+				var value:Array = id_Pulse.values;
+				
+				var stepper:LabelNumericStepper2 = LabelNumericStepper2(event.target);
+				
+				if (value && value.length)
+				{
+					var p:Number = value[0];
+					
+					if (p != 0 && (p < 50 || p > 135 ))
+					{
+						isNotValid = true;
+						
+						inputStepper = stepper.firstNumericStepper;
+					}
+					
+					if (isNotValid)
+					{
+						unRegisterFocusOutHandlers();
+						hasFocus = focusManager.getFocus();
+						
+						vital = id_Pulse;
+						selectedUnit = 4;
+						Alert.show("Provided value for pulse does not occur in feasible range.\n Do you want to keep these values",
+							"Pulse out of Range error", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, alertsCloseHandler);
+					}
+				}
+			}
+			
+			private function validateRespiratory(event:FocusEvent):void
+			{
+				var isNotValid:Boolean = false;
+				var value:Array = id_Respiratory.values;
+				
+				var stepper:LabelNumericStepper2 = LabelNumericStepper2(event.target);
+				
+				if (value && value.length)
+				{
+					var r:Number = value[0];
+					
+					if (r != 0 && (r < 10 || r > 65))
+					{
+						isNotValid = true;
+						
+						inputStepper = stepper.firstNumericStepper;
+					}
+					
+					if (isNotValid)
+					{
+						unRegisterFocusOutHandlers();
+						hasFocus = focusManager.getFocus();
+						
+						vital = id_Respiratory;
+						selectedUnit = 5;
+						Alert.show("Provided value for respiratory does not occur in feasible range.\n Do you want to keep these values",
+							"Respiratory out of Range error", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, alertsCloseHandler);
+					}
+				}
+			}
+			
+			private var inputStepper:NumericStepper;
+			
+			private function validateBloodPressure(event:FocusEvent):void
+			{
+				var isNotValid:Boolean = false;
+				var value:Array = id_BloodPressure.values;
+				
+				if (value && value.length > 1)
+				{
+					var sys:Number = value[0];
+					var dys:Number = value[1];
+					
+					var stepper:LabelNumericStepper2 = LabelNumericStepper2(event.target);
+					
+					if (event.relatedObject == stepper.firstNumericStepper)
+					{
+						inputStepper = stepper.firstNumericStepper;
+						
+						if (sys != 0 && (sys < 70 || sys > 140))
+						{
+							isNotValid = true;
+						}
+					}
+						
+					else if (event.relatedObject == stepper.secondNumericStepper)
+					{
+						inputStepper = stepper.secondNumericStepper;
+						
+						if (dys != 0 && (dys < 50 || dys > 95))
+						{
+							isNotValid = true;
+						}
+					}
+					
+					if (isNotValid)
+					{
+						unRegisterFocusOutHandlers();
+						hasFocus = focusManager.getFocus();
+						
+						vital = id_BloodPressure;
+						
+						var errorMsg:String = "";
+						
+						if (inputStepper == stepper.firstNumericStepper)
+							errorMsg = "Provided value for blood pressure(Sys) does not occur in feasible range";
+						else
+							errorMsg = "Provided value for blood pressure(Dys) does not occur in feasible range";
+						
+						errorMsg += ".\n Do you want to keep this value";
+						selectedUnit = 6;
+						Alert.show(errorMsg, "Blood pressure out of Range error", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, alertsCloseHandler);
+					}
+				}
+			}
+			
+			private var vital:LabelNumericStepper2;
+			private function alertsCloseHandler(event:CloseEvent):void
+			{				
+				if (vital)
+				{
+					switch(event.detail)
+					{
+						case Alert.YES:
+							vital.selected = false;
+							
+							if (hasFocus)
+								//hasFocus.setFocus();
+								focusManager.setFocus(hasFocus);
+							break;
+						
+						case Alert.NO:
+							vital.selected = true;
+							
+							if (inputStepper == vital.firstNumericStepper){
+								vital.reset(true, false); 
+								resetData();
+							}
+							else{
+								vital.reset(false, true);
+							}
+							
+							//vital.setFocus();
+							break;	
+					}
+					
+					registerFocusOutHandlers();
+				}
+			}
+			private function resetData():void
+			{
+				switch(selectedUnit)
+				{
+					case 1:
+						model.quickInputDTO.Physical.Vitals.Height = '';
+						break;
+					case 2:
+						model.quickInputDTO.Physical.Vitals.Weight = '';
+						break;
+					case 3:
+						model.quickInputDTO.Physical.Vitals.Temperature = '';
+						break;
+					case 4:
+						model.quickInputDTO.Physical.Vitals.Pulse = '';
+						break;
+					case 5:
+						model.quickInputDTO.Physical.Vitals.Respiration = '';
+						break;
+					case 6:
+						model.quickInputDTO.Physical.Vitals.BPDys = '';
+						break;
+					default:
+						break;
+				}
+			}
+			private function registerFocusOutHandlers():void
+			{
+				id_Height.addEventListener(FocusEvent.FOCUS_OUT, validateHeight, false, 0, true);
+				id_Weight.addEventListener(FocusEvent.FOCUS_OUT, validateWeight, false, 0, true);
+				id_Temperature.addEventListener(FocusEvent.FOCUS_OUT, validateTemperature, false, 0, true);
+				id_Pulse.addEventListener(FocusEvent.FOCUS_OUT, validatePulse, false, 0, true);
+				id_Respiratory.addEventListener(FocusEvent.FOCUS_OUT, validateRespiratory, false, 0, true);
+				id_BloodPressure.addEventListener(FocusEvent.FOCUS_OUT, validateBloodPressure, false, 0, true);
+			}
+			
+			private function unRegisterFocusOutHandlers():void
+			{
+				id_Height.removeEventListener(FocusEvent.FOCUS_OUT, validateHeight);
+				id_Weight.removeEventListener(FocusEvent.FOCUS_OUT, validateWeight);
+				id_Temperature.removeEventListener(FocusEvent.FOCUS_OUT, validateTemperature);
+				id_Pulse.removeEventListener(FocusEvent.FOCUS_OUT, validatePulse);
+				id_Respiratory.removeEventListener(FocusEvent.FOCUS_OUT, validateRespiratory);
+				id_BloodPressure.removeEventListener(FocusEvent.FOCUS_OUT, validateBloodPressure);
+			}
+			
+			private function registerChangeWatcherHandlers():void
+			{
+				ChangeWatcher.watch(id_Height, "hasViewChanged", vitalsViewChangedWatcherHandler);
+				ChangeWatcher.watch(id_Weight, "hasViewChanged", vitalsViewChangedWatcherHandler);
+				ChangeWatcher.watch(id_Temperature, "hasViewChanged", vitalsViewChangedWatcherHandler);
+				ChangeWatcher.watch(id_Pulse, "hasViewChanged", vitalsViewChangedWatcherHandler);
+				ChangeWatcher.watch(id_Respiratory, "hasViewChanged", vitalsViewChangedWatcherHandler);
+				ChangeWatcher.watch(id_BloodPressure, "hasViewChanged", vitalsViewChangedWatcherHandler);
+				ChangeWatcher.watch(id_oxygen, "text", vitalsViewChangedWatcherHandler);
+			}
+			
+			private function vitalsViewChangedWatcherHandler(event:Event):void
+			{
+				vitalsGetEdited();
+				//trace(event.kind, event.property, event.oldValue, event.newValue);
+			}
+			
+			private function vitalsGetEdited():void
+			{
+				hasChange = id_Height.hasViewChanged;
+				
+				hasChange = hasChange || id_Weight.hasViewChanged;
+				
+				hasChange = hasChange || id_Temperature.hasViewChanged;
+				
+				hasChange = hasChange || id_Respiratory.hasViewChanged;
+				
+				hasChange = hasChange || id_Pulse.hasViewChanged;
+				
+				hasChange = hasChange || id_BloodPressure.hasViewChanged;
+				
+				hasChange = hasChange || id_oxygen.text.length > 0;
+			}
+			
+			protected function slideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if( model.quickInputDataLoadedFlag )
+					UpdateChange();
+				
+				id_Header.id_OptionPopUp.displayPopUp = true;
+				id_Header.id_iconButtons.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if(id_notesDictation.id_Area.visible)
+					{
+						
+						if(id_Header.id_OptionPopUp.displayPopUp)
+						{
+							id_Header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						}
+						else
+						{
+							id_Header.id_iconButtons.setStyle("skinClass", VBIconsButton);	
+						}
+					}
+					this.ExpandedView = true;
+					
+					event.stopImmediatePropagation();
+				});	
+				
+				id_Header.id_Voice.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_VITALS ) )
+					{
+						id_notesDictation.notesDTO = QSUtilityFunctions.getModuleNoteDTO(moduleConstantName);
+						id_notesDictation.DictationDTO = QSUtilityFunctions.getModuleDictationDTO(moduleConstantName);
+						
+						id_notesDictation.id_Area.visible 		= true;
+						id_notesDictation.id_Area.includeInLayout = true;		
+						id_notesDictation.id_VBViews.selectedIndex = 1;						
+						//id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						id_Header.id_iconButtons.selected = false;
+						id_Header.id_OptionPopUp.displayPopUp = false;
+						
+						id_notesDictation.dictationPanel.rec_btn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{													
+							id_Header.setIcons(true, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							hasChange = true;
+						});	
+						id_notesDictation.id_notesPanel.id_body.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{						
+							id_Header.setIcons(id_notesDictation.DictationDTO.DictationID && id_notesDictation.DictationDTO.DictationID != Constants.GUID_FORMAT, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							id_notesDictation.id_Area.visible 		= false;
+							id_notesDictation.id_Area.includeInLayout = false;
+						});
+						
+						ExpandedView = true;
+						
+						if(this.ExpandedView)
+						{
+							event.stopImmediatePropagation();
+						}
+					}
+				});			
+				
+				id_Header.id_NotesBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_VITALS ) )
+					{
+						id_notesDictation.notesDTO = QSUtilityFunctions.getModuleNoteDTO(moduleConstantName);
+						id_notesDictation.DictationDTO = QSUtilityFunctions.getModuleDictationDTO(moduleConstantName);
+						
+						id_notesDictation.id_Area.visible 		= true;
+						id_notesDictation.id_Area.includeInLayout = true;						
+						id_notesDictation.id_VBViews.selectedIndex = 0;
+						//id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						id_Header.id_iconButtons.selected = false;
+						id_Header.id_OptionPopUp.displayPopUp = false;
+						
+						id_notesDictation.id_notesPanel.id_body.id_subject.setFocus();
+						
+						
+						id_notesDictation.dictationPanel.rec_btn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{													
+							id_Header.setIcons(true, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							hasChange = true;
+						});	
+						id_notesDictation.id_notesPanel.id_body.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{						
+							id_Header.setIcons(id_notesDictation.DictationDTO.DictationID && id_notesDictation.DictationDTO.DictationID != Constants.GUID_FORMAT, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							id_notesDictation.id_Area.visible 		= false;
+							id_notesDictation.id_Area.includeInLayout = false;
+						});
+						
+						ExpandedView = true;
+						
+						if(this.ExpandedView)
+						{
+							event.stopImmediatePropagation();
+						}
+					}
+				});
+				
+				id_Header.id_slideoutBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					ToggleSlideOut();
+					event.stopImmediatePropagation();
+				});
+				id_Header.id_Pin.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_VITALS ) )
+					{
+						PinView = event.currentTarget.selected;
+						//event.stopImmediatePropagation();
+					}
+				});
+				
+				
+				registerChangeWatcherHandlers();
+				
+				id_Header.id_OptionPopUp.displayPopUp = false;
+				
+				init();
+				if( model.isNewVisitCreated )
+				{
+					/* old impl 
+					if(model.quickInputDTO.Physical!=null && model.quickInputDTO.Physical.Vitals!=null)
+					{
+						this.englishMode 				= !model.quickInputDTO.Physical.Vitals.IsMetricDisplaySelected;
+						id_Header.id_english.selected 	= !model.quickInputDTO.Physical.Vitals.IsMetricDisplaySelected;
+						id_Header.id_metric.selected 	=  model.quickInputDTO.Physical.Vitals.IsMetricDisplaySelected;
+					}
+					else
+						this.englishMode = true; */
+					
+					this.englishMode = true; // By defaulr englisg is select @ New visit
+				}
+				else
+					LoadDataMode(); 
+			}
+			
+			protected function pinableslideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( event.viewState == QSViewStateEvent.EXPANDED_VIEW )
+				{
+					if( id_Header )
+					{
+						id_Header.HeadingLable = id_Header.HeadingLable.toUpperCase();
+						id_Header.id_pmhHeader.setStyle("skinClass", QIinternalBarFocusSkin);
+						id_Header.id_headingLbl.setStyle("color", 0xffffff);
+						id_Header.id_expandBtn.selected = true;
+						
+					}
+					
+				}
+				else
+				{
+					id_Header.HeadingLable = AppUtils.TitleCase(id_Header.HeadingLable);
+					id_Header.id_pmhHeader.setStyle("skinClass", QIinternalBarSkin);
+					id_Header.id_headingLbl.setStyle("color", 0x000000);
+					id_Header.id_expandBtn.selected = false;
+				}
+			}
+			
+			
+			
+			
+			protected function id_noteIndicator_clickHandler(event:MouseEvent):void
+			{
+				var popup:NotesPopup = new NotesPopup();
+				popup.height = 30;
+				popup.ShowPopup( this );
+				popup.HeaderLabel = "Notes";
+				
+				var noteDto:ModuleNoteDTO = QSUtilityFunctions.getModuleNoteDTO( Constants.PATIENT_VITAL_MODULE_NAME );
+				if( noteDto.Note )
+					popup.id_message.text  = noteDto.Note;
+				
+				var pLoc:Point = id_IndicatorGrp.localToGlobal( new Point( id_noteIndicator.x - 15 +  (id_noteIndicator.width /2) , id_noteIndicator.y + 10) ); 
+				popup.move(pLoc.x,pLoc.y );
+				
+			}
+			
+			protected function id_dictationIndicator_clickHandler(event:MouseEvent):void
+			{
+				var module:ModuleDictationDTO = QSUtilityFunctions.getModuleDictationDTO(Constants.PATIENT_VITAL_MODULE_NAME);
+				
+				if( dictationPanel )
+				{
+					dictationPanel.removePopup();					
+				}
+				
+				dictationPanel 					= new DictationPopup();
+				dictationPanel.width			= 200;
+				dictationPanel.height			= 75;
+				dictationPanel.HeadingLable 	= "Dictation";
+				dictationPanel.DictationID	 	= module.DictationID;
+				
+				dictationPanel.ModuleID	 		= module.ModuleTypeID.toString();
+				dictationPanel.ShowPopup( this );
+				
+				var pLoc:Point = id_IndicatorGrp.localToGlobal( new Point( id_dictationIndicator.x - 125 +  (id_dictationIndicator.width /2) , id_dictationIndicator.y + 14) );
+				dictationPanel.move( pLoc.x, pLoc.y );
+				
+			}
+			
+			protected function id_oxygen_changeHandler(event:TextOperationEvent):void
+			{
+				model.quickInputDTO.Physical.Vitals.Oxygen = id_oxygen.text;
+				hasChange = true;
+			}
+			
+			private function valueCommit_handler():void
+			{
+				calculateBMI();
+				convertInPreviousSystem();
+			}
+			private function convertInPreviousSystem():void
+			{
+				if(this.englishMode == true)
+					convertInMetricAgain();
+				else
+					convertInEnglishAgain();
+			}
+			
+		]]>
+	</fx:Script>
+	<!--<fx:Binding source="model.quickInputVitalsDataLoaded" destination="IsModelUpdated" /> -->
+	<fx:Binding source="model.quickInputDataLoadedFlag" destination="IsModelUpdated" />
+	
+	<custom:HeaderContents>
+		<s:Group width="100%" height="24" minWidth="{ChromeUtil.topLevelMainContainer.width - 70}">
+			<s:layout>
+				<s:VerticalLayout verticalAlign="bottom" />
+			</s:layout>
+			
+			<!--<vitals:VitalsPanelHeader id="id_Header" width="100%" height="22"  HeadingLable="Vitals"/>-->
+			<vitals:VitalsHeader id="id_Header" width="100%" height="22"  HeadingLable="Vitals" SectionNameID="{QSSecurityUtil.QI_VITALS}"/>
+		</s:Group>
+		
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		
+		<s:SkinnableContainer width="100%" minHeight="36" height="100%"  skinClass="com.adobe.Quivus.view.controls.skins.QISlideHeaderOuterSkin">						
+			<s:layout>
+				<s:HorizontalLayout horizontalAlign="center" verticalAlign="middle" paddingRight="5" />
+			</s:layout>
+			<custom:slideOutQIHeader Label="Vitals" width="100%" height="22" />								   
+		</s:SkinnableContainer>				   
+		
+	</custom:SlideHeaderContents>
+	<custom:Contents>
+		
+		<s:SkinnableContainer id="sc_Vitals" skinClass="com.gazuntite.patient.visit.view.commons.QISectionBGSkin" width="{id_Header.width}" 
+							  visible="{model.securityProxyObject.PatientExam.QuickInput.Physicals.VitalSigns.IsViewAllowed}" includeInLayout="{sc_Vitals.visible}">
+			<s:layout>
+				<s:VerticalLayout  verticalAlign="top" gap="0"   horizontalAlign="{isSlideOut? 'right':'center'}" paddingRight="3"
+								   paddingTop="{isSlideOut? -2:0}" paddingLeft="{isSlideOut? 1:3}"/>
+			</s:layout>
+			<!--<s:VGroup width="{id_Header.width}" verticalAlign="top" gap="0" 
+			horizontalAlign="{isSlideOut? 'right':'center'}" paddingTop="{isSlideOut? -2:0}" paddingLeft="{isSlideOut? 30:1}">-->
+			<s:HGroup id="id_NotesArea" width="100%" paddingTop="0" />
+			
+			<notes:QISectionLevelNotesDictation id="id_notesDictation" width="100%" 
+												/>
+			
+			<!--<s:BorderContainer height="75" width="{id_Header.width}" backgroundColor="#F8F8F8" borderWeight="2" borderAlpha="{isSlideOut?1:0}" borderColor="#368CC3">-->
+			<!--<s:SkinnableContainer skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.QISectionBGSkin"  height="100" width="{id_Header.width}">
+			
+			<s:layout>
+			<s:VerticalLayout gap="4" horizontalAlign="left"  paddingLeft="3" paddingRight="3" paddingTop="5" paddingBottom="2"/>
+			</s:layout>-->
+			<s:VGroup  gap="4" horizontalAlign="left"  paddingLeft="3" paddingRight="3" paddingTop="5" paddingBottom="2" maxHeight="100" minHeight="82" height="100%" width="{id_Header.width}"
+					   enabled="{model.securityProxyObject.PatientExam.QuickInput.Physicals.VitalSigns.IsEditAllowed}">
+				
+				
+				<s:HGroup width="100%" gap="3" >
+					<s:VGroup width="100%" minWidth="67" horizontalAlign="center" >
+						<vitals:LabelNumericStepper2 id="id_Height" width="100%"  label="Height(Cm)" stepSizes="[0.1]" maxValues="[9999.9, 9999.9]" 
+													 values="{this.PhysicalHeight}" valueCommit="valueCommit_handler()" />
+						<!--<s:Label id="lbl_Height"  color="#FFFFFF" horizontalCenter="0" fontFamily="Calibri" verticalCenter="0"/>-->
+					</s:VGroup>
+					
+					<s:VGroup width="100%" minWidth="67" horizontalAlign="center">
+						<vitals:LabelNumericStepper2 id="id_Weight" width="100%" label="Weight(Kg)" stepSizes="[0.1]" maxValues="[9999.99]" 
+													 values="{[this.PhysicalWeight]}" valueCommit="valueCommit_handler()"/>
+						<!--<s:Label id="lbl_Weight" color="#FFFFFF" fontFamily="Calibri" horizontalCenter="0" verticalCenter="0"/>-->
+					</s:VGroup>
+					
+					<s:VGroup width="100%" minWidth="67" horizontalAlign="center">
+						<vitals:LabelNumericStepper2 id="id_Temperature" width="100%" label="Temp(C)" stepSizes="[0.1]" maxValues="[999.99]" 
+													 values="{[this.PhysicalTemperature]}" valueCommit="convertInPreviousSystem()"/>
+						<!--<s:Label id="lbl_Temperature" color="#333333"/>-->
+					</s:VGroup>
+					
+					<s:VGroup width="100%" minWidth="67" horizontalAlign="center">
+						<vitals:LabelNumericStepper2 id="id_Pulse" width="100%" label="Pulse(Min)" maxValues="[999.99]" doubleModeOn="false" 
+													 values="{[this.PhysicalPulse]}"/>
+						<!--<s:Label id="lbl_Pulse" color="#FFFFFF"/>-->
+					</s:VGroup>
+					
+					<s:VGroup width="100%" minWidth="67" horizontalAlign="center">
+						<vitals:LabelNumericStepper2 id="id_Respiratory" width="100%" label="Resp.(Min)" maxValues="[999.99]" doubleModeOn="false" 
+													 values="{[this.PhysicalRespiration]}"/>
+						<!--<s:Label id="lbl_Respiratory" color="#FFFFFF"/>-->
+					</s:VGroup>
+					
+					<s:VGroup width="50" horizontalAlign="center">
+						<s:SkinnableContainer width="100%" skinClass="com.adobe.quivus.skins.chrome.containerSkins.VitalsNumericStepperBG" >
+							<s:layout>
+								<s:VerticalLayout horizontalAlign="center" paddingTop="7" paddingLeft="1" paddingRight="1" gap="4"/>
+							</s:layout>
+							
+							<s:Label id="labelField" text="O2" width="100%" fontFamily="Calibri" fontSize="11" textAlign="center" color="#9B9C9C" />
+							
+							<s:HGroup gap="-15" horizontalAlign="center">							
+								<components1:LabelTextInput   id="id_oxygen"	width="35" minWidth="50" prompt="" 
+															 change="id_oxygen_changeHandler(event)" text="{[this.Oxygen]}"/>
+								<components1:LabelTextInput  width="15" prompt="%" enabled="false" text="%" />
+							</s:HGroup>
+							
+						</s:SkinnableContainer>	
+						<!--<s:Label id="lbl_O2" color="#FFFFFF"/>-->
+					</s:VGroup>
+					
+					<s:VGroup width="100%" minWidth="150" horizontalAlign="center">
+						<vitals:LabelNumericStepper2 id="id_BloodPressure" width="100%" label="Blood Pressure(Sys/Dys)" doubleModeOn="true" maxValues="[999, 999]" 
+													 values="{[this.PhysicalBPSys, this.PhysicalBPDys]}"/>
+						<!--<s:Label id="lbl_BloodPressure" color="#FFFFFF"/>-->
+					</s:VGroup>
+					
+					<s:VGroup width="40" horizontalAlign="center">
+						<vitals:LabelBMI id="id_BMI" fontFamily="Calibri" color="#000000"  label="BMI" value="{bmi}" width="100%"
+										 />
+						<!--<s:Label id="lbl_BMI" color="#FFFFFF"/>-->
+					</s:VGroup>
+				</s:HGroup> 
+				<s:HGroup width="100%">
+					<s:SkinnableContainer skinClass="com.adobe.quivus.skins.chrome.containerSkins.VitalsToolTipBG" >
+						<s:layout>
+							<s:HorizontalLayout verticalAlign="middle"  paddingLeft="5"  />
+						</s:layout>
+						<s:Label id="lbl_Height" color="#333333"  fontFamily="Calibri" fontSize="12" width="80" />
+						<buttonSeparators:buttonSeparator/>
+						<s:Label id="lbl_Weight" color="#333333" fontFamily="Calibri" fontSize="12" width="80" />
+						<buttonSeparators:buttonSeparator/>
+						<s:Label id="lbl_Temperature" color="#333333" fontFamily="Calibri" fontSize="12"  width="80"/>
+					</s:SkinnableContainer>
+					<mx:Spacer width="100%"/>
+					<s:Button label="Next" click="dispatchEvent( new SelectSection('SelectSection', 'id_VitalsPanel', true, true) )" 
+							  buttonMode="true" skinClass="com.adobe.quivus.skins.chrome.buttonSkins.QInextBtnSkin" toolTip="Next Section"/>
+					
+				</s:HGroup>			
+				<s:HGroup id="id_IndicatorGrp" width="100%" horizontalAlign="left" includeInLayout="{id_noteIndicator.visible}">
+					<s:Button id="id_noteIndicator" label="Notes" visible="false" includeInLayout="{id_noteIndicator.visible}"
+							  click="id_noteIndicator_clickHandler(event)" toolTip="View Notes" 
+							  useHandCursor="true" buttonMode="true" skinClass="com.adobe.quivus.skins.chrome.buttonSkins.notesIndicatorBtnSkin" />
+					<s:Button id="id_dictationIndicator" label="Dictation" visible="false" includeInLayout="{id_dictationIndicator.visible}"
+							  click="id_dictationIndicator_clickHandler(event)" toolTip="Play Dictation" 
+							  useHandCursor="true" buttonMode="true" skinClass="com.adobe.quivus.skins.chrome.buttonSkins.dictationIndicatorBtnSkin"/>
+				</s:HGroup>
+				
+				
+			</s:VGroup>
+			<!--</s:BorderContainer>-->
+		</s:SkinnableContainer>
+		<!--</s:SkinnableContainer>-->
+		
+		
+	</custom:Contents>
+	
+</custom:PinableSlideOutPanel>

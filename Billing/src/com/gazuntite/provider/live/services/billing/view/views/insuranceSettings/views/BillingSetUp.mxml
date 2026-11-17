@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"  width="100%" height="100%"  creationComplete="group1_creationCompleteHandler(event)"
+		 xmlns:Settings="com.zigron.provider.live.services.billing.view.views.Settings.*" xmlns:insuranceSettings="com.gazuntite.provider.live.services.billing.view.views.insuranceSettings.*" xmlns:views="com.gazuntite.provider.live.services.billing.view.views.insuranceSettings.views.*" xmlns:components="com.gazuntite.provider.live.services.billing.view.views.insuranceSettings.views.components.*" xmlns:EDIReceiver="com.gazuntite.provider.live.services.billing.view.views.setting.EDIReceiver.*">
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.view.views.insuranceSettings.events.ManageAllInsuranceEvent;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			private var addNewInsurancePopUp:AddInsurancePopUp = null;
+			
+			public function AddNewInsurance():void
+			{
+				var addNewInsurancePopUp:AddInsurancePopUp = new AddInsurancePopUp ();
+				addNewInsurancePopUp.title = "Insurance: (NEW)";
+				addNewInsurancePopUp.ShowPopup(FlexGlobals.topLevelApplication.mainContainer);
+				addNewInsurancePopUp.id_Insurance.setStateCityZIP();
+				addNewInsurancePopUp.addEventListener("saveClick", SaveNewInsurance);
+				
+			}
+			public function SaveNewInsurance(event:Event):void
+			{				
+				//model.insuranceDto = new AddInsuranceDTO();
+				//InitailizeDto();
+				addNewInsurancePopUp = event.currentTarget as AddInsurancePopUp;
+				/* addNewInsurancePopUp.id_Insurance.SaveInsurance();
+				addNewInsurancePopUp.id_InsCode.SaveInsurance();
+				addNewInsurancePopUp.id_EDI.SaveInsurance(); */
+								
+				var xmlData:XML 								= model.insuranceDto.ToXML();
+				var manageInsurance:ManageAllInsuranceEvent= new ManageAllInsuranceEvent(xmlData,callBack) ;
+				CairngormEventDispatcher.getInstance().dispatchEvent(manageInsurance)  ;
+				return;
+			}
+			
+			
+			/* public function InitailizeDto():void
+			{
+				model.insuranceDto.InsuranceName				= "";
+				model.insuranceDto.Address 						= "";
+				model.insuranceDto.City 						= "";
+				model.insuranceDto.Phone						= "";
+				model.insuranceDto.Extension 					= "";
+				model.insuranceDto.FAX							= "";
+				model.insuranceDto.State 						= "";
+				model.insuranceDto.ZIP							= "";
+				model.insuranceDto.PlanName						= "";
+				model.insuranceDto.Note							= "";
+				model.insuranceDto.ModifiedBy					= "0";
+				model.insuranceDto.CreatedBy					= "0";
+				
+				model.insuranceDto.PatientSignatureOnFile		= "0";
+				model.insuranceDto.InsuredSignatureOnFile 		= "0";
+				model.insuranceDto.PhysicianSignatureOnFile 	= "0";
+				model.insuranceDto.PrintPINsOnInsForm 			= "0";
+				model.insuranceDto.PrimaryMediaTypeID 			= "0";
+				model.insuranceDto.SecondaryMediaTypeID			= "0";
+				model.insuranceDto.TertiaryMediaTypeID			= "0";
+			} */
+				
+			
+			public function callBack(result:String):void
+			{
+				if(result == "true")
+				{
+					id_InsSetUp.onRefreshClick(null);
+					Alert.show("Insurance Saved Successfully","Save Info",4,FlexGlobals.topLevelApplication.mainContainer);
+					addNewInsurancePopUp.removePopup();
+				}
+				else
+					Alert.show("Insurance not Saved Successfully","Save Info",4,FlexGlobals.topLevelApplication.mainContainer);
+				//var addNewInsurancePopUp:AddInsurancePopUp 		= event.currentTarget as AddInsurancePopUp;
+				//addNewInsurancePopUp.removePopup();
+				
+			}
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				//model.insSearchPageNumber = 1 ;
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:layout>
+		<s:VerticalLayout paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" gap="-4"/>
+	</s:layout>
+	<s:TabBar dataProvider="{id_InsViewStack}" skinClass="com.adobe.gazuntite.skins.chrome.tabBarSkins.lightGreyTabBar" buttonMode="true" useHandCursor="true"
+			  width="380" />
+	<mx:ViewStack id="id_InsViewStack"  width="100%" height="100%" >
+		<s:NavigatorContent label="Insurance SetUp"  width="100%" height="100%" >
+			<s:VGroup width="100%">
+				<components:InsuranceSetUp id="id_InsSetUp" width="100%" height="100%"  />
+				<s:HGroup horizontalAlign="right" width="100%">
+				<s:Button styleName="blackButtonSkin" label="Add New" width="80"
+						  click="AddNewInsurance()"  toolTip="Add New" buttonMode="true" useHandCursor="true" />
+				</s:HGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent  label="Integration" width="100%" height="100%">
+			<components:Integration width="100%" height="100%"/>
+		</s:NavigatorContent>
+		<s:NavigatorContent  label="EDI Receiver Setup" width="100%" height="100%">
+			<EDIReceiver:EDIReceiverView width="100%" height="100%"/>
+		</s:NavigatorContent>
+	</mx:ViewStack>
+</s:Group>

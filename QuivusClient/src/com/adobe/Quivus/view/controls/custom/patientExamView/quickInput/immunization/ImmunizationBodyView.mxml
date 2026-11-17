@@ -1,0 +1,1479 @@
+]<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:input="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.immunization.input.*" 
+		 xmlns:VBImmunization="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbPMH.VBImmunization.*"
+		 creationComplete="cc()"
+		 preinitialize="preInitialize()" 
+		 xmlns:itemEditors="com.adobe.Quivus.view.controls.custom.itemEditors.*" 
+		 xmlns:components="com.zigron.controls.extended.components.*" 
+		 xmlns:commons="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.*" 
+		 xmlns:validators="com.adobe.Quivus.utils.validators.*" xmlns:components1="com.gazuntite.controls.extended.components.*" 
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.customDTO.AssociatedVisit;
+			import com.adobe.Quivus.events.staticData.immunization.LoadImmunizationDoseStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.immunization.LoadImmunizationLotNumberStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.immunization.LoadImmunizationManufacturerStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.immunization.LoadImmunizationRefusalReasonStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.immunization.LoadImmunizationRoutStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.immunization.LoadImmunizationSeriesStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.immunization.LoadImmunizationSiteStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.immunization.LoadImmunizationTypesStaticDataEvent;
+			import com.adobe.Quivus.events.viewBackground.immunization.ManagePatientImmunizationEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.utils.QuivusCombineEventDispatcher;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.Quivus.view.controls.custom.DictationPopup;
+			import com.adobe.Quivus.view.controls.custom.itemEditors.ComboBoxItemEditor;
+			import com.adobe.Quivus.view.controls.custom.itemEditors.SparkComboBoxItemEditor;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPanel;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.gazuntite.patient.visit.view.itemrenderers.DeleteRecordRenderer;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.dictation.QIDictationManager;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbPMH.VBImmunization.ImmunizationItemEditor;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbPMH.VBImmunization.VBImmunizationGridPanel;
+			import com.adobe.quivus.skins.chrome.containerSkins.dateToolTipBG;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.AddBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.ImmunizationSpeakerBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.QIDictationBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.ImmunizationNotesFilledBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.ImmunizationWriteNotesBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.QIWriteNotes;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.QIWriteNotesSelected;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.addMoreButton;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.quivus.skins.chrome.buttonSkins.closeCrossButton;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import flash.net.dns.AAAARecord;
+			
+			import flashx.textLayout.events.ModelChange;
+			
+			import mx.binding.utils.ChangeWatcher;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.controls.Label;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.core.FlexGlobals;
+			import mx.core.INavigatorContent;
+			import mx.core.UIComponent;
+			import mx.events.CloseEvent;
+			import mx.events.CollectionEvent;
+			import mx.events.CollectionEventKind;
+			import mx.events.DataGridEvent;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.events.PropertyChangeEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.formatters.DateFormatter;
+			import mx.formatters.Formatter;
+			
+			import spark.components.ComboBox;
+			import spark.events.IndexChangeEvent;
+			
+			import valueObjects.ImmunizationDTO;
+			import valueObjects.ImmunizationTypeDTO;
+			import valueObjects.ModuleDictationDTO;
+			import valueObjects.ModuleNoteDTO;
+			import valueObjects.PMHDTO;
+			import valueObjects.PageDTO;
+			import valueObjects.QuickInputDTO;
+			private var section:String;
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+			private var _enable:Boolean;
+			
+			public var recordNotesPanel:NotesPanel;
+			private var QI:QIImmunizationPanel;
+			private var recordDictationPanel:DictationPopup;
+			
+			private var _hasGridChanged:Boolean;
+			private var _hasViewChanged:Boolean;
+			private var _CombinedQIVBImmunizationList:ArrayCollection;
+			
+			private var recordGridNotesPopUp:NotesPanel;
+			//private var gridNotesDTO:ModuleNoteDTO;
+			
+			[Bindable]
+			private var arrAssociateTypes:ArrayCollection = new ArrayCollection(['This Visit', 'Previous Visit', 'N/A']);
+			
+			[Bindable]
+			public var deleteColumnData:Object;
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			private function cc():void
+			{	
+				//addEventListener("writeDictationClick", writeDictationClickHandler, false, 0, true);
+				//addEventListener("writeNotesClick", onWriteNotesClick, false, 0, true);
+				id_DataGrid.addEventListener(DataGridActionsEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+				id_DataGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				id_DataGrid.addEventListener(DataGridActionsEvent.ITEM_EDIT_KEY_UP, itemEditKeyUpHandler, false, 0, true);
+			}
+			
+			private function preInitialize():void
+			{
+				if (!deleteColumnData)
+					deleteColumnData = {};
+				
+				deleteColumnData["noteDataFields"] = {subject: "NoteSubject", note: "Note", header: "ImmunizationType.ImmunizationTypeName"};
+				deleteColumnData["dictationDataField"] = "DictationID";
+				deleteColumnData["recordIDField"] = "PatientImmunizationId";
+				deleteColumnData["section"] = QIPopUpManager.IMMUNIZATION;
+			}
+			
+			private function itemEditKeyUpHandler(event:DataGridActionsEvent):void
+			{
+				var lblFld:String = SparkComboBoxItemEditor(event.target).labelField;
+				
+				if (lblFld == "Dose")
+				{
+					if( event.searchString.length > 2 )
+					{
+						var doseEvent : LoadImmunizationDoseStaticDataEvent = new LoadImmunizationDoseStaticDataEvent( event.searchString );
+						CairngormEventDispatcher.getInstance().dispatchEvent( doseEvent );					
+					}
+				}
+				else if (lblFld == "LotNumber")
+				{
+					if( event.searchString.length > 0 )
+					{
+						var lotNumberEvent : LoadImmunizationLotNumberStaticDataEvent = new LoadImmunizationLotNumberStaticDataEvent( event.searchString );
+						CairngormEventDispatcher.getInstance().dispatchEvent( lotNumberEvent );					
+					}
+				}
+			}
+			
+			private function editRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				var editable:Boolean = ImmunizationDTO(id_DataGrid.selectedItem).IsRecordEditable;
+				
+				if( editable == false )
+				{
+					event.preventDefault();
+					event.stopImmediatePropagation();
+					id_DataGrid.destroyItemEditor();
+					id_DataGrid.editable = false;
+				}
+				else
+				{
+					id_DataGrid.editable 	= true;
+					var rowIndex:int 		= id_DataGrid.selectedIndex;
+					var itemToSetInEditableMode:IListItemRenderer = id_DataGrid.indexToItemRenderer(rowIndex);
+					var ev:DataGridEvent 	= new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+					ev.columnIndex 			= 2;
+					ev.rowIndex 			= rowIndex;
+					ev.itemRenderer 		= itemToSetInEditableMode;
+					ev.dataField 			= "DateAdmin";
+					id_DataGrid.dispatchEvent(ev);
+				}
+			}
+			
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+				
+				if (curTar.selectedItem)
+				{
+					var immunizationID:int = ImmunizationDTO(curTar.selectedItem).PatientImmunizationId;
+					UtilityFunctions.AskMessage(  "Do you want to delete selected record ?", function():void
+					{
+						if (immunizationID == 0)
+						{
+							//model.quickInputDTO.PMH.Immunization.removeItemAt(curTar.selectedIndex);
+							CombinedQIVBImmunizationList.removeItemAt(curTar.selectedIndex);
+							//if (model.quickInputDTO.PMH.Immunization.length <= 0)
+							if (CombinedQIVBImmunizationList.length <= 0)
+							{
+								_hasGridChanged = false;
+								hasViewChanged = isGetEdited();
+							}
+						}
+						else
+						{
+							
+							id_DataGrid.selectedItem.IsDeleted 		= true;
+							CombinedQIVBImmunizationList.filterFunction = filterDeletedItems;
+							CombinedQIVBImmunizationList.refresh();
+							/* 							model.quickInputDTO.PMH.Immunization.filterFunction = filterDeletedItems;
+							model.quickInputDTO.PMH.Immunization.refresh(); */
+							
+							hasViewChanged = _hasGridChanged = true;
+							
+						}
+					});
+				}
+			}
+			
+			/*private function addRecordClickHandler(event:Event):void
+			{	
+			//recordNotesPanel = new NotesPanel();
+			if(recordNotesPanel.id_body.id_message.text.length > 0)
+			{
+			Alert.show("There are unsaved changes in notes,Do ya want to save","Save Notes", Alert.YES|Alert.NO, 
+			FlexGlobals.topLevelApplication.mainContainer, function(event:CloseEvent):void
+			{
+			if( event.detail == Alert.YES)
+			{
+			recordNotesPanel.SaveNotes();
+			recordNotesPanel.removeNotePanel();
+			saveRecords();
+			
+			}
+			else if( event.detail == Alert.NO)
+			{
+			recordNotesPanel.removeNotePanel();
+			saveRecords();
+			}
+			});
+			}
+			
+			else 
+			saveRecords();
+			}*/
+			
+			private var recordLevelDicPanel:DictationPopup;
+			private function writeDictationClickHandler(event:Event):void
+			{
+				var addRecord:AddRecord = AddRecord(event.target);
+				
+				recordLevelDicPanel = QIDictationManager.show(addRecord, recordLevelDicPanel, addRecord.dictationDTO, addRecord.id_WriteDictation);
+				QIPopUpManager.addPopUp(recordLevelDicPanel, QIPopUpManager.IMMUNIZATION);
+				
+				recordLevelDicPanel.move( recordLevelDicPanel.x - 81, recordLevelDicPanel.y);
+				
+				
+				recordLevelDicPanel.addEventListener(MouseEvent.CLICK, function():void
+				{
+					QIPopUpManager.removePopUp(recordLevelDicPanel, QIPopUpManager.IMMUNIZATION);
+					
+					if(recordLevelDicPanel && recordLevelDicPanel.DictationID)
+					{
+						id_Add.id_WriteDictation.setStyle("skinClass", ImmunizationSpeakerBtn);
+					}
+					
+				}, true, 0, false);
+			}
+			
+			private var recordNotesDTO:ModuleNoteDTO;
+			private var recordDictationDTO:ModuleDictationDTO;
+			
+			
+		/*	public function saveRecords():void
+			{
+				Alert.show('Are you sure you want to save this record?', 'Save Confirmation', Alert.YES | Alert.NO, this, saveRecordsConfirmed, null, Alert.OK)
+			}
+		*/	
+			//public function saveRecordsConfirmed(eventObj:CloseEvent):void 
+			public function saveRecords():void
+			{
+				
+			//	if (eventObj.detail == Alert.YES) 
+			//	{
+				
+					var immDTO:ImmunizationDTO 	= new ImmunizationDTO();
+					immDTO.IsNA
+					immDTO.ImmunizationType		= id_ImmunizationCmbo.selectedItem as ImmunizationTypeDTO;
+					immDTO.Dose					= id_DoseCmbo.textInput.text;
+					immDTO.LotNumber			= id_LotNoCmbo.textInput.text;
+					immDTO.Manufacturer			= id_ManufacturerCmbo.textInput.text;
+					immDTO.Rout					= id_BodySideRouteCmbo.textInput.text;
+					
+					var reasonOfRefusal:String = ValidationUtils.TrimString(id_ReasonOfRefusalCmbo.textInput.text);
+					
+					if (reasonOfRefusal.length)
+					{
+						model.immunizationRefusalReasonList.addItem(reasonOfRefusal);
+						immDTO.RefusalReason		= reasonOfRefusal;
+					}
+					
+					immDTO.Site					= id_SiteCmbo.textInput.text;
+					immDTO.Series				= id_SeriesCmbo.textInput.text;
+					
+					immDTO.CreatedAt			= new Date();
+					immDTO.UpdatedAt			= new Date();
+					//immDTO.VisitId				= model.visitId;
+					//immDTO.VisitDate 			= id_VISDate.text;
+					
+					//Tahir Alvi - New Feature implemented
+					immDTO.VisitId 				= model.ImmonizationAssociatedVisit.ID;				
+					immDTO.VisitDate 			= model.ImmonizationAssociatedVisit.VisitDate;
+					//immDTO.VisitDate 			= DateField.stringToDate(formatDateTime.format(model.ImmonizationAssociatedVisit.VisitDate),"MM/DD/YYYY");
+					//DateField.stringToDate(dateString,"DD/MM/YYYY");
+					
+					immDTO.DictationID 			= Constants.GUID_FORMAT;
+					
+					immDTO.CreatedBy 			= model.loggedInUserDTO.UserId;
+					immDTO.ManagedBy			= model.loggedInUserDTO.UserId;
+					
+					immDTO.DateAdmin			= id_DateAdmin.text;//selectedDate;
+					immDTO.NextDoseDue			= id_NextDue.text;//selectedDate;
+					immDTO.ExpiryDate			= id_VISDate.text;//selectedDate; 
+					
+					immDTO.ModifiedAt 			= Constants.NULL_DATE;
+					
+					if (id_Add.notesDTO)
+					{
+						immDTO.Note = id_Add.notesDTO.Note;
+						immDTO.NoteSubject = id_Add.notesDTO.NoteSubject;
+					}
+					// Mansoor
+					
+					if (id_Add.dictationDTO != null && id_Add.dictationDTO.DictationID != null)
+					{
+						immDTO.DictationID = id_Add.dictationDTO.DictationID;
+						
+						//id_Add.id_WriteDictation.setStyle("skinClass", ImmunizationSpeakerBtn);
+					}
+					if(model.quickInputDTO.PMH==null) 
+						model.quickInputDTO.PMH= new PMHDTO();
+					
+					if(model.quickInputDTO.PMH.Immunization== null)
+						model.quickInputDTO.PMH.Immunization= new ArrayCollection();
+					
+					//Tahir Alvi - Associated Visit
+					if((id_AssociateVisitzCombo.selectedIndex == 2) || (id_AssociateVisitzCombo.selectedIndex == 1 && id_VisitDatesCombo.selectedIndex != -1))
+					{
+						if(model.immunizationDTOList == null)
+							model.immunizationDTOList = new ArrayCollection();
+						
+						immDTO.IsDirty = true;
+						model.immunizationDTOList.addItemAt(immDTO, 0);
+					//	var mpiEvent : ManagePatientImmunizationEvent = new ManagePatientImmunizationEvent(  );
+					//	CairngormEventDispatcher.getInstance().dispatchEvent( mpiEvent );
+						Alert.show('Are you sure you want to save this record.', 'Save Confirmation', Alert.YES | Alert.NO, this, alertSaveListener, null, Alert.OK)
+					}
+					else
+					{
+						if(CombinedQIVBImmunizationList == null)
+							CombinedQIVBImmunizationList = new ArrayCollection(); 
+						
+						model.quickInputDTO.PMH.Immunization.addItemAt(immDTO, 0);
+						CombinedQIVBImmunizationList.addItemAt(immDTO, 0);
+						isRecordAddInGrid = true;
+					}
+					hasViewChanged = _hasGridChanged = true;
+					resetFields();
+			//	}
+			}
+			//Tahir Alvi - Associated Visit
+			private function alertSaveListener(eventObj:CloseEvent):void 
+			{
+				if (eventObj.detail == Alert.YES) 
+				{
+					var mpiEvent : ManagePatientImmunizationEvent = new ManagePatientImmunizationEvent(  );
+					CairngormEventDispatcher.getInstance().dispatchEvent( mpiEvent );
+				}
+				else
+				{
+					return;	
+				}
+			} 
+			
+			/* public function showNotes(loc:Point):void
+			{
+			
+			
+			if (!recordNotesDTO)
+			recordNotesDTO = new ModuleNoteDTO();
+			
+			recordNotesPanel 				= new NotesPanel();
+			
+			recordNotesPanel.HeadingLable 	= id_ImmunizationCmbo.textInput.text;
+			recordNotesPanel.VisitDateLable = model.FormatedVisitDate;
+			
+			id_Add.id_WriteNotes.selected = true;
+			
+			
+			id_NotesArea.addElement( recordNotesPanel );
+			
+			recordNotesPanel.notesDTO	= recordNotesDTO;
+			
+			
+			} */
+			
+			
+			
+			
+			private function onWriteNotesClick(event:Event):void
+			{
+				if (!recordGridNotesPopUp)
+					recordGridNotesPopUp = new NotesPanel();
+				
+				if (!recordGridNotesPopUp.isPanelShown)
+				{
+					//gridNotesDTO = new ModuleNoteDTO();
+					var headingLabel:String = "";
+					
+					//extractDataForNotes();
+					
+					
+					var addRecord:AddRecord = AddRecord(event.target);
+					
+					//recordLevelDicPanel = QIDictationManager.show(addRecord, recordLevelDicPanel, addRecord.dictationDTO, addRecord.id_WriteDictation);
+					
+					//headingLabel = deriveComplexData(headerField);
+					recordGridNotesPopUp 				= new NotesPanel();
+					recordGridNotesPopUp.width			= 250;
+					recordGridNotesPopUp.height			= 110;
+					recordGridNotesPopUp.HeadingLable 	= id_ImmunizationCmbo.textInput.text;
+					recordGridNotesPopUp.VisitDateLable = model.FormatedVisitDate;//new Date().toDateString();
+					recordGridNotesPopUp.ShowPopup(this);
+					
+					
+					
+					recordGridNotesPopUp.notesDTO		=  addRecord.notesDTO; //gridNotesDTO;
+					//recordGridNotesPopUp.onNotesSaved = updateNotesData;
+					
+					QIPopUpManager.addPopUp(recordGridNotesPopUp, section);
+					
+					//var pt:Point = localToGlobal(new Point(recordGridNotesPopUp.x, recordGridNotesPopUp.y));
+					
+					var pt:Point = id_Add.localToGlobal(new Point(id_Add.id_WriteNotes.x ,id_Add.id_WriteNotes.y));
+					
+					recordGridNotesPopUp.move(pt.x - 195, pt.y + 20);
+					
+					//recordGridNotesPopUp.move( recordGridNotesPopUp.x , recordGridNotesPopUp.y);
+					/*recordGridNotesPopUp.addEventListener("notesSaved", function(event:Event):void
+					{
+					updateNotesData();
+					
+					}, false, 0, true);*/
+					
+					recordGridNotesPopUp.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						//recordGridNotesPopUp.removePopup();
+						QIPopUpManager.removePopUp(recordGridNotesPopUp, section);
+						
+					}, false, 0, true);
+					
+					recordGridNotesPopUp.id_header.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						recordGridNotesPopUp.SaveNotes();
+						//if(recordNotesDTO)
+						if(recordGridNotesPopUp.id_body.id_message.text.length > 0)
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotesSelected);
+							
+						}
+						else
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotes);
+							
+						}
+						recordGridNotesPopUp.removeNotePanel();
+						QIPopUpManager.removePopUp(recordGridNotesPopUp, section);
+					});
+					
+					
+					recordGridNotesPopUp.addEventListener("notesSaved", function(event:Event):void
+					{
+						if(recordGridNotesPopUp.id_body.id_message.text.length > 0)
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotesSelected);								
+						}
+						else
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotes);
+						}
+					});
+				}
+			}
+			
+			
+			[Bindable]
+			public function get enable():Boolean
+			{
+				return _enable;
+			}
+			
+			public function set enable(value:Boolean):void
+			{
+				_enable = value;
+			}
+			
+			public function resetFields():void
+			{
+				id_ImmunizationCmbo.selectedIndex = -1;
+				id_ImmunizationCmbo.textInput.text = "";
+				id_ManufacturerCmbo.selectedIndex = -1;
+				id_ManufacturerCmbo.textInput.text = "";
+				
+				id_RefusalChk.selected = false;
+				
+				id_ReasonOfRefusalCmbo.selectedIndex = -1;
+				id_ReasonOfRefusalCmbo.textInput.text = "";
+				
+				id_DoseCmbo.selectedIndex = -1;
+				id_DoseCmbo.textInput.text = "";
+				
+				id_LotNoCmbo.selectedIndex = -1;
+				id_LotNoCmbo.textInput.text = "";
+				
+				id_BodySideRouteCmbo.selectedIndex = -1;
+				id_BodySideRouteCmbo.textInput.text = "";
+				
+				id_SiteCmbo.selectedIndex = -1;
+				id_SiteCmbo.textInput.text = "";
+				
+				id_DateAdmin.selectedDate = null;
+				id_DateAdmin.text = "";
+				
+				id_NextDue.selectedDate = null;
+				id_NextDue.text = "";
+				
+				id_ExpiryDate.selectedDate = null;
+				id_ExpiryDate.text = "";
+				
+				id_SeriesCmbo.selectedIndex = -1;
+				id_SeriesCmbo.textInput.text = "";
+				
+				enable = false;
+				id_Add.enableAll = false;
+				recordNotesDTO = new ModuleNoteDTO();
+				
+				id_Add.notesDTO = new ModuleNoteDTO();
+				id_Add.dictationDTO = null
+				
+				if (recordNotesPanel)
+					recordNotesPanel.removePopup();
+				
+				id_ImnzationForm.enabled = false;
+				id_AssociateVisitzCombo.selectedIndex = -1;
+				id_VisitDatesCombo.selectedIndex	  = -1;
+				if(id_VisitDatesCombo.visible == true)
+					id_VisitDatesCombo.visible = false;
+				
+			}
+			
+			public function isGetEdited():Boolean
+			{
+				var edited:Boolean = false;
+				
+				if (id_ImmunizationCmbo.selectedItem != null ||
+					id_DoseCmbo.textInput.text.length ||  id_DoseCmbo.selectedItem != null ||
+					id_LotNoCmbo.textInput.text.length || id_LotNoCmbo.selectedItem != null ||
+					id_DateAdmin.text.length || id_DateAdmin.selectedItem != null ||
+					id_NextDue.text.length || id_NextDue.selectedItem != null ||
+					id_ManufacturerCmbo.textInput.text.length || id_ManufacturerCmbo.selectedItem != null ||
+					id_BodySideRouteCmbo.textInput.text.length > 2 || id_BodySideRouteCmbo.selectedItem != null ||
+					id_ExpiryDate.text.length || id_ExpiryDate.selectedDate != null ||
+					id_ReasonOfRefusalCmbo.textInput.text.length || id_ReasonOfRefusalCmbo.selectedItem != null ||
+					id_SiteCmbo.textInput.text.length > 2 || id_SiteCmbo.selectedItem != null ||
+					id_SeriesCmbo.textInput.text.length > 2 || id_SeriesCmbo.selectedItem != null)
+					
+					edited = true;
+				
+				//hasViewChanged = (_hasGridChanged)? _hasGridChanged : edited;
+				
+				return edited;
+			}
+			
+			private function isNonRequiredFieldsLengthValid():Boolean
+			{
+				var result:Boolean = true;
+				
+				if( id_BodySideRouteCmbo.textInput.text.length > 0 && id_BodySideRouteCmbo.textInput.text.length > 200 )
+				{
+					result = false;
+					id_BodySideRouteCmbo.setFocus();
+					Alert.show("Max length for \"Body Side Route\" is 200 chars", "Invalid Input");
+				}
+				else if( id_SiteCmbo.textInput.text.length > 0 && id_SiteCmbo.textInput.text.length > 200 )
+				{
+					result = false;
+					id_SiteCmbo.setFocus();
+					Alert.show("Max length for Site is 200 chars", "Invalid Input");
+				}
+				else if( id_SeriesCmbo.textInput.text.length > 0 && id_SeriesCmbo.textInput.text.length > 200 )
+				{
+					result = false;
+					id_SeriesCmbo.setFocus();
+					Alert.show("Max length for Series is 200 chars", "Invalid Input");
+				}
+				
+				return result;
+			}
+			
+			public function areRequiredFieldsProvidedAndValid():Boolean
+			{
+				var result:Boolean = false;
+				
+				if ((id_ImmunizationCmbo.selectedIndex >= 0 && id_ImmunizationCmbo.selectedItem != null) &&
+					(id_DoseCmbo.textInput.text.length || id_DoseCmbo.selectedIndex >= 0 && id_DoseCmbo.selectedItem != null))
+				{
+					result = true;
+					
+					if (id_RefusalChk.selected)
+					{
+						if (!id_ReasonOfRefusalCmbo.textInput.text.length && id_ReasonOfRefusalCmbo.selectedIndex < 0 )
+						{
+							result = false;
+						}
+					}
+				}
+				/* calling isGetEdited() to check whether is there any change in view or not
+				just to set hasViewChanged boolean
+				*/
+				//isGetEdited();
+				
+				return result;
+			}
+			
+			private function comboChangeHandler(event:Event):void
+			{
+				id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+			}
+			
+			protected function id_ImmunizationCmbo_keyUpHandler(event:KeyboardEvent):void
+			{
+				var searchString:String = event.currentTarget.textInput.text;
+				/* if( searchString.length > 2 )
+				{
+					if(model.immunizationTypeDTOList==null || model.immunizationTypeDTOList.length==0)
+					{
+						var imsttEvent : LoadImmunizationTypesStaticDataEvent = new LoadImmunizationTypesStaticDataEvent();
+						CairngormEventDispatcher.getInstance().dispatchEvent( imsttEvent );
+					}					
+				}  */
+				callLater( function ():void
+				{
+					id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+					enable = isGetEdited();
+				});
+			}
+			
+			protected function id_ImmunizationCmbo_OpenHandler(event:Event):void
+			{
+				if(model.immunizationTypeDTOList==null || model.immunizationTypeDTOList.length==0)
+				{
+					var imsttEvent : LoadImmunizationTypesStaticDataEvent = new LoadImmunizationTypesStaticDataEvent();
+					CairngormEventDispatcher.getInstance().dispatchEvent( imsttEvent );
+				}					
+			}
+			
+			protected function id_ManufacturerCmbo_keyUpHandler(event:KeyboardEvent):void
+			{
+				var searchString:String = event.currentTarget.textInput.text;
+				if( searchString.length > 2 )
+				{
+					var allergyEvent : LoadImmunizationManufacturerStaticDataEvent = new LoadImmunizationManufacturerStaticDataEvent( searchString );
+					CairngormEventDispatcher.getInstance().dispatchEvent( allergyEvent );				
+				}
+				
+				enable = isGetEdited();
+			}
+			
+			
+			protected function id_ReasonOfRefusalCmbo_keyUpHandler(event:KeyboardEvent):void
+			{
+				var searchString:String = event.currentTarget.textInput.text;
+				if( searchString.length > 2 )
+				{
+					var allergyEvent : LoadImmunizationRefusalReasonStaticDataEvent = new LoadImmunizationRefusalReasonStaticDataEvent( searchString );
+					CairngormEventDispatcher.getInstance().dispatchEvent( allergyEvent );					
+				}
+				
+				id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+				enable = isGetEdited();
+			}
+			
+			
+			protected function id_BodySideRouteCmbo_keyUpHandler(event:KeyboardEvent):void
+			{
+				var searchString:String = event.currentTarget.textInput.text;
+				if( searchString.length > 2 )
+				{
+					var allergyEvent : LoadImmunizationRoutStaticDataEvent = new LoadImmunizationRoutStaticDataEvent( searchString );
+					CairngormEventDispatcher.getInstance().dispatchEvent( allergyEvent );				
+				}
+				
+				enable = isGetEdited();
+				
+				//
+				Cmbo_changeHandler();
+			}
+			
+			
+			protected function id_SiteCmbo_keyUpHandler(event:KeyboardEvent):void
+			{
+				var searchString:String = event.currentTarget.textInput.text;
+				if( searchString.length > 2 )
+				{
+					var allergyEvent : LoadImmunizationSiteStaticDataEvent = new LoadImmunizationSiteStaticDataEvent( searchString );
+					CairngormEventDispatcher.getInstance().dispatchEvent( allergyEvent );					
+				}
+				
+				enable = isGetEdited();
+				
+				//
+				Cmbo_changeHandler();
+			}
+			
+			
+			protected function id_SeriesCmbo_keyUpHandler(event:KeyboardEvent):void
+			{
+				var searchString:String = event.currentTarget.textInput.text;
+				if( searchString.length > 2 )
+				{
+					var allergyEvent : LoadImmunizationSeriesStaticDataEvent = new LoadImmunizationSeriesStaticDataEvent( searchString );
+					CairngormEventDispatcher.getInstance().dispatchEvent( allergyEvent );					
+				}
+				
+				enable = isGetEdited();
+				
+				//
+				Cmbo_changeHandler();
+			}
+			
+			
+			protected function id_LotNoCmbo_keyUpHandler(event:KeyboardEvent):void
+			{
+				var searchString:String = event.currentTarget.textInput.text;
+				
+				/**
+				 * Ayesha: 7th March 2011
+				 * Changing limit from 3 to 1
+				 * */
+				if( searchString.length > 0 )
+				{
+					var allergyEvent : LoadImmunizationLotNumberStaticDataEvent = new LoadImmunizationLotNumberStaticDataEvent( searchString );
+					CairngormEventDispatcher.getInstance().dispatchEvent( allergyEvent );					
+				}
+				
+				enable = isGetEdited();
+			}
+			
+			
+			protected function id_DoseCmbo_keyUpHandler(event:Event):void
+			{
+				var searchString:String = event.currentTarget.textInput.text;
+				if( searchString.length > 2 )
+				{
+					var allergyEvent : LoadImmunizationDoseStaticDataEvent = new LoadImmunizationDoseStaticDataEvent( searchString );
+					CairngormEventDispatcher.getInstance().dispatchEvent( allergyEvent );					
+				}
+				
+				id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+				enable = isGetEdited();
+			}
+			
+			private function refusalCheckBoxChangeHandler():void
+			{
+				id_ReasonOfRefusalCmbo.enabled = id_RefusalChk.selected;
+				id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+			}
+			
+			private function validateDateAdmin():void
+			{
+				//commented due to date to string converion
+				
+				/* var validationRes:ValidationResultEvent;
+				
+				pastDateValidator.source = id_DateAdmin;
+				pastDateValidator.property = "selectedDate";
+				
+				validationRes = pastDateValidator.validate(id_DateAdmin.selectedDate);
+				
+				if (validationRes && !validationRes.results)
+				{
+				id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+				}
+				else
+				{
+				id_Add.enableAll = false;
+				}
+				
+				enable = isGetEdited(); */
+			}
+			
+			private function validateDate():void
+			{
+				enable = isGetEdited();
+			}
+			
+			/* changes by Baber waqas for displaying row number in grid
+			*/
+			public function displayRowNum(oItem:Object,iCol:int):String
+			{
+				var ret:String;
+				try
+				{
+					var rowNumber:int = id_DataGrid.dataProvider.getItemIndex(oItem) + 1; //Sort able column fails some how, don't know why?
+					ret = String(rowNumber);
+				}
+				catch(e:Error )
+				{
+					ret = "##";
+				}
+				return ret;
+			}
+			
+			
+			public function displayVisitDate(oItem:Object,iCol:int):String
+			{
+				//var formatDateTime:DateFormatter = new DateFormatter();
+				var visitDate:String = formatDateTime2.format(oItem.VisitDate.toString());					
+				if(oItem.IsNA)
+					visitDate = 'N/A';
+				
+				return String(visitDate);
+			}
+			public function displayAdminDate(oItem:Object,iCol:int):String
+			{
+				//var formatDateTime:DateFormatter = new DateFormatter();
+				var visitDate:String = formatDateTime2.format(oItem.DateAdmin.toString());					
+				/* if(oItem.IsNA)
+					visitDate = 'N/A'; */
+				
+				return String(visitDate);
+			}
+			/* 
+			Chagnes end
+			*/
+			private function recentPatientGridItemEditBeginHandler(event:DataGridEvent):void
+			{
+				if( event.itemRenderer.data && !event.itemRenderer.data.IsRecordEditable )
+				{
+					event.preventDefault();
+					event.stopImmediatePropagation();
+					id_DataGrid.destroyItemEditor();
+					id_DataGrid.editable = false;
+				}
+				
+				id_DataGrid.createItemEditor(event.columnIndex, event.rowIndex);
+				
+				if (event.columnIndex == 4)
+				{
+					SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).data = event.itemRenderer.data; 
+				}
+			}
+			
+			private function recentPatientGridItemEditEndHandler(event:DataGridEvent):void
+			{
+				if( null == id_DataGrid.itemEditorInstance || null == id_DataGrid.selectedItem )
+					return;
+				var validationRes:ValidationResultEvent;
+				var immunizationID:int = ImmunizationDTO(id_DataGrid.selectedItem).PatientImmunizationId;
+				var editable:Boolean = ImmunizationDTO(id_DataGrid.selectedItem).IsRecordEditable;
+				
+				if( editable == false )
+				{
+					event.preventDefault();
+					event.stopImmediatePropagation();
+					id_DataGrid.destroyItemEditor();
+					id_DataGrid.editable = false;
+				}
+				
+				if (event.dataField == "DateAdmin")
+				{
+					//Tahir -- for proper save after edit the field
+					event.itemRenderer.data.DateAdmin = event.target.itemEditorInstance.text;
+					if (immunizationID != 0)
+						event.itemRenderer.data.IsDirty = true;
+					
+					hasViewChanged = _hasGridChanged = true;
+					
+					//commented due to date to string converion
+					/* var dateAdminEditor:DateField = DateField(id_DataGrid.itemEditorInstance);
+					
+					if (dateAdminEditor.text.length)
+					{
+					pastDateValidator.error = "Admin date invalid";
+					pastDateValidator.source = dateAdminEditor;
+					
+					validationRes = pastDateValidator.validate(dateAdminEditor.selectedDate);
+					
+					if (validationRes && !validationRes.results)
+					{
+					event.itemRenderer.data.DateAdmin = dateAdminEditor.selectedDate;
+					
+					if (immunizationID != 0)
+					event.itemRenderer.data.IsDirty = true;
+					
+					hasViewChanged = _hasGridChanged = true;
+					}
+					else
+					{
+					id_DataGrid.destroyItemEditor();
+					event.stopImmediatePropagation();
+					event.preventDefault();
+					}
+					}
+					else
+					{
+					event.itemRenderer.data.DateAdmin = null;
+					
+					if (immunizationID != 0)
+					event.itemRenderer.data.IsDirty = true;
+					} */
+				}
+					
+				else if (event.dataField == "ImmunizationType.ImmunizationTypeName")
+				{
+					var editor:LabelComboBox = SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor;
+					
+					comboValidator.error = "Invalid Immunization";
+					comboValidator.source = editor;
+					comboValidator.property = "selectedItem";
+					
+					validationRes = comboValidator.validate(editor.selectedItem);
+					
+					if (validationRes && !validationRes.results)
+					{
+						event.itemRenderer.data.ImmunizationType = editor.selectedItem;
+						
+						if (immunizationID != 0)
+							event.itemRenderer.data.IsDirty = true;
+						
+						hasViewChanged = _hasGridChanged = true;
+					}
+					else
+					{
+						id_DataGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+					}
+					
+				}
+				else if (event.dataField == "Dose")
+				{
+					var sparkItemEditor:SparkComboBoxItemEditor = id_DataGrid.itemEditorInstance as SparkComboBoxItemEditor;
+					
+					if (sparkItemEditor)
+					{
+						var doseEditor:LabelComboBox = sparkItemEditor.id_ComboEditor;
+						
+						if (doseEditor.textInput.text.length > 2)
+						{
+							event.itemRenderer.data.Dose = doseEditor.textInput.text;
+							
+							if (immunizationID != 0)
+								event.itemRenderer.data.IsDirty = true;
+							
+							hasViewChanged = _hasGridChanged = true;
+						}
+						else
+						{
+							id_DataGrid.destroyItemEditor();
+							event.stopImmediatePropagation();
+							event.preventDefault();
+						}
+					}
+				}
+					
+				else if (event.dataField == "LotNumber")
+				{
+					var lotNumEditor:LabelComboBox = SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor;
+					
+					event.itemRenderer.data.LotNumber = lotNumEditor.textInput.text;
+					
+					if (immunizationID != 0)
+						event.itemRenderer.data.IsDirty = true;
+					
+					hasViewChanged = _hasGridChanged = true;
+				}
+					
+					//commented due to date to string converion
+					// Tahir - uncomented due to proper save after edit. 
+				else if (event.dataField == "NextDoseDue")
+				{
+					event.itemRenderer.data.NextDoseDue = event.target.itemEditorInstance.text;
+					if (immunizationID != 0)
+						event.itemRenderer.data.IsDirty = true;
+					
+					hasViewChanged = _hasGridChanged = true;
+					/* var nextDoseDueEditor:DateField = DateField(id_DataGrid.itemEditorInstance);
+					
+					if (nextDoseDueEditor.text.length)
+					{
+					if (ValidationUtils.isValidDateFormat(nextDoseDueEditor.text))
+					{
+					event.itemRenderer.data.NextDoseDue = nextDoseDueEditor.selectedDate;
+					
+					if (immunizationID != 0)
+					event.itemRenderer.data.IsDirty = true;
+					
+					hasViewChanged = _hasGridChanged = true;	
+					}
+					else
+					{
+					id_DataGrid.destroyItemEditor();
+					event.stopImmediatePropagation();
+					event.preventDefault();
+					}
+					}
+					else
+					{
+					event.itemRenderer.data.NextDoseDue = null;
+					
+					if (immunizationID != 0)
+					event.itemRenderer.data.IsDirty = true;
+					
+					hasViewChanged = _hasGridChanged = true;
+					} */
+				} 
+				
+				id_DataGrid.destroyItemEditor();
+				event.stopImmediatePropagation();
+				event.preventDefault();
+			}
+			
+			protected function id_DoseCmbo_changeHandler(event:IndexChangeEvent):void
+			{
+				id_DoseCmbo_keyUpHandler( event );
+			}
+			
+			protected function id_add_clickHandler(event:MouseEvent):void
+			{		
+				id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+				id_Add.enableAll = isNonRequiredFieldsLengthValid();
+				enable = isGetEdited();
+				if( id_Add.enableAll )
+				{
+					saveRecords();
+					id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotes);
+					id_Add.id_WriteDictation.setStyle("skinClass", QIDictationBtn);
+				}
+				else
+				{
+					if(UtilityFunctions.IsNullOrEmpty(id_ImmunizationCmbo.selectedItem) )
+					{
+						id_ImmunizationCmbo.errorString = "invalid immunization";
+						id_ImmunizationCmbo.setFocus();
+					}
+					else if(UtilityFunctions.IsNullOrEmpty(id_DoseCmbo.selectedItem) )
+					{
+						id_DoseCmbo.errorString = "invalid dose value";
+						id_DoseCmbo.setFocus();
+					}
+				}
+			}	
+			
+			protected function id_DataGrid_creationCompleteHandler(event:FlexEvent):void
+			{
+				if( UtilityFunctions.IsNullOrEmpty( model.immunizationCurrentPageByPatient ) )
+				{
+					model.immunizationCurrentPageByPatient = new PageDTO();
+				}
+				
+				QSUtilityFunctions.CheckUserPageOrSetPageToZero( model.immunizationCurrentPageByPatient );
+				
+				
+				QuivusCombineEventDispatcher.loadImmunizationForVB();
+			}
+			
+			protected function id_AddMoreBtn_clickHandler(event:MouseEvent):void
+			{
+				if(id_AddMoreBtn.label == 'Add More')
+				{
+					dateToolTipContainer.visible=true;
+					dateToolTipContainer.includeInLayout = true;
+					id_AddMoreBtn.label = ''; 
+					id_AddMoreBtn.label = 'Close';  
+					id_imnzButtons.visible = true;
+					id_imnzButtons.includeInLayout = true;
+					id_ImnzationForm.visible = true;
+					id_ImnzationForm.includeInLayout = true;
+					id_ImnzationForm.enabled = false;
+					id_AssociateVisitzCombo.visible = true;
+					id_AssociateVisitzCombo.includeInLayout =true;
+					id_AssociateVisitzCombo.selectedIndex = -1;
+				}else if(id_AddMoreBtn.label == 'Close')
+				{
+					dateToolTipContainer.visible=false;
+					dateToolTipContainer.includeInLayout = false;
+					id_AddMoreBtn.label = ''; 
+					id_AddMoreBtn.label = 'Add More';  
+					id_imnzButtons.visible = false;
+					id_imnzButtons.includeInLayout = false;
+					id_ImnzationForm.visible = false;
+					id_ImnzationForm.includeInLayout = false;
+					id_ImnzationForm.enabled = false;
+					
+					
+					if(id_ImnzationForm.enabled == true)
+						id_ImnzationForm.enabled = false;
+					id_AssociateVisitzCombo.visible = false;
+					id_AssociateVisitzCombo.includeInLayout = false;
+					id_AssociateVisitzCombo.selectedIndex = -1;
+					if(id_VisitDatesCombo.visible == true)
+						id_VisitDatesCombo.visible = false;
+					id_VisitDatesCombo.selectedIndex = -1;
+				}
+			}
+			private var isRecordAddInGrid:Boolean = false;
+			[Bindable]
+			public function get CombinedQIVBImmunizationList():ArrayCollection
+			{
+				return _CombinedQIVBImmunizationList;
+			}
+			
+			
+			public function set CombinedQIVBImmunizationList(value:ArrayCollection):void
+			{
+				if(_CombinedQIVBImmunizationList)
+					_CombinedQIVBImmunizationList.removeAll();
+				_CombinedQIVBImmunizationList = null;
+				_CombinedQIVBImmunizationList = new ArrayCollection();
+				
+				if(model.immunizationDTOList && model.immunizationDTOList.length > 0)
+					_CombinedQIVBImmunizationList.addAll(model.immunizationDTOList);
+				if(model.quickInputDTO.PMH.Immunization && model.quickInputDTO.PMH.Immunization.length >0 && isRecordAddInGrid)
+					_CombinedQIVBImmunizationList.addAll(model.quickInputDTO.PMH.Immunization);
+				
+				if(CombinedQIVBImmunizationList)
+				{
+					if(CombinedQIVBImmunizationList.length > 0)
+					{
+						if(hasViewChanged)
+							hasViewChanged = false;
+						
+						hasViewChanged = true;
+					}
+				}
+				model.ImmunizationsReviewHistory = _CombinedQIVBImmunizationList;
+			}
+			
+			//Tahir Alvi - New Implementation for associate records	
+			protected function id_AssociateVisitzCombo_changeHandler():void
+			{
+				resetForm();//reset all fields before any selection
+				if(model.ImmonizationAssociatedVisit == null)
+					model.ImmonizationAssociatedVisit = new AssociatedVisit();
+				
+				if(id_AssociateVisitzCombo.selectedIndex != -1)
+					id_ImnzationForm.enabled = true;
+				
+				if(id_AssociateVisitzCombo.selectedIndex == 1)
+				{
+					
+					id_ImnzationForm.enabled = false;
+					id_VisitDatesCombo.visible = true;
+					dateToolTipContainer.includeInLayout = true;
+					dateToolTipContainer.visible = true;
+					id_DateLabel.text = 'Please Select Visit Date' ;
+					if(id_btnAdd.enabled)
+						id_btnAdd.enabled = false;
+					
+				}else
+				{
+					id_VisitDatesCombo.visible = false;
+					dateToolTipContainer.includeInLayout =  false;
+					dateToolTipContainer.visible =  false;
+					if(id_AssociateVisitzCombo.selectedIndex == 0)
+					{
+						model.ImmonizationAssociatedVisit.VisitDate = model.visitDTO.VisitDate;
+						model.ImmonizationAssociatedVisit.ID   		= model.visitDTO.VisitId;
+					}else if(id_AssociateVisitzCombo.selectedIndex == 2){
+						model.ImmonizationAssociatedVisit.VisitDate = Constants.NULL_DATE;
+						model.ImmonizationAssociatedVisit.ID   		= 0;
+					}
+				}
+			}
+			
+			private function getVisitDate(item:Object):String 
+			{
+				var strDate:String ='';;
+				if(item != null)
+					strDate = formatDateTime.format(item.VisitDate);
+				
+				return strDate;
+			}
+			
+			protected function id_VisitDatesCombo_changeHandler():void
+			{
+				if(id_VisitDatesCombo.selectedIndex != -1)
+					id_ImnzationForm.enabled = true;
+				
+				dateToolTipContainer.visible = false;
+				dateToolTipContainer.includeInLayout = false;
+				if(model.ImmonizationAssociatedVisit == null)
+					model.ImmonizationAssociatedVisit = new AssociatedVisit();
+				
+				if(model.ImmonizationAssociatedVisit != null)
+				{
+					model.ImmonizationAssociatedVisit.VisitDate = id_VisitDatesCombo.selectedItem.VisitDate;
+					model.ImmonizationAssociatedVisit.ID        = id_VisitDatesCombo.selectedItem.VisitId;
+				}
+				id_btnAdd.enabled = areRequiredFieldsProvidedAndValid();
+			}
+			//reset all form fields on chnage of Associate combo.
+			private function resetForm():void
+			{
+				id_ImmunizationCmbo.selectedIndex = -1;
+				id_ImmunizationCmbo.textInput.text = "";
+				id_ManufacturerCmbo.selectedIndex = -1;
+				id_ManufacturerCmbo.textInput.text = "";
+				
+				id_RefusalChk.selected = false;
+				
+				id_ReasonOfRefusalCmbo.selectedIndex = -1;
+				id_ReasonOfRefusalCmbo.textInput.text = "";
+				
+				id_DoseCmbo.selectedIndex = -1;
+				id_DoseCmbo.textInput.text = "";
+				
+				id_LotNoCmbo.selectedIndex = -1;
+				id_LotNoCmbo.textInput.text = "";
+				
+				id_BodySideRouteCmbo.selectedIndex = -1;
+				id_BodySideRouteCmbo.textInput.text = "";
+				
+				id_SiteCmbo.selectedIndex = -1;
+				id_SiteCmbo.textInput.text = "";
+				
+				id_DateAdmin.selectedDate = null;
+				id_DateAdmin.text = "";
+				
+				id_NextDue.selectedDate = null;
+				id_NextDue.text = "";
+				
+				id_ExpiryDate.selectedDate = null;
+				id_ExpiryDate.text = "";
+				
+				id_SeriesCmbo.selectedIndex = -1;
+				id_SeriesCmbo.textInput.text = "";
+				
+				enable = false;
+				id_Add.enableAll = false;
+				recordNotesDTO = new ModuleNoteDTO();
+				
+				id_Add.notesDTO = new ModuleNoteDTO();
+				id_Add.dictationDTO = null
+				
+				if (recordNotesPanel)
+					recordNotesPanel.removePopup();
+			}
+			
+			
+			protected function Cmbo_changeHandler(event:IndexChangeEvent = null):void
+			{
+				id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+				id_Add.enableAll = isNonRequiredFieldsLengthValid();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YY" />
+		<mx:DateFormatter id="formatDateTime2" formatString="MM/DD/YYYY" />
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<validators:ComboValidator id="comboValidator"/>
+		<validators:PastDateValidator id="pastDateValidator" property="selectedDate"/>
+		<validators:FutureDateValidator id="futureDateValidator"/>
+	</fx:Declarations>
+	<fx:Binding source="model.quickInputDTO.PMH.Immunization" destination="CombinedQIVBImmunizationList"  />
+	<fx:Binding source="model.immunizationDTOList" destination="CombinedQIVBImmunizationList"  />
+	<s:layout>
+		<s:VerticalLayout gap="5" paddingRight="5" paddingLeft="5" />
+	</s:layout>
+	<s:HGroup id="id_NotesArea" width="100%" paddingTop="0" />
+	
+	<s:HGroup width="{id_ImnzationForm.width}" >
+		<s:DropDownList id="id_AssociateVisitzCombo"  focusEnabled="true"
+						prompt="Associate With" visible="false" includeInLayout="false" dataProvider="{arrAssociateTypes}" change="id_AssociateVisitzCombo_changeHandler()"
+						width="{id_ImmunizationCmbo.width}" skinClass="com.adobe.quivus.skins.chrome.comboBoxSkins.requiredDropDownList"/>
+		<s:DropDownList id="id_VisitDatesCombo" prompt="Select Visit Date" focusEnabled="true"
+						dataProvider="{model.unSignedVisitDates}"  change="id_VisitDatesCombo_changeHandler()"
+						labelField="VisitDate" labelFunction="getVisitDate"  visible="false" width="{id_DoseCmbo.width}" 
+						skinClass="com.adobe.quivus.skins.chrome.comboBoxSkins.requiredDropDownList" includeInLayout="{id_VisitDatesCombo.visible}"/>
+		<s:SkinnableContainer id="dateToolTipContainer" skinClass="com.adobe.quivus.skins.chrome.containerSkins.dateToolTipBG" 
+							  visible="false" includeInLayout="false"  >
+			<s:Label id="id_DateLabel" text="Please Select Visit" fontFamily="Calibri" fontSize="12"
+					 width="100%" paddingLeft="10" horizontalCenter="0"  verticalCenter="0"/>
+		</s:SkinnableContainer>
+	</s:HGroup>
+	
+	<s:HGroup id="id_ImnzationForm" width="100%" visible="false" includeInLayout="false" enabled="false">
+		
+		<s:VGroup width="33%">
+			<components1:LabelComboBox id="id_ImmunizationCmbo" prompt="Immunization" width="100%" labelField="ImmunizationTypeName" maxChars="30"
+									  dataProvider="{model.immunizationTypeDTOList}" keyUp="id_ImmunizationCmbo_keyUpHandler(event)" 
+									  change="comboChangeHandler(event)" open="id_ImmunizationCmbo_OpenHandler(event)"
+									  focusOut="areRequiredFieldsProvidedAndValid()"
+									  skinClass="com.gazuntite.controls.extended.skins.comboBoxRegisterationRequiredSkin" tabIndex="1"/>
+			<components1:LabelComboBox id="id_ManufacturerCmbo" prompt="Manufacturer" width="100%" maxChars="250"
+									  dataProvider="{model.immunizationManufacturerList}" keyUp="id_ManufacturerCmbo_keyUpHandler(event)" tabIndex="8" />
+			
+			<s:HGroup width="100%" verticalAlign="middle">
+				
+					<s:CheckBox id="id_RefusalChk" fontFamily="Calibri" color="#ffffff" label="Refusal" change="refusalCheckBoxChangeHandler()" tabIndex="12"
+								skinClass="com.adobe.Quivus.view.controls.skins.checkBoxSkins.QICheckBoxSkin"  />
+					<s:Label text="Refusal" fontFamily="Calibri" color="#ffffff" fontSize="11" />
+				
+				<!--<s:HGroup gap="2" verticalAlign="middle">				
+					<s:CheckBox id="id_RefusalChk" fontFamily="Calibri" color="#ffffff" label="Refusal" change="refusalCheckBoxChangeHandler()" tabIndex="12"
+								skinClass="com.adobe.Quivus.view.controls.skins.checkBoxSkins.QICheckBoxSkin" label="Refusal"/>
+				</s:HGroup>-->		
+				<components1:LabelComboBox id="id_ReasonOfRefusalCmbo" prompt="Reason of Refusal" width="100%" enabled="{id_RefusalChk.selected}" maxChars="500"
+									  dataProvider="{model.immunizationRefusalReasonList}" keyUp="id_ReasonOfRefusalCmbo_keyUpHandler(event)" change="comboChangeHandler(event)" tabIndex="13"/>
+			</s:HGroup>
+			
+		</s:VGroup>
+		
+		<s:VGroup width="33%">
+			<s:HGroup width="100%" >
+				<components1:LabelComboBox id="id_DoseCmbo" prompt="Dose" width="50%"
+										  dataProvider="{model.immunizationDoseList}" keyUp="id_DoseCmbo_keyUpHandler(event)" 
+										  change="id_DoseCmbo_changeHandler(event)"
+										  focusOut="areRequiredFieldsProvidedAndValid()"
+										  skinClass="com.gazuntite.controls.extended.skins.comboBoxRegisterationRequiredSkin" tabIndex="2"/>
+				<components1:LabelComboBox id="id_LotNoCmbo" prompt="Lot#" width="50%"
+										  dataProvider="{model.immunizationLotNumberList}" keyUp="id_LotNoCmbo_keyUpHandler(event)" tabIndex="3" />
+			</s:HGroup>
+			<components1:LabelComboBox id="id_BodySideRouteCmbo" prompt="Body Side/Route" width="100%" maxChars="250"
+									  dataProvider="{model.immunizationRoutList}" 
+									  keyUp="id_BodySideRouteCmbo_keyUpHandler(event)" change="Cmbo_changeHandler(event)"
+									  tabIndex="9" />
+			<components1:LabelComboBox id="id_SiteCmbo" prompt="Site" width="100%" maxChars="250"
+									  dataProvider="{model.immunizationSitesList}" 
+									  keyUp="id_SiteCmbo_keyUpHandler(event)"  change="Cmbo_changeHandler(event)"
+									  tabIndex="14"/>
+			
+		</s:VGroup>
+		
+		<s:VGroup width="34%">
+			<s:HGroup width="100%" >
+				
+				<components1:LabelDateField id="id_DateAdmin" prompt="Date Admin" toolTip="Admin Date" width="50%" 
+										   yearNavigationEnabled="true" editable="true" maxYear="{new Date().getFullYear()}" minYear="1901"
+										   change="validateDateAdmin()" keyUp="validateDateAdmin()"
+										   selectableRange="{{rangeEnd : new Date()}}" fontFamily="calibri" fontSize="11" tabIndex="4"/>
+				<components1:LabelDateField id="id_NextDue" prompt="Next Due" toolTip="Next Due" width="50%" 
+										   yearNavigationEnabled="true" editable="true" selectableRange="{{rangeStart:new Date()}}"
+										   change="validateDate()" keyUp="validateDate()" fontFamily="calibri" fontSize="11" tabIndex="5"/>
+			</s:HGroup>
+			<s:HGroup width="100%" >
+				<components1:LabelDateField id="id_VISDate" toolTip="Visit Date" width="50%" yearNavigationEnabled="true" textInputStyleName="optionalDateTextBox"  
+										   enabled="false" editable="false" 
+										   selectedDate="{model.visitDTO.VisitDate}" maxYear="{new Date().getFullYear()}" minYear="1901" tabIndex="10"/>
+				<components1:LabelDateField id="id_ExpiryDate" prompt="Expiry Date" textInputStyleName="optionalDateTextBox" toolTip="Expiry Date" width="50%"  yearNavigationEnabled="true" editable="true" maxYear="{new Date().getFullYear()}" minYear="1901"
+										   change="validateDate()" keyUp="validateDate()" fontFamily="calibri" fontSize="11" tabIndex="11"/>
+			</s:HGroup>
+			<components1:LabelComboBox id="id_SeriesCmbo" prompt="Series" width="100%" maxChars="250"
+									  dataProvider="{model.immunizationSeriesList}" 
+									  keyUp="id_SeriesCmbo_keyUpHandler(event)"  change="Cmbo_changeHandler(event)"
+									  tabIndex="15" />
+			
+		</s:VGroup>
+		
+		<s:VGroup verticalAlign="top" horizontalAlign="left" width="10%" paddingTop="0" gap="12">
+			<commons:AddRecord id="id_Add" enabled="{enable}" writeNotesClick="onWriteNotesClick(event)"  writeDictationClick="writeDictationClickHandler(event)" 
+							   tabIndex="6"/>
+			
+		</s:VGroup>
+		
+	</s:HGroup>
+	
+	<s:HGroup width="100%">
+		
+		<s:HGroup id="id_imnzButtons" width="100%" visible="false" includeInLayout="false">
+			<s:Button id="id_btnAdd" enabled="{id_Add.enableAll}" buttonMode="true" useHandCursor="true" toolTip="Add Record"	  
+					  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.AddMoreTooltipBtn" label="Add Immunization" tabIndex="16" 
+					  click="id_add_clickHandler(event)" />
+			<s:SkinnableContainer skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.tooltipBG" visible="{!id_btnAdd.enabled}"  />
+		</s:HGroup>
+		<s:HGroup horizontalAlign="right" width="100%">
+			<s:Button id="id_AddMoreBtn" label="Add More" click="id_AddMoreBtn_clickHandler(event)"
+					  skinClass="{id_AddMoreBtn.label=='Close' ? closeCrossButton:addMoreButton}"
+					  toolTip="{id_AddMoreBtn.label=='Close' ? 'Close Immunization Form' :'Add Immunization Record'}"
+					  buttonMode="true" useHandCursor="true" tabIndex="0"  />
+			<s:Button label="Next" id="id_nextBtn" 
+					  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QInextBtnSkin"
+					  toolTip="Move to Next Section Physical" buttonMode="true" />
+		</s:HGroup>	
+	<components1:LabelDataGrid id="id_DataGrid"
+							  creationComplete="id_DataGrid_creationCompleteHandler(event)"
+							  rowCount="{id_DataGrid.dataProvider.length ? id_DataGrid.dataProvider.length + 1 :  1}"
+							  width="100%"   
+							  editable="true"
+							  itemEditBegin="recentPatientGridItemEditBeginHandler(event)" 
+							  itemEditEnd="recentPatientGridItemEditEndHandler(event)"
+							  dataProvider="{CombinedQIVBImmunizationList}" 
+							  minHeight="70" maxHeight="250"
+							  horizontalScrollPolicy="on" verticalScrollPolicy="on"
+							  columnWidths="{[30,'15%', '15%', '30%', '10%', '10%', '10%', 90]}"
+							  visible="{id_DataGrid.dataProvider.length > 0? true: false}" includeInLayout="{id_DataGrid.dataProvider.length > 0? true: false}">
+		<components:columns>
+			<!-- Changes by baber waqas for displaying serial number  -->	
+			<mx:DataGridColumn headerText="Sr.#" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editable="false" labelFunction="displayRowNum"  />
+			<mx:DataGridColumn headerText="Visit Date" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"  editable="false" labelFunction="displayVisitDate" />
+			<mx:DataGridColumn headerText="Date Admin" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editable="true"  dataField="DateAdmin"  editorDataField="text" > 
+				<!--editorDataField="selectedDate" itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG">-->
+				
+				<!--<mx:itemEditor>
+				<fx:Component>
+				<components:LabelDateField width="100%" editable="true" text="{outerDocument.id_DateAdmin.text}"
+				selectableRange="{{rangeEnd : new Date()}}" />
+				</fx:Component>
+				</mx:itemEditor>-->
+			</mx:DataGridColumn>					
+			<mx:DataGridColumn dataField="ImmunizationType.ImmunizationTypeName"  
+							   headerText="Immunization"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor width="100%" dataProvider="{outerDocument.model.immunizationTypeDTOList}" labelField="ImmunizationTypeName" />
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn dataField="Dose" headerText="Dose" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>
+						<!--<VBImmunization:ImmunizationItemEditor dataProvider="{outerDocument.model.immunizationDoseList}" immunizationField="Dose" width="100%"/>
+						-->
+						<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.immunizationDoseList}" labelField="Dose" width="100%" height="100%"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn dataField="LotNumber" headerText="Lot#" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.immunizationLotNumberList}" labelField="LotNumber" width="100%"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Next Due" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"  dataField="NextDoseDue" editable="true" editorDataField="text"> 
+				<!-- editorDataField="selectedDate" itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG">-->
+				<!--<mx:itemEditor>
+				<fx:Component>
+				<components:LabelDateField width="100%" editable="true" text="{outerDocument.id_NextDue.text}" />
+				</fx:Component>
+				</mx:itemEditor>-->
+			</mx:DataGridColumn>
+			<!--<mx:DataGridColumn dataField="VisitStatus" headerText="Status" itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG" />-->
+			<commons:DataGridColumnEx headerText="" editable="false" data="{deleteColumnData}" dataField="Note" property="PatientImmunizationId" 
+									  section="{QIPopUpManager.IMMUNIZATION}" itemRenderer="com.gazuntite.patient.visit.view.itemrenderers.DeleteRecordRenderer" />
+		</components:columns>
+	</components1:LabelDataGrid>
+	
+	<s:HGroup width="100%" horizontalAlign="center" paddingBottom="5">		
+		<s:Label id="id_lbl" text="No Immunization Records" color="#FFFFFF" visible="{(!id_DataGrid.dataProvider.length)}"  includeInLayout="{id_lbl.visible}" fontFamily="Calibri" fontSize="14" width="100%" textAlign="center"/>
+	</s:HGroup>
+	
+	</s:HGroup>
+</s:Group>

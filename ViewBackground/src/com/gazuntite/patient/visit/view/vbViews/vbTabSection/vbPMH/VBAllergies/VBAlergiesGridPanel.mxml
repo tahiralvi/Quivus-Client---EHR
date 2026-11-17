@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="utf-8"?>
+<common:VBCollapsibleView xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+					  xmlns:viewBackground="com.gazuntite.patient.visit.view.vbViews.*"
+					  xmlns:paging="com.gazuntite.patient.visit.view.vbViews.paging.*"
+					  xmlns:common="com.gazuntite.patient.visit.view.common.*"
+					  creationComplete="cc(event)" 
+					  xmlns:components="com.gazuntite.controls.extended.components.*" xmlns:grid="com.gazuntite.common.view.components.grid.*" 
+					  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.VBdictationBtnSelected;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.VBnotesBtnSelected;
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.VBIconsBlackButton;
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.VBIconsButton;
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.VBIconsButtonFilled;
+			import com.gazuntite.common.util.QSAppUtils;
+			import com.gazuntite.common.util.QSConstants;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			import com.gazuntite.patient.visit.utlis.VBUtilityFunctions;
+			import com.gazuntite.patient.visit.view.vbViews.VBSectionDictation;
+			import com.gazuntite.patient.visit.view.vbViews.VBSectionNotes;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import spark.components.DataRenderer;
+			
+			private var notesGridPanel:VBSectionNotes;
+			private var m_oNotesDTOList:ArrayCollection;
+			
+			private var dictationGridPanel:VBSectionDictation;
+			
+			private var _expandedView:Boolean;
+			
+			[Bindable]
+			private var model:VBModelLocator = VBModelLocator.getInstance();
+			
+			[Bindable]
+			public var dataGridActionsData:Object;
+			
+			public function get notesDTOList():ArrayCollection
+			{
+				return m_oNotesDTOList;
+			}
+			
+			public function set notesDTOList(value:ArrayCollection):void
+			{
+				m_oNotesDTOList = value;
+			}
+			
+			public function GridRowNumber(item:Object, iCol:int):String
+			{
+				var strRowNum:String = "";
+				
+				if (id_DataGrid.dataProvider)
+				{
+					var rowNum:int = id_DataGrid.dataProvider.getItemIndex(item) + 1;
+					strRowNum = String(rowNum);
+				}
+				
+				return strRowNum;
+				
+			}
+			
+			private var vb_IsModelUpdated:Boolean;
+			private var moduleConstantName:String = QSConstants.ALLERGY_MODULE_NAME;
+			
+			public function get IsModelUpdated():Boolean{
+				
+				return vb_IsModelUpdated;
+				
+			}
+			
+			public function set IsModelUpdated(value:Boolean):void{
+				
+				vb_IsModelUpdated = value;
+				
+				if(vb_IsModelUpdated )
+				{
+					//Ayesha 21/02/2013 temporary change
+					var notesDTOList:ArrayCollection = new ArrayCollection();//QSUtilityFunctions.getModuleNoteListForViewBackGround(moduleConstantName);
+					var dictationDTOList:ArrayCollection = new ArrayCollection();//QSUtilityFunctions.getModuleDictationListForViewBackGround(moduleConstantName);
+					
+					if(dictationDTOList && dictationDTOList.length > 0)
+					{
+						id_header.id_Voice.setStyle("skinClass", VBdictationBtnSelected);
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+					}
+					
+					if(notesDTOList && notesDTOList.length > 0)
+					{
+						id_header.id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected);
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+					}		
+				}
+			}
+			
+			private function cc(event:FlexEvent):void
+			{
+				if (expandedView)
+				{
+					id_header.HeadingLable = id_header.HeadingLable.toUpperCase();
+				}
+				else
+				{
+					id_header.HeadingLable = id_header.HeadingLable.toLowerCase();
+				}
+				
+				id_header.id_OptionPopUp.displayPopUp = true;
+				id_header.id_iconButtons.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if(!expandedView)
+					{
+						expandedView = true;						
+					}
+					
+					//if(id_Area.visible)
+					{
+						
+						if(id_header.id_OptionPopUp.displayPopUp)
+						{
+							id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						}
+						else
+						{
+							id_header.id_iconButtons.setStyle("skinClass", VBIconsButton);	
+						}
+					}
+					
+				});
+				
+				id_header.id_Voice.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					var notesDTOList:ArrayCollection = new ArrayCollection();//QSUtilityFunctions.getModuleNoteListForViewBackGround(moduleConstantName);
+					var dictationDTOList:ArrayCollection = new ArrayCollection();//QSUtilityFunctions.getModuleDictationListForViewBackGround(moduleConstantName);
+					
+					id_notesDictation.notesDTOList = notesDTOList;
+					id_notesDictation.DictationDTOList = dictationDTOList;
+					id_notesDictation.id_Area.visible 		= true;
+					id_notesDictation.id_Area.includeInLayout = true;
+					//id_notesDictation.id_VBViews.selectedIndex = 1;						
+					id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+					id_header.id_iconButtons.selected =  false;
+					id_header.id_OptionPopUp.displayPopUp = false;
+					
+					if (expandedView)
+					{
+						event.stopImmediatePropagation();
+					}
+				});
+				
+				id_header.id_NotesBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					var notesDTOList:ArrayCollection = new ArrayCollection();//QSUtilityFunctions.getModuleNoteListForViewBackGround(moduleConstantName);
+					var dictationDTOList:ArrayCollection = new ArrayCollection();//QSUtilityFunctions.getModuleDictationListForViewBackGround(moduleConstantName);
+					
+					id_notesDictation.notesDTOList = notesDTOList;
+					id_notesDictation.DictationDTOList = dictationDTOList;
+					{
+						id_notesDictation.id_Area.visible 		= true;
+						id_notesDictation.id_Area.includeInLayout = true;						
+						//id_notesDictation.id_VBViews.selectedIndex = 0;
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						id_header.id_iconButtons.selected = false;
+						id_header.id_OptionPopUp.displayPopUp = false;
+						
+					}
+					
+					if (expandedView)
+					{
+						event.stopImmediatePropagation();
+					}
+				});
+				
+				id_header.id_OptionPopUp.displayPopUp = false;
+				
+				/* 	if(this.ExpandedView)
+				{
+				id_header.id_pmhHeader.setStyle("skinClass", VBinternalBarSkin);	
+				}
+				else
+				{
+				id_header.id_pmhHeader.setStyle("skinClass", VBInternalBarInactiveSkin);
+				} */
+				
+				if (!dataGridActionsData)
+					dataGridActionsData = {};
+				
+				dataGridActionsData["noteDataFields"] = {subject: "NoteSubject", note: "Note", header: "AllergyName", visitDate: "VisitDate"};
+				dataGridActionsData["dictationDataField"] = "DictationID";
+			}
+			
+			
+			/*private function myFilter(obj:*):Boolean
+			{
+				if(model.vbFilter == Constants.BY_VISIT)
+				{
+					if(model.vbVisitId == obj.VisitId)
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+				
+				return true;
+			}*/
+			
+			protected function slideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if(id_header && id_header.id_pmhHeader)
+				{
+					if(event.viewState == QSViewStateEvent.EXPANDED_VIEW)
+					{				
+						
+						//id_header.id_pmhHeader.setStyle("skinClass", VBinternalBarSkin);	
+						id_header.HeadingLable = id_header.HeadingLable.toUpperCase();
+						id_header.id_expandBtn.selected = true;
+					}
+					else
+					{
+						//id_header.id_pmhHeader.setStyle("skinClass", VBInternalBarInactiveSkin);
+						id_header.HeadingLable = QSAppUtils.TitleCase(id_header.HeadingLable);
+						id_header.id_expandBtn.selected = false;
+					}
+				}
+			}
+			
+			
+			protected function id_notesArea_creationCompleteHandler(event:FlexEvent):void
+			{
+				//var notesDTOList:ArrayCollection = UtilityFunctions.getModuleNoteListForViewBackGround( Constants.ALLERGY_MODULE_NAME );
+				//id_notesArea.id_SectionNotes.dataProvider = notesDTOList;
+			}
+			
+			
+			protected function id_recordingsArea_creationCompleteHandler(event:FlexEvent):void
+			{
+				//var dictationDTOList:ArrayCollection = UtilityFunctions.getModuleDictationListForViewBackGround(Constants.ALLERGY_MODULE_NAME);
+				//id_recordingsArea.id_SectionDictations.dataProvider = dictationDTOList;
+			}
+			
+			
+			/* protected function id_crossBtn_clickHandler(event:MouseEvent):void
+			{
+			id_notesDictation.id_Area.visible 		= false;
+			id_notesDictation.id_Area.includeInLayout = false;										
+			id_header.id_iconButtons.setStyle("skinClass", VBIconsButton);
+			id_header.id_iconButtons.selected = false;
+			id_header.id_OptionPopUp.displayPopUp = false;
+			} */
+			
+			/* private function statusLabelFunction(oItem:Object, iCol:int):String
+			{
+			var vd:String = (oItem as AllergyDTO).IsActive;
+			
+			if( UtilityFunctions.IsNullOrEmpty( vd ) )
+			{
+			return '';//"N/A";
+			} 
+			else if(vd == '1' || vd.toLowerCase() == Constants.STRING_TRUE )
+			{
+			return "Active";
+			}
+			else if( vd == '0' ||vd.toLowerCase() == Constants.STRING_FALSE)
+			{
+			return "InActive";
+			}
+			return ""; 
+			
+			} */
+			
+			private function preInitialize():void
+			{
+				/* if (!deleteColumnData)
+				deleteColumnData = {};
+				*/
+				/* deleteColumnData["noteDataFields"] = {subject: "NoteSubject", note: "Note", header: "ImmunizationType.ImmunizationTypeName"};
+				deleteColumnData["dictationDataField"] = "DictationID";
+				deleteColumnData["recordIDField"] = "PatientImmunizationId"; */
+				//deleteColumnData["section"] = QIPopUpManager.IMMUNIZATION;
+			}
+			
+			
+			private function switchPageForGridView( event:Event ):void
+			{
+				loadFromServer();
+			}
+			
+			
+			protected function id_PaginationFilterView_RefreshViewHandler(event:Event):void
+			{
+				if( UtilityFunctions.IsNullOrEmpty( model.allergyCurrentPageByPatient ) )
+				{
+					model.allergyCurrentPageByPatient = id_PaginationFilterView.page;
+				}
+				/* var lpaEvent : LoadPatientAllergyByPatientIdEvent = new LoadPatientAllergyByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpaEvent ); */
+			}
+			
+			private function loadFromServer():void
+			{
+				if (UtilityFunctions.IsNullOrEmpty(model.allergyCurrentPageByPatient))
+				{
+					model.allergyCurrentPageByPatient = VBUtilityFunctions.getNewPageDTOWithDefaultValues();// PageDTO();
+				}
+				
+				/* var lpaEvent : LoadPatientAllergyByPatientIdEvent = new LoadPatientAllergyByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpaEvent ); */
+			}
+			
+			private function getOnSet(oItem:Object, iCol:int):String
+			{
+				var strVisitDate:String = '';
+				
+				if (oItem && oItem.OnSet)
+				{
+					var dateRecieved:Date = new Date(Date.parse(oItem.OnSet));
+					strVisitDate = formatDateTime.format(dateRecieved);
+					if( strVisitDate.indexOf('NaN',0) != -1)
+						strVisitDate = oItem.OnSet;
+				}
+				return strVisitDate;
+			}
+			private function displayVisitDate(oItem:Object, iCol:int):String
+			{
+				var strVisitDate:String = '';
+				
+				if (oItem && oItem.VisitDate)
+				{
+					var dateRecieved:Date = new Date(Date.parse(oItem.VisitDate));					
+					if( dateRecieved!=null && dateRecieved.fullYear == 1901)
+					{
+						strVisitDate="N/A";																								
+					}
+					else						
+					{
+						strVisitDate= formatDateTime.format(dateRecieved);												
+					}
+					
+				}
+				return strVisitDate;
+			}
+			
+			private function setOnSet(oItem:Object,iCol:int):String
+			{
+				var strVisitDate:String = '';
+				
+				if (oItem && oItem.OnSet)
+				{
+					var dateRecieved:Date = new Date(Date.parse(oItem.OnSet));
+					strVisitDate = formatDateTime.format(dateRecieved);
+					if( strVisitDate.indexOf('NaN',0) != -1)
+						strVisitDate = oItem.OnSet;
+				}
+				return strVisitDate;
+			}
+			private var _isNKDAFlag:Boolean;
+			[Bindable]
+			public function get isNKDAFlag():Boolean
+			{
+				return _isNKDAFlag;
+			}
+			
+			public function set isNKDAFlag(value:Boolean):void
+			{
+				_isNKDAFlag = value;
+				
+				if(_isNKDAFlag)
+				{
+					id_DataGrid.visible 			= false;
+					id_DataGrid.includeInLayout  = false;
+					id_nkda.visible = true;
+					id_nkda.includeInLayout = true;
+				}
+				else
+				{
+					id_DataGrid.visible 			= true;
+					id_DataGrid.includeInLayout  = true;
+					id_nkda.visible = false;
+					id_nkda.includeInLayout = false;
+				}
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YYYY" />
+	</fx:Declarations>
+	
+	<fx:Binding source="model.AllergyNKDAFlag" destination="isNKDAFlag" />
+	
+	<common:headerContents>
+		<s:Group id="id_mainHeader" width="100%" height="24"> <!--minWidth="{ChromeUtil.topLevelMainContainer.width - 90}"-->
+			<s:layout>
+				<s:VerticalLayout verticalAlign="bottom" horizontalAlign="center" />
+			</s:layout>
+			<viewBackground:VBSectionHeader id="id_header" width="{id_mainHeader.width - 8}" HeadingLable="Allergies"
+											Skin="com.adobe.gazuntite.skins.viewBackground.skinnableContainers.VBBGSectionSkin"/>	<!--SectionNameID="{QSSecurityUtil.VB_ALLERGIES}"-->				   
+		</s:Group>
+	</common:headerContents>
+	
+	<s:SkinnableContainer id="id_contents" width="100%" height="100%"  skinClass="com.adobe.gazuntite.skins.viewBackground.skinnableContainers.VBBGSectionSkin">					
+		<s:layout>
+			<s:VerticalLayout horizontalAlign="center" verticalAlign="top" gap="1" paddingLeft="4" paddingRight="4" paddingBottom="4" paddingTop="4" />
+		</s:layout>
+		<!--<s:VGroup id="id_NotesArea" width="100%" paddingTop="0" gap="-2">-->
+		<viewBackground:VBSectionLevelNotesDictation id="id_notesDictation" width="100%"  />
+		
+		<!--</s:VGroup>-->
+		<s:Button label="Filter" visible="false" includeInLayout="false" id="id_applyFiler"/>	
+		<paging:PaginationFilterView id="id_PaginationFilterView" width="100%" page="{model.allergyCurrentPageByPatient}"
+									 GoToFirstPage="switchPageForGridView(event)" GoToNextPage="switchPageForGridView(event)" 
+									 GoToPreviousPage="switchPageForGridView(event)" GoToLastPage="switchPageForGridView(event)"
+									 RefreshView="id_PaginationFilterView_RefreshViewHandler(event)"
+									 />
+		<s:Label id="id_nkda" text="NO KNOWN DRUG ALLERGIES" fontFamily="Calibri" fontSize="15"  textAlign="center" fontWeight="bold" verticalAlign="top" 
+				 visible="false" includeInLayout="false" width="100%" color="#FFFFFF"/>
+		<components:LabelDataGrid id="id_DataGrid" width="100%" useRollOver="false" 
+								  dataProvider="{model.QIAllergyDTOList}" 
+								  rowCount="{id_DataGrid.dataProvider.length + 1}"
+								  rowHeight="23"
+								  verticalScrollPolicy="on" maxHeight="150"
+								  verticalScrollBarStyleName="VScrollBar"
+								  columnWidths="{[25,'10%','20%','20%','15%','10%', 100]}">
+			<components:columns>
+				<mx:DataGridColumn headerText="NKDA" dataField="NKDA" headerRenderer="mx.controls.Label" wordWrap="true" />
+				<mx:DataGridColumn headerText="Visit Date" width="100" dataField="VisitDate" headerWordWrap="true" labelFunction="displayVisitDate"/>
+				<mx:DataGridColumn headerText="OnSet" dataField="OnSet" headerRenderer="mx.controls.Label" wordWrap="true" labelFunction="setOnSet"/>
+				<mx:DataGridColumn headerText="Allergy" dataField="AllergyName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn headerText="Reaction" dataField="Reaction" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn headerText="Status" dataField="Status" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<grid:DataGridColumnEx itemRenderer="com.gazuntite.patient.visit.view.common.DeleteEditOnlyRenderer"
+									   data="{dataGridActionsData}" editable="false"/>
+			</components:columns>
+		</components:LabelDataGrid>
+		
+	</s:SkinnableContainer>
+</common:VBCollapsibleView>

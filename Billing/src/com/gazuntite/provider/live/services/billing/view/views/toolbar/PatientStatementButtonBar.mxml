@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  >
+	
+	<fx:Metadata>		
+		[Event(name="PrintSend", type="flash.events.Event")]
+		[Event(name="ReBill", type="flash.events.Event")]
+		[Event(name="Setting", type="flash.events.Event")]		
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+						
+			public static const PRINT_SEND			:String = "PrintSend";
+			public static const REBILL				:String = "ReBill";
+			public static const SETTING				:String = "Setting";
+			
+			
+			protected function clickHandler(event:MouseEvent):void
+			{
+				var btn:Button = event.currentTarget as Button;
+				switch( btn.id )
+				{					
+					case "id_printSendBtn":
+						dispatchEvent( new Event( PRINT_SEND, true ) );
+						break;		
+					case "id_rebillBtn":						
+						dispatchEvent( new Event( REBILL, true ) );
+						break;
+					case "id_setting":						
+						dispatchEvent( new Event( SETTING, true ) );
+						break;					
+				}
+			}	
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:Button buttonMode="true" id="id_printSendBtn" label="Print/Send"  
+			  click="clickHandler(event)" width="100" tabIndex="16"
+			  styleName="blackButtonSkin" toolTip="{id_printSendBtn.label}"/>
+	<s:Button buttonMode="true" id="id_rebillBtn" label="Rebill Statement"  tabIndex="17"
+			  styleName="blackButtonSkin" toolTip="{id_rebillBtn.label}" width="100"/>
+	<s:Button id="id_setting" width="100" useHandCursor="true" buttonMode="true" toolTip="{id_setting.label}" 
+			  click="clickHandler(event)" tabIndex="18"
+			  label="Settings" styleName="blackButtonSkin"  />
+	
+</s:HGroup>

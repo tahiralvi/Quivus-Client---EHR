@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/>
+	</s:states>
+	<s:Rect height="13" width="14" x="0" y="0" visible.over="false" visible.down="false">
+		<s:filters>
+			<s:DropShadowFilter alpha="0.25" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#363636" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#666666" ratio="0.9058823529411765"/>
+				<s:GradientEntry alpha="1.0" color="#3D3D3D" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<s:Rect height="13" includeIn="down,over,up" width="14" x="0" y="0" visible.up="false">
+		<s:filters>
+			<s:DropShadowFilter alpha="0.25" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter includeIn="down" blurX="4.0" blurY="4.0" distance="0" hideObject="false" color="0x000000" inner="true" strength="1" alpha="0.5" quality="2" knockout="false" angle="90"/>
+		</s:filters>
+		<s:fill>
+			<s:LinearGradient rotation.over="270" rotation.up="90" rotation.down="270">
+				<s:GradientEntry ratio="0" color.over="#FFE345" alpha="1.0" color.up="#363636" color.down="#FFE345"/>
+				<s:GradientEntry includeIn="down,over" ratio="0.5058823529411764" color="#D67F18" alpha="1.0"/>
+				<s:GradientEntry ratio.over="0.5333333333333333" color.over="#FFB681" alpha="1.0" color.up="#666666" color.down="#FFB681" ratio.up="0.9058823529411765" ratio.down="0.5333333333333333"/>
+				<s:GradientEntry ratio="1" color.over="#E7D091" alpha="1.0" color.up="#3D3D3D" color.down="#E7D091"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<s:Rect height="2" width="8" x="3" y="5">
+		<s:fill>
+			<s:SolidColor color="#B0B0B0" color.over="#FFFFFF" color.down="#FFFFFF"/>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="0" blurY="0" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+		<s:fill.up>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1" color="#B0B0B0" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#999999" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill.up>
+	</s:Rect>
+</s:Skin>

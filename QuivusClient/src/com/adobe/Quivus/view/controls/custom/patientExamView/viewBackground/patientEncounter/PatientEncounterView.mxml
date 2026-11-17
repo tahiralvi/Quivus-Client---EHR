@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:components1="com.gazuntite.controls.extended.components.*"	 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.visit.LoadPatientVisitListEvent;
+			import com.adobe.Quivus.logging.LoggingUtil;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.signCoSign.event.PatientVisitEvent;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.signCoSign.popUps.AuthenticationPopUp;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.soapNote.soapNoteView;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.renderer.EncounterGridLinkRenderer;
+			import com.adobe.cairngorm.control.CairngormEvent;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.patient.visit.event.visit.LoadPhysiciansbyClinicBranchIDEvent;
+			import com.gazuntite.patient.visit.model.QIModelLocator;
+			import com.gazuntite.common.event.visit.GenerateSoapNotePreviewCommonEvent;
+			import com.gazuntite.controls.extended.components.PopupWindow;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.IList;
+			import mx.controls.Label;
+			import mx.logging.ILogger;
+			
+			import spark.components.Button;
+			
+			import valueObjects.PatientEncounterDTO;
+			
+			//Ayesha: 17th May 2011
+			private var authenticationPopUp:AuthenticationPopUp;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			private var logger : ILogger = LoggingUtil.getLogger( this );
+			
+			private var m_oDataProvider:IList
+			
+			[Bindable]
+			public function get DataProvider():IList
+			{
+				return m_oDataProvider;
+			}
+			
+			public function set DataProvider(value:IList):void
+			{
+				m_oDataProvider = value;
+				/*if(value.length > 0)
+				{
+				id_PatientEncounterGrid.percentHeight = 100;
+				}
+				else
+				{
+				//id_PatientEncounterGrid.percentHeight = 100;
+				id_PatientEncounterGrid.rowCount = 3;
+				id_PatientEncounterGrid.height = 70;
+				}*/
+			}
+			
+			private var StatusWindow:PopupWindow ;
+			
+			
+			public function ShowStatusWindow(statusMessage :String ):void
+			{
+				StatusWindow = UtilityFunctions.ShowStatusMessage( statusMessage, this );
+			}
+			
+			public function RemoveStatusWindow():void
+			{
+				if( StatusWindow )
+					StatusWindow.removePopup();
+				
+				StatusWindow = null;
+			}
+			
+			
+			public static function refreshPatientVisitList():void
+			{
+				var model:AppModelLocator = AppModelLocator.getInstance();
+				var lpvEvent:LoadPatientVisitListEvent = new LoadPatientVisitListEvent(model.loadedPatientId, false );
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpvEvent );
+			}
+			
+			private function onVisitSignCosignSuccess(actionName:String = "", visitID:int = 0):void
+			{
+				switch (actionName)
+				{
+					case Constants.VISIT_SIGNE:
+						var signEv:PatientVisitEvent = new PatientVisitEvent(PatientVisitEvent.PATIENT_VISIT_SIGNED, true);
+						signEv.visitId = visitID;
+						dispatchEvent(signEv);
+						break;
+					
+					case Constants.VISIT_COSIGNED:
+						var cosignEv:PatientVisitEvent = new PatientVisitEvent(PatientVisitEvent.PATIENT_VISIT_COSIGNED, true);
+						cosignEv.visitId = visitID;
+						dispatchEvent(cosignEv);
+						break;
+				}
+				
+				refreshPatientVisitList();
+			}
+			public function PrescriptionLoaded(patientMedAC:ArrayCollection, patientChronicMedAC:ArrayCollection, patientMedAC_inactive:ArrayCollection, patientChronicMedAC_inactive:ArrayCollection):void
+			{
+				if(model.patientMedACList)
+					model.patientMedACList.removeAll();
+				else
+					model.patientMedACList = new ArrayCollection();
+				
+				if(model.patientMedAC_inactiveList)
+					model.patientMedAC_inactiveList.removeAll();
+				else
+					model.patientMedAC_inactiveList = new ArrayCollection();
+				
+				if(model.patientChronicMedAC_inactiveList)
+					model.patientChronicMedAC_inactiveList.removeAll();
+				else
+					model.patientChronicMedAC_inactiveList = new ArrayCollection();
+				
+				if(model.patientChronicMedACList)
+					model.patientChronicMedACList.removeAll();
+				else
+					model.patientChronicMedACList = new ArrayCollection();
+				
+				model.patientMedACList 						= patientMedAC;//prescription list
+				model.patientChronicMedACList 				= patientChronicMedAC;//medication list
+				model.patientMedAC_inactiveList			 	= patientMedAC_inactive;
+				model.patientChronicMedAC_inactiveList	 	= patientChronicMedAC_inactive;
+				
+				//For QI load
+				if(model.chMedicationDTOList)
+					model.chMedicationDTOList.removeAll();
+				else
+					model.chMedicationDTOList = new ArrayCollection();
+				
+				if(model.prescriptionDToList)
+					model.prescriptionDToList.removeAll();
+				else
+					model.prescriptionDToList = new ArrayCollection();
+				
+				model.chMedicationDTOList = patientChronicMedAC;
+				model.prescriptionDToList = patientMedAC;
+			}
+			
+			protected function PatientEncounterGrid_clickHandler(event:MouseEvent):void
+			{
+				//return;
+				if( event.target is Button )
+				{
+					//Alert.show( event.target.id );
+					var peDTO:PatientEncounterDTO = id_PatientEncounterGrid.selectedItem as PatientEncounterDTO;
+					
+					switch(  event.target.id )
+					{
+						case "id_Sign":
+							if( QSSecurityUtil.Security.IsModuleSignable( QSSecurityUtil.VB_ENCOUNTER_LIST ) )//Tahir Alvi - on visit sign click implement security check
+							{
+								authenticationPopUp = new AuthenticationPopUp();
+								
+								if (peDTO.CanSignCosign.toLowerCase() == Constants.STRING_TRUE)
+								{	
+									authenticationPopUp.signBtnLabel = "Sign";
+									authenticationPopUp.actionName = Constants.VISIT_SIGNE;
+								}
+								else if (peDTO.CanSignCosign.toLowerCase() == Constants.STRING_FALSE)
+								{
+									authenticationPopUp.signBtnLabel = "Cosign";
+									authenticationPopUp.actionName = Constants.VISIT_COSIGNED;
+								}
+								
+								authenticationPopUp.originName = Constants.VIEW_BACKGROUND_MODULE_NAME;
+								authenticationPopUp.visitID = peDTO.VisitId;
+								authenticationPopUp.onVisitSignCosignCallback = onVisitSignCosignSuccess;
+								
+								authenticationPopUp.ShowPopup(this);
+							}
+							break;
+						
+						case "id_Edit":
+							if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_ENCOUNTER_LIST ) )//Tahir Alvi - on visit edit click implement security check
+							{
+								if( peDTO )
+								{
+									//QuivusCombineEventDispatcher.loadQuickInputEvents(peDTO.VisitId,true);
+									var Qimodel:QIModelLocator = 	QIModelLocator.getInstance();
+									
+									Qimodel.patientID = model.patientDTO.PatientId;
+									Qimodel.ClinicBranchIdSeq = model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchIdSeq;
+									Qimodel.VisitID = peDTO.VisitId;
+									Qimodel.VisitDate = peDTO.VisitDate;
+									Qimodel.canCoSign =	peDTO.CanSignCosign
+									Qimodel.PlaceOfServiceTypeID =	peDTO.PlaceOfServiceTypeID
+									Qimodel.PlaceOfServiceTypeName = peDTO.PlaceOfServiceTypeName
+									Qimodel.LoggedInUserSelectedStationID = peDTO.StationID
+									Qimodel.EncounterTypeName = peDTO.VisitEncounterTypeName
+									
+									//Tahir Alvi - for provider ---------// LE.BranchId, LE.VisitID, LE.patientID, LE.isEditMode, LE.UserId
+									var lphys:LoadPhysiciansbyClinicBranchIDEvent = new LoadPhysiciansbyClinicBranchIDEvent(model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchIdSeq,
+										peDTO.VisitId, int(peDTO.PatientID), 'true', model.loggedInUserDTO.UserId)
+									CairngormEventDispatcher.getInstance().dispatchEvent( lphys );
+								}
+							}
+							break;
+						case "id_WriteNotes":
+							break;
+						case "id_View":
+						case "id_Print":
+							
+							if( peDTO )
+							{
+								var soapNote:soapNoteView = new soapNoteView();
+								soapNote.show(soapNoteView.REVIEW_AND_PRINT, RemoveStatusWindow, ShowStatusWindow );
+								
+								var callback:Function = function( note:String, isURL:Boolean = false ):void
+								{
+									soapNote.SoapNoteURL = note;
+								}
+								
+								var isMale:Boolean = model.basicUserDTO.Gender.GenderName.toLowerCase() == "male";
+								var isAllSelected:Boolean 	= false;
+								var isTempVisit:Boolean 	= false;
+								
+								var evt:CairngormEvent;
+								evt = new GenerateSoapNotePreviewCommonEvent( peDTO.VisitId,  
+									model.sessionDTO.SessionID, 
+									model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchIdSeq, 
+									model.userSelectedStationDTO.StationID, 
+									isAllSelected,
+									isMale, 
+									isTempVisit,
+									'0',
+									peDTO.VisitProvider,
+									peDTO.VisitEncounterTypeName,
+									peDTO.PlaceOfServiceTypeName,
+									callback);
+								CairngormEventDispatcher.getInstance().dispatchEvent( evt );
+								
+								logger.debug( "GenerateSoapNotePreviewEvent for " + event.target.toolTip + ": model.basicUserDTO.Gender-> " + model.basicUserDTO.Gender.GenderName.toLowerCase() + ", " +
+									"isMale->" + isMale ); 
+								
+							}
+							break;
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="center" verticalAlign="top" paddingTop="0" 
+						  paddingLeft="2" paddingRight="2" />
+	</s:layout>
+	<!--<s:BorderContainer borderColor="#E0DFCB" borderWeight="4" borderAlpha="0"
+	backgroundColor="#E0DFCB" backgroundAlpha="1" width="100%"
+	>
+	<s:layout>
+	<s:VerticalLayout horizontalAlign="center" verticalAlign="top" 
+	/>
+	</s:layout>-->
+	
+	<components1:LabelDataGrid id="id_PatientEncounterGrid"  width="{this.width-4}" maxWidth="{this.width}" height="100%"
+							  minHeight="75" click="PatientEncounterGrid_clickHandler(event)" verticalScrollPolicy="on"
+							  dataProvider="{DataProvider}"  					
+							  rowCount="{DataProvider.length ? DataProvider.length  :1 }"
+							  sortableColumns="false"
+							  horizontalScrollPolicy="off" 
+							  verticalScrollBarStyleName="VScrollBar" columnWidths="{['15%','15%','10%','15%','15%','10%',140]}">
+		<components1:columns>
+			<mx:DataGridColumn dataField="VisitDate" headerText="Visit Date" headerRenderer="mx.controls.Label" wordWrap="true" itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG" />
+			<mx:DataGridColumn dataField="StationName" headerText="Location" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" />
+			<mx:DataGridColumn dataField="VisitEncounterTypeName" headerText="Visit Type"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"  />					
+			<mx:DataGridColumn dataField="PlaceOfServiceTypeName" headerText="Place Of Service" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"  />					
+			<mx:DataGridColumn dataField="VisitProvider" headerText="Provider" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"  />
+			<mx:DataGridColumn dataField="VisitStatus" headerText="Status" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"  />
+			<mx:DataGridColumn headerText="" headerRenderer="mx.controls.Label" wordWrap="true"  itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.renderer.EncounterGridLinkRenderer" />
+		</components1:columns>
+	</components1:LabelDataGrid>
+	
+	<!--</s:BorderContainer>	-->
+</s:Group>

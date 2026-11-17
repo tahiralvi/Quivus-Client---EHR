@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+	</s:states>
+	<s:Rect height="17" id="rect1" width="147" x="0" y="0" visible.up="false">
+		<s:fill>
+			<s:SolidColor alpha="1" color="#AF0000"/>
+		</s:fill>
+		<s:filters>
+			<s:GlowFilter alpha="0.79" blurX="2" blurY="2" color="#FFFFFF" inner="false" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	
+	<s:Label text="{hostComponent.label}" fontWeight="bold" fontFamily="Calibri" fontSize="11" color="#ffffff" />
+	<s:Path data="M 2.60 4.50 L 0.00 0.01 5.20 -0.00 Z " height="3.5" id="path1" width="6.2" x="134.4" y="7.5" visible.up="false">
+		<s:fill>
+			<s:SolidColor color="0xFCD11B"/>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter blurX="0" blurY="0" distance="1" hideObject="false" color="0x950000" inner="false" strength="1" alpha="0.5" quality="2" knockout="false" angle="270"/>
+		</s:filters>
+	</s:Path>
+	<s:transitions>
+		<s:Transition fromState="over" toState="up" autoReverse="true">
+			<s:Parallel>
+				<s:Parallel target="{rect1}">
+					<s:Fade duration="0"/>
+				</s:Parallel>
+				<s:Parallel target="{path1}">
+					<s:Fade duration="0"/>
+				</s:Parallel>
+			</s:Parallel>
+		</s:Transition>
+		<s:Transition fromState="up" toState="over" autoReverse="true">
+			<s:Parallel>
+				<s:Parallel target="{rect1}">
+					<s:Fade duration="0"/>
+				</s:Parallel>
+				<s:Parallel target="{path1}">
+					<s:Fade duration="0"/>
+				</s:Parallel>
+			</s:Parallel>
+		</s:Transition>
+	</s:transitions>
+</s:Skin>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SparkSkin xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" 
+    xmlns:fb="http://ns.adobe.com/flashbuilder/2009" minWidth="21" minHeight="21" alpha.disabledStates="0.5">
+    <fx:Metadata>[HostComponent("spark.components.ButtonBarButton")]</fx:Metadata>
+
+    <!-- host component -->
+    <!-- states -->
+    <s:states>
+        <s:State name="up" />
+        <s:State name="over" stateGroups="overStates" />
+        <s:State name="down" stateGroups="downStates" />
+        <s:State name="disabled" stateGroups="disabledStates" />
+        <s:State name="upAndSelected" stateGroups="selectedStates, selectedUpStates" />
+        <s:State name="overAndSelected" stateGroups="overStates, selectedStates" />
+        <s:State name="downAndSelected" stateGroups="downStates, selectedStates" />
+        <s:State name="disabledAndSelected" stateGroups="selectedUpStates, disabledStates, selectedStates" />
+    </s:states>
+    
+   
+    
+    <!-- layer 2: fill -->
+    <!--- @private -->
+	<s:Path data="M 99 31 L 0 31 L 0 5 C 0 2.239 2.239 0 5 0 L 94 0 C 96.761 0 99 2.239 99 5 L 99 31 Z"  winding="nonZero" x="0" y="0" 
+			includeIn="upAndSelected, overAndSelected, downAndSelected">
+		<s:fill>
+			<s:LinearGradient rotation="90" scaleX="31" x="0" y="0">
+				<s:GradientEntry color="#A8EDDD" ratio="0"/>
+				<s:GradientEntry color="#64B7A7" ratio="0.545098"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="0" blurX="2" blurY="2" distance="-0" quality="2"/>
+		</s:filters>
+	</s:Path>
+	
+	<s:Path data="M 99 31 L 0 31 L 0 5 C 0 2.239 2.239 0 5 0 L 94 0 C 96.761 0 99 2.239 99 5 L 99 31 Z"  winding="nonZero" x="0" y="4" 
+			includeIn="up, over, down">
+		<s:fill>
+			<s:LinearGradient rotation="90" scaleX="31" x="0" y="0">
+				<s:GradientEntry color="#ffffff" ratio="0"/>
+				<s:GradientEntry color="#ffffff" ratio="0.545098"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="0" blurX="2" blurY="2" distance="-0" quality="2"/>
+		</s:filters>
+	</s:Path>
+	
+	
+   
+    
+    <!-- layer 8: text -->
+    <!--- @copy spark.components.supportClasses.ButtonBase#labelDisplay -->
+	<s:HGroup horizontalAlign="center" verticalAlign="middle" width="100%" height="100%" paddingLeft="-10" y="4" y.upAndSelected="0" y.downAndSelected="0" y.overAndSelected="0">	
+    <s:Label id="labelDisplay"
+             textAlign="center"
+             verticalAlign="middle"
+			  typographicCase="uppercase"
+			 fontFamily="Calibri Bold"
+			 fontSize="13"
+			 color="#111111"
+             maxDisplayedLines="1"
+             verticalCenter="1" 
+             left="0" right="0" top="2" bottom="2" paddingLeft="2">
+    </s:Label>
+	</s:HGroup>
+    
+</s:SparkSkin>

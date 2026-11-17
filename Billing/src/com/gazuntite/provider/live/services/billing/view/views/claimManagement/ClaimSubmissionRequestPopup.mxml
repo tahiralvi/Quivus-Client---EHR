@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						xmlns:s="library://ns.adobe.com/flex/spark" 
+						xmlns:mx="library://ns.adobe.com/flex/mx" 
+						xmlns:components="com.gazuntite.controls.extended.components.*" xmlns:components1="com.gazuntite.controls.extended.components.*">
+	
+	<fx:Script>
+		<![CDATA[
+						
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			private var _requestString:String
+			[Bindable] private var requestData:String
+			[Bindable] private var requestExceptiopns:String
+			
+						
+			[Bindable]
+			public function get RequestString():String
+			{
+				return _requestString;
+			}
+
+			public function set RequestString(value:String):void
+			{
+				_requestString = value;
+				
+				if(value.indexOf("Exceptions:") > -1 && value.indexOf("ISA*") > -1)
+				{
+					requestExceptiopns = value.split('*')[0];
+					requestData = value.replace(requestExceptiopns+"*","");					
+				}
+				else if(value.indexOf("ISA*") == -1)
+				{
+					requestExceptiopns = value
+					requestData = "";					
+				}
+				else
+				{
+					requestData = value;
+				}
+				
+				if(requestData == "" && requestExceptiopns != "" )
+					id_837RequestView.selectedIndex = 1;
+				else
+					id_837RequestView.selectedIndex = 0;
+			}
+
+			protected function id_close_clickHandler(event:MouseEvent):void
+			{
+				removePopup();
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		
+	</fx:Declarations>
+	
+	<components:layout>
+		<s:VerticalLayout gap="20"  paddingBottom="3" paddingLeft="13" paddingRight="3"  paddingTop="10"  />
+	</components:layout>
+	<s:ButtonBar id= "id_Tabs" width="100%" dataProvider = "{id_837RequestView}" styleName="blackButtonBarSkin"  />
+	<mx:ViewStack id="id_837RequestView" width = "100%" height = "100%" resizeToContent="true">
+		<s:NavigatorContent label="EDI 837 Request Data" width = "100%" height = "100%">
+			<s:TextArea id="id_data" width="100%" text="{requestData}" horizontalScrollPolicy="auto"  />
+		</s:NavigatorContent>
+		<s:NavigatorContent label="Messages/Exceptions" width = "100%" height = "100%">
+			<s:TextArea width="100%" text="{requestExceptiopns}" horizontalScrollPolicy="auto" />
+		</s:NavigatorContent>
+	</mx:ViewStack>
+	
+	
+</components1:PopupWindow>

@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:extended="com.adobe.Quivus.view.controls.extended.*" 
+		 creationComplete="popupgroup1_creationCompleteHandler(event)" 
+		 xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 >
+	<fx:Metadata>
+		[Event(name="SearchListPatientSelected", type="com.adobe.Quivus.view.events.PatientSelectedEvent")]
+	</fx:Metadata>
+	<components1:layout>
+		<s:VerticalLayout gap="0" paddingBottom="0" paddingLeft="0" paddingTop="-7" verticalAlign="top" horizontalAlign="center" />
+	</components1:layout>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppEventStrings;
+			import com.adobe.gazuntite.skins.chrome.comboBoxSkins.VScrollBarBlueSkin;
+			import com.gazuntite.provider.search.services.patient.view.events.PatientSelectedEvent;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			import valueObjects.PatientSearchDTO;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var m_sSearchString:String
+
+			
+			public function get SearchString():String
+			{
+				return m_sSearchString;
+			}
+
+			public function set SearchString(value:String):void
+			{
+				m_sSearchString = value;
+			}
+
+			public function closeHandler():void
+			{
+				this.removePopup();
+			}
+			
+			public function getListLength():Number{
+				
+				if(id_SearchList && id_SearchList.dataProvider.length < 5)
+				{
+					trace( "list hieght: " + id_SearchList.dataProvider.length * 10);
+					return id_SearchList.dataProvider.length * 10;					
+				}
+				else
+				{
+					return 115;
+				}
+			} 
+			
+			public function refreshList(query:String):void
+			{
+				SearchString = query;
+				model.patientSearchDTOList.refresh();
+			}
+			
+			public function setListHeight():void
+			{
+				
+				if(id_SearchList && id_SearchList.dataProvider.length < 5)
+				{
+					trace( "list hieght: " + id_SearchList.dataProvider.length * 25);
+					id_SearchList.height= id_SearchList.dataProvider.length * 25;
+					id_listBorder.height = (id_SearchList.dataProvider.length * 25) + 15;
+				}
+				else
+				{
+					id_SearchList.height= 115;
+					id_listBorder.height = 130;
+				}
+			}
+			
+			protected function id_SearchList_creationCompleteHandler(event:FlexEvent):void
+			{
+				setListHeight();
+				model.patientSearchDTOList.filterFunction = filterForData;
+				
+				id_SearchList.setStyle("useRollOver", true);
+				id_SearchList.setStyle( "rowHeight", 25); 
+				
+				/* id_SearchList.setStyle("backgroundColor", 0xFFFFFF );
+				id_SearchList.setStyle( "rollOverColor", 0xF7C174 );
+				id_SearchList.setStyle( "textRollOverColor", 0x333333 );
+				id_SearchList.setStyle( "selectionColor", 0x7c632c );  */
+				
+			}
+			
+			private function filterForData(item:Object):Boolean
+			{
+				//H
+				var dto:PatientSearchDTO = item as PatientSearchDTO;
+				if(dto.FirstName!=null && dto.FirstName.toLowerCase().search( SearchString.toLowerCase() ) != -1 )
+					return true;
+				if(dto.LastName!=null && dto.LastName.toLowerCase().search( SearchString.toLowerCase() ) != -1 )
+					return true;
+				if(dto.MiddleName!=null && dto.MiddleName.toLowerCase().search( SearchString.toLowerCase() ) != -1 )
+					return true;
+				if(dto.QuivusID!=null && dto.QuivusID.toLowerCase().search( SearchString.toLowerCase() ) != -1 )
+					return true;
+				if(dto.SSN!=null && dto.SSN.toLowerCase().search( SearchString.toLowerCase() ) != -1 )
+					return true;
+				return false;      
+			}
+			
+			protected function id_SearchList_clickHandler(event:MouseEvent):void
+			{
+				if( event.target is spark.components.Button )
+				{
+					event.stopImmediatePropagation();
+					return;
+				}
+				var evt:PatientSelectedEvent = new PatientSelectedEvent( AppEventStrings.SEARCH_LIST_PATIENT_SELECTED )
+				this.dispatchEvent( evt );
+				closeHandler(); 
+				
+				//see patientExampnael for event
+			}
+
+
+			protected function popupgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				FlexGlobals.topLevelApplication.mainContainer.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void{closeHandler()});
+			}
+
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<!--<s:BorderContainer id="id_listBorder" backgroundColor="#cccccc" borderColor="#246D9B" cornerRadius="4" borderAlpha="0" 
+					   width="100%" height="100%" minWidth="265">-->
+	
+	<s:SkinnableContainer id="id_listBorder" width="100%" height="100%" minWidth="265" 
+						  skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.contactlistbgSkin" >
+		
+		
+	
+		<s:layout>
+			<s:HorizontalLayout gap="0" paddingTop="2" paddingLeft="2" paddingRight="2"
+								paddingBottom="2" verticalAlign="top" horizontalAlign="left" />
+		</s:layout>
+	
+	<s:List id="id_SearchList"  width="100%" height="100%" minHeight="23" minWidth="280" dataProvider="{model.patientSearchDTOList}" 
+			itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.PatientSearchListRenderer" 
+			skinClass="com.adobe.Quivus.view.controls.skins.patientSearchListSkin" click="id_SearchList_clickHandler(event)" 
+			creationComplete="id_SearchList_creationCompleteHandler(event)" 
+			
+			/>		
+	<!--</s:BorderContainer>-->
+		</s:SkinnableContainer>
+	
+	
+	<s:Button id="id_CloseBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.closeBtnSkin" 
+			  click="closeHandler()" buttonMode="true" useHandCursor="true" toolTip="Close Patient Search"/>
+	
+	
+	
+</components1:PopupGroup>

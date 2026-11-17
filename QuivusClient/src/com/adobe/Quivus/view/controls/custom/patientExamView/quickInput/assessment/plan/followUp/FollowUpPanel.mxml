@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:PinableSlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+					  xmlns:quickInput="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.*" 
+					  xmlns:followUp="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.plan.followUp.*"
+					  
+					  creationComplete="pinableslideoutpanel1_creationCompleteHandler(event)"
+					  QSSlideStateChange="pinableslideoutpanel1_QSSlideStateChangeHandler(event)"
+					  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPanel;
+			import com.adobe.Quivus.view.controls.skins.QIinternalBarFocusSkin;
+			import com.adobe.Quivus.view.controls.skins.QIinternalBarSkin;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			
+			import mx.events.FlexEvent;
+			import mx.events.ItemClickEvent;
+			import mx.events.MoveEvent;
+
+			private var notesPanel:NotesPanel;
+			
+			protected function pinableslideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_Header.id_slideoutBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					ToggleSlideOut();
+					event.stopImmediatePropagation();
+				});
+				id_Header.id_Pin.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					PinView = event.currentTarget.selected;
+					//event.stopImmediatePropagation();
+				});
+				id_Header.id_NotesBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					showNotes();
+					event.stopImmediatePropagation();
+				});
+				
+				id_Header.rbGroup.addEventListener(ItemClickEvent.ITEM_CLICK, function( event:ItemClickEvent ):void
+				{
+					id_FollowUpView.SelectByDate = event.index == 0;
+					id_FollowUpView.OnCompletion = event.index == 1;
+					event.stopImmediatePropagation();
+				});
+				
+			}
+			
+			private function showNotes():void
+			{
+				if( notesPanel )
+					notesPanel.removePopup();
+				
+				notesPanel = new NotesPanel();
+				notesPanel.width			= 550
+				notesPanel.height			= 150
+				notesPanel.HeadingLable 	= "Lab";
+				notesPanel.VisitDateLable 	= new Date().toDateString();
+				notesPanel.notesDTO	= QSUtilityFunctions.getModuleNoteDTO( Constants.FOLLOWUP_MODULE_NAME );
+				notesPanel.ShowPopup( this );
+				var loc:Point = getNotesPopupPosition();
+				notesPanel.move( loc.x, loc.y );
+				
+				notesPanel.id_header.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MoveEvent):void
+				{
+					notesPanel.removePopup();
+					event.stopImmediatePropagation();
+				}); 
+			}
+			
+			private function getNotesPopupPosition():Point
+			{
+				var pLoc:Point = new Point( id_Header.width , id_Header.y - 14 );
+				var loc:Point = id_Header.localToGlobal( pLoc );
+				
+				return loc;
+			}
+			
+			
+			protected function slideoutpanel1_moveHandler(event:MoveEvent):void
+			{
+				if( notesPanel )
+				{
+					var loc:Point = getNotesPopupPosition();
+					notesPanel.move( loc.x, loc.y );	
+				}
+			}
+
+
+			protected function pinableslideoutpanel1_QSSlideStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( event.viewState == QSViewStateEvent.EXPANDED_VIEW )
+				{
+					if( id_Header )
+					{
+						id_Header.HeadingLable = id_Header.HeadingLable.toUpperCase();
+						id_Header.id_pmhHeader.setStyle("skinClass", QIinternalBarFocusSkin);
+						id_Header.id_headingLbl.setStyle("color", 0xffffff);
+					}
+				}
+				else
+				{
+					id_Header.HeadingLable = AppUtils.TitleCase(id_Header.HeadingLable);
+					id_Header.id_pmhHeader.setStyle("skinClass", QIinternalBarSkin);
+					id_Header.id_headingLbl.setStyle("color", 0x000000);
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	
+	<custom:HeaderContents>
+		
+		<followUp:FollowUpHeader id="id_Header" width="100%" height="22" HeadingLable="Follow Up" />
+		
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		
+		<custom:slideOutGreyHeader width="100%"  />						   
+		
+	</custom:SlideHeaderContents>
+	<custom:Contents>
+		<s:VGroup depth="50" paddingTop="0" width="100%" verticalAlign="top" horizontalAlign="center">
+			
+			<s:BorderContainer id="id_mainGroup" width="100%" cornerRadius="3" backgroundColor="#1F8FBF" borderAlpha="0" borderColor="#1F8FBF">
+				<s:layout>
+					<s:HorizontalLayout paddingTop="0" horizontalAlign="left" paddingBottom="0" />
+				</s:layout>
+				
+				<followUp:FollowUpView id="id_FollowUpView" width="100%" />
+				
+				
+			</s:BorderContainer>
+		</s:VGroup>
+		
+	</custom:Contents>
+	
+	
+</custom:PinableSlideOutPanel>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 >
+	<fx:Script>
+		<![CDATA[
+			
+			private var m_sLabel:String;
+
+			[Bindable]
+			public function get Label():String
+			{
+				return m_sLabel;
+			}
+
+			public function set Label(value:String):void
+			{
+				m_sLabel = value;
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+
+	
+	<!--<s:BorderContainer cornerRadius="2" width="100%" height="22" 
+					   skinClass="com.adobe.Quivus.view.controls.skins.slideOutHeaderSkin">-->
+
+	<s:SkinnableContainer height="22" width="100%" minWidth="550" skinClass="com.adobe.Quivus.view.controls.skins.QIinternalBarFocusSkin">
+		<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="center" >
+			<s:Label  paddingLeft="12" color="#ffffff" paddingTop="6" fontFamily="Calibri" fontSize="12" text="{Label}" />				
+			
+		</s:HGroup>
+
+			<!--<s:Label text="{Label}" top="2" left="5" />		-->		
+	</s:SkinnableContainer>
+	
+</s:Group>

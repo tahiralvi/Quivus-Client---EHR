@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<flexLibProperties includeAllClasses="true" useMultiPlatformConfig="false" version="3">
+  <includeClasses>
+    <classEntry path="com.zigron.provider.services.view.panels.LiveServicesView"/>
+    <classEntry path="com.zigron.provider.services.view.panels.ToolButtons"/>
+    <classEntry path="com.zigron.provider.services.view.skins.toolButtonsBGSkin"/>
+  </includeClasses>
+  <includeResources/>
+  <namespaceManifests/>
+</flexLibProperties>

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:profile="com.adobe.Quivus.view.controls.custom.patientExamView.profile.*" xmlns:panel="com.adobe.Quivus.view.controls.panel.*" xmlns:custom="com.adobe.Quivus.view.controls.custom.*"
+		 >		
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			
+
+			public function ScrollUp(event:MouseEvent):void
+			{
+				func_ScrollUp();
+			}
+			
+			public  function func_ScrollUp():void 
+			{
+				switch( id_mainTanButtons.selectedIndex )
+				{
+					case 0:
+						id_PatientProfileView.ScrollUp();
+						break;
+					/* case 1:
+					id_PhysicalView.ScrollUp();
+					break; */
+				}
+			}
+			
+			public  function func_ScrollDown():void 
+			{
+				switch( id_mainTanButtons.selectedIndex )
+				{
+					case 0:
+						id_PatientProfileView.ScrollDown();
+						break
+					/* case 1:
+					id_PhysicalView.ScrollDown();
+					break */
+				}
+			}
+			
+			public function ScrollDown(event:MouseEvent):void
+			{
+				func_ScrollDown();
+			}
+
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="left" verticalAlign="top" gap="-3" paddingTop="4" 
+						    paddingLeft="0" paddingBottom="0" />
+	</s:layout>
+<!--	<s:BorderContainer borderColor="#DF1313" borderWeight="4"
+					   backgroundColor="#DF1313" backgroundAlpha="1" width="100%"
+					   >-->
+	
+	
+	<s:SkinnableContainer width="100%" height="100%"
+						  minHeight="30" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.redSkin">
+		<s:layout>
+			<s:VerticalLayout horizontalAlign="left" verticalAlign="top" paddingLeft="1" paddingRight="1" paddingTop="4" paddingBottom="5" 
+							 />
+		</s:layout>
+
+		
+		<s:Group width="100%" height="100%">				
+			<s:layout>
+				<s:VerticalLayout horizontalAlign="left" verticalAlign="top" 
+								  paddingTop="4" paddingBottom="4" gap="-6" paddingLeft="2" paddingRight="2"  />
+			</s:layout>
+		
+		
+	<s:TabBar id="id_mainTanButtons" dataProvider="{ id_ProfileViews }" buttonMode="true" 
+			  skinClass="com.adobe.Quivus.view.controls.skins.TabBarSkins.PatientProfileTabBarSkin"  />
+	
+	<mx:ViewStack id="id_ProfileViews" width="100%" height="100%" backgroundAlpha="0" resizeToContent="true"
+				  paddingTop="0" top="0" paddingLeft="0" paddingBottom="6" >
+		<s:NavigatorContent width="100%"  label="PROFILE" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.patientProfileTabBG" >			
+			<profile:PatientProfileView id="id_PatientProfileView" width="100%" />
+			
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.patientProfileTabBG" width="100%" label="PHR" >			
+		<s:Label text="Coming Soon" verticalCenter="0"/>
+		</s:NavigatorContent>
+		
+	</mx:ViewStack>
+			
+	</s:Group>
+		
+
+	</s:SkinnableContainer>
+	<!--<mx:Spacer height="10" />-->
+	
+<!--	<s:SkinnableContainer height="15" width="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.scrollerRedBG">
+		<s:layout>
+			<s:HorizontalLayout verticalAlign="top" horizontalAlign="right" paddingRight="15" paddingBottom="0" />
+		</s:layout>
+		<s:Button height="8" width="40" toolTip="Scroll Up" mouseDown="ScrollDown(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.PPscrollUp" 
+				  buttonMode="true" useHandCursor="true"/>
+		<s:Button height="8" width="40" toolTip="Scroll Down" mouseDown="ScrollUp(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.PPScrollDown" 
+				  buttonMode="true" useHandCursor="true"/>
+	
+	</s:SkinnableContainer>-->
+</s:Group>

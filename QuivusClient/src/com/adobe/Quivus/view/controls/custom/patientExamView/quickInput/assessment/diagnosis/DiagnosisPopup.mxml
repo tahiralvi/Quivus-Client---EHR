@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						xmlns:s="library://ns.adobe.com/flex/spark" 
+						xmlns:mx="library://ns.adobe.com/flex/mx" 
+						skinClass="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.TitleWindowSkin"
+						xmlns:components="com.zigron.controls.extended.components.*" 
+						xmlns:itemrenderer="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.itemrenderer.*" 
+						xmlns:CheckBoxGrid="com.zigron.controls.extended.components.CheckBoxGrid.*" 
+						cornerRadius="10" xmlns:CheckBoxGrid1="com.gazuntite.controls.extended.components.CheckBoxGrid.*" xmlns:components1="com.gazuntite.controls.extended.components.*" 
+						>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.staticData.lab.LoadICDCodeEvent;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.events.viewBackground.diagnosis.ManagePatientDiagnosisEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Label;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.events.TextOperationEvent;
+			import spark.skins.spark.TitleWindowSkin;
+			
+			import valueObjects.AssessmentDTO;
+			import valueObjects.ICDCodeDTO;
+			import valueObjects.PatientDiagnosisDTO;
+			
+			[Bindable] public var model : AppModelLocator = AppModelLocator.getInstance();
+			[Bindable] private var searchType:ArrayCollection = new ArrayCollection([{label:"ICD Code"},{label:"Description"}]);
+			[Bindable] private var icdCodeList:ArrayCollection; // Diagnosis Popup
+			[Bindable] private var setDate:String;
+			private var isThisVisit:Boolean = false;
+			private var val:Boolean = false;
+			
+			//Search and load recors on basis search term from form
+			public function searchAndLoadDiagnosis(_searchTerm:String, selectedDate:String, index:uint):void
+			{
+				id_SearchCombo.selectedIndex = index;
+				id_searchText.text 			 = _searchTerm;
+				id_SearchButton.enabled		 = true;
+				if(selectedDate.length == 0)
+					setDate = formatDateTime.format(new Date());
+				else
+					setDate = selectedDate;
+				
+				searchICDCode(_searchTerm);
+			}
+			private function saveDiagnosis(_val:Boolean):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_DIAGNOSIS ) )
+				{
+					if(id_DataGrid.selectedItems.length == 0)
+					{
+						Alert.show('Please select a record for Save.','No record selected');
+						return;
+					}
+					
+					if(isValidRecords())
+					{
+						Alert.show('Please select/enter valid onset date.','Invalid Onset Date');
+						return;
+					}
+					
+					val = _val;
+					if(model.DiagnosisAssociatedVisit.VisitDate == model.visitDTO.VisitDate)
+					{
+						isThisVisit = true;
+						addrecord();
+					}else{
+						//if(model.patientDiagnosisDTOListByPatientId == null)
+						model.patientDiagnosisDTOListByPatientId = new ArrayCollection();
+						
+						isThisVisit = false;
+						Alert.show('Are you sure, you want to save this record.', 'Save Confirmation', Alert.YES | Alert.NO, this, alertSaveDBListener, null, Alert.OK);
+					}
+				}
+			}
+			private function isValidRecords():Boolean
+			{
+				var bool:Boolean = false;
+				for(var i:uint = 0; i< id_DataGrid.selectedItems.length; i++)
+				{
+					var onset:String = id_DataGrid.selectedItems[i].onSet;
+					if(onset.length == 0){
+						return  true;
+						break;
+					}else{
+						continue;
+					}
+				}
+				return bool;
+			}
+			// Add records on the Add & Add and Close Button Click
+			protected function addrecord():void
+			{
+				for(var i:uint = 0; i< id_DataGrid.selectedItems.length; i++)
+				{
+					var patientDiagnosisDTO:PatientDiagnosisDTO = new PatientDiagnosisDTO();
+					patientDiagnosisDTO.ICDCode 				= id_DataGrid.selectedItems[i].ICDCodeDTO;
+					patientDiagnosisDTO.OnSet 					= id_DataGrid.selectedItems[i].onSet;
+					patientDiagnosisDTO.ICDCodeDescription 		= id_DataGrid.selectedItems[i].IcdCodeDescription;
+					if(id_DataGrid.selectedItems[i].chronic == 'Yes'){
+						patientDiagnosisDTO.IsChronic 	= true;
+					}else if(id_DataGrid.selectedItems[i].chronic == 'No'){
+						patientDiagnosisDTO.IsChronic 	= false;
+					}
+					
+					patientDiagnosisDTO.IsActive 				= true;
+					patientDiagnosisDTO.CreatedAt 				= formatDateTime.format(new Date());//datetostring(Tahir)
+					patientDiagnosisDTO.CreatedBy 				= model.loggedInUserDTO.UserId;
+					patientDiagnosisDTO.DictationID 			= Constants.GUID_FORMAT;
+					patientDiagnosisDTO.ModifiedAt 				= Constants.NULL_DATE;
+					patientDiagnosisDTO.PatientID 				= model.loadedPatientId;
+					model.signCosignBtnEnabled 					= true;
+					
+					if(model.quickInputDTO.Assessment == null)
+						model.quickInputDTO.Assessment = new AssessmentDTO();
+					
+					if(model.quickInputDTO.Assessment.Diagnosis == null)
+						model.quickInputDTO.Assessment.Diagnosis = new ArrayCollection();
+					
+					patientDiagnosisDTO.VisitDate 				= formatDateTime.format(model.DiagnosisAssociatedVisit.VisitDate);//datetostring(Tahir)				
+					patientDiagnosisDTO.VisitID 				= model.DiagnosisAssociatedVisit.ID;
+					if(isThisVisit){
+						model.quickInputDTO.Assessment.Diagnosis.addItemAt(patientDiagnosisDTO, 0);
+					}
+					else{
+						patientDiagnosisDTO.IsDirty = true;
+						model.patientDiagnosisDTOListByPatientId.addItem(patientDiagnosisDTO);
+					}
+				}
+				
+				if (model.sessionDTO.IsProvider)
+					model.canSign = true;
+				
+				if(icdCodeList)
+					icdCodeList.removeAll(); icdCodeList = null;
+				
+				if(!isThisVisit)
+					dispatchRecordsinDB();
+				//If Clicked is Add and Close
+				if(val)
+					removePopup();
+			}
+			//Close Alert and disaptach the event for saving records in DB Directly
+			private function alertSaveDBListener(eventObj:CloseEvent):void 
+			{
+				if (eventObj.detail == Alert.YES) 
+				{
+					addrecord();
+				}
+			}
+			private function dispatchRecordsinDB():void 
+			{
+				var mpdEvent : ManagePatientDiagnosisEvent = new ManagePatientDiagnosisEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( mpdEvent );
+			}
+			private function searchICDCode(searchText:String):void
+			{
+				var icdEvent : LoadICDCodeEvent = new LoadICDCodeEvent(searchText, loadData);
+				CairngormEventDispatcher.getInstance().dispatchEvent( icdEvent );
+			}
+			
+			//############### Seach and load data in Grid ###########################			
+			//Search and load ICD code on Buton Click
+			public function searchIcdCode():void
+			{
+				if(id_searchText.text.length < 3){
+					id_message.visible 	= true;
+					id_message.text 	= 'Please enter search term before click';
+				}else{
+					if(icdCodeList)
+						icdCodeList.removeAll(); icdCodeList = null;
+					
+					searchICDCode(id_searchText.text);
+				}
+			}
+			public  function loadData(val:* = null):void
+			{
+				if(model.icdCodeDTOList != null)
+				{
+					if(model.icdCodeDTOList.length)
+					{
+						if(icdCodeList == null)
+							icdCodeList = new ArrayCollection();
+						
+						for(var i:uint = 0; i < model.icdCodeDTOList.length; i++)
+						{
+							var obj:Object 			= new Object();
+							obj.onSet	   			= setDate;
+							obj.chronic				= 'No';
+							obj.ICDCodeDTO			= model.icdCodeDTOList[i];
+							
+							
+							if(model.quickInputDTO.Assessment.Diagnosis != null && model.quickInputDTO.Assessment.Diagnosis.length > 0 && (model.DiagnosisAssociatedVisit.VisitDate == model.visitDTO.VisitDate))
+							{
+								if( hasDuplicateValues( obj.ICDCodeDTO as ICDCodeDTO ) )
+									continue;
+								else
+									icdCodeList.addItem(obj);
+							}
+							else
+							{
+								icdCodeList.addItem(obj);
+							}
+						}
+						
+						//resetFields();
+					}else
+					{
+						id_message.visible  = true;
+						id_message.text 	= 'No diagnosis found, try different.';
+					}
+				}
+			}
+			
+			private function hasDuplicateValues(dto:ICDCodeDTO):Boolean
+			{
+				for(var j:uint =0; j<model.quickInputDTO.Assessment.Diagnosis.length; j++)
+				{
+					var patDiaDTO:PatientDiagnosisDTO = model.quickInputDTO.Assessment.Diagnosis[j] as PatientDiagnosisDTO;
+					
+					if(dto.IcdCodeIdSeq == patDiaDTO.ICDCode.IcdCodeIdSeq)
+						return true;
+				}
+				
+				return false;
+			}
+			
+			private function id_searchText_changeHandler(event:TextOperationEvent):void
+			{
+				if(id_searchText.text.length >= 3){
+					id_SearchButton.enabled = true;
+					id_message.visible 		= false;
+				}else{
+					id_SearchButton.enabled = false;
+					id_message.visible 		= false;
+				}
+			} 
+			private function resetFields():void
+			{
+				id_SearchCombo.selectedIndex = -1;
+				id_message.visible			 = false;
+				id_searchText.text			 = '';
+				id_SearchButton.enabled		 = false;
+				isThisVisit					 = false;
+				
+			}
+			
+			//Close this popup
+			public override function removePopup():void
+			{
+				super.removePopup();
+				resetFields();
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YY" />
+		<fx:Component id="inlineEditor">
+			<mx:ComboBox >
+				<mx:dataProvider>
+					<fx:String>Yes</fx:String>
+					<fx:String>No</fx:String>
+				</mx:dataProvider>
+			</mx:ComboBox>
+		</fx:Component>
+	</fx:Declarations>
+	
+	<components:layout>
+		<s:VerticalLayout horizontalAlign="center"/>
+	</components:layout>
+	
+	<s:HGroup width="95%" height="5%" verticalAlign="middle">
+		<s:DropDownList id="id_SearchCombo" 
+						prompt="Select Type" dataProvider="{searchType}"
+						width="150" skinClass="com.adobe.Quivus.view.controls.skins.comboBoxSkins.DDLSkin" />
+		<s:Group enabled="{id_SearchCombo.selectedIndex != -1 ? true:false}" width="200">
+			<components1:LabelTextInput id="id_searchText"
+									   restrict="0-9 A-Z a-z" maxChars="30" width="200" prompt="Search Diagnosis"
+									   change="id_searchText_changeHandler(event)" left="0" />
+			<s:Button id="id_SearchButton" 
+					  enabled="false" styleName="orangeSearchButtonSkin" width="23"
+					  toolTip="Diagnosis Search" buttonMode="true"
+					  click="searchIcdCode()" left="176"  top="2" height="{id_searchText.height}"/>
+		</s:Group>
+		<s:Label id="id_message" color="#DE2626"  visible="false"/>
+	</s:HGroup >
+	
+	<CheckBoxGrid1:CheckBoxDataGrid id="id_DataGrid"
+								   width="95%" height="90%"  allowMultipleSelection="true" editable="true"
+								   dataProvider="{icdCodeList}"
+								   draggableColumns="true" 
+								   useRollOver="false"
+								   columnWidths="{[30, '15%','20%', '30%','20%' ]}">
+		<CheckBoxGrid:columns>
+			<mx:DataGridColumn dataField="" 
+							   headerText="" 
+							   rendererIsEditor="true"
+							   sortable="false" 
+							   itemRenderer="com.gazuntite.controls.extended.components.CheckBoxGrid.CheckBoxRenderer" 
+							   headerRenderer="com.gazuntite.controls.extended.components.CheckBoxGrid.CheckBoxHeaderRenderer" 
+							   editorDataField="selected" 
+							   />
+			<mx:DataGridColumn dataField="onSet" headerText="OnSet" headerRenderer="mx.controls.Label" wordWrap="true" paddingLeft="3"
+							   editorDataField="text" rendererIsEditor="true" editable="true" sortable="false" 
+							   itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.itemrenderer.onSetRenderer" />
+			<mx:DataGridColumn headerText="ICD Code" dataField="ICDCodeDTO.IcdCodeName"  editable="false" sortable="false" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Diagnosis" dataField="ICDCodeDTO.IcdCodeDescription" editable="false" sortable="false" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<!--			<mx:DataGridColumn headerText="Custom Diagnosis" editable="false" sortable="false" />-->
+			<mx:DataGridColumn headerText="Chronic" dataField="chronic" width="150" editable="true" sortable="false"  editorDataField="selectedItem" itemEditor="{inlineEditor}" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<!--<mx:DataGridColumn headerText="Type" editable="false" sortable="false" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>-->
+		</CheckBoxGrid:columns>
+	</CheckBoxGrid1:CheckBoxDataGrid>
+	
+	<s:HGroup width="95%" horizontalAlign="center" height="5%" verticalAlign="middle" paddingBottom="4">
+		<s:Button buttonMode="true" toolTip="Add diagnosis and close popup" label="Add  &amp; Close" click="saveDiagnosis(true)" skinClass="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.TitleWindowButtonSkin"/>
+		<s:Button buttonMode="true" toolTip="Add diagnosis" label="Add" click="saveDiagnosis(false)" skinClass="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.TitleWindowButtonSkin"/>
+		<s:Button buttonMode="true" toolTip="Close popup" label="Cancel" click="removePopup()" skinClass="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.TitleWindowButtonSkin"/>
+	</s:HGroup>
+	
+</components1:PopupWindow>

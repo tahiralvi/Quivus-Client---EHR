@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+	</s:states>
+	<s:Rect height="17" id="rect1" includeIn="over,up" radiusX="4" width.over="82" width.up="82" x="0.5" y="0.5">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#999999" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:LinearGradient rotation="90" rotation.over="270">
+				<s:GradientEntry alpha="1.0" color="#EBEBEB" color.over="#FFCB00" ratio="0.44313725490196076" ratio.over="0"/>
+				<s:GradientEntry alpha="1.0" color="#D9D9D9" color.over="#FF9300" ratio="0.5254901960784314" ratio.over="0.5176470588235295"/>
+				<s:GradientEntry alpha="1.0" color="#FFFFFF" color.over="#FFCB00" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<s:RichText color="#4D5E68" fontFamily="Calibri" fontSize="12" includeIn="disabled,down" tabStops="S0" text="Load" visible="false" x="14" y="4"/>
+	<s:Rect height="17" id="rect0" includeIn="down" radiusX="4" width="82" x="0.5" y="0.5">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#999999" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#FFCB00" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#FF9300" ratio="0.5176470588235295"/>
+				<s:GradientEntry alpha="1.0" color="#FFCB00" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="17" id="rect2" includeIn="disabled" radiusX="4" width="82" x="0.5" y="0.5">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#999999" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#EBEBEB" ratio="0.44313725490196076"/>
+				<s:GradientEntry alpha="1.0" color="#D9D9D9" ratio="0.5254901960784314"/>
+				<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Label id="labelDisplay"
+			 textAlign="center" fontFamily="Calibri" color="#444444"
+			 verticalAlign="middle"
+			 maxDisplayedLines="1"
+			 horizontalCenter="0" verticalCenter="1"
+			 left="10" right="10" top="2" bottom="2">
+	</s:Label>
+</s:Skin>

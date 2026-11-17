@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:itemEditors="com.gazuntite.common.view.itemEditors.*"
+		 xmlns:VBImmunization="com.gazuntite.patient.visit.view.vbViews.vbTabSection.vbPMH.VBImmunization.*"
+		 xmlns:components="com.gazuntite.controls.extended.components.*"
+		 xmlns:grid="com.gazuntite.common.view.components.grid.*" xmlns:validators="com.gazuntite.common.util.validators.*" xmlns:paging="com.gazuntite.patient.visit.view.vbViews.paging.*" 
+		 creationComplete="cc()">
+	<fx:Declarations>
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YY" />
+		<validators:ComboValidator id="comboValidator"/>
+	</fx:Declarations>
+	<fx:Binding source="model.immunizationDTOList" destination="immunizationCollection"/>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEvent;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.dto.pmh.immunization.ImmunizationDTO;
+			import com.gazuntite.common.dto.baseDTO.common.GeneralTypeDTO;
+			import com.gazuntite.common.event.immunization.LoadImmunizationStaticDataEvent;
+			import com.gazuntite.common.util.QSConstants;
+			import com.gazuntite.common.view.components.notes.NotesPanel;
+			import com.gazuntite.common.view.events.DataGridActionsEvent;
+			import com.gazuntite.common.view.itemEditors.DateFieldEditor;
+			import com.gazuntite.common.view.itemEditors.SparkComboBoxItemEditor;
+			import com.gazuntite.controls.extended.components.LabelComboBox;
+			import com.gazuntite.patient.visit.dto.PageDTO;
+			import com.gazuntite.patient.visit.event.LoadPatientImmunizationsByPatientIdEvent;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			import com.gazuntite.patient.visit.utlis.VBGridController;
+			import com.gazuntite.patient.visit.utlis.VBUtilityFunctions;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import flashx.textLayout.events.ModelChange;
+			
+			import mx.binding.utils.ChangeWatcher;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateChooser;
+			import mx.controls.DateField;
+			import mx.controls.Label;
+			import mx.controls.TextInput;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.core.FlexGlobals;
+			import mx.core.INavigatorContent;
+			import mx.core.UIComponent;
+			import mx.events.CollectionEvent;
+			import mx.events.DataGridEvent;
+			import mx.events.PropertyChangeEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.formatters.DateFormatter;
+			import mx.formatters.Formatter;
+			
+			import spark.components.ComboBox;
+			
+			[Bindable]
+			public var model:VBModelLocator = VBModelLocator.getInstance();
+			
+			[Bindable]
+			public var dataGridActionsData:Object;
+			
+			private var _immunizationCollection:ArrayCollection;
+			
+			private var _hasGridChanged:Boolean;
+			private var _hasViewChanged:Boolean;
+			
+			private var vbGridController:VBGridController;
+			
+			[Bindable]
+			public function get immunizationCollection():ArrayCollection
+			{
+				
+				return _immunizationCollection;
+			}
+			
+			//public var Event 
+			private function myFilter(obj:*):Boolean
+			{
+				if (model.vbFilter == QSConstants.BY_VISIT)
+				{
+					if (model.vbVisitId == obj.VisitId)
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+				
+				return true;
+			}
+			
+			public function set immunizationCollection(value:ArrayCollection):void
+			{
+				_immunizationCollection = value;
+			}
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			
+			public function displayRowNum(oItem:Object,iCol:int):String
+			{
+				var rowNumber:int = id_ImmunizationGrid.dataProvider.getItemIndex(oItem) + 1;
+				return String(rowNumber);
+			}
+			
+			private function cc():void
+			{
+				vbGridController = new VBGridController(null, null, null, doValidateRecord);
+				vbGridController.dataGrid = id_ImmunizationGrid;
+				vbGridController.firstEditableColIdx = 2;
+				vbGridController.firstEditablePropertyName = "DateAdmin";
+				vbGridController.sectionName = QSConstants.IMMUNIZATION_MODULE_NAME;
+				
+				if (!dataGridActionsData)
+					dataGridActionsData = {};
+				
+				dataGridActionsData["noteDataFields"] = {subject: "NoteSubject", note: "Note", header: "ImmunizationType.Name", visitDate: "VisitDate"};
+				dataGridActionsData["dictationDataField"] = "DictationID";
+				dataGridActionsData["recordIDField"] = "ID";
+				//dataGridActionsData["section"] = QIPopUpManager.IMMUNIZATION;
+			}
+			
+			public function doValidateRecord(event:DataGridEvent):void
+			{
+				var validationRes:ValidationResultEvent;
+				
+				var immunizationDateEditor:DateFieldEditor;
+				var immunizationComboEditor:LabelComboBox;
+				
+				switch(event.dataField)
+				{	
+					case "DateAdmin":
+						
+						immunizationDateEditor = event.target.itemEditorInstance as DateFieldEditor;
+						
+						if (immunizationDateEditor && event.itemRenderer && event.itemRenderer.data && 
+									event.itemRenderer.data.hasOwnProperty("DateAdmin"))
+						{
+							event.itemRenderer.data.DateAdmin = immunizationDateEditor.text;
+						}
+						
+						event.itemRenderer.data.IsDirty = true;
+					
+						break;
+					
+					case "ImmunizationType.Name":
+					
+						immunizationComboEditor = SparkComboBoxItemEditor(id_ImmunizationGrid.itemEditorInstance).id_ComboEditor;
+						
+						comboValidator.error = "Invalid Immunization";
+						comboValidator.source = immunizationComboEditor;
+						comboValidator.property = "selectedItem";
+						
+						validationRes = comboValidator.validate(immunizationComboEditor.selectedItem);
+						
+						if (validationRes && !validationRes.results)
+						{
+							event.itemRenderer.data.ImmunizationType = immunizationComboEditor.selectedItem;
+							
+							event.itemRenderer.data.IsDirty = true;
+						}
+						
+						break;
+					
+					case "Dose":
+						
+						immunizationComboEditor = SparkComboBoxItemEditor(id_ImmunizationGrid.itemEditorInstance).id_ComboEditor;
+						
+						if (immunizationComboEditor.textInput.text)
+						{
+							event.itemRenderer.data.Dose = immunizationComboEditor.textInput.text;
+							event.itemRenderer.data.IsDirty = true;
+						}
+						
+						break;
+					
+					case "LotNumber":
+					
+						immunizationComboEditor = SparkComboBoxItemEditor(id_ImmunizationGrid.itemEditorInstance).id_ComboEditor;
+						
+						event.itemRenderer.data.LotNumber = immunizationComboEditor.textInput.text;
+						
+						event.itemRenderer.data.IsDirty = true;
+						
+						break;
+					
+					case "NextDoseDue":
+						
+						immunizationDateEditor = event.target.itemEditorInstance as DateFieldEditor;
+						
+						if (immunizationDateEditor && event.itemRenderer && event.itemRenderer.data && event.itemRenderer.data.hasOwnProperty("NextDoseDue"))
+						{
+							event.itemRenderer.data.NextDoseDue = immunizationDateEditor.text;
+						}
+						
+						event.itemRenderer.data.IsDirty = true;
+						
+						break;
+				}
+				
+				id_ImmunizationGrid.destroyItemEditor();
+				event.stopImmediatePropagation();
+				event.preventDefault();
+			}
+			
+			private function button1_clickHandler(event:MouseEvent):void
+			{
+				if(immunizationCollection!=null){
+					_immunizationCollection.filterFunction=myFilter;
+					_immunizationCollection.refresh();
+					
+				}
+			}
+			
+			public function displayVisitDate(oItem:Object, iCol:int):String
+			{
+				var strVisitDate:String = '';
+				
+				if (oItem && oItem.VisitDate)
+				{
+					var dateRecieved:Date = new Date(Date.parse(oItem.VisitDate));
+					strVisitDate = formatDateTime.format(dateRecieved);
+					var nullDate:Date = QSConstants.NULL_DATE;
+					
+					if (dateRecieved.getFullYear() <= nullDate.getFullYear() && dateRecieved.getMonth() <= nullDate.getMonth())
+						strVisitDate = "";
+					
+					if(oItem.IsNA)
+						strVisitDate = 'N/A';
+				}
+				return strVisitDate;
+			}
+			
+			private function switchPageForGridView(event:*):void
+			{
+				if (VBUtilityFunctions.isNullOrEmptyPage(model.immunizationCurrentPageByPatient))
+					model.immunizationCurrentPageByPatient = VBUtilityFunctions.getNewPageDTOWithDefaultValues();
+				
+				var lpviEvent:LoadPatientImmunizationsByPatientIdEvent = new LoadPatientImmunizationsByPatientIdEvent(); 
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpviEvent );
+			}
+			
+			private function id_PaginationFilterView_RefreshViewHandler(event:*):void
+			{
+				if (!VBUtilityFunctions.isNullOrEmptyPage(id_PaginationFilterView.page))
+				{
+					model.immunizationCurrentPageByPatient = id_PaginationFilterView.page;
+				}
+				
+				var lpviEvent: LoadPatientImmunizationsByPatientIdEvent = new LoadPatientImmunizationsByPatientIdEvent(); 
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpviEvent );
+			}
+		]]>
+	</fx:Script>
+	<s:layout>
+		<s:VerticalLayout gap="0"/>
+	</s:layout>
+	<s:HGroup id="id_NotesArea" width="100%" paddingTop="0" />
+	<s:Button id="id_applyFiler" label="Filter" click="button1_clickHandler(event)" visible="false" includeInLayout="false"/>
+	<paging:PaginationFilterView id="id_PaginationFilterView" width="100%" page="{model.immunizationCurrentPageByPatient}"
+								 showFilterControls="true"
+								 GoToFirstPage="switchPageForGridView(event)" GoToNextPage="switchPageForGridView(event)" 
+								 GoToPreviousPage="switchPageForGridView(event)" GoToLastPage="switchPageForGridView(event)"
+								 RefreshView="id_PaginationFilterView_RefreshViewHandler(event)"/>
+	
+	<components:LabelDataGrid id="id_ImmunizationGrid"
+							  rowCount="{id_ImmunizationGrid.dataProvider.length + 1}" rowHeight="24"
+							  width="100%" editable="false" useRollOver="false" horizontalScrollPolicy="off" verticalScrollPolicy="on"
+							  visible="{id_ImmunizationGrid.dataProvider.length > 0? true: false}" includeInLayout="{id_ImmunizationGrid.dataProvider.length > 0? true: false}"
+							  columnWidths="{[25,'10%','12%','15%','10%','10%','10%', 80]}"
+							  dataProvider="{immunizationCollection}">
+		<components:columns>
+			<mx:DataGridColumn headerText="Sr. #" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editable="false" labelFunction="displayRowNum"/>
+			<mx:DataGridColumn headerText="Visit Date" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" 
+							   editable="false" labelFunction="displayVisitDate" />
+			<mx:DataGridColumn headerText="Date Admin" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="DateAdmin">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:DateFieldEditor width="100%" dateField="DateAdmin" 
+													 selectableRange="{{rangeEnd : new Date()}}" editable="true" yearNavigationEnabled="true"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn> 				
+			<mx:DataGridColumn headerText="Immunization" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="ImmunizationType.Name" 
+							   editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor width="100%" dataProvider="{outerDocument.model.generalTypeDTOListForImmunizationType}" labelField="Name" />
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Dose" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="Dose" 
+							   editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.generalLabelDTOListForDose}" labelField="label" />
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Lot#" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="LotNumber" 
+							   editorDataField="editorText">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.generalLabelDTOListForLot}" labelField="label" />
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Next Due" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="NextDoseDue">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:DateFieldEditor width="100%" dateField="NextDoseDue"
+														   selectableRange="{{rangeStart:new Date()}}" editable="true" yearNavigationEnabled="true"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<grid:DataGridColumnEx itemRenderer="com.gazuntite.patient.visit.view.itemrenderer.VBRenderer" editable="false" data="{dataGridActionsData}"/>
+		</components:columns>
+	</components:LabelDataGrid>
+</s:Group>

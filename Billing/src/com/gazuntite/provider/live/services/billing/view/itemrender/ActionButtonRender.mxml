@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:MXAdvancedDataGridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+								  xmlns:s="library://ns.adobe.com/flex/spark" 
+								  xmlns:mx="library://ns.adobe.com/flex/mx" 
+								  focusEnabled="true" autoDrawBackground="false" >
+
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.provider.live.services.billing.dto.PendingBillsDTO;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.view.event.LoadReportEvent;
+			import com.gazuntite.provider.live.services.billing.view.event.LoadReportPanelEvent;
+			import com.gazuntite.provider.live.services.billing.view.views.PendingBills.PatientBill;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			[Bindable] public var model : BillingModelLocator = BillingModelLocator.getInstance();
+			
+			protected function btnProcessBill_clickHandler(event:MouseEvent):void
+			{	
+				model.TotalCharges = 0;
+				model.PatientBalance = 0;
+				model.PrimaryResponsibility = 0;
+				model.BillingDisallowed = 0;
+				model.SecondaryResponsibility = 0;
+				model.AdditionalPayment = 0;
+				model.WriteOff = 0;
+				
+				var oPatientBill:PatientBill = new PatientBill();				
+				
+				oPatientBill.addEventListener( LoadReportEvent.LOAD_REPORT_EVENT, openReportPanelWindow);				
+				
+				var pLoc:Point = oPatientBill.localToGlobal( new Point( oPatientBill.x  , oPatientBill.y ) );		
+								
+				oPatientBill.SelectedPendingBill = data as PendingBillsDTO;				
+				model.ActionButtonEnabled = false;
+				
+				oPatientBill.ShowPopup(FlexGlobals.topLevelApplication.mainContainer, true); //for main application
+				//oPatientBill.ShowPopup(this.parent, true); // for local test app
+				//BillingPopUpManager.addPopUp(oPatientBill,BillingPopUpManager.SUPER_BILL_POPUPS);
+			}			
+
+			private function openReportPanelWindow(event:LoadReportEvent):void
+			{				
+				dispatchEvent(new LoadReportPanelEvent());				
+			}
+			
+			protected function btnProcessBill_creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+			}
+
+		]]>
+	</fx:Script>
+
+	
+	<s:Button id="btnProcessBill" styleName="actionButtonSkin" toolTip="Process Bill"
+			  creationComplete="btnProcessBill_creationCompleteHandler(event)"
+			  label="Process Bill" width="100" horizontalCenter="-0" verticalCenter="0"
+			  click="btnProcessBill_clickHandler(event)"   useHandCursor="true" buttonMode="true"/>
+</s:MXAdvancedDataGridItemRenderer>

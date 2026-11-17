@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:flm="http://ns.adobe.com/flame/2008">
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Group d:userLabel="PatientProfile" x="0" y="0">
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="340" blurX="4.0" blurY="4.0" color="0x000000" distance="1" hideObject="false" includeIn="upAndSelected" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+		<s:Path data="M 0 37.184 L 8.774 18.592 L 0 0 L 96.986 0 L 107.72 18.592 L 96.986 37.184 L 0 37.184 Z" id="path1" visible.upAndSelected="false" winding="nonZero" x="4.49" y="9.5">
+			<s:fill>
+				<s:LinearGradient rotation="270" scaleX="37.1836" x="53.86" y="37.184">
+					<s:GradientEntry alpha.disabled="1.0" alpha.over="1.0" color="#438FCA" color.disabled="#999999" color.over="#6FC9FF" includeIn="disabled,disabledAndSelected,downAndSelected,over,overAndSelected,up,upAndSelected" ratio="0"/>
+					<s:GradientEntry alpha="1.0" color="#6FC9FF" includeIn="down" ratio="0"/>
+					<s:GradientEntry alpha.disabled="1.0" color="#2065B2" color.disabled="#CCCCCC" ratio="0.509202" ratio.disabled="0.47058823529411764"/>
+					<s:GradientEntry color="#225C90" includeIn="disabledAndSelected,down,downAndSelected,over,overAndSelected,up,upAndSelected" ratio="0.546012"/>
+					<s:GradientEntry alpha.disabled="1.0" color="#4693CB" color.disabled="#999999" ratio="0.582822" ratio.disabled="0.5176470588235295"/>
+					<s:GradientEntry alpha="1.0" color="#6FC9FF" includeIn="down" ratio="0.9058823529411765"/>
+					<s:GradientEntry alpha="1.0" color="#257CB2" includeIn="down" ratio="1"/>
+					<s:GradientEntry alpha="1.0" color="#CCCCCC" includeIn="disabled" ratio="0.5803921568627451"/>
+					<s:GradientEntry alpha.disabled="1.0" alpha.over="1.0" color="#4693CB" color.disabled="#999999" color.over="#6FC9FF" includeIn="disabled,disabledAndSelected,downAndSelected,over,overAndSelected,up,upAndSelected" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+		</s:Path>
+		<s:Path data="M 0 37.184 L 8.774 18.592 L 0 0 L 96.986 0 L 107.72 18.592 L 96.986 37.184 L 0 37.184 Z" includeIn="up" visible="false" winding="nonZero" x="4.49" y="9.5">
+			<s:fill>
+				<s:LinearGradient rotation="270" scaleX="37.1836" x="53.86" y="37.184">
+					<s:GradientEntry alpha="1.0" color="#6FC9FF" ratio="0"/>
+					<s:GradientEntry color="#2065B2" ratio="0.509202"/>
+					<s:GradientEntry color="#225C90" ratio="0.546012"/>
+					<s:GradientEntry color="#4693CB" ratio="0.582822"/>
+					<s:GradientEntry alpha="1.0" color="#6FC9FF" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+		</s:Path>
+		<s:Path data="M 0 37.184 L 8.774 18.592 L 0 0 L 96.986 0 L 107.72 18.592 L 96.986 37.184 L 0 37.184 Z" includeIn="up" visible="false" winding="nonZero" x="4.49" y="9.5">
+			<s:fill>
+				<s:LinearGradient rotation="270" scaleX="37.1836" x="53.86" y="37.184">
+					<s:GradientEntry alpha="1.0" color="#6FC9FF" ratio="0"/>
+					<s:GradientEntry color="#2065B2" ratio="0.509202"/>
+					<s:GradientEntry color="#225C90" ratio="0.546012"/>
+					<s:GradientEntry color="#4693CB" ratio="0.582822"/>
+					<s:GradientEntry alpha="1.0" color="#6FC9FF" ratio="0.9058823529411765"/>
+					<s:GradientEntry alpha="1.0" color="#257CB2" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+		</s:Path>
+		<s:Path data="M 0 37.184 L 8.774 18.592 L 0 0 L 96.986 0 L 107.72 18.592 L 96.986 37.184 L 0 37.184 Z" includeIn="up" visible="false" winding="nonZero" x="4.49" y="9.5">
+			<s:fill>
+				<s:LinearGradient rotation="270" scaleX="37.1836" x="53.86" y="37.184">
+					<s:GradientEntry alpha="1.0" color="#999999" ratio="0"/>
+					<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="0.47058823529411764"/>
+					<s:GradientEntry alpha="1.0" color="#999999" ratio="0.5176470588235295"/>
+					<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="0.5803921568627451"/>
+					<s:GradientEntry alpha="1.0" color="#999999" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+		</s:Path>
+		<!--<s:RichText ai:aa="2" color="#FFFFFF" columnCount="1" fontFamily="Calibri" fontSize="12" id="richtext1" d:id="13" kerning="on" lineHeight="100%" tabStops="S36" text="Patient Profile" d:userLabel="Patient Profile" flm:variant="5" visible.upAndSelected="false" whiteSpaceCollapse="preserve" width="54" x="48" y="16">
+			<s:filters>
+				<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			</s:filters>
+		</s:RichText>-->
+
+		
+		<s:BitmapImage ai:embed="1" id="bitmapimage1" smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/filled_0002.png')" visible.upAndSelected="false" x="24" y="13"/>
+		<s:Path data="M 0 57.184 L 13.493 28.592 L 0 0 L 103.016 0 L 119.523 28.592 L 103.016 57.184 L 0 57.184 Z" id="path2" visible.disabled="false" visible.down="false" visible.over="false" visible.up="false" winding="nonZero" x="0.589" y="0.5">
+			<s:fill>
+				<s:LinearGradient rotation="270" scaleX="57.1836" x="59.761" y="57.184">
+					<s:GradientEntry color="#55AA0A" ratio="0"/>
+					<s:GradientEntry color="#2C7D09" ratio="0.509202"/>
+					<s:GradientEntry color="#3F8F09" ratio="0.546012"/>
+					<s:GradientEntry color="#5DB20A" ratio="0.582822"/>
+					<s:GradientEntry color="#5DB20A" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+		</s:Path>
+		<!--<s:RichText ai:aa="2" color="#FFFFFF" columnCount="1" fontFamily="Calibri" fontSize="20" id="richtext2" d:id="15" kerning="on" lineHeight="100%" tabStops="S0 S50" d:userLabel="Patient Profile" flm:variant="7" visible.disabled="false" visible.down="false" visible.over="false" visible.up="false" whiteSpaceCollapse="preserve" width="58" width.disabledAndSelected="79" width.downAndSelected="80" width.overAndSelected="79" width.upAndSelected="75" x="35" y="9">
+			<s:content><s:p><s:span>Patient</s:span></s:p><s:p><s:span>Profile</s:span></s:p></s:content>
+			<s:filters>
+				<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			</s:filters>
+		</s:RichText>-->
+		<s:Label 
+			ai:aa="2" color="#FFFFFF" verticalAlign="middle" fontFamily="Calibri" fontSize="13" d:id="15" kerning="on" lineHeight="100%" d:userLabel="" flm:variant="7" width="60" width.disabledAndSelected="79" width.downAndSelected="80" width.overAndSelected="79" width.upAndSelected="75" x="44" y="0"
+			height="100%"			
+			id="labelDisplay" 
+				 >
+			<s:filters>
+				<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			</s:filters>
+		</s:Label>
+	</s:Group>
+	<s:transitions>
+		<s:Transition autoReverse="true" fromState="disabledAndSelected" toState="up">
+			<s:Parallel>
+				<s:Parallel target="{path2}">
+					<s:Fade duration="0"/>
+				</s:Parallel>
+				<s:Parallel target="{labelDisplay}">
+					<s:Fade duration="0"/>
+					<s:Resize duration="0"/>
+				</s:Parallel>
+			</s:Parallel>
+		</s:Transition>
+	</s:transitions>
+</s:Skin>

@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:components="com.zigron.controls.extended.components.*" 
+		 xmlns:registeration="com.adobe.Quivus.view.controls.registeration.*"
+		  creationComplete="group1_creationCompleteHandler(event)" xmlns:components1="com.gazuntite.controls.extended.components.*" >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.communication.GetClinicUserIDEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.controls.extended.skins.comboBoxRegisterationRequiredSkin;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import spark.events.IndexChangeEvent;
+			
+			private var _EmailAddress:String;
+			private var _userID:int;
+			private var _Heading:String;
+			private var _ProviderName:String;
+			private var _clinicBranchID:String;
+			private var _userSessionStatus:String;
+			
+			[Bindable] private var model : AppModelLocator = AppModelLocator.getInstance();
+			private var personalPhoneNumbers:ArrayCollection;
+			
+			protected function id_PhoneNumberAddMore_creationCompleteHandler(event:FlexEvent):void
+			{
+				/* id_PhoneNumberAddMore.id_TelNumber.setStyle("skinClass", LabelTextInputRequiredSkin);
+				id_PhoneNumberAddMore.id_TelNumberKind.setStyle("skinClass", comboBoxRegisterationRequiredSkin); */
+			}
+			
+			protected function id_Gender_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_Gender.setStyle("skinClass", comboBoxRegisterationRequiredSkin);
+			}
+			
+			protected function id_State_changeHandler(event:IndexChangeEvent):void
+			{
+				
+			}
+			
+			protected function id_City_changeHandler(event:IndexChangeEvent):void
+			{
+				
+			}
+			
+			private function AddMorePhoneNumbers(event:Event):void
+			{
+				
+			}
+
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				
+			}
+
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				var clinicuserIDevent: GetClinicUserIDEvent = new GetClinicUserIDEvent(model.loggedInUserDTO.UserId, model.userSelectedStationDTO.ClinicBranchID, false, getProviderDetails);
+				CairngormEventDispatcher.getInstance().dispatchEvent(clinicuserIDevent);
+			}
+			
+			[Bindable]
+			public function get ProviderName():String
+			{
+				return _ProviderName;
+			}
+			
+			public function set ProviderName(value:String):void
+			{
+				_ProviderName = value;
+			}
+			
+			[Bindable]
+			public function get Heading():String
+			{
+				return _Heading;
+			}
+			
+			public function set Heading(value:String):void
+			{
+				_Heading = value;
+			}
+			
+			[Bindable]
+			public function get clinicBranchID():String
+			{
+				return _clinicBranchID;
+			}
+			
+			public function set clinicBranchID(value:String):void
+			{
+				_clinicBranchID = value;
+			}
+			
+			private function getProviderDetails(val:* = null):void
+			{
+				ProviderName = model.SearchProviderDetailsResults.FirstName +' '+model.SearchProviderDetailsResults.MiddleName+' '+ model.SearchProviderDetailsResults.LastName ; 
+				id_FName.text = model.SearchProviderDetailsResults.FirstName;
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:layout>
+		<s:VerticalLayout paddingBottom="3" paddingLeft="3" paddingRight="3" paddingTop="3" gap="1"/>
+	</s:layout>
+	
+	<components1:CollapsiblePanel width="100%" title="LOGIN INFORMATION:" skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin" >
+		<components:layout>
+			<s:HorizontalLayout />
+		</components:layout>
+		
+		<s:BorderContainer width="100" height="95" borderWeight="1" borderColor="0">
+			<mx:Image id="id_ProfileImage" width="95" height="90" maintainAspectRatio="false" />
+		</s:BorderContainer>
+		
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Role" />
+			<components1:LabelTextInput id="id_Role" prompt="Role" width="150" />
+			
+			<s:Label text="LogIn ID" />
+			<components1:LabelTextInput id="id_LogInID" prompt="Log-In" width="150" />
+			
+			<s:Label text="Password" />
+			<components1:LabelTextInput id="id_Password" prompt="Password" displayAsPassword="true" width="150"  />
+			<s:Button label="Change" fontSize="9" height="15" />
+			
+		</s:HGroup>
+		
+	</components1:CollapsiblePanel>
+	
+	
+	<components1:CollapsiblePanel width="100%" title="PERSONAL INFORMATION:"  collapsed="true"
+								 skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin" >
+		<components:layout>
+			<s:VerticalLayout />
+		</components:layout>
+		
+				<s:HGroup width="100%">
+					<components1:LabelComboBox id="id_Prefix"  prompt="Prefix" width="55"
+											  labelField="PrefixName" paddingLeft="3" 
+											  paddingRight="3" paddingTop="5" paddingBottom="3" tabIndex="0"/>
+					<components1:LabelTextInput id="id_FName" fontFamily="Calibri" fontSize="11" fontWeight="normal"  restrict="[A-Z a-z , . ' 0-9]"
+											  prompt="First Name"  
+											   contentBackgroundColor="#EDDA8C" borderColor="#444444" 
+											   
+											   text="{model.SearchProviderDetailsResults.FirstName}"
+											   width="100%" paddingLeft="3" paddingRight="3" paddingTop="5" paddingBottom="3"  tabIndex="1"/>
+					
+					<components1:LabelTextInput  id="id_MName" fontFamily="Calibri " fontSize="11"  prompt="Middle Name" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+												text="{model.SearchProviderDetailsResults.MiddleName}"
+												 paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="2"/>
+					
+					<components1:LabelTextInput id="id_LName" fontFamily="Calibri" fontSize="11" prompt="Last Name" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+											   contentBackgroundColor="#EDDA8C" 
+											   text="{model.SearchProviderDetailsResults.LastName}"
+											   paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="3"/>
+				</s:HGroup>
+				<s:HGroup width="100%">
+					<components1:LabelTextInput id="id_SSN" prompt="SSN / ID Number" width="100%" tabIndex="4" 
+											   fontFamily="Calibri" fontSize="11" contentBackgroundColor="#EDDA8C" 
+											   text="{model.SearchProviderDetailsResults.SSN}"
+											  />
+					<components1:LabelComboBox id="id_Gender" prompt="Gender" width="100%"  
+											   labelField="GenderName"  tabIndex="5"  
+											  
+											   
+											  creationComplete="id_Gender_creationCompleteHandler(event)"
+											  />
+				</s:HGroup>
+				
+				<s:HGroup width="100%">
+					<components1:LabelTextInput id="id_Address" fontFamily="Calibri" fontSize="11" prompt="Address" width="50%"  tabIndex="7"
+											   text=""
+											 />
+					
+					<components1:LabelComboBox id="id_State" prompt="State" width="20%" change="id_State_changeHandler(event)"
+											
+											 
+											  labelField="StateName" tabIndex="8" />
+					
+					<components1:LabelComboBox id="id_City" prompt="City" width="20%" change="id_City_changeHandler(event)" 											
+											  labelField="CityName" tabIndex="9" />
+					<components1:LabelComboBox id="id_ZIP" prompt="Zip" fontFamily="Calibri" fontSize="11" width="10%"
+											 
+											  labelField="ZipCode" tabIndex="10" />
+					
+				</s:HGroup>
+				
+			<!--</s:VGroup>-->		
+			
+			<s:HGroup width="100%" verticalAlign="middle">
+				<!--<registeration:PhoneNumberAddMore id="id_PhoneNumberAddMore" width="66%" tabIndex="13" 
+												  creationComplete="id_PhoneNumberAddMore_creationCompleteHandler(event)"
+												  
+												  />-->
+				
+				<s:Button click="AddMorePhoneNumbers(event)"
+						  buttonMode="true" useHandCursor="true" toolTip="Add More" tabIndex="16"/>
+				
+			</s:HGroup>
+			
+	</components1:CollapsiblePanel>
+	<components1:CollapsiblePanel width="100%" title="PROFESSIONAL INFORMATION:"  collapsed="true"
+								 skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin" >
+		<components:layout>
+			<s:VerticalLayout />
+		</components:layout>
+		
+		<s:HGroup width="100%">
+			<components1:LabelComboBox id="id_Title"  prompt="Title" width="55"
+									  paddingLeft="3" paddingRight="3" paddingTop="5" paddingBottom="3" tabIndex="0"/>
+			<components1:LabelTextInput id="id_WorkDays" fontFamily="Calibri" fontSize="11" fontWeight="normal"  restrict="[A-Z a-z , . ' 0-9]"
+									  prompt="Work Days"  
+									   contentBackgroundColor="#EDDA8C" borderColor="#444444" 
+									   width="100%" paddingLeft="3" paddingRight="3" paddingTop="5" paddingBottom="3"  tabIndex="1"/>
+			
+			<components1:LabelTextInput  id="id_WorkStart" fontFamily="Calibri " fontSize="11"  prompt="Work Start" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+										styleName="textInputSkin" paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="2"/>
+			
+			<components1:LabelTextInput id="id_WorkEnd" fontFamily="Calibri" fontSize="11" prompt="Work End" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+									   contentBackgroundColor="#EDDA8C" 
+									   paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="3"/>
+		</s:HGroup>
+		<s:HGroup width="100%">
+			<components1:LabelTextInput id="id_NPI" fontFamily="Calibri" fontSize="11" fontWeight="normal"  restrict="[A-Z a-z , . ' 0-9]"
+									   prompt="NPI"  
+									   contentBackgroundColor="#EDDA8C" borderColor="#444444" 
+									   width="100%" paddingLeft="3" paddingRight="3" paddingTop="5" paddingBottom="3"  tabIndex="1"/>
+			
+			<components1:LabelTextInput  id="id_UPIN" fontFamily="Calibri " fontSize="11"  prompt="UPIN" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+										styleName="textInputSkin" paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="2"/>
+			
+			<components1:LabelTextInput id="id_DEA" fontFamily="Calibri" fontSize="11" prompt="DEA" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+									   contentBackgroundColor="#EDDA8C" styleName="requiredTextInputSkin"	 
+									   paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="3"/>
+		</s:HGroup>
+		<s:HGroup width="100%">
+			<components1:LabelTextInput id="id_TPI" fontFamily="Calibri" fontSize="11" fontWeight="normal"  restrict="[A-Z a-z , . ' 0-9]"
+									   prompt="TPI"  
+									   contentBackgroundColor="#EDDA8C" borderColor="#444444" 
+									   width="100%" paddingLeft="3" paddingRight="3" paddingTop="5" paddingBottom="3"  tabIndex="1"/>
+			
+			<components1:LabelTextInput  id="id_LicenseNo" fontFamily="Calibri " fontSize="11"  prompt="License #" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+									 styleName="textInputSkin"	paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="2"/>
+			
+			<components1:LabelTextInput id="id_EIN" fontFamily="Calibri" fontSize="11" prompt="EIN" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+									   contentBackgroundColor="#EDDA8C" 
+									   paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="3"/>
+			
+			<s:Button label="Subscribe" click="button1_clickHandler(event)" />
+		</s:HGroup>
+		
+	</components1:CollapsiblePanel>
+	
+	<components1:CollapsiblePanel width="100%" title="E-PRESCRIPTION INFORMATION:" collapsed="true"
+								 skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin" >
+		<components:layout>
+			<s:VerticalLayout />
+		</components:layout>
+		
+		<s:HGroup width="100%">
+			<components1:LabelTextInput id="id_Txt1" fontFamily="Calibri" fontSize="11" fontWeight="normal"  restrict="[A-Z a-z , . ' 0-9]"
+									   prompt="Txt"  
+									   contentBackgroundColor="#EDDA8C" borderColor="#444444" 
+									   width="100%" paddingLeft="3" paddingRight="3" paddingTop="5" paddingBottom="3"  tabIndex="1"/>
+			
+			<components1:LabelTextInput  id="id_Txt2" fontFamily="Calibri " fontSize="11"  prompt="Txt" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+										paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="2"/>
+			
+			<components1:LabelTextInput id="id_3" fontFamily="Calibri" fontSize="11" prompt="Txt" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+									   contentBackgroundColor="#EDDA8C"  
+									   paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="3"/>
+		</s:HGroup>
+		<s:HGroup width="100%">
+			<components1:LabelTextInput id="id_Txt4" fontFamily="Calibri" fontSize="11" fontWeight="normal"  restrict="[A-Z a-z , . ' 0-9]"
+									  prompt="Txt"  
+									   contentBackgroundColor="#EDDA8C" borderColor="#444444" 
+									   width="100%" paddingLeft="3" paddingRight="3" paddingTop="5" paddingBottom="3"  tabIndex="1"/>
+			
+			<components1:LabelTextInput  id="id_Txt5" fontFamily="Calibri " fontSize="11"  prompt="Txt" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+										paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="2"/>
+			
+			<components1:LabelTextInput id="id_Txt6" fontFamily="Calibri" fontSize="11" prompt="Txt" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+									   contentBackgroundColor="#EDDA8C" 
+									   paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="3"/>
+		</s:HGroup>
+		<s:HGroup width="100%">
+			<components1:LabelTextInput id="id_Txt7" fontFamily="Calibri" fontSize="11" fontWeight="normal"  restrict="[A-Z a-z , . ' 0-9]"
+									  prompt="Txt"  
+									   contentBackgroundColor="#EDDA8C" borderColor="#444444" 
+									   width="100%" paddingLeft="3" paddingRight="3" paddingTop="5" paddingBottom="3"  tabIndex="1"/>
+			
+			<components1:LabelTextInput  id="id_Txt8" fontFamily="Calibri " fontSize="11"  prompt="Txt #" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+										 paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="2"/>
+			
+			<components1:LabelTextInput id="id_Txt9" fontFamily="Calibri" fontSize="11" prompt="Txt" width="100%" restrict="[A-Z a-z , . ' 0-9]"
+									   contentBackgroundColor="#EDDA8C" 	 
+									   paddingLeft="3" paddingTop="5" paddingRight="3" paddingBottom="3" tabIndex="3"/>
+		</s:HGroup>
+		
+	</components1:CollapsiblePanel>
+	
+</s:Group>

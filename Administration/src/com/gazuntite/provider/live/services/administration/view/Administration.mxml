@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:roleManagement="com.gazuntite.provider.live.services.administration.view.roleManagement.*" 
+		 xmlns:appController="com.gazuntite.provider.live.services.administration.appController.*" 
+		 xmlns:accessRightManag="com.gazuntite.provider.live.services.administration.view.accessRightManag.*" 
+		 xmlns:userManagement="com.gazuntite.provider.live.services.administration.view.userManagement.*" 
+		 xmlns:generalSetting="com.gazuntite.provider.live.services.administration.view.generalSetting.*"
+		 xmlns:locationManagement="com.gazuntite.provider.live.services.administration.view.locationManagement.*"
+		 initialize="init()" minHeight="325" width="100%" 
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.provider.live.services.administration.event.accessRightManagement.LoadUserGroupedByTypesEvent;
+			import com.gazuntite.provider.live.services.administration.event.generalSetting.LoadClinicGeneralSettingAdminEvent;
+			import com.gazuntite.provider.live.services.administration.event.locationManagement.LoadClinicRoomByStationIdEvent;
+			import com.gazuntite.provider.live.services.administration.event.locationManagement.LoadPracticeDetailsEvent;
+			import com.gazuntite.provider.live.services.administration.event.roleManagement.LoadRoleEvent;
+			import com.gazuntite.provider.live.services.administration.event.userManagement.LoadClinicBranchUsersEvent;
+			import com.gazuntite.provider.live.services.administration.model.AdminAppModelLocator;
+			import com.gazuntite.provider.live.services.administration.util.AdminCombineEventDispatcher;
+			
+			import mx.events.IndexChangedEvent;
+			import mx.managers.CursorManager;
+			
+			[Bindable]
+			private var model:AdminAppModelLocator= AdminAppModelLocator.getInstance();
+			
+			private function init():void
+			{
+				AdminCombineEventDispatcher.LoadStaticData();
+			}
+						
+			protected function viewStack_changeHandler(event:IndexChangedEvent):void
+			{
+				switch(event.newIndex)
+				{
+					case 0:
+						callLocationManagement();
+						break;
+					case 1:		//General setting
+						var lgs:LoadClinicGeneralSettingAdminEvent = new LoadClinicGeneralSettingAdminEvent();
+						CairngormEventDispatcher.getInstance().dispatchEvent( lgs );	
+						CursorManager.setBusyCursor();  
+						break;
+					case 2:		// User management
+						var lcbu:LoadClinicBranchUsersEvent = new LoadClinicBranchUsersEvent();
+						CairngormEventDispatcher.getInstance().dispatchEvent( lcbu );	
+						CursorManager.setBusyCursor();
+						break;
+					case 3:		// Role managment
+						var lre:LoadRoleEvent = new LoadRoleEvent();
+						CairngormEventDispatcher.getInstance().dispatchEvent( lre );
+						CursorManager.setBusyCursor(); 
+						break;
+					case 4:		// Access Rights managment
+						var lugt:LoadUserGroupedByTypesEvent = new LoadUserGroupedByTypesEvent();
+						CairngormEventDispatcher.getInstance().dispatchEvent( lugt );
+						break;
+					case 5:		//Patient Record Access Restriction
+						break;
+					case 6:		//ANTA Log
+						break;
+				}
+			}
+			
+			private function callLocationManagement():void
+			{
+				//load practice Details 
+				var lpde:LoadPracticeDetailsEvent = new LoadPracticeDetailsEvent(model.loggedInUserSelectedBranchId);
+				CairngormEventDispatcher.getInstance().dispatchEvent( lpde );	
+				//load Rooms Details 
+				var lcre:LoadClinicRoomByStationIdEvent = new LoadClinicRoomByStationIdEvent(model.loggedInUserSelectedStationId);
+				CairngormEventDispatcher.getInstance().dispatchEvent( lcre );	
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:BorderContainer width="100%" height="100%"  styleName="greyBGContainerSkin">
+		<s:layout>
+			<s:VerticalLayout paddingTop="4" paddingBottom="4" paddingLeft="2" paddingRight="2" gap="-4" />
+		</s:layout>
+		
+		<s:ButtonBar dataProvider="{viewStack}" styleName="blackButtonBarSkin"  width="100%" >
+			<s:layout>
+				<s:ButtonBarHorizontalLayout gap="2" />
+			</s:layout>
+		</s:ButtonBar>
+		
+		<mx:ViewStack id="viewStack"  width="100%"  height="100%" top="20"  creationPolicy="all" 
+					  change="viewStack_changeHandler(event)">
+			<s:NavigatorContent label="Location Management" width="100%" height="100%">
+				<s:SkinnableContainer  width="100%" height="100%"  styleName="blackTitleBGContainerSkin">
+					<locationManagement:LocationManagement width="100%" height="100%"/>
+				</s:SkinnableContainer>
+			</s:NavigatorContent>
+			
+			<s:NavigatorContent label="General Setting" width="100%" height="100%">
+				<generalSetting:GeneralSettingView width="100%" height="100%"/>
+				
+			</s:NavigatorContent>
+			<s:NavigatorContent label="User Management" width="100%" height="100%">
+				<userManagement:UserManagView width="100%" height="100%"/>
+				
+			</s:NavigatorContent>
+			<s:NavigatorContent label="Role Management" width="100%" height="100%" >
+				<roleManagement:RoleManagView width="100%" height="100%"/>
+				
+			</s:NavigatorContent>
+			<s:NavigatorContent label="Access Right Management" width="100%" height="100%" >
+				<accessRightManag:AccessRightView id="id_accessRightView"  width="100%" height="100%" DataProviderLeft="{model.UserGroupedByRoleList}"/>
+				
+			</s:NavigatorContent>
+			<s:NavigatorContent label="Patient Record Access Restriction" width="100%" height="100%" >
+				<s:SkinnableContainer  width="100%" height="100%"  styleName="blackTitleBGContainerSkin">
+					<s:Label text="Coming Soon"  horizontalCenter="0" verticalCenter="0" fontFamily="Calibri" fontSize="15"/>
+				</s:SkinnableContainer>
+			</s:NavigatorContent>
+			<s:NavigatorContent label="ATNA Log" width="100%" height="100%" contentBackgroundAlpha="0" backgroundAlpha="0">
+				<s:SkinnableContainer  width="100%" height="100%"  styleName="blackTitleBGContainerSkin">
+					<s:Label text="Coming Soon" horizontalCenter="0" verticalCenter="0" fontFamily="Calibri" fontSize="15"/>
+				</s:SkinnableContainer>
+			</s:NavigatorContent>
+		</mx:ViewStack>
+		
+	</s:BorderContainer>
+</s:Group>

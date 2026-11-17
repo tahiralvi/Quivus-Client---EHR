@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx"
+					  xmlns:components="com.gazuntite.controls.extended.components.*"
+					  skinClass="com.adobe.Quivus.view.controls.skins.statusListSkin" width="100%"
+	 >
+	
+	
+
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			
+			public var itemClickListener:Function;
+			public var addMoreClickListener:Function;
+			public var itemRendererClass:Class;
+			
+			private var m_acDataProvider:ArrayCollection
+			
+			[Bindable]
+			public function get DataProvider():ArrayCollection
+			{
+				return m_acDataProvider;
+			}
+			
+			public function set DataProvider(value:ArrayCollection):void
+			{
+				m_acDataProvider = value;
+			}
+			
+			protected function list1_clickHandler(event:MouseEvent):void
+			{
+				itemClickListener( event );
+			}
+
+			protected function linkbutton1_clickHandler(event:MouseEvent):void
+			{
+				addMoreClickListener( event );
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+		
+	
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="center" paddingLeft="2" paddingTop="2" />
+	</s:layout>
+	<!--<s:SkinnableContainer width="100%" skinClass="com.adobe.Quivus.view.controls.skins.QLSkin">
+	-->	
+	<!--<s:Button id="id_bt1" />-->
+		
+		<s:VGroup gap="2">
+			
+			<s:Button skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.statusList_AvailableBtn" />
+			<s:Button skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.statusList_InvisibleBtn" />
+			<s:Button skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.statusList_BusyBtn" />
+			<s:Button skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.statusList_AwayBtn" />
+		</s:VGroup>
+		
+		
+
+	
+</s:SkinnableContainer>

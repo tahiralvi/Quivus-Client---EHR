@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+					  xmlns:extended="com.adobe.Quivus.view.controls.extended.*" 
+					  xmlns:components="com.gazuntite.controls.extended.components.*"
+					  xmlns:topBarView="com.adobe.Quivus.view.controls.custom.topBarView.*" 
+					  skinClass="com.adobe.Quivus.view.controls.skins.topBarSkin"
+					  creationComplete="skinnablecontainer1_creationCompleteHandler(event)" 
+					  width="100%"  >
+	
+	<fx:Metadata>
+		[Event(name="smsClick", type="com.adobe.Quivus.view.events.smsClickEvent")]
+		[Event(name="mailClick", type="com.adobe.Quivus.view.events.mailClickEvent")]
+		[Event(name="searchWeb", type="com.adobe.Quivus.view.events.WebSearchEvent")]
+		[Event(name="userSignOutEvent", type="com.adobe.Quivus.view.events.UserSignOutEvent")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.command.patientProfileCustomization.ManageUserPatientProfileBarSettingCommand;
+			import com.adobe.Quivus.events.authenticate.SignOutEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppEventStrings;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QuivusCombineEventDispatcher;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.skins.topBarSkin;
+			import com.adobe.Quivus.view.events.UserSignOutEvent;
+			import com.adobe.Quivus.view.events.WebSearchEvent;
+			import com.adobe.Quivus.view.events.mailClickEvent;
+			import com.adobe.Quivus.view.events.smsClickEvent;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			
+			import valueObjects.StationDTO;
+			
+			[Bindable]
+			[Embed(source='assets/icons/close.png')]
+			private var closeIcon:Class;
+			
+			private var isContactSearch:Boolean = true;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var innerTimer:Timer 	= new Timer(10,0);
+			private var DMInnerTimer:Timer 	= new Timer(10,0);
+			public var max_restore_tooltip:String = "";
+			
+			public function getToolTip():String
+			{
+				max_restore_tooltip = "Restore";
+				return max_restore_tooltip;
+			} 
+			
+			public function showUserControl(value:Boolean):void
+			{
+				id_userView.visible = value;
+				id_QuickLinks.visible = value;
+			}
+			
+			public function showSearchControl(value:Boolean):void
+			{
+				id_WebContactButtonArea.visible = value;
+				id_Location.visible = value; ;
+			}
+			
+			protected function skinnablecontainer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				//id_SearchArea.id_btnSearch.addEventListener(MouseEvent.CLICK, OnWebSearchButtonClick);
+				id_WebSearchOptions.id_web.addEventListener(MouseEvent.CLICK, OnWebSearchButtonClick);
+				id_userView.id_SignOut.addEventListener(MouseEvent.CLICK, OnSignOutClick);
+				addEventListener('closeApplicationEvent', onCloseApplication);
+			}			
+			
+			private function OnWebSearchButtonClick(event:MouseEvent):void
+			{
+				if( model.CurrentSearchMode == Constants.WEB_SEARCH_MODE )
+				{
+					var query:String = "";//= id_SearchArea.id_SearchTextInput.text;
+					var webSearch:WebSearchEvent = new WebSearchEvent( AppEventStrings.SEARCH_WEB, query, true, true);
+					this.dispatchEvent( webSearch );
+					
+					//id_WebSearchOptions.id_web.selected = !id_contacts.selected;
+					
+					//id_contacts.selected = !id_WebSearchOptions.id_web.selected;
+					
+					if(id_contacts.selected)
+					{
+						id_contacts.selected = !id_WebSearchOptions.id_web.selected;
+					}
+					
+					if(id_WebSearchOptions.id_web.selected)
+					{
+						//	id_WebSearchOptions.id_searchEnginesList.y = 25;
+						//id_WebSearchOptions.id_IconImage.y 		   = 28;
+						id_WebSearchOptions.id_searchEnginesList.selected = false;
+						//id_WebSearchOptions.id_web.selected = false;
+					}
+					else
+					{
+						//	id_WebSearchOptions.id_searchEnginesList.y = 2;
+						//id_WebSearchOptions.id_IconImage.y 		   = 5;
+						id_WebSearchOptions.id_searchEnginesList.selected = true;
+						//id_WebSearchOptions.id_BGRect.visible = false;
+						//id_WebSearchOptions.id_web.selected = true;
+					}
+				} 
+			}
+			
+			private function OnSignOutClick(event:MouseEvent):void
+			{
+				dispatchSignOutEvent();
+			}
+			
+			public function dispatchSignOutEvent(Silent:Boolean = false):void
+			{
+				var usoe:UserSignOutEvent = new UserSignOutEvent( "" );
+				usoe.forceSilent = Silent;
+				this.dispatchEvent( usoe );
+			}
+			
+			protected function id_restore_rollOverHandler(event:MouseEvent):void
+			{
+				event.currentTarget.toolTip = getToolTip();
+			}
+			
+			private function DispatchMailClick( event:MouseEvent):void
+			{
+				var ev:mailClickEvent = new mailClickEvent( mailClickEvent.NAME, null, true, false, event.localX, event.localY, event.relatedObject, event.ctrlKey, event.altKey, event.shiftKey, event.buttonDown, event.delta, event.commandKey, event.controlKey, event.clickCount);
+				dispatchEvent( ev );
+			}
+			
+			//Tahir Alvi - Close application on InActive window
+			private function onCloseApplication(event:Event):void
+			{
+				removeEventListener('closeApplicationEvent', onCloseApplication);
+				id_close_clickHandler();
+			}
+			
+			protected function id_close_clickHandler():void
+			{
+				UtilityFunctions.AskMessage(  "Do you really want to exit 'Gazuntite Online Clinic'", function():void
+				{
+					if(model.dictationUploadInProcessCount != 0)
+					{	
+						NativeApplication.nativeApplication.autoExit = false;					
+						NativeWindow( stage.nativeWindow ).visible = false;
+						
+						innerTimer = new Timer(1000);
+						innerTimer.addEventListener(TimerEvent.TIMER, checkDictationUploaded);
+					}
+					else
+					{
+						if(model.UserLoggedIn && !model.setAsDefault && model.userPatientProfileBarSettingTemp!=null)
+						{
+							ManageUserPatientProfileBarSettingCommand.setFirstSectionOldData();
+							ManageUserPatientProfileBarSettingCommand.setSecondSectionOldData();
+							ManageUserPatientProfileBarSettingCommand.setThirdSectionOldData();
+						}
+						if(model.sessionDTO!=null)
+						{
+							var lpsdEvent : SignOutEvent = new SignOutEvent(model.sessionDTO);
+							CairngormEventDispatcher.getInstance().dispatchEvent( lpsdEvent );
+						}
+						ChromeUtil.closeWindow();
+					}
+				}
+					
+				);
+			}
+			
+			private function checkDictationUploaded(event:TimerEvent):void 
+			{	
+				if(model.dictationUploadInProcessCount != 0)
+				{	
+					
+				}
+				else
+				{
+					innerTimer.removeEventListener(TimerEvent.TIMER, checkDictationUploaded);
+					NativeApplication.nativeApplication.autoExit = true;
+					if(model.UserLoggedIn && !model.setAsDefault && model.userPatientProfileBarSettingTemp!=null)
+					{
+						ManageUserPatientProfileBarSettingCommand.setFirstSectionOldData();
+						ManageUserPatientProfileBarSettingCommand.setSecondSectionOldData();
+						ManageUserPatientProfileBarSettingCommand.setThirdSectionOldData();
+					}
+					ChromeUtil.closeWindow();
+				}
+			}
+			
+			public function changeToopTip():void
+			{
+				if(id_restore.toolTip=='Restore')
+				{
+					id_restore.toolTip='Maximize';
+				}
+				else if(id_restore.toolTip=='Maximize')
+				{
+					
+					id_restore.toolTip='Restore';
+				}
+			}
+			
+			protected function id_LocationDDL_changeHandler(event:IndexChangeEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.LOCATION_LIST ) )//Tahir Alvi - on location combo click implement security check
+				{
+					callLater( AskUserChangeLocation, [event.oldIndex] );
+				}else{
+					if(event)
+						event.stopImmediatePropagation();
+				}
+			}
+			
+			private function AskUserChangeLocation(selectedIndex:int):void
+			{
+				Alert.show("Do you really want to change your location?","Are you sure?", Alert.YES|Alert.NO, 
+					FlexGlobals.topLevelApplication.mainContainer, function(event:CloseEvent):void
+					{
+						if( event.detail == Alert.YES)
+						{
+							model.userSelectedStationDTO = id_LocationDDL.selectedItem as StationDTO;
+							QuivusCombineEventDispatcher.UpdateModel();
+						}
+						else if( event.detail == Alert.NO)
+						{
+							id_LocationDDL.selectedIndex = selectedIndex;
+						}
+					}); 
+			}
+			
+			protected function id_LocationDDL_clickHandler(event:MouseEvent):void
+			{
+				if(!QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.LOCATION_LIST ) )//Tahir Alvi - on location combo click implement security check
+				{
+					if(event)
+						event.stopImmediatePropagation();
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+		<s:HorizontalLayout gap="0" horizontalAlign="left" verticalAlign="top" />
+	</s:layout>
+	
+	<s:Group resizeMode="noScale"  x="{id_logo.x}" width="35%"   >		
+		<topBarView:Logo id="id_logo"  />
+		<topBarView:QuickLinks id="id_QuickLinks" />
+	</s:Group>
+	
+	<s:VGroup width="100%" horizontalAlign="center" gap="-1"  id="id_Location"   >
+		<s:SkinnableContainer skinClass="com.adobe.Quivus.view.controls.skins.borderContainerSkins.locationHudBGConatiner" >
+			<s:layout >
+				<s:VerticalLayout  gap="1" horizontalAlign="center"  />
+			</s:layout>
+			<s:HGroup width="100%" horizontalAlign="center"  paddingTop="2">
+				<s:Label text="Welcome" fontFamily="Calibri" fontSize="11" color="#666666"  />
+				<s:Label   maxDisplayedLines="1" fontFamily="Calibri Bold" fontSize="12" 
+						   color="#000000" typographicCase="uppercase"
+						   text="{model.providerName}"  maxWidth="150"  toolTip="{model.providerName}"/>
+			</s:HGroup>
+			<s:HGroup  width="100%" verticalAlign="middle" horizontalAlign="center">
+				<s:Label   id="id_lblLocation" 
+						   text="Location" fontFamily="Calibri"  fontSize="11" color="#666666" 
+						   visible="{model.userSelectedClinicBranchDTO.StationList.length > 0}" />
+				<s:DropDownList id="id_LocationDDL" 
+								width="140" fontFamily="Calibri Bold" color="#000000"
+								labelField="StationName" useHandCursor="true" buttonMode="true" 
+								click="id_LocationDDL_clickHandler(event)"
+								change="id_LocationDDL_changeHandler(event)"
+								itemRenderer="com.adobe.Quivus.view.controls.skins.itemRenderers.LocationDDL_IR" 
+								skinClass="com.adobe.Quivus.view.controls.skins.comboBoxSkins.locationDLSkin"
+								dataProvider="{model.userSelectedClinicBranchDTO.StationList}"
+								selectedItem="{model.userSelectedStationDTO}" 
+								toolTip="{model.userSelectedStationDTO.StationName}" />
+				
+			</s:HGroup>
+			
+		</s:SkinnableContainer>
+		<s:HGroup id="id_WebContactButtonArea" horizontalAlign="center" verticalAlign="top" width="100%" gap="3"  >
+			<s:ToggleButton id="id_contacts" 
+							skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.TopBarContactBtn"
+							label="CONTACT"	visible="{model.UserLoggedIn}" buttonMode="true" useHandCursor="true" toolTip="Search Contact to Communicate"	/>
+			<topBarView:WebSearchOptions id="id_WebSearchOptions" />	
+		</s:HGroup>
+	</s:VGroup>
+	<s:VGroup paddingTop="2" horizontalAlign="right"  width="35%" gap="-10" paddingRight="5">	
+		<s:HGroup id="id_windowControlButtons" gap="0" width="50" horizontalAlign="right" paddingTop="-3">
+			<s:Button id="id_min" height="15" width="16" useHandCursor="true" buttonMode="true" 
+					  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.minButton" 
+					  click="ChromeUtil.minimizeWindow()" toolTip="Minimize"/>
+			
+			<s:Button id="id_restore" height="15" width="16" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.restoreButton"
+					  click="ChromeUtil.toggleMaximizeWindow(); changeToopTip()" toolTip="Maximize" useHandCursor="true" buttonMode="true"/>					
+			
+			<s:Button id="id_close" height="15" width="16" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.closeButton"
+					  click="id_close_clickHandler()" toolTip="Close" useHandCursor="true" buttonMode="true"/>
+			
+		</s:HGroup>
+		<topBarView:TopBarUserView id="id_userView" width="150"   />
+	</s:VGroup>
+</s:SkinnableContainer>

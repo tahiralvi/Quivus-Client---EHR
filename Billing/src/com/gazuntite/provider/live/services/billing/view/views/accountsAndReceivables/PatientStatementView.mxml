@@ -1,0 +1,472 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  xmlns:common="com.gazuntite.provider.live.services.billing.view.common.*" 
+		  xmlns:components="com.gazuntite.controls.extended.components.*" 
+		  xmlns:toolbar="com.gazuntite.provider.live.services.billing.view.views.toolbar.*"	
+		  creationComplete="vgroup1_creationCompleteHandler(event)"
+		  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.util.ValidationUtils;
+			import com.gazuntite.common.util.xml.XmlUtils;
+			import com.gazuntite.controls.extended.components.LabelComboBox;
+			import com.gazuntite.provider.live.services.billing.dto.accountsAndReceiveables.PatientStatementDTO;
+			import com.gazuntite.provider.live.services.billing.dto.accountsAndReceiveables.StatementPatientDetailDTO;
+			import com.gazuntite.provider.live.services.billing.event.BillingEventString;
+			import com.gazuntite.provider.live.services.billing.event.accountsAndReceiveables.LoadPatientStatementEvent;
+			import com.gazuntite.provider.live.services.billing.event.report.PatientStatementReportEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.util.BillingConstants;
+			import com.gazuntite.provider.live.services.billing.view.views.report.PatientStatementReportPanel;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;			
+
+			[Bindable] 
+			private var SearchTypes:ArrayCollection = new ArrayCollection(["Claim Number","Visit Date","Guarantor","Gazuntite Id",
+				        "Phone","Status","Initial Billing Date","Batch","Media","Type"]);
+			
+			[Bindable] 
+			private var StatusTypes:ArrayCollection = new ArrayCollection(["All , Except Hold","Alert","Ready to send","Done",
+				"Sent","Pending","Rejected","Challenge"]);
+			
+			[Bindable] 
+			private var MediaTypes:ArrayCollection = new ArrayCollection(["All","Paper","Electronic"]);
+			
+			[Bindable] 
+			private var StatementTypes:ArrayCollection = new ArrayCollection(["All","Standard","Remainder"]);
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();			
+			
+			protected function id_buttonBar_PrintSendHandler(event:Event):void
+			{
+				if(id_StatementGrid.selectedIndex < 0)
+				{
+					Alert.show("Please select a claim from list", "claim Not Selected",4,FlexGlobals.topLevelApplication.mainContainer);					
+					return;
+					id_StatementGrid.setFocus();
+				}
+				
+				var statementData:XML = null;
+				
+				statementData = XmlUtils.getNodeByTagName("PatientStatementData")
+				
+				statementData.appendChild((id_StatementGrid.selectedItem as PatientStatementDTO).ToXML());
+					
+				for each (var patient:StatementPatientDetailDTO in model.StatementPatientDetailList) 
+				{					
+					if(patient.PatientID == (id_StatementGrid.selectedItem as PatientStatementDTO).PatientID )
+					{
+						statementData.appendChild(patient.ToXML());
+						break;
+					}
+						
+				}
+				
+				
+				if(reportPanel && reportPanel.isPopUp)
+				{
+					reportPanel.removePopup();
+					reportPanel = null;
+				}
+					
+				//ReportContentsLoaded("test");
+				var pse:PatientStatementReportEvent = new PatientStatementReportEvent(statementData,ReportContentsLoaded);
+				CairngormEventDispatcher.getInstance().dispatchEvent(pse);
+				
+			}
+			
+			private var reportPanel:PatientStatementReportPanel = null;
+			private function ReportContentsLoaded(resp:String):void
+			{
+				if(UtilityFunctions.IsNotNullOrEmpty(resp))
+				{
+					reportPanel = new PatientStatementReportPanel();
+					
+					reportPanel.ShowPopup(FlexGlobals.topLevelApplication.mainContainer);
+					reportPanel.StatementURL = resp;
+					
+				}
+			}
+			
+			protected function id_buttonBar_ReBillHandler(event:Event):void
+			{
+				// TODO Auto-generated method stub
+				
+			}
+			
+			protected function id_buttonBar_SettingHandler(event:Event):void
+			{
+				// TODO Auto-generated method stub
+				
+			}
+			
+			protected function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				addEventListeners();	
+				
+				id_FilterBar_RefreshViewHandler(null);
+			}
+			
+			public function addEventListeners():void
+			{
+				id_FilterBar.id_FieldsCmbo.addEventListener(ListEvent.CHANGE,searchTypeChanged);
+				id_FilterBar.id_btnSearch.addEventListener(MouseEvent.CLICK, OnSearchClick);
+				id_FilterBar.id_SearchTextInput.addEventListener(KeyboardEvent.KEY_UP, OnSearchKeyUp);
+				id_FilterBar.id_SearchTextInput.addEventListener(KeyboardEvent.KEY_DOWN, OnSearchKeyDown);
+				//id_FilterBar.addEventListener( BillingEventString.LIST_ONLY , 			id_FilterBar_ListOnlyHandler );
+				//id_FilterBar.addEventListener( BillingEventString.CHANGE_STAUS , 		id_FilterBar_ChangeStatusHandler );
+				id_FilterBar.addEventListener( BillingEventString.GOTO_FIRST_PAGE , 	switchPageForPendingBills );
+				id_FilterBar.addEventListener( BillingEventString.GOTO_LAST_PAGE , 		switchPageForPendingBills );
+				id_FilterBar.addEventListener( BillingEventString.GOTO_NEXT_PAGE , 		switchPageForPendingBills );
+				id_FilterBar.addEventListener( BillingEventString.GOTO_PREVIOUS_PAGE ,  switchPageForPendingBills );
+				id_FilterBar.addEventListener( BillingEventString.REFRESH_VIEW , 		id_FilterBar_RefreshViewHandler);
+			}
+			
+			private function OnSearchKeyUp(event:KeyboardEvent): void
+			{				
+				
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == 3 && id_FilterBar.id_SearchTextInput.text.length < 3 )
+					id_FilterBar.id_SearchTextInput.text = "Ga-";
+			}	
+			
+			private function OnSearchKeyDown(event:KeyboardEvent): void
+			{
+				if(event.keyCode == 13)
+					OnSearchClick(null);		
+			}
+			
+			protected function OnSearchClick(MouseEvent:Event):void
+			{
+				searchType = 0;
+				searchString = "0";
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == -1)
+				{
+					Alert.show("Please select search type", "Search Type Not Selected",4,FlexGlobals.topLevelApplication.mainContainer);					
+					return;
+					id_FilterBar.id_FieldsCmbo.setFocus();
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex < 0 && id_FilterBar.id_FieldsCmbo.textInput.text.length > 0)
+				{
+					Alert.show("Please select proper search type from list", "Search Type Not Selected",4,FlexGlobals.topLevelApplication.mainContainer);					
+					return;
+					id_FilterBar.id_FieldsCmbo.setFocus();
+				}
+				if(id_FilterBar.id_SearchTextInput.visible == true && UtilityFunctions.IsNullOrEmpty(id_FilterBar.id_SearchTextInput.text))	
+				{
+					Alert.show("Please enter something to search ", "Search Field Empty",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+					id_FilterBar.id_SearchTextInput.setFocus();
+				}
+				
+				id_FilterBar.id_SearchTextInput.text = UtilityFunctions.TrimString(id_FilterBar.id_SearchTextInput.text);				
+							
+				var searchName:String = "";
+				var searchFirstName:String = "";
+				var searchLastName:String = "";
+				searchString = id_FilterBar.id_SearchTextInput.text;
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == 2 )
+				{	
+					searchName = id_FilterBar.id_SearchTextInput.text;
+					if(searchName.indexOf(' ') > -1)
+					{
+						searchFirstName = UtilityFunctions.TrimString(searchName.split(' ')[0]);
+						searchLastName = UtilityFunctions.TrimString(searchName.split(' ')[1]);
+					}
+					else if(searchName.indexOf(',') > -1)
+					{
+						searchLastName = UtilityFunctions.TrimString(searchName.split(',')[0]);
+						searchFirstName = UtilityFunctions.TrimString(searchName.split(',')[1]);
+					}
+					else 
+						searchFirstName = searchName;	
+					
+					if (searchFirstName.length >= 1 && searchFirstName.length <= 50)
+					{
+						if (!isValidAlphaNumericWithSpaces(searchFirstName))
+						{
+							Alert.show("Please enter valid guarantor first name", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+							searchString = "0";
+							return;							
+							id_FilterBar.id_SearchTextInput.setFocus();
+						}
+					}
+					else if (searchFirstName.length > 0 && searchFirstName.length > 50)
+					{						
+						Alert.show("Guarantor first name is too long", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+						searchString = "0";
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					}
+					
+					if (searchLastName.length >= 1 && searchLastName.length <= 50)
+					{
+						if (!isValidAlphaNumericWithSpaces(searchLastName))
+						{
+							Alert.show("Please enter valid guarantor last name", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+							searchString = "0";
+							return;
+							id_FilterBar.id_SearchTextInput.setFocus();
+						}
+					}
+					else if (searchLastName.length > 0 && searchLastName.length > 50)
+					{						
+						Alert.show("Guarantor last name is too long", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+						searchString = "0";
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					}
+				}							
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 1 || id_FilterBar.id_FieldsCmbo.selectedIndex == 6 )
+				{
+					if( !  ValidationUtils.isValidDateFormat(id_FilterBar.id_SearchTextInput.text) || !  ValidationUtils.isValidDateString(id_FilterBar.id_SearchTextInput.text))
+					{
+						Alert.show("Please enter valid " + id_FilterBar.id_FieldsCmbo.textInput.text + " in valid format [MM/DD/YYYY]", "Invalid Data/format",4,FlexGlobals.topLevelApplication.mainContainer);
+						searchString = "0";
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					}
+				}
+				else if(id_FilterBar.id_SearchTextInput.visible == false)
+				{
+					if(id_typeList.selectedIndex < 0)
+					{
+						Alert.show("Please select any type from list", "Invalid Data/format",4,FlexGlobals.topLevelApplication.mainContainer);
+						searchString = "0";
+						return;
+						id_typeList.setFocus();
+					}
+					if(id_FilterBar.id_FieldsCmbo.selectedIndex == 5 && id_typeList.selectedIndex > 0)
+						searchString = String(id_typeList.selectedIndex + 1);
+					else
+						searchString = String(id_typeList.selectedIndex);
+				}
+				
+				searchType = id_FilterBar.id_FieldsCmbo.selectedIndex + 1;
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == 1 || id_FilterBar.id_FieldsCmbo.selectedIndex == 6 )
+					searchString = UtilityFunctions.FormatDate(searchString);
+				
+				var ce:LoadPatientStatementEvent = new LoadPatientStatementEvent(searchType, 
+					                         searchString,model.LoggedInUserSelectedBranchId,BillingConstants.FIRST_PAGE_NUMBER,RecordStatus);
+				CairngormEventDispatcher.getInstance().dispatchEvent(ce);
+			}
+			
+			private function isValidAlphaNumericWithSpaces(str:String = ""):Boolean
+			{
+				var isValid:Boolean = true;
+				
+				var reg:RegExp = /[a-zA-Z0-9,.'()\/\s]{1,200}/ig;
+				var result:Object;
+				
+				do
+				{
+					result = reg.exec(str);
+					
+					if ((result == null) || (result && result.index !=0))
+					{
+						isValid = false;
+						break;
+					}
+					
+				}while (reg.lastIndex < str.length)
+				
+				return isValid;
+			}
+			
+			private var searchType:int = 0;
+			private var searchString:String = "0";
+			private var id_typeList: LabelComboBox = null;			
+			private function searchTypeChanged( event:Event ):void
+			{
+				id_FilterBar.id_SearchTextInput.visible = true;
+				//id_FilterBar.id_SearchTextInput.includeInLayout = true;
+				
+				if(id_typeList)
+				{
+					id_FilterBar.removeElement(id_typeList);
+					id_typeList = null;
+				}
+				
+				id_FilterBar.id_SearchTextInput.text = "";
+				
+				id_FilterBar.id_SearchTextInput.restrict = null;
+				
+				var numIndexes:String = "*0*3*4*7*";
+				var cmbIndexes:String = "*5*8*9*";
+				if(numIndexes.indexOf("*" + id_FilterBar.id_FieldsCmbo.selectedIndex.toString() + "*") > -1)
+				{
+					id_FilterBar.id_SearchTextInput.restrict = "[0-9]";
+					
+					if(id_FilterBar.id_FieldsCmbo.selectedIndex == 3)
+						id_FilterBar.id_SearchTextInput.text = "Ga-";	
+					
+				}
+				else if(cmbIndexes.indexOf("*" + id_FilterBar.id_FieldsCmbo.selectedIndex.toString() + "*") > -1)
+				{	
+					id_typeList  = new LabelComboBox();
+					
+					if(id_FilterBar.id_FieldsCmbo.selectedIndex == 5)
+					{
+						id_typeList.dataProvider = StatusTypes;
+					}
+					else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 8)
+					{
+						id_typeList.dataProvider = MediaTypes;
+					}
+					else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 9)
+					{
+						id_typeList.dataProvider = StatementTypes;
+					}
+						
+					id_FilterBar.addElementAt(id_typeList,1);
+					
+					id_typeList.left =id_FilterBar.left + 105;
+					id_typeList.top =id_FilterBar.top;	
+					//id_typeList.left =id_FilterBar.id_SearchTextInput.left;
+					//id_typeList.top =id_FilterBar.id_SearchTextInput.top;
+					//id_typeList.width = id_FilterBar.id_SearchTextInput.width;
+					id_typeList.width = 100;;
+					id_typeList.visible = true;					
+					id_typeList.selectedIndex = 0;
+					
+					id_FilterBar.id_SearchTextInput.visible = false;
+					//id_FilterBar.id_SearchTextInput.includeInLayout = false;
+				}
+				
+			}
+			
+			public function id_FilterBar_RefreshViewHandler(event:Event):void
+			{
+				var ce:LoadPatientStatementEvent = new LoadPatientStatementEvent(searchType, 
+					searchString,model.LoggedInUserSelectedBranchId,BillingConstants.FIRST_PAGE_NUMBER,RecordStatus);
+				CairngormEventDispatcher.getInstance().dispatchEvent(ce);
+			}
+			
+			private function switchPageForPendingBills( event:Event ):void
+			{				
+				switch( event.type ) 
+				{
+					case BillingEventString.GOTO_FIRST_PAGE:
+						model.PatientStatementSearchPageNo = 1;							
+						break;
+					case BillingEventString.GOTO_NEXT_PAGE:
+						model.PatientStatementSearchPageNo += 1; 						
+						break;
+					case BillingEventString.GOTO_PREVIOUS_PAGE:
+						model.PatientStatementSearchPageNo -= 1;						
+						break;
+					case BillingEventString.GOTO_LAST_PAGE:
+						model.PatientStatementSearchPageNo = model.PatientStatementTotalPageNo;						
+						break;
+				}	
+								
+				var ce:LoadPatientStatementEvent = new LoadPatientStatementEvent(id_FilterBar.id_FieldsCmbo.selectedIndex + 1,
+														id_FilterBar.id_SearchTextInput.text,model.LoggedInUserSelectedBranchId,
+														model.PatientStatementSearchPageNo,RecordStatus);
+				CairngormEventDispatcher.getInstance().dispatchEvent(ce);				
+			}
+			
+			private function RecordStatus():void
+			{
+				if(model.totalrecords_PS < BillingConstants.PAGE_SIZE)
+				{
+					id_FilterBar.id_GoToFirstPage.enabled = false;
+					id_FilterBar.id_GoToLastPage.enabled = false;
+					id_FilterBar.id_GoToNextPage.enabled = false;
+					id_FilterBar.id_GoToPreviousPage.enabled = false;
+				}
+				else
+				{
+					if(model.PatientStatementSearchPageNo == 1)
+					{
+						id_FilterBar.id_GoToFirstPage.enabled = false;
+						id_FilterBar.id_GoToPreviousPage.enabled = false;
+					}
+					else
+					{
+						id_FilterBar.id_GoToFirstPage.enabled = true;
+						id_FilterBar.id_GoToPreviousPage.enabled = true;
+					}
+					if(model.PatientStatementSearchPageNo == model.PatientStatementTotalPageNo)
+					{
+						id_FilterBar.id_GoToNextPage.enabled = false;
+						id_FilterBar.id_GoToLastPage.enabled = false;
+					}
+					else
+					{
+						id_FilterBar.id_GoToNextPage.enabled = true;
+						id_FilterBar.id_GoToLastPage.enabled = true;
+					}				
+				}
+			}
+			
+			
+			
+			/* private var popup:PatientStatementInfoPopup = null;
+			public function id_claimInfo_clickHandler(event:MouseEvent):void
+			{
+				if(popup && popup.isPopUp) return;
+				
+				popup = new PatientStatementInfoPopup();
+				
+				var psDTO:PatientStatementDTO =  id_StatementGrid.selectedItem as PatientStatementDTO;
+				
+				var pLoc:Point = id_StatementGrid.localToGlobal(new Point(id_StatementGrid.x ,id_StatementGrid.height));
+				popup.SubmissionCount = psDTO.SubmissionCount;
+				popup.LastSubmissionDate = psDTO.LastSubmissionDate;
+				
+				popup.x 		= pLoc.x + 100; 
+				popup.y 		= pLoc.y ;			
+				
+				popup.ShowPopup( this );
+				
+			} */
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<common:BillingGridFilterView width="100%" id="id_FilterBar"									
+								  PagingMessage="{ 'Page ' + model.PatientStatementSearchPageNo + '/' + model.PatientStatementTotalPageNo}" 
+								  MessageVisible="{ (model.PatientStatementList != null &amp;&amp;  model.PatientStatementList.length > 0 ) ? true : false}"
+								  RecordMessage="{model.totalRecordMessage_PS}" EnableChangeStausButton="false"
+								  DataProvider="{SearchTypes}" tabIndex="1" />
+	<components:LabelDataGrid id="id_StatementGrid" width="100%" dataProvider="{model.PatientStatementList}" 
+							  height="100" useRollOver="false" editable="false" allowMultipleSelection="true" 
+							  verticalScrollPolicy="on"  
+							  verticalScrollBarStyleName="VScrollBar" horizontalScrollPolicy="auto"
+							  maxHeight="150" variableRowHeight="true" tabIndex="12" horizontalScrollBarStyleName="VScrollBar"
+							  columnWidths="{['3%'],['7%'],['10%'],['20%'],['10%'],['10%'],['10%'],['10%'],['5%'],['10%'],['10%']}"
+							  >
+		<components:columns>
+			<mx:DataGridColumn headerText="Sr.#" dataField="SNo" />
+			<mx:DataGridColumn headerText=""  itemRenderer="com.gazuntite.provider.live.services.billing.view.itemrender.StatementButtonRenderer"/>
+			<mx:DataGridColumn headerText="Claim #" dataField="ClaimID" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Visit Date" dataField="VisitDate" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText=""  itemRenderer="com.gazuntite.provider.live.services.billing.view.itemrender.StatementButtonRenderer"/>
+			<mx:DataGridColumn headerText="Guarantor" dataField="Guarantor" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Gazuntite ID" dataField="GAXENID" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Phone" dataField="Phone" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Status" dataField="Status" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Initial Billing" dataField="DateCreated" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Batch" dataField="BatchNumber" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Media" dataField="Media" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Type" dataField="StatementTypeName" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>							
+		</components:columns>
+		</components:LabelDataGrid>
+		<toolbar:PatientStatementButtonBar id="id_buttonBar" PrintSend="id_buttonBar_PrintSendHandler(event)" 
+										   ReBill="id_buttonBar_ReBillHandler(event)"
+										   Setting="id_buttonBar_SettingHandler(event)"
+										   />				  
+</s:VGroup>

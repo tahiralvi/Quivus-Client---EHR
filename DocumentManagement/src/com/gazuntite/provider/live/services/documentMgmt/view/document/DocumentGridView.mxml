@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"   width="100%"
+		 xmlns:document="com.gazuntite.provider.live.services.documentMgmt.view.document.*"
+		 creationComplete="group1_creationCompleteHandler(event)" xmlns:LiveGridView="com.zigron.common.view.LiveGridView.*" xmlns:LiveGridView1="com.gazuntite.common.view.LiveGridView.*"
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.dto.typeDTO.DocumentSectionTypeDTO;
+			import com.gazuntite.common.dto.typeDTO.SearchFieldTypeDTO;
+			import com.gazuntite.common.util.ValidationUtils;
+			import com.gazuntite.common.view.LiveGridView.ListOnlyPopup;
+			import com.gazuntite.common.view.events.ListOnlySelectionEvent;
+			import com.gazuntite.provider.live.services.documentMgmt.event.LoadPatientDocumentByClinicIdEvent;
+			import com.gazuntite.provider.live.services.documentMgmt.event.SearchPatientDocumentEvent;
+			import com.gazuntite.provider.live.services.documentMgmt.model.DMAppModelLocator;
+			import com.gazuntite.provider.live.services.documentMgmt.util.DMConstant;
+			import com.gazuntite.provider.live.services.documentMgmt.util.DMEventStrings;
+			import com.gazuntite.provider.live.services.documentMgmt.util.DMQuivusCombineEventDispatcher;
+			import com.gazuntite.provider.live.services.documentMgmt.view.itemRenderer.EditDeleteRenderer;
+			import com.gazuntite.provider.live.services.documentMgmt.view.itemRenderer.NotesButtonRenderer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Label;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			
+			[Bindable]
+			public var model : DMAppModelLocator = DMAppModelLocator.getInstance();
+			
+			[Bindable]
+			private var m_oDataProvider:ArrayCollection ;
+			
+			public var popup:ListOnlyPopup;
+			
+			[Bindable]
+			public function get DataProvider():ArrayCollection
+			{
+				return m_oDataProvider;
+			}
+			
+			public function set DataProvider(value:ArrayCollection):void
+			{
+				m_oDataProvider = value;			
+				//callLater( id_DocumentGrid.expandAll );
+			}
+			
+			
+			public function removeAllPopUp():void 
+			{
+				if( popup && popup.isPopUp )
+				{
+					popup.removePopup();
+					return; 
+				}
+			}
+			
+			protected function filtergridview1_ListOnlyHandler(event:Event):void
+			{
+				if( popup && popup.isPopUp )
+				{
+					popup.removePopup();
+					/* popup.removeEventListener( ListOnlySelectionEvent.LIST_ONLY_SELECTION, ListOnlySelectionEventHandler );*/
+					return; 
+				}
+				
+				popup = new ListOnlyPopup();
+				popup.DataProvider = model.documentSectionTypeDTOListLinear;
+				popup.addEventListener( ListOnlySelectionEvent.LIST_ONLY_SELECTION, ListOnlySelectionEventHandler );
+				
+				var pLoc:Point = id_FilterGridView.id_ListOnly.parent.localToGlobal(new Point(id_FilterGridView.id_ListOnly.x ,id_FilterGridView.id_ListOnly.height));
+				
+				popup.x 		= pLoc.x - 100; 
+				popup.y 		= pLoc.y  + 10 ;
+				/* FlexGlobals.topLevelApplication.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+				if( popup && popup.isPopUp )
+				{
+				popup.removePopup();
+				popup.removeEventListener( DMEventStrings.LIST_ONLY_SELECTION, ListOnlySelectionEventHandler );
+				popup = null;	
+				}
+				
+				}); */
+				popup.ShowPopup( this );
+			}
+			
+			
+			protected function GoToPageHandler(event:Event):void
+			{
+				if( model.isPatientDocSearching )
+					switchPageForSearchView( event.type );
+				else							
+					switchPageForDocumentView( event.type );
+			}
+			
+			private function switchPageForDocumentView( page:String ):void
+			{
+				switch( page )
+				{
+					case DMEventStrings.GOTO_FIRST_PAGE:
+						DMQuivusCombineEventDispatcher.LoadDocumentList(1);
+						break;
+					case DMEventStrings.GOTO_NEXT_PAGE:
+						++model.patientDocSearchPageNo; 
+						DMQuivusCombineEventDispatcher.LoadDocumentList( model.patientDocSearchPageNo ); 
+						break;
+					case DMEventStrings.GOTO_PREVIOUS_PAGE:
+						--model.patientDocSearchPageNo;
+						DMQuivusCombineEventDispatcher.LoadDocumentList( model.patientDocSearchPageNo ); 
+						break;
+					case DMEventStrings.GOTO_LAST_PAGE:
+						DMQuivusCombineEventDispatcher.LoadDocumentList( model.patientDocumentTotalPageNo ); 
+						break;
+				}
+				
+				id_FilterGridView.EnableNavigationButtons( model.patientDocumentTotalPageNo, model.patientDocSearchPageNo );
+			}
+			
+			private function switchPageForSearchView( page:String ):void
+			{
+				if( id_FilterGridView.id_FieldsCmbo.selectedItem )
+				{
+					var sft:SearchFieldTypeDTO = id_FilterGridView.id_FieldsCmbo.selectedItem as SearchFieldTypeDTO;
+					var searchStr:String = id_FilterGridView.id_SearchTextInput.text;
+					
+					var e:SearchPatientDocumentEvent;
+					
+					switch( page )
+					{
+						case DMEventStrings.GOTO_FIRST_PAGE:
+							e = new SearchPatientDocumentEvent( sft.FieldID, searchStr, 1 );
+							break;
+						case DMEventStrings.GOTO_NEXT_PAGE:
+							e = new SearchPatientDocumentEvent( sft.FieldID, searchStr, ++model.patientDocSearchPageNo );
+							break;
+						case DMEventStrings.GOTO_PREVIOUS_PAGE:
+							e = new SearchPatientDocumentEvent( sft.FieldID, searchStr, ++model.patientDocSearchPageNo );
+							break;
+						case DMEventStrings.GOTO_LAST_PAGE:
+							e = new SearchPatientDocumentEvent( sft.FieldID, searchStr, model.patientDocumentTotalPageNo );
+							break;
+					}
+					
+					cursorManager.setBusyCursor();
+					CairngormEventDispatcher.getInstance().dispatchEvent( e );
+					
+					id_FilterGridView.EnableNavigationButtons( model.patientDocSearchPageNo, model.patientDocumentTotalPageNo );
+					
+				}
+			}
+			
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				addEventListeners();
+				
+				
+				// for every record.
+				addEventListener( DMEventStrings.VIEW_DOCUMENT, onViewDocumentClick );
+				id_FilterGridView.id_FieldsCmbo.setFocus();
+			}
+			
+			private function onViewDocumentClick(event:Event):void
+			{
+				/* file. = new File();
+				file.addEventListener(Event.SELECT, onFileSelect);
+				file.browseForOpen("Browse for a file:"); */
+			}
+			
+			private function OnSearchClick(event:MouseEvent):void
+			{
+				var searchStr:String = id_FilterGridView.id_SearchTextInput.text;
+			// As we implement the Masking on Date search so need to implement this check here. 
+				if(searchStr.indexOf('/',0) != -1)
+				{
+					if(!ValidationUtils.isValidDateText(searchStr)) // always send valid date for search
+					{
+						Alert.show('Please enter valid date', 'info', 4, FlexGlobals.topLevelApplication.mainContainer);
+						return;
+					}
+				}
+			
+				if( id_FilterGridView.id_FieldsCmbo.selectedItem && searchStr && searchStr.length )
+				{
+					var sft:SearchFieldTypeDTO = id_FilterGridView.id_FieldsCmbo.selectedItem as SearchFieldTypeDTO;
+					while( searchStr.indexOf( "/" ) !=-1 )
+						searchStr = searchStr.replace( "/", "-" ); //for REST url
+					var e:SearchPatientDocumentEvent = new SearchPatientDocumentEvent( sft.FieldID, searchStr, 1 );
+					cursorManager.setBusyCursor();
+					CairngormEventDispatcher.getInstance().dispatchEvent( e );
+				}
+				else
+				{
+					Alert.show("Plese enter desired field from \"Fields List\" and some thing to serach", "Search Field Empty",4, FlexGlobals.topLevelApplication.mainContainer );
+				}
+			}
+			
+			protected function ListOnlySelectionEventHandler(event:ListOnlySelectionEvent):void
+			{
+				var sel:DocumentSectionTypeDTO 	= event.selection as DocumentSectionTypeDTO;
+				var from:String					= event.from;
+				var to:String					= event.to;
+				
+				if( sel || ( from.length > 0 && to.length > 0 ) )
+				{
+					var searchStr:String = ",,";
+					if( sel != null)
+						searchStr = sel.SectionName + "," + from + "," + to ;
+					else 
+						searchStr ="," + from + "," + to ;
+					
+					var e:SearchPatientDocumentEvent = new SearchPatientDocumentEvent( 0 , searchStr, DMConstant.FIRST_PAGE_NUMBER );
+					CairngormEventDispatcher.getInstance().dispatchEvent( e );
+					
+					
+				}
+				else
+				{
+					Alert.show( "Please Select Field / Date Range", "Invalid Data", 4, this);
+				}
+			}
+			
+			protected function id_FilterGridView_RefreshViewHandler(event:Event):void
+			{
+				//DMQuivusCombineEventDispatcher.LoadDocumentList( 1 );
+				OnSearchClick(null);
+			}
+			
+			public function addEventListeners():void
+			{
+				id_FilterGridView.id_btnSearch.addEventListener(MouseEvent.CLICK, OnSearchClick);
+				id_FilterGridView.addEventListener( DMEventStrings.LIST_ONLY , 			filtergridview1_ListOnlyHandler );
+				id_FilterGridView.addEventListener( DMEventStrings.GOTO_FIRST_PAGE , 	GoToPageHandler );
+				id_FilterGridView.addEventListener( DMEventStrings.GOTO_LAST_PAGE , 		GoToPageHandler );
+				id_FilterGridView.addEventListener( DMEventStrings.GOTO_NEXT_PAGE , 		GoToPageHandler );
+				id_FilterGridView.addEventListener( DMEventStrings.GOTO_PREVIOUS_PAGE ,  GoToPageHandler );
+				id_FilterGridView.addEventListener( DMEventStrings.REFRESH_VIEW , 		id_FilterGridView_RefreshViewHandler );
+			}
+			
+			public function removeAllEventListeners():void
+			{
+				id_FilterGridView.id_btnSearch.removeEventListener(MouseEvent.CLICK, OnSearchClick);
+				id_FilterGridView.removeEventListener( DMEventStrings.LIST_ONLY , 			filtergridview1_ListOnlyHandler );
+				id_FilterGridView.removeEventListener( DMEventStrings.GOTO_FIRST_PAGE , 	GoToPageHandler );
+				id_FilterGridView.removeEventListener( DMEventStrings.GOTO_LAST_PAGE , 		GoToPageHandler );
+				id_FilterGridView.removeEventListener( DMEventStrings.GOTO_NEXT_PAGE , 		GoToPageHandler );
+				id_FilterGridView.removeEventListener( DMEventStrings.GOTO_PREVIOUS_PAGE ,  GoToPageHandler );
+				id_FilterGridView.removeEventListener( DMEventStrings.REFRESH_VIEW , 		id_FilterGridView_RefreshViewHandler );
+			}
+			
+			public function setSearchFieldTypes(types:ArrayCollection):void
+			{
+				//DMQuivusCombineEventDispatcher.LoadDMStaticData();
+				id_FilterGridView.DataProvider = types;
+			}
+			
+			
+		]]>
+	</fx:Script>
+	
+	<s:SkinnableContainer  styleName="blackTitleBGContainerSkin" width="100%" >
+		
+		
+		<s:layout>
+			<s:VerticalLayout gap="5" horizontalAlign="right" paddingRight="2" paddingTop="8" />
+		</s:layout>
+		<s:Label id="id_TotalRecords" text="{'Total Records'+' '+ '('+model.totalRecord.toString()+')'}" 
+				 horizontalCenter="0" fontFamily="Calibri"  color="#F1BE6E" fontWeight="bold" fontSize="13" includeInLayout="{id_TotalRecords.visible}"/>
+		<LiveGridView1:FilterViewForGrid id="id_FilterGridView" width="100%" DataProvider="{model.searchFieldTypeDTOList}"
+										
+										/>
+		<mx:AdvancedDataGrid id="id_DocumentGrid"
+							 rowCount="5" 
+							 verticalScrollBarStyleName="VScrollBar"
+							 width="100%"  sortExpertMode="true"
+							 initialize="id_DocumentGrid.collapseAll();" >  
+			
+			<mx:dataProvider>
+				<!--<mx:GroupingCollection2 id="id_GroupCol" source="{DataProvider}" childrenField="">
+				<mx:grouping>
+				<mx:Grouping>
+				<mx:GroupingField name="SectionName"/>
+				<mx:GroupingField name="SectionName"/>
+				</mx:Grouping>
+				</mx:grouping>
+				</mx:GroupingCollection2>-->
+				<mx:HierarchicalData id="id_GroupCol" source="{DataProvider}" 
+									 childrenField="ChildDocument"/>
+			</mx:dataProvider>
+			
+			<mx:columns>
+				<mx:AdvancedDataGridColumn width="80" dataField="SectionName" itemRenderer="mx.controls.Label"  	
+										   headerText="Doc. Type" headerRenderer="com.gazuntite.provider.live.services.documentMgmt.view.itemRenderer.MyCustomHeader" />
+				<mx:AdvancedDataGridColumn width="100" dataField="PatientFullName" itemRenderer="mx.controls.Label" 
+										   headerText="Patient" headerRenderer="com.gazuntite.provider.live.services.documentMgmt.view.itemRenderer.MyCustomHeader"/>
+				<mx:AdvancedDataGridColumn width="80" dataField="StrUploadedDate" itemRenderer="mx.controls.Label" 
+										   headerText="Date" headerRenderer="com.gazuntite.provider.live.services.documentMgmt.view.itemRenderer.MyCustomHeader"/>
+				<mx:AdvancedDataGridColumn width="100" dataField="DocumentName" itemRenderer="mx.controls.Label" 
+										   headerText="Doc. Name" headerRenderer="com.gazuntite.provider.live.services.documentMgmt.view.itemRenderer.MyCustomHeader"/>
+				<mx:AdvancedDataGridColumn width="100" dataField="UploadedByUserFullName"  
+										   headerText="Uploaded By" headerRenderer="com.gazuntite.provider.live.services.documentMgmt.view.itemRenderer.MyCustomHeader"
+										   itemRenderer="com.gazuntite.provider.live.services.documentMgmt.view.itemRenderer.NameRenderer"/>
+				<mx:AdvancedDataGridColumn dataField="CommentNote" itemRenderer="mx.controls.Label" wordWrap="true"
+										   headerText="Notes"  headerRenderer="com.gazuntite.provider.live.services.documentMgmt.view.itemRenderer.MyCustomHeader"/>
+				<mx:AdvancedDataGridColumn width="100" headerText="" 		itemRenderer="com.gazuntite.provider.live.services.documentMgmt.view.itemRenderer.EditDeleteRenderer" />
+				
+			</mx:columns>
+		</mx:AdvancedDataGrid>
+	</s:SkinnableContainer>
+</s:Group>

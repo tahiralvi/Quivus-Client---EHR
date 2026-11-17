@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   creationComplete="popupgroup1_creationCompleteHandler(event)" xmlns:components1="com.gazuntite.controls.extended.components.*"
+					   >
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.patientProfileCustomization.ManageUserPatientProfileBarSettingEvent;
+			import com.adobe.Quivus.events.staticData.LoadProfileBarStaticDataEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.scrollbarDownButton;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.scrollbarUpButton;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			protected function id_profileTree_clickHandler(event:MouseEvent):void
+			{
+				// ***** NOTE :: see ProfilePanelHeader.mxml for impl; ****
+				trace ( id_profileTree.selectedItem );
+			}
+
+			protected function id_CloseBtn_clickHandler(event:MouseEvent):void
+			{
+				this.removePopup();
+			}
+
+
+			protected function id_profileTree_creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				id_profileTree.setStyle("backgroundAlpha", 0);
+				id_profileTree.setStyle( "backgroundColor", 0xCBE2EF );
+				
+			}
+
+
+			protected function button1_creationCompleteHandler(event:FlexEvent):void
+			{
+				/* id_downBtn.visible = false;
+				id_upBtn.visible = false;
+				if(model.userProfileBarStaticDataList)
+				{
+					if(model.userProfileBarStaticDataList.length >= 4)
+					{
+						id_downBtn.visible = true;
+						id_upBtn.visible = true;
+					}
+				} */
+			}
+			
+			
+			[Embed('com/adobe/Quivus/view/controls/skins/assets/Expand.png')]
+			[Bindable]
+			public var openIcon:Class;
+			
+			[Embed('com/adobe/Quivus/view/controls/skins/assets/Collapse.png')]
+			[Bindable]
+			public var closeIcon:Class;
+
+
+
+			protected function id_upBtn_clickHandler(event:MouseEvent):void
+			{
+				if(id_profileTree.verticalScrollPosition > 0)
+					id_profileTree.verticalScrollPosition--;
+					
+			}
+
+
+			protected function id_downBtn_clickHandler(event:MouseEvent):void
+			{
+				
+				trace("MAX "+id_profileTree.maxVerticalScrollPosition);
+				trace("C "+id_profileTree.verticalScrollPosition);
+				if(id_profileTree.verticalScrollPosition < id_profileTree.maxVerticalScrollPosition)
+					id_profileTree.verticalScrollPosition++;
+			}
+
+			protected function popupgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if( UtilityFunctions.IsNullOrEmpty( model.userProfileBarStaticDataList ) )
+				{
+					var pbsdEvent : LoadProfileBarStaticDataEvent = new LoadProfileBarStaticDataEvent();
+					CairngormEventDispatcher.getInstance().dispatchEvent( pbsdEvent );
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace components "com.zigron.controls.extended.components.*";
+		
+		.pTree 
+		{
+			/* defaultLeafIcon: ClassReference(null); */
+			
+			/* folderOpenIcon:  ClassReference("com.adobe.Quivus.view.controls.skins.buttonSkins.treePlusIcon"); 
+			folderClosedIcon: ClassReference("com.adobe.Quivus.view.controls.skins.buttonSkins.treeMinusIcon"); 
+			 */
+			
+			/* background-alpha: 0;
+			border-visible: false;
+			border-alpha: 0;
+			backgroundAlpha: 0;
+			
+			background-skin: false;
+			backgroundSkin: ClassReference(null); */
+			backgroundAlpha: 0;
+			backgroundColor: #CBE2EF;
+			borderStyle: none;
+			borderThickness: 0;
+			
+			
+		
+			folderClosedIcon : ClassReference(null);
+			folderOpenIcon : ClassReference(null);
+			defaultLeafIcon : ClassReference(null);
+			
+		/* 	disclosureOpenIcon :ClassReference("com.adobe.Quivus.view.controls.skins.buttonSkins.treeMinusIcon"); 
+			disclosureClosedIcon :ClassReference("com.adobe.Quivus.view.controls.skins.buttonSkins.treePlusIcon"); */
+			
+			
+			paddingLeft: 1;			
+			/* disclosureOpenIcon : @Embed(source="assets/plus.gif");
+			disclosureClosedIcon : @Embed(source="assets/minus.gif") */
+
+
+			
+		}
+		
+	</fx:Style>
+
+	<components1:layout>
+		<s:HorizontalLayout paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" />
+	</components1:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<!--<s:BorderContainer id="id_leftArrowArea" width="20" height="100%">
+		
+	</s:BorderContainer>
+	-->
+		
+		
+		<!--<s:VGroup id="id_BodyArea">-->
+			<s:Group>
+				<s:filters>
+					<s:DropShadowFilter blurX="4.0" blurY="4.0" distance="4.0" hideObject="false" inner="false" color="0x000000" strength="1" alpha="0.5" quality="2" knockout="false" angle="90"/>
+				</s:filters>
+				
+				<s:Rect height="199" id="rect3" radiusX="3" width="165" x="0" y="0">
+					<s:fill>
+						<s:LinearGradient rotation="270">
+							<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="0"/>
+							<s:GradientEntry alpha="1" color="#FFFFFF" ratio="0.25882352941176473"/>
+							<s:GradientEntry alpha="1.0" color="#E4E4E4" ratio="1"/>
+						</s:LinearGradient>
+					</s:fill>
+					<s:filters>
+						<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+					</s:filters>
+				</s:Rect>
+				
+				<s:Path data="M 156 0 L 3 0 C 1.344 0 0 1.343 0 3 L 0 147 C 0 148.657 1.344 150 3 150 L 97 150 L 97 169 C 97 170.657 98.344 172 100 172 L 156 172 C 157.656 172 159 170.657 159 169 L 159 147 L 159 145 L 159 3 C 159 1.343 157.657 0 156 0 Z" x="3" y="17">
+					<s:fill>
+						<s:LinearGradient rotation="90">
+							<s:GradientEntry alpha="1.0" color="#CBE2EF" ratio="0"/>
+							<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="0.5333333333333333"/>
+							<s:GradientEntry alpha="1.0" color="#CBE2EF" ratio="1"/>
+						</s:LinearGradient>
+					</s:fill>
+					<s:filters>
+						<s:DropShadowFilter alpha="0.75" angle="90" blurX="3" blurY="3" color="0x000000" distance="0" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+					</s:filters>
+				</s:Path>
+				
+			<s:Group x="5" y="5" width="147">
+				<fx:Script>
+					<![CDATA[
+						import mx.events.FlexEvent;
+					]]>
+				</fx:Script>
+				
+				
+				<s:VGroup gap="1" paddingLeft="3">
+					<s:Group>
+						
+						<s:Label color="#111111" fontFamily="Calibri Bold" text="Change Quick View"  />
+					</s:Group>
+					
+					
+				<mx:Tree id="id_profileTree" itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.TreeItemRenderer"						 
+						 defaultLeafIcon="{null}" chromeColor="#CBE2EF"  
+						 showRoot="true" liveScrolling="false"  
+						 disclosureClosedIcon="{closeIcon}"
+						 disclosureOpenIcon="{openIcon}"
+						 dataProvider="{model.userProfileBarStaticDataList}" click="id_profileTree_clickHandler(event)"
+						 styleName="pTree" width="150" height="145" rowHeight="18" creationComplete="id_profileTree_creationCompleteHandler(event)"
+						  y="20" verticalScrollPolicy="off" 
+
+						  contentBackgroundColor="#CBE2EF" contentBackgroundAlpha="0" selectionColor="#555555" selectable="true"/>				
+				
+				<!--//id_profileTree.verticalScrollPosition decrement commented..-->
+				<s:HGroup paddingTop="8" paddingLeft="0" paddingRight="3" gap="0" width="100%" horizontalAlign="right">
+					
+					<s:Button id="id_SetAsDefault" buttonMode="true" 
+							  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.setAsDefaultBtn"
+							   />
+					<mx:Spacer width="22" />
+					
+					
+				<s:Button id="id_upBtn" click="id_upBtn_clickHandler(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.scrollbarUpButton_small" 
+						   creationComplete="button1_creationCompleteHandler(event)" 
+						   buttonMode="true" useHandCursor="true" toolTip="Scroll Up"/>
+				<s:Button id="id_downBtn" click="id_downBtn_clickHandler(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.scrollbarDownButton_small" 						  
+						  buttonMode="true" useHandCursor="true" toolTip="Scroll Down"/>
+				
+				</s:HGroup>
+					
+					
+				</s:VGroup>
+				
+				</s:Group>
+			<s:Button buttonMode="true" id="id_CloseBtn" click="id_CloseBtn_clickHandler(event)" toolTip="Close" 
+					  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.popupCloseBtnSkin" tabIndex="0" x="142" y="2"
+					   height="16" width="16"/>
+			
+				<!--<s:Path data="M 6.22 5.40 L -0.02 5.40 3.10 -0.01 Z " height="5" id="path1" rotation="180" width="7" x="13" y="12">
+					<s:fill>
+						<s:SolidColor color="#333333"/>
+					</s:fill>
+				</s:Path>-->
+				
+			</s:Group>
+	
+</components1:PopupGroup>

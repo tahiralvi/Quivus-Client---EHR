@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009">
+	<fx:Metadata>
+		/* [HostComponent("spark.components.ToggleButton")] */
+		[HostComponent("com.gazuntite.controls.extended.components.CounterToggleButton")]
+	</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect height="18" height.up="17.95" id="rect4" includeIn="disabled,disabledAndSelected,up" radiusX="2.99979" radiusY="2.99979" width="30" width.up="50.05" x="0" y="1">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#E3E3E3" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#ADADAD" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.7000000000000001" alpha.up="0.75" angle="90" blurX="2" blurX.up="1" blurY="2" blurY.up="1" color="0x000000" color.up="#333333" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1" alpha.disabled="0.75" blurX.disabled="1" blurY.disabled="1" color.disabled="#333333"/>
+			<s:DropShadowFilter alpha="0.2" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="18" id="rect0" includeIn="down,over" radiusX="2.99979" radiusY="2.99979" width="30" width.down="50" width.over="50" x="0" x.down="0.05" x.over="0.05" y="1">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#AFD1FF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#6593D5" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.7000000000000001" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1" blurX.over="1" blurY.over="1" alpha.over="0.75" color.over="#333333" alpha.down="0.75" blurX.down="1" blurY.down="1" color.down="#333333"/>
+			<s:DropShadowFilter alpha="0.2" alpha.down="0.75" angle="90" blurX="0" blurX.down="2" blurY="0" blurY.down="2" color="#FFFFFF" color.down="#333333" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="27" id="rect19" includeIn="downAndSelected,overAndSelected,upAndSelected" radiusX="3" width="30" width.downAndSelected="50" width.overAndSelected="50" width.upAndSelected="50" x="0" x.downAndSelected="0.05" x.overAndSelected="0.05" x.upAndSelected="0.05" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#BEC0E8" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#B8BBE0" ratio="0.47058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#B4B6D1" ratio="0.47058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#E8E8FF" ratio="0.8509803921568627"/>
+				<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.25" angle="270" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:BitmapImage alpha.disabled="0.6" alpha.disabledAndSelected="0.6" smooth="true" source="@Embed('../assets/icons/addpatient.png')" x="6" y="3"/>
+	<s:Rect height="13" includeIn="down,downAndSelected,over,overAndSelected,up,upAndSelected" radiusX="2" width="19" x="28.05" y="4">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#F45454" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#C52727" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="#000000" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.25" angle="90" blurX="1" blurY="1" color="#FFFFFF" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:RichText color="#FFFFFF" fontFamily="Calibri" fontSize="10" includeIn="down,downAndSelected,over,overAndSelected,up,upAndSelected" tabStops="S0" text="{hostComponent.counter}" x="32" y="6"/>
+</s:Skin>

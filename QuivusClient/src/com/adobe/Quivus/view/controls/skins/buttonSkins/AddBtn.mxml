@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+	</s:states>
+	<s:Rect height="14" radiusX="0" width="14" x="0.5" y="0.5">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#999999" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:SolidColor color="#FFFFFF"/>
+		</s:fill>
+	</s:Rect>
+	<s:Rect height="11" radiusX="0" width="11" x="2" y="2">
+		<s:fill>
+			<s:LinearGradient rotation="90" rotation.down="270">
+				<s:GradientEntry alpha="1.0" color="0x999999" ratio="0" color.over="#FFCB00" color.down="#FFCB00"/>
+				<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="1" color.over="#FF9300" color.down="#FF9300"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<s:RichText color="#FFFFFF" fontFamily="Arial" fontSize="12" tabStops="S0" text="+" x="4" y="3">
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="0" blurY="0" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:RichText>
+	<s:RichText color="#333333" fontFamily="Calibri" fontSize="11" tabStops="S0" text="Add" x="21" y="2" color.over="#FF9300" color.down="#FF9300" color.disabled="#999999"/>
+</s:Skin>

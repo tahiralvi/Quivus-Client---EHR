@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<flexLibProperties includeAllClasses="true" useMultiPlatformConfig="false" version="3">
+  <includeClasses>
+    <classEntry path="com.adobe.quivus.skins.chrome.containerSkins.QIBarbackgroundSkin"/>
+    <classEntry path="com.adobe.quivus.skins.chrome.containerSkins.QIBarbackgroundSkin_small"/>
+    <classEntry path="com.adobe.quivus.skins.chrome.buttonSkins.PMHTabBottomButtonsSkin"/>
+    <classEntry path="com.adobe.quivus.skins.chrome.tabBarSkins.QITabsSkin"/>
+    <classEntry path="com.adobe.quivus.skins.chrome.tabBarSkins.QITabbarSkin"/>
+  </includeClasses>
+  <includeResources/>
+  <namespaceManifests/>
+</flexLibProperties>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<flexLibProperties includeAllClasses="true" useMultiPlatformConfig="false" version="3">
+  <includeClasses>
+    <classEntry path="spark.resize.verticalResizeHandle"/>
+    <classEntry path="com.zigron.controls.extended.components.LabelDateField"/>
+    <classEntry path="com.zigron.controls.extended.components.vitals.VitalsEvent"/>
+    <classEntry path="com.zigron.controls.extended.components.LabelTextArea"/>
+    <classEntry path="com.zigron.controls.extended.components.TogglePropertyButton"/>
+    <classEntry path="com.zigron.controls.extended.components.CheckNavigator"/>
+    <classEntry path="com.zigron.controls.extended.components.CheckButtonBarButton"/>
+    <classEntry path="com.zigron.controls.extended.components.ListTree"/>
+    <classEntry path="com.zigron.controls.extended.components.PopupWindow"/>
+    <classEntry path="com.zigron.controls.extended.skins.ComboBoxRegisterationSkin"/>
+    <classEntry path="com.zigron.controls.extended.skins.LabelNumericStepperSkin2"/>
+    <classEntry path="com.zigron.controls.extended.skins.LabelTextAreaSkin"/>
+    <classEntry path="com.zigron.controls.custom.calendar.cal.NoopCalendarDescriptor"/>
+    <classEntry path="com.zigron.controls.custom.calendar.cal.QuivusCalendar"/>
+    <classEntry path="com.zigron.controls.extended.skins.comboButtonSkin"/>
+  </includeClasses>
+  <includeResources/>
+  <namespaceManifests/>
+</flexLibProperties>

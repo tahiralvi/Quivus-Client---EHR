@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true"
+				creationComplete="itemrenderer1_creationCompleteHandler(event)"
+				width="100%" height="22" 
+				>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.rowListBG;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.rowListBGOver;
+			
+			import mx.events.FlexEvent;
+
+			protected function itemrenderer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				/* id_Name.text = data.FirstName + " " + data.MiddleName + " " + data.LastName;
+				id_DOB.text  = ( data.DOB.month + 1 ) + "/" + data.DOB.date + "/" + data.DOB.fullYear ;
+				id_QID.text  = data.QuivusID; */
+			}
+
+
+			protected function id_bg_mouseOverHandler(event:MouseEvent):void
+			{
+				id_bg.setStyle("skinClass", rowListBGOver);
+			}
+
+
+			protected function id_bg_mouseOutHandler(event:MouseEvent):void
+			{
+				id_bg.setStyle("skinClass", rowListBG);
+			}
+
+		]]>
+	</fx:Script>
+	
+		
+		<!--<s:HGroup width="100%" paddingTop="2" paddingBottom="2" gap="1">-->
+		
+		<s:SkinnableContainer id="id_bg" height="22" width="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.rowListBG"
+							  mouseOver="id_bg_mouseOverHandler(event)" mouseOut="id_bg_mouseOutHandler(event)"  buttonMode="true">
+			<s:layout>
+				<s:HorizontalLayout verticalAlign="middle" gap="1" />
+				</s:layout>
+		
+			
+			<s:HGroup width="90" paddingLeft="7">
+				<s:Label color="#000000" id="id_Name" text="{ data.FirstName + ' ' + data.MiddleName + ' ' + data.LastName }" 
+						 fontFamily="Calibri Bold" fontSize="12" verticalAlign="middle"
+						 maxDisplayedLines="1" maxWidth="99"/>
+			</s:HGroup>
+			
+			
+			<s:HGroup width="30" paddingLeft="4">
+				<s:Label color="#666666" text="DOB:" fontFamily="Calibri" fontSize="12" verticalAlign="middle" />
+				
+			</s:HGroup>
+			<s:HGroup width="70">
+				<s:Label color="#000000" id="id_DOB" text="{ ( data.DOB.month + 1 ) + '/' + data.DOB.date + '/' + data.DOB.fullYear }" 
+						 fontFamily="Calibri" fontSize="12" verticalAlign="middle" />
+			</s:HGroup>
+			
+			<s:HGroup width="30" paddingLeft="4">
+				<s:Label color="#666666" text="SSN:" fontFamily="Calibri" fontSize="12" verticalAlign="middle"/>
+			
+			</s:HGroup>			
+			<s:HGroup width="100%" maxWidth="80" paddingRight="4">
+				<s:Label color="#000000" id="id_SSN" text="{ data.SSN }" fontFamily="Calibri" fontSize="12" verticalAlign="middle" />
+			</s:HGroup>
+		</s:SkinnableContainer>	
+		<!--</s:HGroup>
+		<mx:HRule width="100%" />-->
+	
+</s:ItemRenderer>

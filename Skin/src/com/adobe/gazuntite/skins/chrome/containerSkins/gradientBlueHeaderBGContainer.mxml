@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+
+    ADOBE SYSTEMS INCORPORATED
+    Copyright 2008 Adobe Systems Incorporated
+    All Rights Reserved.
+
+    NOTICE: Adobe permits you to use, modify, and distribute this file
+    in accordance with the terms of the license agreement accompanying it.
+
+-->
+
+<!--- The default skin class for a Spark SkinnableContainer container.  
+
+     @see spark.components.SkinnableContainer
+        
+      @langversion 3.0
+      @playerversion Flash 10
+      @playerversion AIR 1.5
+      @productversion Flex 4
+-->
+<s:Skin xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" 
+    xmlns:fb="http://ns.adobe.com/flashbuilder/2009" alpha.disabled="0.5">
+
+    <fx:Metadata>
+    <![CDATA[ 
+        /** 
+         * @copy spark.skins.spark.ApplicationSkin#hostComponent
+         */
+        [HostComponent("spark.components.SkinnableContainer")]
+    ]]>
+    </fx:Metadata> 
+    
+    <s:states>
+        <s:State name="normal" />
+        <s:State name="disabled" />
+    </s:states>
+    
+    <!--- Defines the appearance of the SkinnableContainer class's background. -->
+	<!--<s:Rect height="21" id="rect94" width="100%" x="0" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="0xFF7800" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#FE5C0C" ratio="0.7019607843137254"/>
+				<s:GradientEntry alpha="1.0" color="#EA8D17" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	-->
+	
+	<s:Rect height="29" id="rect89" radiusX="5" width="250" y="8">
+		<s:filters>
+			<s:DropShadowFilter alpha="1" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="2" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#F4F5F5" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#C2C8D3" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#FFFFFF" joints="miter" miterLimit="4" weight="2"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Rect height="25" radiusX="3" width="250" y="10">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#6F85A2" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#7D92AF" ratio="0.5294117647058824"/>
+				<s:GradientEntry alpha="1.0" color="#899BB3" ratio="0.5333333333333333"/>
+				<s:GradientEntry alpha="1.0" color="#B4BFCD" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	
+	<!--<s:RichText color="#000000" fontFamily="Calibri Bold" fontSize="12" id="richtext30" kerning="off" tabStops="S0" text="Write Notes" x="8" y="6"/>
+	-->
+	<s:Path data="M 16.37 14.17 L 0.03 14.17 8.20 0.02 Z " height="9.15" width="18.35"  x="194" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1" color="#FFFFFF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#eeeeee" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Path>
+    
+    <!--
+        Note: setting the minimum size to 0 here so that changes to the host component's
+        size will not be thwarted by this skin part's minimum size.   This is a compromise,
+        more about it here: http://bugs.adobe.com/jira/browse/SDK-21143
+    -->
+    <!--- @copy spark.components.SkinnableContainer#contentGroup -->
+    <s:Group id="contentGroup" left="0" right="0" top="0" bottom="0" minWidth="0" minHeight="0">
+        <s:layout>
+            <s:BasicLayout/>
+        </s:layout>
+    </s:Group>
+
+</s:Skin>

@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   xmlns:extended="com.adobe.Quivus.view.controls.extended.*" 
+					   xmlns:components1="com.gazuntite.controls.extended.components.*" 
+					   creationComplete="popupgroup1_creationCompleteHandler(event)" 
+					   >
+	<fx:Metadata>
+		[Event(name="SearchListPatientSelected", type="com.gazuntite.provider.search.services.patient.view.events")]
+	</fx:Metadata>
+	<fx:Script>
+		
+	</fx:Script>
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.common.dto.PatientDTO;
+			import com.gazuntite.provider.search.services.patient.model.SearchPatientModelLocator;
+			import com.gazuntite.provider.search.services.patient.view.events.PatientSelectedEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var model : SearchPatientModelLocator = SearchPatientModelLocator.getInstance();
+			
+			private var m_sSearchString:String
+			
+			
+			public function get SearchString():String
+			{
+				return m_sSearchString;
+			}
+			
+			public function set SearchString(value:String):void
+			{
+				m_sSearchString = value;
+			}
+			
+			public function closeHandler( event:MouseEvent = null ):void
+			{
+				//this.removePopup();
+				var e:CloseEvent = new CloseEvent( "closeSearchBox", true );
+				dispatchEvent( e );
+			}
+			
+			public function getListLength():Number{
+				
+				if(id_SearchList && id_SearchList.dataProvider.length < 5)
+				{
+					trace( "list hieght: " + id_SearchList.dataProvider.length * 10);
+					return id_SearchList.dataProvider.length * 10;					
+				}
+				else
+				{
+					return 115;
+				}
+			} 
+			
+			public function refreshList(query:String):void
+			{
+				if( null == model.SearchPatientResults ) 
+				{
+					trace("model.SearchPatientResults is null");
+					return;
+				}
+				//trace( "refreshing List for " + query + " total b4 " + model.SearchPatientResults.Patients.length );
+				//var d:Date = new Date();
+				//trace( "time refresh start " + d.minutes, d.seconds )
+				SearchString = query;
+				/* if( null == model.SearchPatientResults.Patients.filterFunction )
+				model.SearchPatientResults.Patients.filterFunction = filterForData;
+				
+				model.SearchPatientResults.Patients.refresh(); */
+				
+				/* var d:Date = new Date();
+				trace( "time refresh end " + d.minutes, d.seconds )
+				trace( "refreshList for " + query + " total after " + model.SearchPatientResults.Patients.length ); */
+			}
+			
+			public function setListHeight():void
+			{
+				
+				if(id_SearchList && id_SearchList.dataProvider && id_SearchList.dataProvider.length < 5)
+				{
+					trace( "list hieght: " + id_SearchList.dataProvider.length * 25);
+					id_SearchList.height= id_SearchList.dataProvider.length * 25;
+					id_listBorder.height = (id_SearchList.dataProvider.length * 25) + 15;
+				}
+				else
+				{
+					id_SearchList.height= 115;
+					id_listBorder.height = 130;
+				}
+			}
+			
+			protected function id_SearchList_creationCompleteHandler(event:FlexEvent):void
+			{
+				setListHeight();
+				
+				id_SearchList.setStyle("useRollOver", true);
+				
+				
+				id_SearchList.setStyle("backgroundColor", 0xFFFFFF );
+				id_SearchList.setStyle( "rollOverColor", 0xF7C174 );
+				id_SearchList.setStyle( "textRollOverColor", 0x333333 );
+				id_SearchList.setStyle( "selectionColor", 0x7c632c ); 
+				
+			}
+			
+			private function filterForData(item:Object):Boolean
+			{
+				var retValue:Boolean;
+				var arr:Array;
+				var dto:PatientDTO = item as PatientDTO;
+				
+				if( SearchString.indexOf( ',' ) != -1 )
+				{
+					arr = SearchString.split( "," );
+				}
+				else if ( SearchString.indexOf( ' ' ) != -1 ) // its a Name 
+				{
+					arr = SearchString.split( ' ' );
+				}
+				
+				if( ! UtilityFunctions.IsNullOrEmpty( arr ) )
+				{
+					var i:int;
+					var token:String;
+					for( i = 0; i < arr.length; i++ )
+					{
+						token = arr[1];
+						retValue = filterPatient( dto, token );
+					}
+				}
+				else if( SearchString )
+				{
+					retValue = filterPatient( dto, SearchString )
+				}
+				/* else
+				{
+				return true;
+				} */
+				
+				return retValue;
+			}
+			
+			private function filterPatient( dto:PatientDTO, criteria:String ):Boolean
+			{
+				var retValue:Boolean;
+				if(retValue == false && dto.FirstName!=null && dto.FirstName.toLowerCase().search( criteria.toLowerCase() ) != -1 )
+				{
+					retValue = true;
+				}
+				
+				if(retValue == false && dto.LastName!=null && dto.LastName.toLowerCase().search( criteria.toLowerCase() ) != -1 )
+				{
+					retValue = true;
+				}
+				
+				if(retValue == false && dto.MiddleName!=null && dto.MiddleName.toLowerCase().search( criteria.toLowerCase() ) != -1 )
+				{
+					retValue = true;
+				}
+				
+				if(retValue == false && dto.QuivusID!=null && dto.QuivusID.toLowerCase().search( criteria.toLowerCase() ) != -1 )
+				{
+					retValue = true;
+				}
+				
+				if(retValue == false && dto.SSN!=null && dto.SSN.toLowerCase().search( criteria.toLowerCase() ) != -1 )
+				{
+					retValue = true;
+				}
+				
+				trace("PatientSearchList::filterPatient -- > retValue =", retValue, "Patient Name: ", dto.FullName );
+				return retValue;
+			}
+			
+			protected function id_SearchList_clickHandler(event:MouseEvent):void
+			{
+				if( event.target is spark.components.Button )
+				{
+					event.stopImmediatePropagation();
+					return;
+				}
+				
+				if(id_SearchList.selectedItem)
+				{
+					var evt:PatientSelectedEvent = new PatientSelectedEvent( PatientSelectedEvent.PATIENT_SELECTED );
+					this.dispatchEvent( evt );
+					closeHandler(); 
+					
+				}
+				
+				//see patientExampnael for event
+			}
+			
+			
+			protected function popupgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				FlexGlobals.topLevelApplication.addEventListener(MouseEvent.MOUSE_DOWN, function(event:MouseEvent):void
+				{
+					closeHandler()
+				});
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<components1:layout>
+		<s:VerticalLayout gap="0" paddingBottom="0" paddingLeft="0" paddingTop="-7" verticalAlign="top" horizontalAlign="center" />
+	</components1:layout>
+	
+	<!--<s:BorderContainer id="id_listBorder" backgroundColor="#cccccc" borderColor="#246D9B" cornerRadius="4" 
+	width="100%" height="100%" minWidth="265">-->
+	<s:SkinnableContainer id="id_listBorder" width="100%" minWidth="265" height="100%" 
+						  styleName="greyishWhiteBGContainerSkin">
+		
+		
+		<s:layout>
+			<s:HorizontalLayout gap="0" paddingTop="2" paddingLeft="2" paddingRight="2"
+								paddingBottom="0" verticalAlign="top" horizontalAlign="left" />
+		</s:layout>
+		
+		
+		<s:List id="id_SearchList"  width="100%" height="100%" minHeight="280" minWidth="280" 
+				dataProvider="{model.SearchPatientResults.Patients}" 
+				click="id_SearchList_clickHandler(event)" 
+				creationComplete="id_SearchList_creationCompleteHandler(event)"
+				itemRenderer="com.gazuntite.provider.search.services.patient.view.search.itemRenderer.PatientSearchListRenderer" 
+				styleName="whiteListBoxSkin"
+				/>	
+	</s:SkinnableContainer>
+	<!--</s:BorderContainer>
+	-->
+	<s:Button id="id_CloseBtn" styleName="closeButtonSkin"
+			  click="closeHandler(event)" buttonMode="true" useHandCursor="true" toolTip="Close Patient Search" />
+	
+	
+	
+</components1:PopupGroup>

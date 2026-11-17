@@ -1,0 +1,797 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:SelectablePanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:general="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.comprehensiveHistory.general.*" 
+		 xmlns:notes="com.adobe.Quivus.view.controls.custom.patientExamView.notes.*" 
+		 xmlns:renderer="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.comprehensiveHistory.renderer.*" 
+		 xmlns:components="com.zigron.controls.extended.components.*"
+		 creationComplete="selectablepanel1_creationCompleteHandler(event)" xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.quickInput.DeleteComprehensiveModuleDatabyPatientIDEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.view.controls.custom.DictationPopup;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesBox;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.dictation.QIDictationManager;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.QIInnerSpeakerBtn;
+			import com.adobe.Quivus.view.controls.skins.radioButtonSkins.YNotesRadioButton;
+			import com.adobe.Quivus.view.controls.skins.radioButtonSkins.YRadioButton;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.writeNotesButtonSelected;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.logging.ILogger;
+			import mx.logging.Log;
+			
+			import spark.components.Button;
+			import spark.events.TextOperationEvent;
+			
+			import valueObjects.MedicalHistoryDTO;
+			import valueObjects.ModuleDictationDTO;
+			
+			//private var logger:ILogger = Log.getLogger("com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.comprehensiveHistory.social.GeneralSection");
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var m_oMedicalHistoryDto:MedicalHistoryDTO;
+
+			public var OnNotesClose:Function;
+			
+			private var WasYesNoClicked:Boolean = false;
+			
+			private var _miniView:Boolean = false;
+			
+			[Bindable]
+			public function get miniView():Boolean
+			{
+				return _miniView;
+			}
+			
+			public function set miniView(value:Boolean):void
+			{
+				_miniView = value;
+			}
+			
+			[Bindable]
+			public function get medicalHistoryDto():MedicalHistoryDTO
+			{
+				return m_oMedicalHistoryDto;
+			}
+
+			public function set medicalHistoryDto(value:MedicalHistoryDTO):void
+			{
+				m_oMedicalHistoryDto = value;
+			}
+
+			public override function set AllowContents(value:Boolean):void
+			{
+				super.AllowContents 		= value;
+				
+				if( !value )
+					DeselectAllButtons();
+				
+				if( id_Views )
+				{
+					id_Views.visible 			= value;
+					id_Views.includeInLayout	= value;
+					
+					if( value )
+					{
+						setSelectedTab( id_Views.selectedChild.label );
+						BindTabData( id_Views.selectedChild.label );
+					}
+					
+					/* if( ! model.isNewVisitCreated && value  ) //load data if not new visit
+					{
+						LoadData();
+					} */
+				}
+			}
+
+			public function ClearData( executeBinding:Boolean = false ):void
+			{
+				id_MedicalTab.medicalHistoryDto = null;
+				id_ChildhoodTab.medicalHistoryDto = null;
+				id_SurgicalTab.medicalHistoryDto = null;
+				id_OtherTab.medicalHistoryDto = null;
+			
+				if( executeBinding )
+				{
+					setSelectedTab( id_Views.selectedChild.label );
+					BindTabData( id_Views.selectedChild.label.toLowerCase() );
+				}
+			}
+			
+			
+			
+			/**Tahir Alvi - 16 June, 2012
+			 * Old Function that load data in Interal section of CH - but now we could't use it
+			 **/ 
+			public function LoadData():void
+			{
+				try
+				{
+					id_MedicalTab.medicalHistoryDto 	= QSUtilityFunctions.getGeneralHistoryDTO(  Constants.MEDICAL_MODULE_NAME );
+					if( id_MedicalTab.medicalHistoryDto )
+					{
+						if( ( id_MedicalTab.medicalHistoryDto.IsNone && 
+							id_MedicalTab.medicalHistoryDto.IsNone.toLowerCase() == Constants.STRING_FALSE.toLowerCase() )|| 
+							( id_MedicalTab.medicalHistoryDto.MedicalHistoryNote && id_MedicalTab.medicalHistoryDto.MedicalHistoryNote.length > 0 ) )
+						{
+							id_tab1.id_Y.selected 		= true;
+							id_tab1.id_N.selected 		= false;
+							id_MedicalTab.IsSelected 	= true;
+							id_MedicalTab.Label 		= "You have selected";
+							id_MedicalTab.Label2 		= Constants.STRING_YES_UI;
+							/*  if(id_MedicalTab.medicalHistoryDto.MedicalHistoryNote.length > 0)
+							id_tab1.id_Y.setStyle("skinClass", YNotesRadioButton);  */
+						}
+						else if( id_MedicalTab.medicalHistoryDto.IsNone )
+						{
+							id_tab1.id_Y.selected 		= false;
+							id_tab1.id_N.selected 		= true;
+							id_MedicalTab.IsSelected 	= false;
+							id_MedicalTab.Label 		= "You have selected";
+							id_MedicalTab.Label2 		= Constants.STRING_NONE_UI;
+						}
+					}
+					
+					id_ChildhoodTab.medicalHistoryDto 	= QSUtilityFunctions.getGeneralHistoryDTO(  Constants.CHILDHOOD_MODULE_NAME );
+					if( id_ChildhoodTab.medicalHistoryDto )
+					{
+						if( ( id_ChildhoodTab.medicalHistoryDto.IsNone  && 
+							id_ChildhoodTab.medicalHistoryDto.IsNone.toLowerCase() == Constants.STRING_FALSE.toLowerCase() ) || 
+							( id_ChildhoodTab.medicalHistoryDto.MedicalHistoryNote  && id_ChildhoodTab.medicalHistoryDto.MedicalHistoryNote.length > 0 ) )
+						{
+							id_tab2.id_Y.selected 		= true;
+							id_tab2.id_N.selected 		= false;
+							id_ChildhoodTab.IsSelected 	= true;
+							id_ChildhoodTab.Label 		= "You have selected";
+							id_ChildhoodTab.Label2 		= Constants.STRING_YES_UI;
+							/* if(medicalHistoryDto.MedicalHistoryNote.length > 0)
+							id_tab2.id_Y.setStyle("skinClass", YNotesRadioButton); */
+						}
+						else if( id_ChildhoodTab.medicalHistoryDto.IsNone )
+						{
+							id_tab2.id_Y.selected 		= false;
+							id_tab2.id_N.selected 		= true;
+							id_ChildhoodTab.IsSelected 	= false;
+							id_ChildhoodTab.Label 		= "You have selected";
+							id_ChildhoodTab.Label2 		= Constants.STRING_NONE_UI;
+						}
+					}
+					
+					id_SurgicalTab.medicalHistoryDto 	= QSUtilityFunctions.getGeneralHistoryDTO(  Constants.SURGICAL_MODULE_NAME );
+					if( id_SurgicalTab.medicalHistoryDto )
+					{
+						if( ( id_SurgicalTab.medicalHistoryDto.IsNone  && 
+							id_SurgicalTab.medicalHistoryDto.IsNone.toLowerCase() == Constants.STRING_FALSE.toLowerCase() ) || 
+							( id_SurgicalTab.medicalHistoryDto.MedicalHistoryNote  && id_SurgicalTab.medicalHistoryDto.MedicalHistoryNote.length > 0 ) )
+						{
+							id_tab3.id_Y.selected 		= true;
+							id_tab3.id_N.selected 		= false;
+							id_SurgicalTab.IsSelected 	= true;
+							id_SurgicalTab.Label 		= "You have selected";
+							id_SurgicalTab.Label2 		= Constants.STRING_YES_UI;
+							/* if(medicalHistoryDto.MedicalHistoryNote.length > 0)
+							id_tab3.id_Y.setStyle("skinClass", YNotesRadioButton); */
+						}
+						else if( id_SurgicalTab.medicalHistoryDto.IsNone )
+						{
+							id_tab3.id_Y.selected 		= false;
+							id_tab3.id_N.selected 		= true;
+							id_SurgicalTab.IsSelected 	= false;
+							id_SurgicalTab.Label 		= "You have selected";
+							id_SurgicalTab.Label2 		= Constants.STRING_NONE_UI;
+						}
+					}
+					
+					id_OtherTab.medicalHistoryDto 		= QSUtilityFunctions.getGeneralHistoryDTO(  Constants.OTHER_MODULE_NAME );
+					if( id_OtherTab.medicalHistoryDto )
+					{
+						if( ( id_OtherTab.medicalHistoryDto.IsNone  && 
+							id_OtherTab.medicalHistoryDto.IsNone.toLowerCase() == Constants.STRING_FALSE.toLowerCase() ) || 
+							( id_OtherTab.medicalHistoryDto.MedicalHistoryNote  && id_OtherTab.medicalHistoryDto.MedicalHistoryNote.length > 0 ) )
+						{
+							id_tab4.id_Y.selected 		= true;
+							id_tab4.id_N.selected 		= false;
+							id_OtherTab.IsSelected 	= true;
+							id_OtherTab.Label 		= "You have selected";
+							id_OtherTab.Label2 		= Constants.STRING_YES_UI;
+							/* 	if(medicalHistoryDto.MedicalHistoryNote.length > 0)
+							id_tab4.id_Y.setStyle("skinClass", YNotesRadioButton); */
+						}
+						else if( id_OtherTab.medicalHistoryDto.IsNone )
+						{
+							id_tab4.id_Y.selected 		= false;
+							id_tab4.id_N.selected 		= true;
+							id_OtherTab.IsSelected 	= false;
+							id_OtherTab.Label 		= "You have selected";
+							id_OtherTab.Label2 		= Constants.STRING_NONE_UI;
+						}
+					}
+					
+					//callLater( showRButton );
+					
+				}
+				catch( e:Error )
+				{
+					//logger.error( "GeneralSection::LoadData() errorID:" + e.errorID + ", errorName:" + e.name + ", errorMessage:" + e.message );
+					trace( "GeneralSection::LoadData() errorID:" + e.errorID + ", errorName:" + e.name + ", errorMessage:" + e.message );
+				}
+			}
+			
+
+			protected function id_Views_changeHandler(event:IndexChangedEvent):void
+			{
+				BindTabData( id_Views.selectedChild.label )
+				makeAllLabelsTitleCase();
+				(id_Views.selectedChild as NavigatorContent).label = id_Views.selectedChild.label.toUpperCase();
+				
+				/**
+				 * Ayesha: 16th May 2011
+				 * hiding popUps on view change
+				 **/
+				
+				QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.COMPREHENSIVE_HISTORY);
+			}
+			
+			private function makeAllLabelsTitleCase():void
+			{
+				id_MedicalSec.label		= AppUtils.TitleCase( id_MedicalSec.label 	);
+				id_ChildhoodSec.label	= AppUtils.TitleCase( id_ChildhoodSec.label );
+				id_SurgicalSec.label	= AppUtils.TitleCase( id_SurgicalSec.label 	);
+				id_OtherSec.label		= AppUtils.TitleCase( id_OtherSec.label 	);
+			}
+			
+			private function BindTabData(tabName:String):void
+			{
+				var tabtitle:String = AppUtils.TitleCase( tabName );
+				switch( tabtitle )
+				{
+					case Constants.MEDICAL_MODULE_NAME:
+						//if( ! id_MedicalNotes.medicalHistoryDto )
+							id_MedicalTab.medicalHistoryDto = QSUtilityFunctions.getGeneralHistoryDTO(  Constants.MEDICAL_MODULE_NAME );
+						break;
+					case Constants.CHILDHOOD_MODULE_NAME:
+						//if( ! id_ChildhoodNotes.medicalHistoryDto )
+							id_ChildhoodTab.medicalHistoryDto = QSUtilityFunctions.getGeneralHistoryDTO(  Constants.CHILDHOOD_MODULE_NAME );
+						break;
+					case Constants.SURGICAL_MODULE_NAME:
+						//if( ! id_SurgicalNotes.medicalHistoryDto )
+							id_SurgicalTab.medicalHistoryDto = QSUtilityFunctions.getGeneralHistoryDTO(  Constants.SURGICAL_MODULE_NAME );
+						break;
+					case Constants.OTHER_MODULE_NAME:
+						//if( ! id_OtherNotes.medicalHistoryDto )
+							id_OtherTab.medicalHistoryDto = QSUtilityFunctions.getGeneralHistoryDTO(  Constants.OTHER_MODULE_NAME );
+						break;
+				}
+			}
+			
+			public function set selectFirstTab( value:Boolean ):void
+			{
+				if( value )
+				{
+					callLater( function():void
+					{
+						BindTabData( Constants.MEDICAL_MODULE_NAME );
+						setSelectedTab( Constants.MEDICAL_MODULE_NAME );
+						
+						id_MedicalTab.id_NotesView.id_TextArea.setFocus();
+					});
+				}
+			}
+
+			private function DeselectAllButtons():void
+			{
+				if( id_tab1 != null )
+				{
+					id_tab1.id_MainButton.selected = false;
+					id_tab2.id_MainButton.selected = false;
+					id_tab3.id_MainButton.selected = false;
+					id_tab4.id_MainButton.selected = false;
+				}
+			}
+
+			
+			private var dictationPanel:DictationPopup;
+			private function voiceBtnClickHandler(event:MouseEvent):void
+			{
+				var voiceBtn:Button = Button(event.currentTarget);
+				var dictationDTO:ModuleDictationDTO = new ModuleDictationDTO();
+				var medicalDTO:MedicalHistoryDTO = getMedicalDTOofSelectedTab();
+				
+				if (medicalDTO)
+					dictationDTO.DictationID = medicalDTO.DictationID;
+				
+				dictationPanel = QIDictationManager.show(voiceBtn.parent, dictationPanel, dictationDTO, voiceBtn);
+				QIPopUpManager.addPopUp(dictationPanel, QIPopUpManager.COMPREHENSIVE_HISTORY);
+				
+				dictationPanel.move( dictationPanel.x - 81, dictationPanel.y);
+				
+				dictationPanel.id_closeBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if (dictationDTO.DictationID && medicalDTO)
+					{
+						medicalDTO.DictationID = dictationDTO.DictationID;
+						
+						//notesBox.id_BoxHeader.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+						
+						if(medicalDTO.DictationID != "00000000-0000-0000-0000-000000000000")
+							voiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+					}
+					
+					QIPopUpManager.removePopUp(dictationPanel, QIPopUpManager.COMPREHENSIVE_HISTORY);
+				});
+				event.stopImmediatePropagation();
+				//M , false, 0, true
+			}
+			
+			private function getMedicalDTOofSelectedTab():MedicalHistoryDTO
+			{
+				var medicalDTO:MedicalHistoryDTO;
+				
+				switch(id_Views.selectedIndex)
+				{
+					case 0:
+						if (id_MedicalTab)
+							medicalDTO = id_MedicalTab.medicalHistoryDto;
+						break;
+					
+					case 1: 
+						if (id_ChildhoodTab)
+							medicalDTO = id_ChildhoodTab.medicalHistoryDto;
+						break;
+					
+					case 2:
+						if (id_SurgicalTab)
+							medicalDTO = id_SurgicalTab.medicalHistoryDto;
+						break;
+					
+					case 3:
+						if (id_OtherTab)
+							medicalDTO = id_OtherTab.medicalHistoryDto;
+						break;	
+				}
+				
+				return medicalDTO;
+			}
+			
+			private function UpdateChange():void
+			{
+				try
+				{
+					hasChange = WasYesNoClicked || id_MedicalTab.hasChange || id_ChildhoodTab.hasChange || id_SurgicalTab.hasChange || id_OtherTab.hasChange || model.quickInputDTO.PMH.ComprehensiveHistory.MedicalHistory.length > 0;
+					
+				}
+				catch( e:Error )
+				{
+					trace( "QICH::General Section", e.message );
+				}
+			}
+			
+			private function OnNotesChangeHandler(event:Event):void
+			{
+				showRButton();
+			}
+			
+			private function showRButton():void
+			{
+				if( id_MedicalTab.id_NotesView.id_TextArea.text.length > 0 )
+					ShowRButtonOn( id_tab1, true );
+				else
+					ShowRButtonOn( id_tab1, false );
+				
+				if( id_ChildhoodTab.id_NotesView.id_TextArea.text.length > 0 )
+					ShowRButtonOn( id_tab2, true );
+				else
+					ShowRButtonOn( id_tab2, false );
+				
+				if( id_SurgicalTab.id_NotesView.id_TextArea.text.length > 0 )
+					ShowRButtonOn( id_tab3, true );
+				else
+					ShowRButtonOn( id_tab3, false );
+				
+				if( id_OtherTab.id_NotesView.id_TextArea.text.length > 0 )
+					ShowRButtonOn( id_tab4, true );
+				else
+					ShowRButtonOn( id_tab4, false );
+				
+			}
+			
+			private function ShowRButtonOn(tab:OptionButton, value:Boolean):void
+			{
+				/* tab.id_R.includeInLayout = value;
+				tab.id_R.visible		 = value; */
+				
+				
+				
+				if( value )
+				{
+					tab.id_Y.selected = true;
+					tab.id_N.selected = false;
+					tab.id_Y.setStyle("skinClass", YNotesRadioButton);
+				}
+				else
+				{
+					tab.id_Y.setStyle("skinClass", YRadioButton);
+					/* tab.id_Y.selected = false;
+					tab.id_N.selected = true; */
+				} 
+			}
+			
+			private function OnNotesCloseClick(event:MouseEvent):void
+			{
+				OnNotesClose();			
+				DeselectAllButtons();
+				
+				event.stopImmediatePropagation();
+			}
+			
+			private function isPreviousYesValue():Boolean
+			{
+				var hasYes:Boolean = false;
+				var i:int;
+				for( i = 0; i < model.medicalHistoryDTOListByPatient.length; i++ )
+				{
+					var dto:MedicalHistoryDTO = model.medicalHistoryDTOListByPatient.getItemAt( i ) as MedicalHistoryDTO;
+					hasYes = dto.IsNone != Constants.STRING_TRUE;
+					if( hasYes )
+						break;
+				}
+				return hasYes;
+			}
+			
+			private function OnYesNoClick(value:String, secLabel:String, target:OptionButton):void
+			{
+				setSelectedTab( secLabel );
+				
+				WasYesNoClicked = true;
+				
+				var elm:GeneralSectionTabImpl = (id_Views.selectedChild as NavigatorContent).getElementAt( 0 ) as GeneralSectionTabImpl;
+				
+				
+				if( null == elm.medicalHistoryDto )
+					BindTabData( id_Views.selectedChild.label )
+				
+				
+				if( ( isPreviousYesValue() || elm.medicalHistoryDto.ICDCodeList.length > 0 ) && value == Constants.STRING_NONE_UI )
+				{
+					var strAlertMessage:String = "Do you want to delete"+" "+secLabel+" "+" history?";//Tahir Alvi
+					Alert.show(strAlertMessage,"Clear Data", Alert.YES|Alert.NO, 
+						FlexGlobals.topLevelApplication.mainContainer, function(event:CloseEvent):void
+						{
+							if( event.detail == Alert.YES)
+							{
+								elm.medicalHistoryDto.MedicalHistoryNote = "";
+								elm.id_NotesView.id_TextArea.text 		 = "";
+								elm.medicalHistoryDto.IsNone = Constants.STRING_TRUE;
+								elm.medicalHistoryDto.ICDCodeList.removeAll();
+								
+								changeTabYesNoSkin(elm.id);
+								var medical_section:int = 1;
+								
+								var delEve:DeleteComprehensiveModuleDatabyPatientIDEvent = new DeleteComprehensiveModuleDatabyPatientIDEvent( model.medicalHistoryDTOListByPatient,
+																								model.quickInputDTO.PatientId, medical_section, 
+																								elm.medicalHistoryDto.MedicalHistoryTypeID,
+																								model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchIdSeq
+																								,loadData);
+								CairngormEventDispatcher.getInstance().dispatchEvent( delEve );
+								setYesNoValue(value);
+							}
+							else if( event.detail == Alert.NO)
+							{
+								elm.IsSelected = true;
+								target.id_Y.selected = true;
+								target.id_N.selected = false;
+								elm.medicalHistoryDto.IsNone = Constants.STRING_FALSE;
+								setYesNoValue(Constants.STRING_YES_UI);
+								showRButton();
+							}
+						});
+				}
+				else
+				{
+					setYesNoValue(value);
+				}
+				
+				UpdateChange();
+				/* elm.id_View.id_DetailsView.id_ICDCode.setFocus(); */
+				dispatchEvent( new Event("data_added", true, true) );
+			}
+			
+			// Tahir Alvi -- response of delete records from general history
+			// Reload CH data
+			private function loadData(val:*=null):void
+			{
+				dispatchEvent(new Event('reLoad_CH',true, true));
+			}
+			
+			private function setYesNoValue(value:String):void
+			{
+				var elm:GeneralSectionTabImpl = (id_Views.selectedChild as NavigatorContent).getElementAt( 0 ) as GeneralSectionTabImpl;
+				
+				elm.Label = "You have selected \n" + value;
+				elm.IsSelected = (value == Constants.STRING_YES_UI) ? true:false;
+				
+				/* if( value == Constants.STRING_YES_UI )
+					callLater( elm.id_NotesView.id_TextArea.setFocus ); */
+				
+				elm.medicalHistoryDto.IsNone = (value == Constants.STRING_NONE_UI )? Constants.STRING_TRUE:Constants.STRING_FALSE;
+				
+				if( value == Constants.STRING_NONE_UI )
+				{
+					elm.id_Views.selectedIndex = 0;
+				}
+			}
+			
+			private function changeTabYesNoSkin(id_name:String):void
+			{
+				if(id_name == "id_MedicalTab")
+				{
+					//id_tab1.id_Y.selected = false;//com.adobe.Quivus.view.controls.skins.radioButtonSkins.YRadioButton
+					id_tab1.id_Y.setStyle("skinClass", YRadioButton);
+				}
+				else if(id_name == "id_ChildhoodTab")
+				{
+					//id_tab2.id_Y.selected = false;
+					id_tab2.id_Y.setStyle("skinClass", YRadioButton);
+				}
+				else if(id_name == "id_SurgicalTab")
+				{
+					//id_tab3.id_Y.selected = false;
+					id_tab3.id_Y.setStyle("skinClass", YRadioButton);
+				}
+				else if(id_name == "id_OtherTab")
+				{
+					//id_tab4.id_Y.selected = false;
+					id_tab4.id_Y.setStyle("skinClass", YRadioButton);
+				}
+			}
+			
+			private function OnTabClick(event:MouseEvent, secLabel:String):void
+			{
+				setSelectedTab( secLabel );
+			}
+			
+			private function setSelectedTab(tabName:String):void
+			{
+				var tabtitle:String = AppUtils.TitleCase( tabName );
+				switch( tabtitle )
+				{
+					case Constants.MEDICAL_MODULE_NAME:
+						id_Views.selectedIndex = 0;
+						id_MedicalTab.id_View.id_DetailsView.id_ICDCode.setFocus();
+						break;
+					case Constants.CHILDHOOD_MODULE_NAME:
+						id_Views.selectedIndex = 1;
+						id_ChildhoodTab.id_View.id_DetailsView.id_ICDCode.setFocus();
+						break;
+					case Constants.SURGICAL_MODULE_NAME:
+						id_Views.selectedIndex = 2;
+						id_SurgicalTab.id_View.id_DetailsView.id_ICDCode.setFocus();
+						break;
+					case Constants.FAMILY_OTHER_MODULE_NAME:
+						id_Views.selectedIndex = 3;
+						id_OtherTab.id_View.id_DetailsView.id_ICDCode.setFocus();
+						break;
+					
+				}
+				
+				callLater( AppUtils.EnableSelection, [ id_TabButtons, AppUtils.getButtonByLabel( id_TabButtons, tabtitle ) ] );
+				
+				/* var selSec:NotesBox = ( id_Views.selectedChild as NavigatorContent ).getElementAt( 0 ) as NotesBox;
+				callLater( selSec.id_TextArea.setFocus ); */
+			}
+
+
+			protected function id_tab4_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_tab1.id_MainButton.height = 32;
+				id_tab2.id_MainButton.height = 32;
+				id_tab3.id_MainButton.height = 32;
+				id_tab4.id_MainButton.height = 32;
+			}
+
+
+			protected function OnTabCreationComplete(event:FlexEvent):void
+			{
+				var notesBox:NotesBox = NotesBox(event.currentTarget.id_NotesView);
+				
+				notesBox.id_BoxHeader.id_CloseBtn.addEventListener(MouseEvent.CLICK, OnNotesCloseClick);
+				notesBox.id_TextArea.addEventListener(TextOperationEvent.CHANGE, OnNotesChangeHandler);
+				notesBox.id_TextArea.addEventListener( "textChanged", function(event:Event):void
+				{
+					if( notesBox.id_TextArea.text.length > 0 )
+					{
+						OnNotesChangeHandler( event );
+						UpdateChange();
+					}
+				});
+				
+				notesBox.id_BoxHeader.id_VoiceBtn.addEventListener(MouseEvent.CLICK, voiceBtnClickHandler, false, 0, true); 
+			}
+			
+			protected function selectablepanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_MedicalTab.addEventListener("dictationChange", function(evt:Event):void
+				{
+					//id_tab1.id_Y.setStyle("skinClass", YNotesRadioButton);					 
+					id_MedicalTab.id_View.id_DetailsView.id_header.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+					id_MedicalTab.id_NotesHeader.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+				});
+				id_ChildhoodTab.addEventListener("dictationChange", function(evt:Event):void
+				{
+					//id_tab2.id_Y.setStyle("skinClass", YNotesRadioButton);
+					id_ChildhoodTab.id_View.id_DetailsView.id_header.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+					id_ChildhoodTab.id_NotesHeader.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+				});
+				id_SurgicalTab.addEventListener("dictationChange", function(evt:Event):void
+				{
+					//id_tab1.id_Y.setStyle("skinClass", YNotesRadioButton);					 
+					id_SurgicalTab.id_View.id_DetailsView.id_header.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+					id_SurgicalTab.id_NotesHeader.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+				});
+				id_OtherTab.addEventListener("dictationChange", function(evt:Event):void
+				{
+					//id_tab4.id_Y.setStyle("skinClass", YNotesRadioButton);
+					id_OtherTab.id_View.id_DetailsView.id_header.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+					id_OtherTab.id_NotesHeader.id_VoiceBtn.setStyle("skinClass", QIInnerSpeakerBtn);
+				});
+				
+				////// **************************** NOTES *********************************////////////
+				
+				id_MedicalTab.addEventListener("notesChange", function(evt:Event):void
+				{
+					//id_tab1.id_Y.setStyle("skinClass", YNotesRadioButton);					 
+					id_MedicalTab.id_View.id_DetailsView.id_header.id_NotesBtn.setStyle("skinClass", writeNotesButtonSelected);
+					id_MedicalTab.id_NotesHeader.id_NotesBtn.setStyle("skinClass", writeNotesButtonSelected);
+				});
+				id_ChildhoodTab.addEventListener("notesChange", function(evt:Event):void
+				{
+					//id_tab2.id_Y.setStyle("skinClass", YNotesRadioButton);
+					id_ChildhoodTab.id_View.id_DetailsView.id_header.id_NotesBtn.setStyle("skinClass", writeNotesButtonSelected);
+					id_ChildhoodTab.id_NotesHeader.id_NotesBtn.setStyle("skinClass", writeNotesButtonSelected);
+				});
+				id_SurgicalTab.addEventListener("notesChange", function(evt:Event):void
+				{
+					//id_tab1.id_Y.setStyle("skinClass", YNotesRadioButton);					 
+					id_SurgicalTab.id_View.id_DetailsView.id_header.id_NotesBtn.setStyle("skinClass", writeNotesButtonSelected);
+					id_SurgicalTab.id_NotesHeader.id_NotesBtn.setStyle("skinClass", writeNotesButtonSelected);
+				});
+				id_OtherTab.addEventListener("notesChange", function(evt:Event):void
+				{
+					//id_tab4.id_Y.setStyle("skinClass", YNotesRadioButton);
+					id_OtherTab.id_View.id_DetailsView.id_header.id_NotesBtn.setStyle("skinClass", writeNotesButtonSelected);
+					id_OtherTab.id_NotesHeader.id_NotesBtn.setStyle("skinClass", writeNotesButtonSelected);
+				});
+				
+				
+				/* id_MedicalTab.id_NotesView.addEventListener( FlexEvent.CREATION_COMPLETE, OnTabCreationComplete);
+				id_ChildhoodTab.id_NotesView.addEventListener( FlexEvent.CREATION_COMPLETE, OnTabCreationComplete);
+				id_SurgicalTab.id_NotesView.addEventListener( FlexEvent.CREATION_COMPLETE, OnTabCreationComplete);
+				id_OtherTab.id_NotesView.addEventListener( FlexEvent.CREATION_COMPLETE, OnTabCreationComplete);
+				
+				 */	
+				id_tab1.id_N.toolTip 	= Constants.STRING_NONE_UI;
+				id_tab1.id_N.value		= Constants.STRING_NONE_UI;
+				
+				id_tab2.id_N.toolTip 	= Constants.STRING_NONE_UI;
+				id_tab2.id_N.value 		= Constants.STRING_NONE_UI;
+				
+				id_tab3.id_N.toolTip 	= Constants.STRING_NONE_UI;
+				id_tab3.id_N.value 		= Constants.STRING_NONE_UI;
+				
+				id_tab4.id_N.toolTip 	= Constants.STRING_NONE_UI;
+				id_tab4.id_N.value 		= Constants.STRING_NONE_UI;
+				
+				id_MedicalTab.id_NotesView.id_ClearBtn.addEventListener( FocusEvent.FOCUS_OUT, function( event:FocusEvent ):void
+				{
+					if( Keyboard.TAB )
+					{
+						id_tab2.id_MainButton.setFocus();
+					}
+				});
+				
+				id_ChildhoodTab.id_NotesView.id_ClearBtn.addEventListener( FocusEvent.FOCUS_OUT, function( event:FocusEvent ):void
+				{
+					if( Keyboard.TAB )
+					{
+						id_tab3.id_MainButton.setFocus();
+					}
+				});
+				
+				id_SurgicalTab.id_NotesView.id_ClearBtn.addEventListener( FocusEvent.FOCUS_OUT, function( event:FocusEvent ):void
+				{
+					if( Keyboard.TAB )
+					{
+						id_tab4.id_MainButton.setFocus();
+					}
+				});
+				
+				addEventListener("data_added", function(event:Event):void
+				{
+					var elm:GeneralSectionTabImpl = (id_Views.selectedChild as NavigatorContent).getElementAt( 0 ) as GeneralSectionTabImpl;
+					changeTabYesNoSkin( elm.id );
+				});
+				
+				addEventListener('clearGenralNotesEvent', function(event:Event):void
+				{
+					id_tab1.id_Y.setStyle("skinClass", YRadioButton);
+					
+					id_tab2.id_Y.setStyle("skinClass", YRadioButton);
+					
+					id_tab3.id_Y.setStyle("skinClass", YRadioButton);
+					
+					id_tab4.id_Y.setStyle("skinClass", YRadioButton);
+					
+				});
+				
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Binding source="model.chdataLoaded" destination="selectFirstTab"  /> 
+	
+	<components:layout>
+		<s:HorizontalLayout gap="-1" paddingTop="2" paddingLeft="1" paddingRight="1" paddingBottom="1" />
+	</components:layout>
+	
+	
+		
+		<!--<s:TabBar id="id_vTabBar" width="122" skinClass="com.adobe.Quivus.view.controls.skins.VerticalTabSkin" 
+				  dataProvider="{id_Views}" />-->
+		
+		<s:VGroup id="id_TabButtons" width="100%" maxWidth="132" gap="-2" paddingTop="0" tabChildren="true">
+			<renderer:OptionButton id="id_tab1" width="100%" height="32" showOptionButtons="YNR" Label="{Constants.MEDICAL_MODULE_NAME}" 
+								   YesNoClickHandler="OnYesNoClick" ButtonClickHandler="OnTabClick" 
+								   Counter="{id_MedicalTab.medicalHistoryDto.ICDCodeList.length}" />
+			<renderer:OptionButton id="id_tab2" width="100%" height="32" showOptionButtons="YNR" Label="{Constants.CHILDHOOD_MODULE_NAME}" 
+								   YesNoClickHandler="OnYesNoClick" ButtonClickHandler="OnTabClick" 
+								   Counter="{id_ChildhoodTab.medicalHistoryDto.ICDCodeList.length}" />
+			<renderer:OptionButton id="id_tab3" width="100%" height="32" showOptionButtons="YNR" Label="{Constants.SURGICAL_MODULE_NAME}" 
+								   YesNoClickHandler="OnYesNoClick" ButtonClickHandler="OnTabClick" 
+								   Counter="{id_SurgicalTab.medicalHistoryDto.ICDCodeList.length}" />
+			<renderer:OptionButton id="id_tab4" width="100%" height="32" showOptionButtons="YNR" Label="{Constants.OTHER_MODULE_NAME}"
+								   creationComplete="id_tab4_creationCompleteHandler(event)" 
+								   YesNoClickHandler="OnYesNoClick" ButtonClickHandler="OnTabClick" 
+								   Counter="{id_OtherTab.medicalHistoryDto.ICDCodeList.length}" />
+		</s:VGroup>					
+		
+		<mx:ViewStack id="id_Views" width="100%" height="123" resizeToContent="true" includeInLayout="{AllowContents}" visible="{AllowContents}" 
+					  change="id_Views_changeHandler(event)" creationPolicy="all" tabChildren="true">
+			<s:NavigatorContent id="id_MedicalSec" label="{Constants.MEDICAL_MODULE_NAME}">
+				<!--<notes:NotesBox id="id_MedicalNotes" width="100%" creationComplete="OnTabCreationComplete(event)" />-->
+				<general:GeneralSectionTabImpl id="id_MedicalTab"  width="100%" height="123" creationComplete="OnTabCreationComplete(event)"  miniView="{miniView}"/>
+			</s:NavigatorContent>
+			<s:NavigatorContent id="id_ChildhoodSec" label="{Constants.CHILDHOOD_MODULE_NAME}">
+				<!--<notes:NotesBox id="id_ChildhoodNotes" width="100%" creationComplete="OnTabCreationComplete(event)"  />-->
+				<general:GeneralSectionTabImpl id="id_ChildhoodTab"  width="100%" height="123" creationComplete="OnTabCreationComplete(event)" miniView="{miniView}"/>
+			</s:NavigatorContent>
+			<s:NavigatorContent id="id_SurgicalSec" label="{Constants.SURGICAL_MODULE_NAME}">
+				<!--<notes:NotesBox id="id_SurgicalNotes" width="100%" creationComplete="OnTabCreationComplete(event)"  />-->
+				<general:GeneralSectionTabImpl id="id_SurgicalTab"  width="100%" height="123" creationComplete="OnTabCreationComplete(event)" miniView="{miniView}"/>
+			</s:NavigatorContent>
+			<s:NavigatorContent id="id_OtherSec" label="{Constants.OTHER_MODULE_NAME}">
+				<!--<notes:NotesBox id="id_OtherNotes" width="100%" creationComplete="OnTabCreationComplete(event)"  />-->
+				<general:GeneralSectionTabImpl id="id_OtherTab"  width="100%" height="123" creationComplete="OnTabCreationComplete(event)" miniView="{miniView}"/>
+			</s:NavigatorContent>
+		</mx:ViewStack>
+			
+</components1:SelectablePanel>

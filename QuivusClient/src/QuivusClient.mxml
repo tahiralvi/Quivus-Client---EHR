@@ -1,0 +1,580 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:business="com.adobe.cafetownsend.business.*"
+					   xmlns:events="com.adobe.Quivus.events.*"
+					   xmlns:view="com.adobe.Quivus.view.*" 
+					   xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+					   xmlns:appController="com.adobe.Quivus.appController.*" 
+					   xmlns:loginView="com.adobe.Quivus.view.controls.custom.loginView.*"
+					   xmlns:components="com.zigron.controls.extended.components.*"
+					   xmlns:appController8="com.gazuntite.provider.services.email.appController.*" 
+					   xmlns:appController9="com.gazuntite.provider.services.sms.appController.*" 
+					   xmlns:appController10="com.gazuntite.provider.eprescription.services.patient.appController.*" 
+					   xmlns:appController13="com.gazuntite.provider.search.services.provider.appController.*" 
+					   xmlns:appController11="com.gazuntite.common.appController.*"	
+					   xmlns:appController12="com.gazuntite.provider.search.services.patient.appController.*" 
+					   xmlns:controller="com.gazuntite.patient.visit.controller.*"
+					   resizing="windowedapplication1_resizeHandler(event)" 
+					   showStatusBar="false"   backgroundAlpha="0"
+					   preinitialize="windowedapplication1_preinitializeHandler(event)"
+					   displayStateChange="OnDisplayStateChange(event)"
+					   creationComplete="Init()" invoke="onInvoke(event)"
+					   closing="OnClosingWindow(event)"  moving="windowedapplication1_movingHandler(event)" xmlns:components1="com.gazuntite.controls.extended.components.*"
+					   >
+	
+	<fx:Declarations>
+		<s:Fade id="id_FadeIn" alphaFrom="1.0" alphaTo="0.0" />
+				
+		<mx:HTTPService id="configService" method="GET" resultFormat="e4x" url="config/configuration.xml" result="handleResult(event)" />
+		
+		<mx:Parallel id="alertCreationCompleteEffect">
+			<mx:Fade duration="500" />
+			<mx:Move yFrom="0"
+					 easingFunction="{Bounce.easeOut}"
+					 duration="1000" />
+		</mx:Parallel>
+	</fx:Declarations>
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace business "com.adobe.cafetownsend.business.*";
+		@namespace events "com.adobe.Quivus.events.*";
+		@namespace view "com.adobe.Quivus.view.*";
+		@namespace custom "com.adobe.Quivus.view.controls.custom.*";
+		@namespace appController "com.adobe.Quivus.appController.*";
+		@namespace loginView "com.adobe.Quivus.view.controls.custom.loginView.*";
+		
+		mx|Alert {
+			fontFamily: VerdanaEmbedded;
+			creationCompleteEffect: alertCreationCompleteEffect;
+		}
+	</fx:Style>
+	
+	
+	<fx:Script>
+		<![CDATA[
+			import air.update.ApplicationUpdaterUI;
+			import air.update.events.UpdateEvent;
+			
+			import appUpdateManager.UpdateManager;
+			
+			import com.adobe.Quivus.appController.AppController;
+			import com.adobe.Quivus.logging.FileTarget;
+			import com.adobe.Quivus.logging.LoggingUtil;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.serviceLocator.QuivusServiceLocator;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.SystemTray;
+			import com.adobe.Quivus.utils.network.NetworkUtil;
+			import com.adobe.Quivus.view.controls.custom.SlideOutPanel;
+			import com.adobe.Quivus.view.controls.custom.loginView.resolutionCheck;
+			import com.adobe.Quivus.view.controls.skins.TabBarSkins.VBrecordingsTabBar;
+			import com.gazuntite.common.appController.QSCommonController;
+			import com.gazuntite.common.util.xml.XmlUtils;
+			import com.gazuntite.controls.extended.components.PopupGroup;
+			import com.gazuntite.controls.extended.components.PopupWindow;
+			import com.gazuntite.dataBridge.controller.LiveServicesController;
+			import com.gazuntite.patient.visit.controller.QIController;
+			import com.gazuntite.patient.visit.controller.VBController;
+			import com.gazuntite.provider.search.services.patient.appController.SearchPatientController;
+			import com.gazuntite.provider.search.services.provider.appController.SearchProviderController;
+			import com.gazuntite.provider.services.email.appController.EmailController;
+			import com.gazuntite.provider.services.sms.appController.SMSController;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.effects.easing.Bounce;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.events.MoveEvent;
+			import mx.events.ResizeEvent;
+			import mx.logging.ILogger;
+			import mx.logging.Log;
+			import mx.logging.LogEventLevel;
+			import mx.logging.targets.LineFormattedTarget;
+			import mx.logging.targets.TraceTarget;
+			import mx.managers.CursorManager;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.components.Group;
+			import spark.components.NavigatorContent;
+			import spark.components.TabBar;
+			import spark.components.TextArea;
+			
+			[Bindable] private var model : AppModelLocator = AppModelLocator.getInstance();
+			[Bindable] public static var appVersion:String;
+			[Bindable] [Embed('assets/icons/loading.gif')]
+			public var myBusyCursor : Class
+			
+			public var appX:Number;
+			public var appY:Number;
+			
+			public var slideout_array:Array = new Array();
+			public var slideout_count:Number = 0;
+			public var slideout_index:Number = 35000;		
+			
+			public var slideout_crossed:Boolean = false;
+			//public var slideout_tabbar:TabBar;
+			
+			private var AppLogWindow:PopupWindow;
+			//private var systemTray:SystemTray;
+			private var configurationFile:File;
+			
+			private var LogTarget : LineFormattedTarget;
+			private var logger : ILogger = LoggingUtil.getLogger( QuivusClient );
+			
+			private function LoadConfigurations():void
+			{
+				
+				this.configurationFile = new File("app:/config/Quivus_Configurations.xml");
+				
+				if( configurationFile && configurationFile.exists )
+				{
+					var stream:FileStream = new FileStream();
+					stream.open( configurationFile, FileMode.READ);
+					
+					var prefsXML:XML 						= XML(stream.readUTFBytes(stream.bytesAvailable));
+					
+					stream.close();
+					
+					var settings_config:XML 				= prefsXML.settings[0];
+					model.SettingConfigXML 					= settings_config;
+					
+					initLogging();
+					//Check Network
+					NetworkUtil.Network.StartNetworkMonitor();
+					
+					var service_config:XML 					= prefsXML.service.(@type == prefsXML.@type)[0];
+					model.ServiceConfigXML 					= service_config;
+					
+					QSCommonController.getInstance().ApplicationConfig ( service_config );
+					QIController.getInstance().ApplicationConfig ( service_config );
+					LiveServicesController.getInstance().ApplicationConfig ( service_config );
+					VBController.getInstance().ApplicationConfig(service_config);
+				}
+			}
+			
+			private function Init():void
+			{
+				// Start the MonsterDebugger
+				//MonsterDebugger.initialize(this);
+				//MonsterDebugger.trace("Quivus Clinet init!", this);
+				// Monster Debugger trace message
+				//id_MonsterDebuggerFlex.trace("Quivus Clinet init!");
+				
+				// Flex trace message
+				//logger.error("Monster Debugger Started!");
+				
+				
+				
+				//SlideOutPanel.allowSlideOut_Global = false;
+				//slideout tab 
+				/* FlexGlobals.topLevelApplication.id_tabs.addEventListener(IndexChangedEvent.CHANGE, function(evt:IndexChangedEvent):void
+				{
+				trace("VS length "+FlexGlobals.topLevelApplication.id_tabs.length);
+				if(FlexGlobals.topLevelApplication.id_tabs.length == 0)
+				{
+				FlexGlobals.topLevelApplication.id_slideout_main.visible = false;
+				}
+				
+				//
+				if(FlexGlobals.topLevelApplication.slideout_count > FlexGlobals.topLevelApplication.id_tabs.length)
+				{
+				//tab is decreased..
+				trace("Tab is decreased");
+				trace("Prepare to slideout");
+				
+				}
+				
+				
+				});  */
+				//end slideout tab
+				
+				//MonsterDebugger.initialize(this);
+				//MonsterDebugger.trace(this, this, "QUIVUS CCCC!", );
+				
+				
+				//monitor network activity
+				
+				var screen:Rectangle = ChromeUtil.getScreenRect();
+				this.width 			 = Capabilities.screenResolutionX; //screen.width;
+				this.height 		 = Capabilities.screenResolutionY - 40; //screen.height - 30;
+				
+				/* if(this.width < 1280 || this.height < 728 )
+				{
+				
+				
+				var resCheck:resolutionCheck = new resolutionCheck();
+				resCheck.Show(true);
+				
+				
+				//Alert.okLabel = "Exit";
+				
+				//Alert.buttonWidth = 100;
+				//Alert.show("Your screen resolution is less than 1280x800", "Resolution Check",(Alert.OK),this, closeResPopup);
+				//alert.move(newX, newY);
+				} */
+				
+				
+				trace(Capabilities.os);
+				
+				ChromeUtil.topLevelWindow 			= nativeWindow;
+				ChromeUtil.topLevelMainContainer 	= mainContainer;
+				ChromeUtil.topLevelQuivusClient 	= this;
+				
+				//Application is close on clicking the close button rather then move into system tray
+				//20 nov, 2012
+				/*donot close window but hide it in OS sytem tray
+				systemTray = new SystemTray( nativeWindow );
+				systemTray.initTray();*/
+				
+				nativeWindow.addEventListener( "checkUpdate", OnCheckUpdate );
+				
+				this.x = 0;
+				this.y = 0;
+				if((Capabilities.os.indexOf("Windows") >= 0))
+				{
+					appX = this.x;
+					appY = this.y;
+				}
+				else if((Capabilities.os.indexOf("Mac") >= 0))
+				{
+					//this.y = 25;
+					appX = this.x;
+					appY = this.y;
+				} 
+				else 
+				{
+					appX = this.x;
+					appY = this.y;
+					
+				}
+				
+				var appXml:XML 		= NativeApplication.nativeApplication.applicationDescriptor;
+				var ns:Namespace 	= appXml.namespace();
+				var appId:String 	= appXml.ns::id[0];
+				var appName:String 	= appXml.ns::filename[0];
+				
+				appVersion = appXml.ns::versionNumber[0];
+				
+				model.appVersion = appVersion;
+				
+				//Tahir Alvi - start DB Funtional
+				localDBStartUp()
+				configService.send();
+				
+			}
+			
+			
+			private function localDBStartUp():void
+			{
+				//Mansoor move DB file
+				var dbFile:File = File.applicationDirectory.resolvePath("db/" + Constants.REGISTERATION_STATIC_DATA_DB_NAME);
+				var dbWorkFile:File = File.applicationStorageDirectory.resolvePath("temp/"+model.appVersion + "/" + Constants.REGISTERATION_STATIC_DATA_DB_NAME);
+				
+				if(!dbWorkFile.exists && dbFile.exists)
+				{
+					dbFile.copyTo(dbWorkFile);
+				}
+				
+				dbFile = File.applicationDirectory.resolvePath("db/" + Constants.QUICKINPUT_STATIC_DATA_DB_NAME);
+				dbWorkFile = File.applicationStorageDirectory.resolvePath("temp/"+model.appVersion + "/" + Constants.QUICKINPUT_STATIC_DATA_DB_NAME);
+				
+				if(!dbWorkFile.exists && dbFile.exists)
+				{
+					dbFile.copyTo(dbWorkFile);
+				}
+				
+				dbFile = File.applicationDirectory.resolvePath("db/" + Constants.COMP_HISTORY_STATIC_DATA_DB_NAME);
+				dbWorkFile = File.applicationStorageDirectory.resolvePath("temp/"+model.appVersion + "/" + Constants.COMP_HISTORY_STATIC_DATA_DB_NAME);
+				
+				if(!dbWorkFile.exists && dbFile.exists)
+				{
+					dbFile.copyTo(dbWorkFile);
+				}
+				
+			}
+			
+			private function onInvoke(event:InvokeEvent) : void
+			{
+				//systemTray.unDock( event );
+			}
+			
+			protected function OnClosingWindow(event:Event):void
+			{
+				if( model.UserLoggedIn )
+					mainContainer.SignOutApplication();
+				
+			}
+			
+			public function closeResPopup(event:CloseEvent):void
+			{
+				ChromeUtil.closeWindow();
+			}
+			
+			
+			/**
+			 * to file<br>
+			 * <b>On Windows(2000, XP etc.)--In:</b><br>
+			 * 	/Documents and Settings/{user_name}/Application Data/applicationID.publisherID/Local Store/log/<br>
+			 * 
+			 * <b>On Windows 7--In:</b><br> 	
+			 * 	/Users/{user_name}/AppData/Roaming/Quivus/Local Store/log/QuivusClient/log/<br>
+			 * 
+			 * <b>On Mac OS--In:</b><br>
+			 *	/Users/{user_name}/Library/Preferences/applicationID.publisherID/Local Store/log/<br>
+			 * 
+			 * <P>Press Ctrl + L to see log in default browser </P>
+			 * 
+			 */
+			private function initLogging():void
+			{
+				initFileLogging();
+				initTraceLogging();
+			}
+			
+			private function initFileLogging():void 
+			{
+				
+				this.LogTarget 					= new FileTarget(); //new TextAreaTarget( out );
+				
+				var filters:String				= XmlUtils.getPropertyValueByName( 'FILTERS', model.SettingConfigXML );
+				this.LogTarget.filters 			= [filters];
+				
+				var level:String 				= XmlUtils.getPropertyValueByName( 'LOG_LEVEL', model.SettingConfigXML );
+				this.LogTarget.level 			= LoggingUtil.getLogLevel( level ); //LogEventLevel.ALL;
+				
+				// Add date, time, category, and log level to the output
+				this.LogTarget.includeDate 		= true;
+				this.LogTarget.includeTime 		= true;
+				this.LogTarget.includeCategory 	= true;
+				this.LogTarget.includeLevel 	= true;
+				
+				Log.addTarget(LogTarget);	
+			}
+			
+			private function initTraceLogging():void 
+			{
+				// Create a target.
+				var logTarget:TraceTarget = new TraceTarget();
+				
+				// Log only messages for the classes in the mx.rpc.* and 
+				// mx.messaging packages.
+				logTarget.filters			= ["com.adobe.quivus.*"];
+				
+				// Log all log levels.
+				logTarget.level 			= LogEventLevel.DEBUG;
+				
+				// Add date, time, category, and log level to the output.
+				logTarget.includeDate 		= true;
+				logTarget.includeTime 		= true;
+				logTarget.includeCategory 	= true;
+				logTarget.includeLevel 		= true;
+				logTarget.includeCategory 	= true;
+				
+				Log.addTarget(logTarget);		// Begin logging.
+				
+				
+			}
+			
+			protected function OnDisplayStateChange(event:NativeWindowDisplayStateEvent):void
+			{
+				if( null == mainContainer ) return;
+				if( event.afterDisplayState == "maximized")
+				{
+					mainContainer.percentWidth = 100;
+					mainContainer.top = 5;
+				}
+				else
+				{
+					mainContainer.percentWidth = 50;
+				} 
+				
+				/* mainContainer.top = 5;
+				mainContainer.percentWidth = 50;
+				mainContainer.percentHeight = 100; */
+			}
+			
+			protected function windowedapplication1_preinitializeHandler(event:FlexEvent):void
+			{
+				//Load Application Configuration File
+				LoadConfigurations();
+				
+				
+				QSCommonController.getInstance();
+				SearchPatientController.getInstance();
+				QIController.getInstance();
+				AppController.getInstance();
+				SMSController.getInstance();
+				EmailController.getInstance();
+				SearchProviderController.getInstance();
+				VBController.getInstance();
+				
+				
+				//myLogging();
+				CursorManager.setBusyCursor();
+				
+				QuivusServiceLocator.getInstance().getQuivusManagerServiceInstance();				
+				QuivusServiceLocator.getInstance().getStreamingServiceInstance();
+				/* QuivusServiceLocator.getInstance().getQuivusManagerServiceInstance();
+				QuivusServiceLocator.getInstance().getQuivusManagerServiceInstance(); */
+				
+				addEventListener(KeyboardEvent.KEY_DOWN, function(event:KeyboardEvent):void
+				{
+					if( event.ctrlKey && event.keyCode == Keyboard.L )
+					{
+						try
+						{
+							var file:File = File.applicationStorageDirectory.resolvePath( ( LogTarget as FileTarget).DEFAULT_LOG_PATH + ".html" );
+							if( Log.isDebug() )
+								logger.debug( "Loading Log File ...." + file.nativePath );
+							file.openWithDefaultApplication();
+						}
+						catch(e:Error)
+						{
+							logger.error( "Unable to Load Log File ...." + file.nativePath );
+						}
+					}
+				});
+			}
+			
+			[Bindable]
+			public function set ShowLogin(value:Boolean):void
+			{
+				allowUserLogIn = value;
+			}
+			
+			public function get ShowLogin():Boolean
+			{
+				return allowUserLogIn;
+			}
+			
+			private var allowUserLogIn:Boolean = true;
+			
+			
+			[Bindable] private var baseURL:String;
+			[Bindable] private var updates:String;
+			private var updater:UpdateManager;
+			private function handleResult(event:ResultEvent):void
+			{
+				var xml:XML = event.result as XML;
+				baseURL = xml..baseurl.toString();
+				updates = xml..updates.toString();
+				
+				if(updates)
+				{
+					CheckUpdate( false, true );
+				}
+			}
+			
+			private function OnCheckUpdate(event:Event):void
+			{
+				CheckUpdate( true, false );
+			}
+			
+			/**
+			 * 
+			 * @param showCheckState Boolean value to show the Check Now dialog box
+			 * @param initializeCheckNow Boolean value to initialize application and run check on instantiation of the Class
+			 * 
+			 * */
+			public function CheckUpdate(showCheckState:Boolean, initializeCheckNow:Boolean = false):void
+			{
+				updater = new UpdateManager(showCheckState, initializeCheckNow);
+				updater.checkNow();
+			}
+			
+			private function createLogArea():TextArea
+			{
+				var area:TextArea 	= new TextArea();
+				area.percentHeight 	= 100;
+				area.percentWidth  	= 100;
+				
+				AppLogWindow 		= new PopupWindow();
+				AppLogWindow.width  = 550;
+				AppLogWindow.height = 415;
+				AppLogWindow.addElement( area );
+				
+				
+				return area;
+			}
+			
+			/* public function slideOutCancel(ind:int):void
+			{
+			trace("Slide out cancel");
+			//var navContent:NavigatorContent = (id_tabs.getChildAt(ind) as NavigatorContent);
+			///var panel:SlideOutPanel = 	navContent.getChildAt(0) as SlideOutPanel;
+			//var panel:Group = 	navContent.getChildAt(0) as Group;
+			//panel.addElement();
+			//panel.ToggleSlideOut();
+			//	((id_tabs.getChildAt(ind) as NavigatorContent).getChildAt(0) as SlideOutPanel).ToggleSlideOut();
+			} */
+			
+			protected function windowedapplication1_movingHandler(event:NativeWindowBoundsEvent):void
+			{
+				// TODO Auto-generated method stub
+				ChromeUtil.isMoved = true;
+			}
+			
+			protected function windowedapplication1_resizeHandler(event:NativeWindowBoundsEvent):void
+			{
+				callLater( ChromeUtil.TestConstraintWidth );
+				ChromeUtil.isResized = true;
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Binding source="model.wsdlLoaded" destination="ShowLogin" />
+	
+	<!-- All Style Sheets include in main projects  -->
+	<fx:Style source="assets\styles\ApplevelStyle.css" />
+	<fx:Style source="..\Skin\src\Styles\AppLevelSkins.css" />
+	<fx:Style source="..\Skin\src\Styles\AppLevelPopUpSkins.css" />
+	<fx:Style source="..\Skin\src\Styles\AppLevelScrollerSkins.css" />
+	<fx:Style source="..\Skin\src\Styles\AppLevelTextInputSkins.css" />
+	<fx:Style source="..\Skin\src\Styles\AppLevelButtonSkins.css" />
+	<fx:Style source="..\Skin\src\Styles\AppLevelDataGridSkins.css" />
+	<fx:Style source="..\Skin\src\Styles\AppLevelContainerSkins.css" />
+	<fx:Style source="..\Skin\src\Styles\AppLevelButtonBarSkins.css" />
+	<fx:Style source="..\Skin\src\Styles\AppLevelComboBoxSkins.css" />
+	<fx:Style source="..\Skin\src\Styles\AppLevelCheckBoxSkins.css" />
+	
+	
+	<loginView:splashScreen id="id_splash" width="50%" height="100%" visible="{!ShowLogin}" />
+	
+	<custom:mainContainer id="mainContainer" visible="{ShowLogin}" width="50%" height="94%" 
+						  skinClass="com.adobe.Quivus.view.controls.skins.CustomWindowSkin" />
+	
+	<s:SkinnableContainer id="id_slideout_main" x="{Capabilities.screenResolutionX/2 - 1}" width="{Capabilities.screenResolutionX/2 + 4}" 
+						  skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.slideoutBGSkin"
+						  visible="false" maxHeight="{Capabilities.screenResolutionY - 220}">
+		<s:layout>
+			<s:VerticalLayout gap="-2" paddingLeft="11" paddingBottom="3" />
+		</s:layout>
+		<components1:TerrificTabBar id="id_TabBar" dataProvider="{id_tabs}" buttonMode="true"
+								   skinClass="com.adobe.Quivus.view.controls.skins.TabBarSkins.closeableTabBar"/>
+		<s:SkinnableContainer id="id_VS" height="100%" width="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.QIrecordingsSkin">
+			<s:layout>
+				<s:VerticalLayout verticalAlign="top" horizontalAlign="center" paddingBottom="1" paddingLeft="8" paddingRight="1" paddingTop="1" />
+			</s:layout>
+			
+			<mx:ViewStack id="id_tabs" width="{mainContainer.width}" height="100%" minHeight="100" minWidth="500" resizeToContent="true" 
+						  paddingLeft="6" paddingBottom="0" paddingRight="0" paddingTop="0" borderStyle="solid" borderVisible="true" borderAlpha="0">
+				
+				
+			</mx:ViewStack>
+			
+		</s:SkinnableContainer>
+	</s:SkinnableContainer>
+	
+	
+</s:WindowedApplication>

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5"
+		  creationComplete="vgroup1_creationCompleteHandler(event)"
+		  >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			
+			import mx.events.FlexEvent;
+			
+			import spark.events.TextOperationEvent;
+			
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			protected function textchangeHandler(event:TextOperationEvent):void
+			{
+				var txt:TextInput  = event.target as TextInput;
+				
+				switch(txt.id)
+				{
+					case "id_fileName":
+					{
+						model.CurrentEDIReceiver.FileName = txt.text;
+						break;
+					}
+					case "id_fileNameId":
+					{
+						model.CurrentEDIReceiver.FileNameID = txt.text;
+						break;
+					}
+					case "id_filePath":
+					{
+						model.CurrentEDIReceiver.FilePath = txt.text;
+						break;
+					}
+					case "id_intReceiverId":
+					{
+						model.CurrentEDIReceiver.InterchangeReceiverID = txt.text;
+						break;
+					}
+					case "id_intSenderId":
+					{
+						model.CurrentEDIReceiver.InterchangeSenderID = txt.text;
+						break;
+					}
+					case "id_programFile":
+					{
+						model.CurrentEDIReceiver.ProgramFile = txt.text;
+						break;
+					}
+					case "id_submitterId1":
+					{
+						model.CurrentEDIReceiver.SubmitterID1 = txt.text;
+						break;
+					}	
+					case "id_submitterId2":
+					{
+						model.CurrentEDIReceiver.SubmitterID2 = txt.text;
+						break;
+					}
+					case "id_submitterPass1":
+					{
+						model.CurrentEDIReceiver.SubmitterPassword1 = txt.text;
+						break;
+					}	
+					case "id_submitterPass2":
+					{
+						model.CurrentEDIReceiver.SubmitterPassword2 = txt.text;
+						break;
+					}	
+					case "id_uniqSubmissionCount":
+					{
+						model.CurrentEDIReceiver.UniqueSubmissionCount = txt.text;
+						break;
+					}
+					case "id_vendorId":
+					{
+						model.CurrentEDIReceiver.VendorID = txt.text;
+						break;
+					}						
+				}
+				
+			}
+			
+			protected function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_submitterId1.setFocus();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:VGroup width="100%">
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Submitter ID 1:" width="140" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_submitterId1" text="{model.CurrentEDIReceiver.SubmitterID1}" width="100%" change="textchangeHandler(event)" restrict="[a-z A-Z 0-9]"	maxChars="20" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Submitter ID 2:" width="140" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_submitterId2" text="{model.CurrentEDIReceiver.SubmitterID2}" fontFamily="Calibri" fontSize="12"
+						 width="100%" change="textchangeHandler(event)" restrict="[a-z A-Z 0-9]"	maxChars="20" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Submitter Password 1:" width="140" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_submitterPass1" text="{model.CurrentEDIReceiver.SubmitterPassword1}" fontFamily="Calibri" fontSize="12"
+						 width="100%" change="textchangeHandler(event)" restrict="[a-z A-Z 0-9]"	maxChars="20" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Submitter Password 2:" width="140" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_submitterPass2" text="{model.CurrentEDIReceiver.SubmitterPassword2}" fontFamily="Calibri" fontSize="12" 
+						 width="100%" change="textchangeHandler(event)" restrict="[a-z A-Z 0-9]"	maxChars="20" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Program File:" width="140" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_programFile" text="{model.CurrentEDIReceiver.ProgramFile}" width="100%" change="textchangeHandler(event)" maxChars="30" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="File Path:" width="140" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_filePath" text="{model.CurrentEDIReceiver.FilePath}" width="100%" change="textchangeHandler(event)" maxChars="100" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle" >
+			<s:Label text="File Name:" width="140" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_fileName" text="{model.CurrentEDIReceiver.FileName}" width="100%" change="textchangeHandler(event)" maxChars="30" />
+		</s:HGroup>
+	</s:VGroup>
+	<s:VGroup width="100%">
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Interchange Receiver ID:" width="140" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_intReceiverId" text="{model.CurrentEDIReceiver.InterchangeReceiverID}" width="100%" change="textchangeHandler(event)" restrict="[a-z A-Z 0-9]"	maxChars="15" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Interchange Sender ID:" width="140" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_intSenderId" text="{model.CurrentEDIReceiver.InterchangeSenderID}" width="100%" change="textchangeHandler(event)" restrict="[a-z A-Z 0-9]"	maxChars="15" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Vendor ID:" width="140" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_vendorId" text="{model.CurrentEDIReceiver.VendorID}" width="100%" change="textchangeHandler(event)" restrict="[a-z A-Z 0-9]"	maxChars="10" />
+		</s:HGroup>
+	</s:VGroup>
+	<s:VGroup width="100%">
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Unique Submission Count:(Auto Generated)" width="220" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_uniqSubmissionCount" text="{model.CurrentEDIReceiver.UniqueSubmissionCount}" width="100%" change="textchangeHandler(event)" restrict="[a-z A-Z 0-9]" enabled="false" maxChars="15" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="File Name ID:(Auto Generated)" width="200" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_fileNameId" text="{model.CurrentEDIReceiver.FileNameID}" width="100%" 
+						 change="textchangeHandler(event)" restrict="[0-9]" enabled="false" maxChars="3" />
+		</s:HGroup>
+	</s:VGroup>
+	
+	
+</s:VGroup>

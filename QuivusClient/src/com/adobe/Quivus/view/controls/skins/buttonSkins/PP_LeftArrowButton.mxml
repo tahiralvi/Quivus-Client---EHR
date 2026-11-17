@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+	</s:states>
+	<s:Rect height="17" id="rect1" radiusX="1" width="10" y="0" x="0">
+		<s:fill>
+			<s:LinearGradient rotation="90" rotation.over="270" rotation.down="270">
+				<s:GradientEntry alpha="1" color="0xB92222" ratio="0"/>
+				<s:GradientEntry alpha="1" color="0x5A0707" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter includeIn="down" blurX="4.0" blurY="4.0" distance="2" hideObject="false" color="0x000000" inner="true" strength="1" alpha="0.5" quality="2" knockout="false" angle="90"/>
+		</s:filters>
+	</s:Rect>
+	<s:Path data="M 6.27 5.40 L 0.03 5.40 3.15 -0.01 Z " height="3.4" id="path1" rotation="-90" width="6.25" x="3.006" y="11.28">
+		<s:fill>
+			<s:SolidColor color="#FFFFFF"/>
+		</s:fill>
+	</s:Path>
+</s:Skin>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						xmlns:s="library://ns.adobe.com/flex/spark" 
+						xmlns:mx="library://ns.adobe.com/flex/mx"
+						xmlns:components="com.zigron.controls.extended.components.*" 						
+						creationComplete="CreationCompleteHandler(event)" 
+						xmlns:components1="com.gazuntite.controls.extended.components.*"
+						>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			
+			import mx.events.FlexEvent;
+			import mx.managers.CursorManager;		
+			
+			[Bindable]
+			private var model : com.gazuntite.provider.live.services.billing.model.BillingModelLocator = BillingModelLocator.getInstance();
+			
+			private var _PatientStatementText:String = "loading...";
+			
+			[Bindable]
+			private var htmlText:String = "<b>Loading...</b>";
+			
+			private var _StatementURL:String;
+			
+			[Bindable]
+			public function get StatementURL():String
+			{
+				return _StatementURL;
+			}
+
+			public function set StatementURL(value:String):void
+			{
+				_StatementURL = value;
+				id_htmlArea.location = value;
+			}
+
+			[Bindable]	
+			public function get PatientStatementText():String
+			{
+				return _PatientStatementText;
+			}
+
+			public function set PatientStatementText(value:String):void
+			{
+				_PatientStatementText = value;
+			}
+
+			protected function CreationCompleteHandler(event:FlexEvent):void
+			{
+				_PatientStatementText = "<b>Loading...</b>";
+			}
+			
+			protected function id_htmlArea_completeHandler(event:Event):void
+			{
+				if(null != event.currentTarget.location )
+				{
+					CursorManager.removeBusyCursor();
+					id_htmlArea.htmlLoader.navigateInSystemBrowser = true;
+					//callback("RemoveLoadingPoPup" , 0); 
+				}
+				//cursorManager.removeBusyCursor();
+				//id_htmlArea.htmlLoader.navigateInSystemBrowser = true;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:VGroup gap="2" height="{Capabilities.screenResolutionY - 130}" width="{(Capabilities.screenResolutionX / 2) - 30 }" verticalAlign="top" horizontalAlign="center" paddingLeft="5" >
+				
+		<mx:HTML id="id_htmlArea" htmlText="{PatientStatementText}" height="{Capabilities.screenResolutionY - 175}" width="{(Capabilities.screenResolutionX / 2) - 50}" complete="id_htmlArea_completeHandler(event)" x="2"/>
+		
+		
+		<s:VGroup verticalAlign="bottom" horizontalAlign="center" paddingBottom="0" width="100%">	
+			<s:HGroup horizontalAlign="center" width="100%">
+				<s:Button id="id_okBtn"  label="OK" useHandCursor="true" buttonMode="true"/>
+				<s:Button id="id_closeBtn"  label="Cancel" useHandCursor="true" buttonMode="true"/>
+				<!--<s:Button id="printBtn" click="printBtnClickHandler()" label="Print" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.OKBtnSkin" useHandCursor="true" buttonMode="true"/>-->
+			</s:HGroup>
+		</s:VGroup>
+	</s:VGroup>
+</components1:PopupWindow>

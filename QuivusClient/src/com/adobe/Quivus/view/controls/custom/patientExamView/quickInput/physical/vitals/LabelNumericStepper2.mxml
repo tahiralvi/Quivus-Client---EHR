@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 skinClass="com.adobe.quivus.skins.chrome.containerSkins.VitalsNumericStepperBG"
+		 implements="mx.managers.IFocusManagerComponent" tabEnabled="true" tabChildren="true" focusEnabled="true"
+		 >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.quivus.skins.chrome.containerSkins.VitalsNumericStepperBG;
+			import com.adobe.quivus.skins.chrome.containerSkins.VitalsNumericStepperBGActive;
+			
+			import mx.events.FlexEvent;
+			import mx.managers.IFocusManagerComponent;
+
+			private var _label:String;
+			private var _labelChanged:Boolean;
+			
+			private var _stepSizes:Array = [] /*of Numbers*/;
+			private var _stepSizesChanged:Boolean;
+			
+			private var _values:Array = [] /*of Numbers*/;
+			private var _valuesChanged:Boolean;
+			
+			private var _maxValues:Array = [] /*of Numbers*/;
+			private var _maxValuesChanged:Boolean;
+			
+			private var _valueParseFunction:Function;
+			private var _valueParseFunctionChanged:Boolean;
+			
+			private var _selected:Boolean;
+			private var _selectedChanged:Boolean;
+			
+			private var _doubleModeOn:Boolean;
+			private var _doubleModeChanged:Boolean;
+			
+			private var _hasViewChanged:Boolean;
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+
+			override public function setFocus():void
+			{
+				super.setFocus();
+				
+				var hasFocus:* = focusManager.getFocus();
+				
+				if (firstNumericStepper && hasFocus != firstNumericStepper)
+					//firstNumericStepper.setFocus();
+					focusManager.setFocus(firstNumericStepper);
+				else if (secondNumericStepper.visible && hasFocus)
+					//secondNumericStepper.setFocus();
+					focusManager.setFocus(secondNumericStepper);
+			} 
+			
+			
+			public function set selected(value:Boolean):void
+			{
+				_selected = value;
+				_selectedChanged = true;
+				
+				invalidateProperties();
+			}
+			
+			[Bindable]
+			public function get doubleModeOn():Boolean
+			{
+				return _doubleModeOn;
+			}
+			
+			public function set doubleModeOn(value:Boolean):void
+			{
+				if (value != _doubleModeOn)
+				{
+					_doubleModeOn = value;
+					_doubleModeChanged = true;
+					
+					invalidateProperties();
+				}
+			}
+			
+			[Bindable]
+			public function get label():String
+			{
+				return _label;
+			}
+			
+			public function set label(value:String):void
+			{
+				if (value != _label)
+				{
+					_label = value;
+				}
+			}
+			
+			public function get stepSizes():Array
+			{
+				return _stepSizes;
+			}
+			
+			public function set stepSizes(value:Array/*of Numbers*/):void
+			{
+				_stepSizes = value;
+				_stepSizesChanged = true;
+				
+				invalidateProperties();
+			}
+			
+			public function get values():Array /*of Numbers*/
+			{
+				return _values;
+			}
+			
+			public function set values(value:Array /*of Numbers*/):void
+			{
+				_values = value;
+				_valuesChanged = true;
+				
+				if (firstNumericStepper && secondNumericStepper)
+				{
+					if (_valuesChanged && _values && _values.length)
+					{
+						_valuesChanged = false;
+						
+						firstNumericStepper.value = _values[0];
+						
+						if (_values.length > 1)
+							secondNumericStepper.value = _values[1];
+							
+						else
+							secondNumericStepper.value = _values[0];
+					}
+				}
+				else
+					invalidateProperties();
+			}
+			
+			public function set maxValues(value:Array /*of Numbers*/):void
+			{
+				_maxValues = value;
+				_maxValuesChanged = true;
+				
+				invalidateProperties();
+			}
+			
+			public function set valueParseFunction(value:Function):void
+			{
+				_valueParseFunction = value;
+			}
+			
+			public function isGetEdited():Boolean
+			{
+				var edited:Boolean = false;
+				
+				if (firstNumericStepper)
+				{
+					if (firstNumericStepper.value != 0)
+						edited = true;
+					
+					else if (firstNumericStepper.textDisplay.text.length)
+						edited = true;
+				}
+				
+				if (secondNumericStepper)
+				{
+					if (secondNumericStepper.value != 0)
+						edited = true;
+					else if (secondNumericStepper.textDisplay.text.length)
+						edited = true;
+				}
+				
+				return edited;
+			}
+			
+			public function reset(setFirst:Boolean = true, setSecond:Boolean = true):void
+			{
+				if (setFirst && firstNumericStepper)
+				{
+					firstNumericStepper.value = 0;
+					//firstNumericStepper.setFocus();
+					focusManager.setFocus(firstNumericStepper);
+				}
+				
+				if (setSecond && secondNumericStepper)
+				{
+					secondNumericStepper.value = 0;
+					
+					if (!setFirst)
+						//secondNumericStepper.setFocus();
+						focusManager.setFocus(secondNumericStepper);
+				}
+			}
+			
+			private function parseFirstNumericStepperValue(value:String):Number
+			{
+				var val:Number = parseFloat(value);
+				
+				if (!_values)
+					_values = [];
+				
+				val = (isNaN(val))? 0 : val;
+				
+				_values[0] = val;
+				
+				return val;
+			}
+			
+			private function parseSecondNumericStepperValue(value:String):Number
+			{
+				var val:Number = parseFloat(value);
+				
+				if (!_values)
+					_values = [];
+				
+				val = (isNaN(val))? 0 : val;
+				
+				_values[1] = val;
+				
+				return val;
+			}
+			
+			/**
+			 * Every time values changes either by user or programatically then dispatch FlexEvent.VALUE_COMMIT
+			 * 
+			 * it can be listen in parent container to perform further action on values change
+			 * */
+			private function commitValues(curTar:NumericStepper):void
+			{
+				if (!_values)
+					_values = [];
+				
+				if (curTar == firstNumericStepper)
+				{
+					_values[0] = curTar.value;
+					dispatchEvent(new FlexEvent(FlexEvent.VALUE_COMMIT));
+				}
+					
+				else if(curTar == secondNumericStepper)
+				{
+					if (_values && _values.length > 1)
+					{
+						_values[1] = curTar.value;
+						dispatchEvent(new FlexEvent(FlexEvent.VALUE_COMMIT));
+					}
+				}
+				
+				if (firstNumericStepper.value != 0 || secondNumericStepper.value != 0)
+					hasViewChanged = true;
+				else
+					hasViewChanged = false;
+			}
+			
+			private function valueChangeHandler(event:Event):void
+			{
+				var curTar:NumericStepper = NumericStepper(event.currentTarget);
+				commitValues(curTar);
+			}
+			
+			private function valueCommitHandler(event:FlexEvent):void
+			{
+				var curTar:NumericStepper = NumericStepper(event.currentTarget);
+				commitValues(curTar);
+			}
+			
+			private function stepperKeyUpHandler():void
+			{
+				if (firstNumericStepper.textDisplay.text.length && firstNumericStepper.textDisplay.text != "0")
+					hasViewChanged = true;
+				
+				else if (secondNumericStepper.textDisplay.text.length && secondNumericStepper.textDisplay.text != "0")
+					hasViewChanged = true;
+				
+				else
+					hasViewChanged = false;
+					
+			}
+			
+			override protected function commitProperties():void
+			{
+				super.commitProperties();
+				
+				if (_doubleModeChanged)
+				{
+					_doubleModeChanged = false;
+					
+					secondNumericStepper.includeInLayout = _doubleModeOn;
+					secondNumericStepper.visible = _doubleModeOn;
+				}
+				
+				if (firstNumericStepper && secondNumericStepper)
+				{
+					if (_stepSizesChanged && _stepSizes && _stepSizes.length)
+					{
+						_stepSizesChanged = false;
+						
+						firstNumericStepper.stepSize = _stepSizes[0];
+						
+						if (_stepSizes.length > 1)
+							secondNumericStepper.stepSize = _stepSizes[1];
+							
+						else
+							secondNumericStepper.stepSize = _stepSizes[0];
+					}
+					
+					if (_valuesChanged && _values && _values.length)
+					{
+						_valuesChanged = false;
+						
+						firstNumericStepper.value = _values[0];
+						
+						if (_values.length > 1)
+							secondNumericStepper.value = _values[1];
+							
+						else
+							secondNumericStepper.value = _values[0];
+					}
+					
+					if (_maxValuesChanged && _maxValues && _maxValues.length)
+					{
+						_maxValuesChanged = false;
+						
+						firstNumericStepper.maximum = _maxValues[0];
+						
+						if (_maxValues.length > 1)
+							secondNumericStepper.maximum = _maxValues[1];
+						else
+							secondNumericStepper.maximum = _maxValues[0];
+					}
+				}
+				
+			}
+
+			protected function labelField_mouseDownHandler(event:FocusEvent):void
+			{
+				this.setStyle("skinClass", VitalsNumericStepperBGActive);
+				labelField.setStyle("color", 0x000000);
+			}
+
+
+			protected function labelField_mouseOutHandler(event:FocusEvent):void
+			{
+				this.setStyle("skinClass", VitalsNumericStepperBG);
+				labelField.setStyle("color", 0x9B9C9C);
+				
+				event.stopImmediatePropagation();
+				event.preventDefault();
+				
+				var relatedObj:NumericStepper = NumericStepper(event.currentTarget);
+				
+				event.relatedObject = relatedObj;
+				
+				dispatchEvent(event);
+				if(secondNumericStepper.visible && doubleModeOn){
+					focusManager.setFocus(secondNumericStepper);
+			}
+			}
+			protected function labelField2_mouseOutHandler(event:FocusEvent):void
+			{
+				this.setStyle("skinClass", VitalsNumericStepperBG);
+				labelField.setStyle("color", 0x9B9C9C);
+				
+				event.stopImmediatePropagation();
+				event.preventDefault();
+				
+				var relatedObj:NumericStepper = NumericStepper(event.currentTarget);
+				
+				event.relatedObject = relatedObj;
+				
+				dispatchEvent(event);
+			}
+
+		]]>
+	</fx:Script>
+	
+		<s:layout>
+			<s:VerticalLayout horizontalAlign="center" paddingTop="7" paddingLeft="2" paddingRight="2"/>
+		</s:layout>
+	
+		<s:Label id="labelField" text="{label}" width="100%" fontFamily="Calibri" fontSize="11" textAlign="center" color="#9B9C9C"
+				  
+				 />
+		<s:HGroup width="100%" gap="5">
+			<s:NumericStepper height="18" id="firstNumericStepper" valueParseFunction="parseFirstNumericStepperValue" width="100%" textAlign="center" textAlignLast="center" 
+							  skinClass="com.gazuntite.controls.extended.skins.LabelNumericStepperSkin2" 
+							  valueCommit="valueCommitHandler(event)" change="valueChangeHandler(event)"
+							  keyUp="stepperKeyUpHandler()"
+							  focusIn="labelField_mouseDownHandler(event)" focusOut="labelField_mouseOutHandler(event)"
+							  focusEnabled="true" focusRect="true" focusAlpha="1"  tabEnabled="true" tabChildren="true"
+							  />
+			<s:NumericStepper height="18" id="secondNumericStepper" valueParseFunction="parseSecondNumericStepperValue" textAlign="center"  textAlignLast="center"
+							  skinClass="com.gazuntite.controls.extended.skins.LabelNumericStepperSkin2" width="100%"
+							  includeInLayout="false" visible="false" 
+							  valueCommit="valueCommitHandler(event)" change="valueChangeHandler(event)"
+							  keyUp="stepperKeyUpHandler()"
+							  focusIn="labelField_mouseDownHandler(event)" focusOut="labelField2_mouseOutHandler(event)"
+							  focusEnabled="true" focusRect="true" focusAlpha="1"  tabEnabled="true" tabChildren="true"
+							  />
+		</s:HGroup>
+</s:SkinnableContainer>

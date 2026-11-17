@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:roleManagement="com.gazuntite.provider.live.services.administration.view.roleManagement.*" 
+		 xmlns:userManagement="com.gazuntite.provider.live.services.administration.view.userManagement.*"
+		 width="100%" height="100%"  skinClass="com.adobe.gazuntite.skins.chrome.containerSkins.blackMiniTitleBGContainer"
+		 >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<userManagement:UserManagGridView width="100%" height="100%" />
+</s:SkinnableContainer>

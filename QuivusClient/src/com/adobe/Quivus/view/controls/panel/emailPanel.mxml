@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:SlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+					  creationComplete="slideoutpanel1_creationCompleteHandler(event)" 
+					  xmlns:components="com.gazuntite.controls.extended.components.*"
+					  xmlns:emailView="com.adobe.Quivus.view.controls.custom.emailView.*" 					
+					  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.utils.ChromeUtil;
+			
+			
+			/* [Bindable]
+			[Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='arrow_grey')]
+			private var ButtonBG:Class
+			
+			[Bindable]
+			[Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='arrow_grey_over')]
+			private var ButtonBGOver:Class */
+			
+		]]>
+	</fx:Script>
+	<fx:Metadata>
+		[Event(name="close", type="mx.events.CloseEvent")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.email.SendEmailEvent;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			
+			private var emailAddress:String;
+			private var m_bShowAttachButton:Boolean;
+
+			public function get ShowAttachButton():Boolean
+			{
+				return m_bShowAttachButton;
+			}
+
+			public function set ShowAttachButton(value:Boolean):void
+			{
+				m_bShowAttachButton = value;
+			}
+
+			[Bindable]
+			public function get EmailAddress():String
+			{
+				return emailAddress;
+			}
+			
+			public function set EmailAddress(value:String):void
+			{
+				emailAddress = value;
+			}
+
+			protected function slideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				//id_emailView.EmailAddress = this.ContactDTO.UserEmail;
+				//id_emailPanelHeader.id_attachment.AttachmentHandler = OnAttachClick;
+				
+				id_emailPanelHeader.id_slideoutBtn.addEventListener(MouseEvent.CLICK, button1_clickHandler);
+				
+				id_emailView.id_SendBtn.addEventListener(MouseEvent.CLICK, OnSendClick);
+				
+				id_emailPanelHeader.id_CloseBtn.addEventListener(MouseEvent.CLICK ,CloseHandler);
+					
+				id_emailPanelHeader.id_AttachmentButton.visible = ShowAttachButton;
+				
+			}
+			
+			protected function OnSendClick(event:MouseEvent):void
+			{
+				trace("Attach click handler");
+				var seEvent : SendEmailEvent = new SendEmailEvent
+				( 
+					id_emailView.id_subject.text,
+					id_emailView.id_email.text,
+					id_emailView.id_message.text,
+					id_emailPanelHeader.id_AttachmentButton.Attachment != null ? id_emailPanelHeader.id_AttachmentButton.Attachment.FileName : '',
+					id_emailPanelHeader.id_AttachmentButton.Attachment != null ? id_emailPanelHeader.id_AttachmentButton.Attachment.Content : null,
+					CloseHandler
+				);
+				CairngormEventDispatcher.getInstance().dispatchEvent( seEvent );
+			}
+			
+			protected function CloseHandler(event:MouseEvent = null):void
+			{
+				//chUtil.removeWindowsCount();
+				dispatchEvent( new CloseEvent(CloseEvent.CLOSE) );
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				this.ToggleSlideOut();
+				event.stopImmediatePropagation();
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	
+	
+	<custom:HeaderContents>
+		<s:Group width="100%" height="22">
+			<s:layout>
+				<s:VerticalLayout paddingLeft="{isSlideOut? 5:0}"  horizontalAlign="center" />
+			</s:layout>
+		
+		<emailView:emailPanelHeader id="id_emailPanelHeader" minWidth="560" width="100%" height="22"  />
+			</s:Group>
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		<!--<custom:slideOutGreyHeader minWidth="{id_contents.width}" />				-->		   
+		
+		<s:SkinnableContainer height="22" width="100%" minWidth="550" skinClass="com.adobe.Quivus.view.controls.skins.PatientRegHeaderSkin">
+			<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="center" >
+				<s:Label  paddingLeft="12" color="#ffffff" paddingTop="6" fontFamily="Calibri Bold" text="EMAIL" />				
+				
+			</s:HGroup>
+			
+		</s:SkinnableContainer>
+		
+	</custom:SlideHeaderContents>
+	<custom:Contents>
+		
+		
+		<s:VGroup paddingTop="-3" gap="0" height="100%" width="{id_emailPanelHeader.width}" verticalAlign="top" horizontalAlign="center"
+				  paddingLeft="{isSlideOut? 10:0}" maxHeight="400" 
+				  >
+			
+			<s:VGroup paddingTop="4" gap="-4" height="100%" width="{isSlideOut? id_emailPanelHeader.width :id_emailPanelHeader.width}"  verticalAlign="top" horizontalAlign="center" >
+					
+				<s:BorderContainer height="205" width="100%" cornerRadius="3" backgroundColor="#999AAA" borderAlpha="0" borderColor="#999AAA">
+					<s:layout>
+						<s:HorizontalLayout paddingTop="0" horizontalAlign="left" />
+							
+						
+					</s:layout>
+					
+						
+					<emailView:emailView id="id_emailView" width="100%" height="200" EmailAddress="{EmailAddress}" />
+				</s:BorderContainer>
+	
+				<s:Button id="id_CloseBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.closeBtnSkin" 
+						  click="CloseHandler(event)" buttonMode="true" useHandCursor="true" toolTip="Close Email Section"/>
+				
+				
+			</s:VGroup>
+		</s:VGroup>
+		
+	</custom:Contents>
+	
+</custom:SlideOutPanel>

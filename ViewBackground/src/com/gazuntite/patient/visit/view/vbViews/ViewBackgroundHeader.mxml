@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:components="com.gazuntite.controls.extended.components.*" xmlns:buttonSeparators="com.adobe.gazuntite.skins.chrome.buttonSeparators.*"
+		 >
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.yellowCreateVisitButton;
+			import com.gazuntite.common.util.QSAppUtils;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			import com.gazuntite.patient.visit.view.event.CreateVisitUIEvent;
+			
+			import mx.controls.Alert;
+			
+			[Bindable]
+			private var model:VBModelLocator = VBModelLocator.getInstance();
+			
+			protected function CreateVisitBtn_clickHandler(event:Event):void
+			{
+				dispatchCreateQIUIEvent(QSAppUtils.GetDateFromToday( 0 ));
+				event.stopImmediatePropagation();
+			}
+			
+			public function dispatchCreateQIUIEvent(date:Date):void
+			{
+				//if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.QUICK_INPUT ) )
+				//{
+					var e:CreateVisitUIEvent = 	new CreateVisitUIEvent();
+					
+					if (date)
+						e.visitDate = date;
+					
+					dispatchEvent(e);
+				//}
+ 			}
+			
+			
+			
+			protected function id_slideoutBtn_clickHandler(event:MouseEvent):void
+			{
+				/* this.ToggleSlideOut();
+				event.stopImmediatePropagation();	 */		
+			}
+			
+			
+			
+			/* protected function id_OtherDays_clickHandler(event:MouseEvent):void
+			{
+				id_OptionPopUp.displayPopUp = false; 
+				id_clockBtn.selected = false;
+				callLater( CreateVisitBtn_clickHandler, [ event ] );
+				event.stopImmediatePropagation();
+			} */
+			
+			
+			protected function id_OptionPopUp_focusOutHandler(event:FocusEvent):void
+			{
+				id_OptionPopUp.displayPopUp = false ; 
+				id_clockBtn.selected		= false ;
+			}
+			
+			
+			protected function id_n1_clickHandler(event:MouseEvent, date:Date):void
+			{
+				dispatchCreateQIUIEvent(date);
+				id_clockBtn.selected 		= false;
+				id_OptionPopUp.displayPopUp = false ;
+			}
+			
+			protected function id_CloseButton_clickHandler(event:MouseEvent):void
+			{
+				id_clockBtn.selected 		= false;
+				id_OptionPopUp.displayPopUp = false ;
+			}
+			
+			
+			protected function id_clockBtn_clickHandler(event:MouseEvent):void
+			{
+				//if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.VB_CREATE_VIST ) )//Tahir Alvi 
+				//{
+					id_OptionPopUp.displayPopUp = !id_OptionPopUp.displayPopUp; 
+					event.stopImmediatePropagation();
+				//}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Style>
+		.popUpBox
+		{
+			backgroundColor : #F9D234; 
+			borderStyle : "solid";
+			paddingTop : 2;
+			paddingBottom : 2; 
+			paddingLeft : 2; 
+			paddingRight : 2;
+		}
+	</fx:Style>
+	<fx:Metadata>
+		 [Event(name="CreateVisitUI", type="com.gazuntite.patient.visit.view.event.CreateVisitUIEvent")] 
+	</fx:Metadata>
+	<fx:Style>
+		.popUpBox
+		{
+			backgroundColor : #F9D234; 
+			borderStyle : "solid";
+			paddingTop : 2;
+			paddingBottom : 2; 
+			paddingLeft : 2; 
+			paddingRight : 2;
+		}
+	</fx:Style>
+	<fx:Declarations>
+		<mx:DateFormatter id="id_DateFormatter" formatString="MM-DD-YY" />
+	</fx:Declarations>
+	
+	<s:SkinnableContainer id="id_headerSkin" skinClass="com.adobe.gazuntite.skins.chrome.skinnableContainers.PP_headerSkin_disabled" width="100%" height="22">
+			
+		<s:layout>
+			<s:HorizontalLayout verticalAlign="middle" />
+		</s:layout>
+
+		<s:HGroup verticalAlign="top" horizontalAlign="left" width="26%" paddingLeft="5">
+			
+			<s:Label id="id_label" color="#272727" fontFamily="Calibri Bold" fontSize="13" text="View Background" 
+					 paddingTop="2" />
+		</s:HGroup>
+		<s:HGroup verticalAlign="middle" width="29%" gap="2">			
+			
+			<s:Rect height="21" width="1">
+				<s:fill>
+					<s:SolidColor color="#E1BA12"/>
+				</s:fill>
+				<s:filters>
+					<s:DropShadowFilter alpha="0.5" angle="0" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+				</s:filters>
+			</s:Rect>
+			
+			<s:Label text="Last Visit" color="#222222" fontFamily="Calibri" alpha="0.8"  
+					 paddingLeft="2" paddingRight="2" />
+			<s:SkinnableContainer skinClass="com.adobe.gazuntite.skins.viewBackground.skinnableContainers.VBHeaderLabelBG" >
+				<s:layout>
+					<s:HorizontalLayout verticalAlign="middle"  horizontalAlign="center" paddingTop="2" paddingLeft="2" paddingRight="2"/>
+					
+				</s:layout>	
+				
+				<components:DotedLabel DesiredLength="13" text="{model.lastVisitDate}" color="#000000" fontFamily="Calibri Bold"  toolTip="{model.lastVisitDate}"
+									   paddingRight="2" minWidth="60"/>
+			</s:SkinnableContainer>
+			
+			<s:Rect height="21" width="1">
+				<s:fill>
+					<s:SolidColor color="#E1BA12"/>
+				</s:fill>
+				<s:filters>
+					<s:DropShadowFilter alpha="0.5" angle="0" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+				</s:filters>
+			</s:Rect>				
+			
+		</s:HGroup>
+		
+		<s:HGroup verticalAlign="middle" width="40%" paddingLeft="2">
+			<s:Label text="Next Appointment" color="#222222" fontFamily="Calibri" alpha="0.8" 
+					 />
+			
+			<s:SkinnableContainer skinClass="com.adobe.gazuntite.skins.viewBackground.skinnableContainers.VBHeaderLabelBG" >
+				<s:layout>
+					<s:HorizontalLayout verticalAlign="middle"  horizontalAlign="center" paddingTop="2" paddingLeft="2" paddingRight="2"/>
+					
+				</s:layout>	
+				<components:DotedLabel DesiredLength="13" text="{model.nextAppointmentDate}" minWidth="60" color="#000000" fontFamily="Calibri Bold" toolTip="{model.nextAppointmentDate}"   />
+			</s:SkinnableContainer>
+		</s:HGroup>
+		
+		<s:HGroup horizontalAlign="right" width="100%" paddingRight="1" paddingTop="5" gap="0"  paddingBottom="0">
+			<s:HGroup horizontalAlign="right" gap="-4" verticalAlign="top"  paddingRight="5" paddingTop="1" paddingBottom="0" >
+				<s:Button id="id_CreateVisitBtn" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.CreateVisitBtn" 
+						  click="CreateVisitBtn_clickHandler(event)" useHandCursor="true" buttonMode="true" toolTip="Create New Visit" />
+				<s:VGroup width="20" gap="-4" horizontalAlign="right" id="id_VBButtonsGroup">
+					
+					<s:HGroup gap="0" paddingTop="0">					
+						<s:ToggleButton id="id_clockBtn" height="25" skinClass="com.adobe.gazuntite.skins.chrome.toggleButtonSkins.createVisitTimeBtn"
+										buttonMode="true" useHandCursor="true"  toolTip="Visit Date"
+										click="id_clockBtn_clickHandler(event)"
+										/>
+					</s:HGroup>
+					
+					<s:PopUpAnchor id="id_OptionPopUp" width="180" 
+								   popUpPosition="below" 
+								   displayPopUp="false" 
+								   focusOut="id_OptionPopUp_focusOutHandler(event)"
+								   styleName="popUpBox">
+						<s:SkinnableContainer skinClass="com.adobe.gazuntite.skins.chrome.skinnableContainers.CommunicationIconsBGLarge" width="100%">
+							<s:layout>
+								<s:VerticalLayout gap="2" verticalAlign="bottom" horizontalAlign="left" paddingBottom="5" paddingLeft="7" paddingTop="4" />
+							</s:layout>
+							<s:HGroup width="100%" paddingRight="5">
+								<s:RichText color="#000000" fontSize="12" height="12" kerning="off" text="Visit Date" whiteSpaceCollapse="preserve" fontFamily="Calibri Bold"/>
+								<mx:Spacer width="100%"/>
+								<s:Button buttonMode="true" id="id_CloseButtonn" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.popupCloseBtnSkin" 
+										  toolTip="Close" height="16" width="16"
+										  click="id_CloseButton_clickHandler(event)"/>
+							</s:HGroup>
+							
+							<s:Button id="id_n1" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.menuButton" 
+									  click="id_n1_clickHandler(event, QSAppUtils.GetDateFromToday( 0 ))"  
+									  buttonMode="true" useHandCursor="true" toolTip="Today ({id_DateFormatter.format( QSAppUtils.GetDateFromToday( 0 ) )})" 
+									  label="Today ({id_DateFormatter.format( QSAppUtils.GetDateFromToday( 0 ) )})"/>
+							<s:Button id="id_n2" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.menuButton" 
+									  buttonMode="true" useHandCursor="true" toolTip="Yesterday ({id_DateFormatter.format( QSAppUtils.GetDateFromToday( -1 ) )})" 
+									  label="Yesterday ({id_DateFormatter.format( QSAppUtils.GetDateFromToday( -1 ) )})"
+									  click="id_n1_clickHandler(event, QSAppUtils.GetDateFromToday( -1 ))" />		
+							<s:Button id="id_n3" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.menuButton" 
+									  buttonMode="true" useHandCursor="true" toolTip="Day B. Yesterday ({id_DateFormatter.format( QSAppUtils.GetDateFromToday( -2 ) )})"
+									  label="Day B. Yesterday ({id_DateFormatter.format( QSAppUtils.GetDateFromToday( -2 ) )})"
+									  click="id_n1_clickHandler(event, QSAppUtils.GetDateFromToday( -2 ))" />
+							
+						</s:SkinnableContainer>
+					</s:PopUpAnchor>
+					
+				</s:VGroup>
+				<mx:Spacer width="10" />
+				<s:ToggleButton id="id_LoadVBBtn" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.loadVisitBtn" 
+						  useHandCursor="true" buttonMode="true" toolTip="Filter Data" />
+			</s:HGroup>
+			<buttonSeparators:buttonSeparator/>
+			
+			<s:HGroup paddingBottom="1" paddingTop="-1" paddingRight="2">
+				
+				<s:ToggleButton id="id_expandBtn" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.expandButton_white" 
+								width="19" height="21"	buttonMode="true" useHandCursor="true" toolTip="{id_expandBtn.selected?'Collapse':'Expand'}"/>
+			</s:HGroup>
+			<buttonSeparators:buttonSeparator includeInLayout="false" visible="false" />
+			<s:HGroup paddingBottom="1" paddingTop="-1" paddingRight="2" includeInLayout="false" visible="false">
+				<s:ToggleButton id="id_slideoutBtn" skinClass="com.adobe.gazuntite.skins.chrome.toggleButtonSkins.slideOutBtn_white"
+								buttonMode="true" useHandCursor="true" toolTip="{id_slideoutBtn.selected?'Slide-In':'Slide-Out'}" 
+								width="18" height="21"  click="id_slideoutBtn_clickHandler(event)"/>
+			</s:HGroup>
+		</s:HGroup>
+	</s:SkinnableContainer>
+</s:Group>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" 
+    xmlns:fb="http://ns.adobe.com/flashbuilder/2009" alpha.disabled="0.5">
+
+    <fx:Metadata>
+    <![CDATA[ 
+        /** 
+         * @copy spark.skins.spark.ApplicationSkin#hostComponent
+         */
+        [HostComponent("spark.components.SkinnableContainer")]
+    ]]>
+    </fx:Metadata> 
+    
+    <s:states>
+        <s:State name="normal" />
+        <s:State name="disabled" />
+    </s:states>
+    
+    <!--- Defines the appearance of the SkinnableContainer class's background. -->
+	<s:Path alpha="1" data="M 341.5 0.5 L 7.5 0.5 C 3.634 0.5 0.5 3.634 0.5 7.5 L 0.5 249.5 C 0.5 253.367 3.634 256.5 7.5 256.5 L 341.5 256.5 C 345.366 256.5 348.5 253.367 348.5 249.5 L 348.5 7.5 C 348.5 3.634 345.366 0.5 341.5 0.5 Z" height="100%" width="100%" winding="nonZero" x="0" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#CBDBF0" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#899BB2" ratio="0.4980392156862745"/>
+				<s:GradientEntry alpha="1.0" color="#6E84A1" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter blurX="4.0" blurY="4.0" distance="1" hideObject="false" color="#57616D" inner="false" strength="1" alpha="0.7" quality="2" knockout="false" angle="90"  />
+		</s:filters>
+	</s:Path>
+    
+    <!--
+        Note: setting the minimum size to 0 here so that changes to the host component's
+        size will not be thwarted by this skin part's minimum size.   This is a compromise,
+        more about it here: http://bugs.adobe.com/jira/browse/SDK-21143
+    -->
+    <!--- @copy spark.components.SkinnableContainer#contentGroup -->
+    <s:Group id="contentGroup" left="0" right="0" top="0" bottom="0" minWidth="0" minHeight="0">
+        <s:layout>
+            <s:BasicLayout/>
+        </s:layout>
+    </s:Group>
+
+</s:Skin>

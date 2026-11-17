@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:SlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*"
+					  xmlns:components1="com.gazuntite.controls.extended.components.*" 
+					  xmlns:registeration="com.adobe.Quivus.view.controls.registeration.*" 
+					  xmlns:buttonSeparators="com.adobe.Quivus.view.controls.skins.buttonSeparators.*" 
+					  creationComplete="slideoutpanel1_creationCompleteHandler(event)"
+					  QSViewStateChange="slideoutpanel1_QSViewStateChangeHandler(event)"
+					  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.view.events.CloseFormEvent;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+            public  var _hasChange :  Boolean;
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+
+			public function get hasChange():Boolean
+			{
+				return _hasChange;
+			}
+
+			public function set hasChange(value:Boolean):void
+			{
+				_hasChange = value;
+			}
+
+			protected function slideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				//id_userRegistrationForm = new userRegistrationForm();
+				id_userRegistrationForm.id_btnCancel.addEventListener( MouseEvent.CLICK, function (event:MouseEvent):void
+				{
+					CloseHandler(event);
+				});	
+				addEventListener(CloseFormEvent.CLOSE_FORM_EVENT, closeFormWindow);
+			}
+			private function closeFormWindow(event:CloseFormEvent):void
+			{
+				dispatchEvent( new CloseEvent("close") );
+			}
+			
+			protected function CloseHandler(event:MouseEvent):void
+			{
+				dispatchEvent( new CloseEvent("close") );
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				this.ToggleSlideOut();
+				event.stopImmediatePropagation();
+			}
+			
+			protected function ScrollUp(event:MouseEvent):void
+			{
+				//id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition + 15;
+				id_userRegistrationForm.ScrollUp();
+			}
+			
+			protected function ScrollDown(event:MouseEvent):void
+			{
+				//id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition - 15;
+				id_userRegistrationForm.ScrollDown();
+			}
+
+
+			protected function slideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if(id_userRegistrationForm)
+				{
+					if(id_userRegistrationForm.id_BasicInfo && event.viewState == QSViewStateEvent.COLLAPSED_VIEW)
+					{
+						id_userRegistrationForm.id_BasicInfo.removeErrorTips();
+					}
+					
+					/**
+					 * Ayesha: 26th May 2011
+					 * hiding and showing popUps on collapsing and expanding registration Panel respectively
+					 * */
+					
+					if (event.viewState == QSViewStateEvent.COLLAPSED_VIEW)
+					{
+						id_userRegistrationForm.hideAllPopUps();
+					}
+					else
+					{
+						id_userRegistrationForm.showAllPopUps();
+					}
+				}
+			}
+
+
+
+			protected function button2_buttonDownHandler(event:Event):void
+			{
+				id_userRegistrationForm.ScrollUp();
+			}
+
+
+			protected function button3_buttonDownHandler(event:Event):void
+			{
+				id_userRegistrationForm.ScrollDown();
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<custom:SlideHeaderContents>
+		<!--<custom:slideOutGreyHeader width="100%" minWidth="{id_content.width}" />-->
+		<s:SkinnableContainer height="22" width="100%" minWidth="{ChromeUtil.topLevelMainContainer.width - 22}" skinClass="com.adobe.Quivus.view.controls.skins.PatientRegHeaderSkin">
+			<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="center" >
+				<s:Label  paddingLeft="12" color="#ffffff" paddingTop="6" fontFamily="Calibri Bold" text="PATIENT REGISTRATION" />				
+			</s:HGroup>
+		</s:SkinnableContainer>
+	</custom:SlideHeaderContents>
+	
+	<custom:Contents>
+		
+		<s:VGroup id="id_content" paddingTop="0" gap="0" width="{id_header.width}" verticalAlign="top" horizontalAlign="left" paddingLeft="{isSlideOut? 10:0}">
+
+			<s:VGroup paddingTop="{isSlideOut? -2:0}"  gap="-2" width="{isSlideOut? id_header.width :id_header.width }" verticalAlign="top" horizontalAlign="center">
+	
+				<s:SkinnableContainer width="100%" height="100%"
+									  minHeight="30" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.grayPanelBodySkin">
+					<s:layout>
+						<s:VerticalLayout gap="5" paddingTop="0" paddingLeft="4" paddingRight="4" paddingBottom="5" horizontalAlign="left"  />
+					</s:layout>
+					<s:Scroller id="id_Scroller" width="100%" height="100%" horizontalScrollPolicy="off" verticalScrollPolicy="off">
+						<s:Group width="100%" height="100%" >
+							<registeration:userRegistrationForm id="id_userRegistrationForm" width="100%"  />
+						</s:Group>
+					</s:Scroller>
+					<s:HGroup id="id_HgScroll" width="100%" horizontalAlign="center" paddingTop="11">
+						<s:HGroup width="100%" horizontalAlign="center" paddingTop="-10" paddingRight="15" paddingBottom="5">
+							<s:Button height="8" width="40" toolTip="Scroll Up" click="ScrollUp(event)" 
+									  buttonDown="button2_buttonDownHandler(event)"
+									  autoRepeat="true" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.PEscrollUp" 
+									  buttonMode="true" useHandCursor="true"/>
+							<s:Button height="8" width="40" toolTip="Scroll Down" click="ScrollDown(event)" 
+									  buttonDown="button3_buttonDownHandler(event)" autoRepeat="true"
+									  skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.PEScrollDown" 
+									  buttonMode="true" useHandCursor="true"/>
+						</s:HGroup>
+					</s:HGroup>
+				</s:SkinnableContainer>
+				
+				<s:Button id="id_CloseBtn" click="CloseHandler(event)" toolTip="Close Registration" buttonMode="true" useHandCursor="true" 
+						  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.closeBtnSkin" />
+			</s:VGroup>
+		</s:VGroup>
+	</custom:Contents>
+	
+	<custom:HeaderContents>
+		<s:Group width="100%" id="id_header" height="22">
+			<s:layout>
+				<s:VerticalLayout paddingLeft="{isSlideOut? 5:0}"  horizontalAlign="center" />
+			</s:layout>
+		<s:SkinnableContainer width="100%" minWidth="580" skinClass="com.adobe.Quivus.view.controls.skins.PatientRegHeaderSkin">
+			
+			<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="left">
+				<s:Label paddingLeft="12" color="#000000" paddingTop="6" fontFamily="Calibri Bold" text="PATIENT REGISTRATION" />
+			</s:HGroup>
+			<s:HGroup horizontalAlign="right" width="100%" paddingRight="1" paddingTop="0" gap="1">
+				<buttonSeparators:buttonSeparatorGrey />
+				<s:HGroup paddingTop="0">
+					
+					<s:Button id="id_CloseButton" click="CloseHandler(event)" toolTip="Close Registration" buttonMode="true" useHandCursor="true" 
+							    skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QICrossButtonSkin"/>
+				</s:HGroup>
+				<buttonSeparators:buttonSeparatorGrey />
+				<s:HGroup paddingTop="0">
+					
+					<s:ToggleButton id="id_expandBtn" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.expandButton_grey" 
+									buttonMode="true" useHandCursor="true" toolTip="{id_expandBtn.selected?'Collapse':'Expand'}"/>
+				</s:HGroup>
+				<buttonSeparators:buttonSeparatorGrey />
+				<s:HGroup paddingTop="0" paddingRight="3">
+					<s:ToggleButton id="id_slideoutBtn" skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.slideOutBtn"
+									buttonMode="true" useHandCursor="true" toolTip="{id_slideoutBtn.selected?'Slide-In':'Slide-Out'}" 
+									width="18" height="18"  click="button1_clickHandler(event)" />
+				</s:HGroup>
+			</s:HGroup>
+		</s:SkinnableContainer>
+			</s:Group>
+	</custom:HeaderContents>
+	
+</custom:SlideOutPanel>

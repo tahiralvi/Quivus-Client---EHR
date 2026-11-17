@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:SlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+					  xmlns:patientEncounter="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.patientEncounter.*"
+					  
+					 xmlns:VBImmunization="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.vbTabSection.vbPMH.VBImmunization.*" 
+					  xmlns:quickInput="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.*" 
+					  xmlns:viewBackground="com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.*" 
+					  creationComplete="slideoutpanel1_creationCompleteHandler(event)"
+					  QSViewStateChange="slideoutpanel1_QSViewStateChangeHandler(event)"
+					  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.VBSectionDictation;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.viewBackground.VBSectionNotes;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBInternalBarInactiveSkin;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.transparentGridPanelSkin;
+			import com.adobe.Quivus.view.controls.skins.VBinternalBarSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.VBdictationBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.VBnotesBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridDictationButtonSelectedSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridDictationButtonSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.writeNotesButton;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBIconsButton;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.writeNotesButtonSelected;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.VBdictationBtnSelected;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.VBnotesBtnSelected;
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.VBIconsBlackButton;
+			import com.adobe.gazuntite.skins.chrome.toggleButtonSkins.VBIconsButtonFilled;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			
+			private var notesGridPanel:VBSectionNotes;
+			private var m_oNotesDTOList:ArrayCollection;
+			
+			private var dictationGridPanel:VBSectionDictation;
+			
+			public function get notesDTOList():ArrayCollection
+			{
+				return m_oNotesDTOList;
+			}
+			
+			public function set notesDTOList(value:ArrayCollection):void
+			{
+				m_oNotesDTOList = value;
+			}
+			private var vb_IsModelUpdated:Boolean;
+			
+			public function get IsModelUpdated():Boolean{
+				
+				return vb_IsModelUpdated;
+				
+			}
+			private var moduleConstantName:String = Constants.IMMUNIZATION_MODULE_NAME;
+			public function set IsModelUpdated(value:Boolean):void{
+				
+				vb_IsModelUpdated = value;
+				
+				if(vb_IsModelUpdated )
+				{
+					var notesDTOList:ArrayCollection = QSUtilityFunctions.getModuleNoteListForViewBackGround
+						( moduleConstantName);
+					var dictationDTOList:ArrayCollection = QSUtilityFunctions.getModuleDictationListForViewBackGround
+						(moduleConstantName);
+					
+					/* if(notesDTOList && notesDTOList.length > 0) {
+					id_header.id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected); 
+					} else {
+					id_header.id_NotesBtn.setStyle("skinClass", VBnotesBtn);
+					}
+					
+					if( dictationDTOList && dictationDTOList.length > 0) {
+					id_header.id_Voice.setStyle("skinClass", VBdictationBtnSelected);
+					} else {
+					id_header.id_Voice.setStyle("skinClass", VBdictationBtn);
+					} */
+					
+					if(dictationDTOList && dictationDTOList.length > 0)
+					{
+						id_header.id_Voice.setStyle("skinClass", VBdictationBtnSelected);
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+					}
+					
+					if(notesDTOList && notesDTOList.length > 0)
+					{
+						id_header.id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected);
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+					}		
+					
+				}
+			}
+			protected function slideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_header.HeadingLable = id_header.HeadingLable.toUpperCase();
+				if(this.ExpandedView)
+				{
+					id_header.HeadingLable = id_header.HeadingLable.toUpperCase();
+				}
+				else
+				{
+					id_header.HeadingLable = id_header.HeadingLable.toLowerCase();
+				}
+				
+				id_header.id_OptionPopUp.displayPopUp = true;
+				id_header.id_iconButtons.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					//if(id_Area.visible)
+					{
+						
+						if(id_header.id_OptionPopUp.displayPopUp)
+						{
+							id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						}
+						else
+						{
+							id_header.id_iconButtons.setStyle("skinClass", VBIconsButton);	
+						}
+					}
+					
+				});	
+				id_header.id_Voice.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					var notesDTOList:ArrayCollection = QSUtilityFunctions.getModuleNoteListForViewBackGround
+					( moduleConstantName);
+					var dictationDTOList:ArrayCollection = QSUtilityFunctions.getModuleDictationListForViewBackGround
+					(moduleConstantName);
+					
+					id_notesDictation.notesDTOList = notesDTOList;
+					id_notesDictation.DictationDTOList = dictationDTOList;
+					id_notesDictation.id_Area.visible 		= true;
+					id_notesDictation.id_Area.includeInLayout = true;
+					//id_notesDictation.id_VBViews.selectedIndex = 1;						
+					id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+					id_header.id_iconButtons.selected = false;
+					id_header.id_OptionPopUp.displayPopUp = false;
+					
+					if(this.ExpandedView)
+					{
+						event.stopImmediatePropagation();
+					}
+				});			
+				
+				id_header.id_slideoutBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					ToggleSlideOut();
+					
+					FlexGlobals.topLevelApplication.slideout_count++;
+					event.stopImmediatePropagation();
+				});
+				
+				id_slideoutHeader.id_slideoutClose.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					ToggleSlideOut();								
+					
+					event.stopImmediatePropagation();
+				});
+				
+				id_header.id_NotesBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					var notesDTOList:ArrayCollection = QSUtilityFunctions.getModuleNoteListForViewBackGround
+					( moduleConstantName);
+					var dictationDTOList:ArrayCollection = QSUtilityFunctions.getModuleDictationListForViewBackGround
+					(moduleConstantName);
+					
+					id_notesDictation.notesDTOList = notesDTOList;
+					id_notesDictation.DictationDTOList = dictationDTOList;
+					{
+						id_notesDictation.id_Area.visible 		= true;
+						id_notesDictation.id_Area.includeInLayout = true;						
+						//id_notesDictation.id_VBViews.selectedIndex = 0;
+						id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						id_header.id_iconButtons.selected = false;
+						id_header.id_OptionPopUp.displayPopUp = false;
+						
+					}
+					
+					if(this.ExpandedView)
+					{
+						event.stopImmediatePropagation();
+					}
+				});
+				id_header.id_OptionPopUp.displayPopUp = false;
+				
+				/* if(this.ExpandedView)
+				{
+					id_header.id_pmhHeader.setStyle("skinClass", VBinternalBarSkin);	
+				}
+				else
+				{
+					id_header.id_pmhHeader.setStyle("skinClass", VBInternalBarInactiveSkin);
+				} */
+			}
+
+			
+
+			protected function slideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if(id_header && id_header.id_pmhHeader)
+				if(event.viewState == QSViewStateEvent.EXPANDED_VIEW)
+				{
+					//id_header.id_pmhHeader.setStyle("skinClass", VBinternalBarSkin);	
+					id_header.HeadingLable = id_header.HeadingLable.toUpperCase();
+					id_header.id_expandBtn.selected = true;
+				}
+				else
+				{
+					//id_header.id_pmhHeader.setStyle("skinClass", VBInternalBarInactiveSkin);
+					id_header.HeadingLable = AppUtils.TitleCase(id_header.HeadingLable);
+					id_header.id_expandBtn.selected = false;
+				}
+			}
+			
+			
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Binding source="model.vbDataLoadedFlag"  destination="IsModelUpdated"/>
+	<custom:HeaderContents>
+		<s:Group id="id_mainHeader" width="100%" height="24" minWidth="{ChromeUtil.topLevelMainContainer.width - 70}">
+			<s:layout>
+				<s:VerticalLayout verticalAlign="bottom" horizontalAlign="center" />
+			</s:layout>
+			<viewBackground:VBSectionHeader id="id_header" width="{id_mainHeader.width - 8}" HeadingLable="{Constants.VB_SECTION_NAME_IMMUNIZATION}" SectionNameID="{QSSecurityUtil.VB_IMMUNIZATION}"
+											Skin="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBImmunizationPanelSkin"/>						   
+		</s:Group>
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		<viewBackground:VBSectionSlideoutHeader id="id_slideoutHeader" label="{Constants.VB_SECTION_NAME_IMMUNIZATION}" />
+		
+		
+	</custom:SlideHeaderContents>
+	<custom:Contents>
+		<s:SkinnableContainer id="id_contents" width="100%" height="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.VBImmunizationPanelSkin" >
+			<s:layout>
+				<s:VerticalLayout horizontalAlign="center" verticalAlign="top" gap="1" paddingLeft="4" paddingRight="4" paddingBottom="4" paddingTop="4" />
+			</s:layout>
+			<!--<s:HGroup id="id_NotesArea" width="100%" paddingTop="0" />-->
+			<viewBackground:VBSectionLevelNotesDictation id="id_notesDictation" width="100%" />
+			<VBImmunization:VBImmunizationGridView width="100%" height="100%"  id="id_immGridView"/>
+		</s:SkinnableContainer>
+	</custom:Contents>
+	
+</custom:SlideOutPanel>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<flexLibProperties includeAllClasses="true" useMultiPlatformConfig="false" version="3">
+  <includeClasses>
+    <classEntry path="com.zigron.provider.live.services.administration.appController.AdminController"/>
+    <classEntry path="com.zigron.provider.live.services.administration.model.AdminAppModelLocator"/>
+    <classEntry path="com.zigron.provider.live.services.administration.event.roleManagement.LoadRoleEvent"/>
+    <classEntry path="com.zigron.provider.live.services.administration.command.roleManagement.LoadRoleCommand"/>
+    <classEntry path="com.zigron.provider.live.services.administration.util.AdminConstant"/>
+    <classEntry path="com.zigron.provider.live.services.administration.util.AdminServiceMethod"/>
+    <classEntry path="com.zigron.provider.live.services.administration.delegate.roleManagement.LoadRoleDelegate"/>
+    <classEntry path="com.zigron.provider.live.services.administration.util.AdminCombineEventDispatcher"/>
+    <classEntry path="com.zigron.provider.live.services.administration.view.roleManagement.roleTreeView"/>
+    <classEntry path="com.zigron.provider.live.services.administration.dto.AccessRightDTO"/>
+  </includeClasses>
+  <includeResources/>
+  <namespaceManifests/>
+</flexLibProperties>

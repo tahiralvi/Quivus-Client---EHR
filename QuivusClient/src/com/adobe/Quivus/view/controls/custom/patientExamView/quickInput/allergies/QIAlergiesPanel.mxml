@@ -1,0 +1,961 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:PinableSlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							 xmlns:s="library://ns.adobe.com/flex/spark" 
+							 xmlns:mx="library://ns.adobe.com/flex/mx" 
+							 xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+							 xmlns:allergies="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.allergies.*" 
+							 xmlns:quickInput="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.*"					 				
+							 xmlns:notes="com.adobe.Quivus.view.controls.custom.patientExamView.notes.*"
+							 QSViewStateChange="pinableslideoutpanel1_QSViewStateChangeHandler(event)"
+							 QSSlideStateChange="pinableslideoutpanel1_QSSlideStateChangeHandler(event)"					   
+							 move="pinableslideoutpanel1_moveHandler(event)" 
+							 creationComplete="creationCompleteHandler()" 
+							 xmlns:components="com.zigron.controls.extended.components.*" 
+							 xmlns:commons="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.*" xmlns:components1="com.gazuntite.controls.extended.components.*"  >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.CombineAllergyEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.utils.QuivusCombineEventDispatcher;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.DictationPopup;
+			import com.adobe.Quivus.view.controls.custom.ePrescriptionView.EprescriptionEditAllergiesView;
+			import com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPanel;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPopup;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.adobe.Quivus.view.controls.skins.QIinternalBarBorderSkin;
+			import com.adobe.Quivus.view.controls.skins.QIinternalBarFocusSkin;
+			import com.adobe.Quivus.view.controls.skins.QIinternalBarSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.createVisitBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridDictationButtonSelectedSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridDictationButtonSkin;
+			import com.adobe.Quivus.view.controls.skins.dataGridSkins.DatagridHeaderSeparatorSkin;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBIconsButton;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.writeNotesButton;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.writeNotesButtonSelected;
+			import com.adobe.Quivus.view.events.SelectSection;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.quivus.skins.chrome.buttonSkins.VBdictationBtnSelected;
+			import com.adobe.quivus.skins.chrome.buttonSkins.VBnotesBtnSelected;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.VBIconsBlackButton;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.VBIconsButtonFilled;
+			import com.gazuntite.common.dto.AllergDTO;
+			import com.gazuntite.common.event.SavePatientGaxenIdEvent;
+			import com.gazuntite.common.util.ValidationUtils;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.provider.eprescription.services.patient.event.UpdateGaxenIDEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Label;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.CollectionEvent;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.events.MoveEvent;
+			import mx.managers.CursorManager;
+			import mx.states.OverrideBase;
+			
+			import valueObjects.AllergyDTO;
+			import valueObjects.ModuleDictationDTO;
+			import valueObjects.ModuleNoteDTO;
+			import valueObjects.PatientAllergyDTO;
+			
+			
+			private const moduleConstantName:String = Constants.ALLERGY_MODULE_NAME;
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			private var m_bHasChange:Boolean;
+			private var m_bIsModelUpdated:Boolean;
+			private var NKDARecord:AllergDTO = null;
+			private var notesPanel:NotesPanel;
+			//private var dictationPanel:DictationPopup;
+			public var IsNotesPanelVisible:Boolean;
+			private var _isNKDAFlag:Boolean;
+			private var _allergyCollection:ArrayCollection;
+			
+			[Bindable]
+			public function get hasChange():Boolean
+			{
+				return m_bHasChange;
+			}
+			
+			public function set hasChange(value:Boolean):void
+			{
+				m_bHasChange = value;
+				
+				if( value )
+				{
+					id_Header.id_ChangeIndicator.visible		 = true;
+					id_Header.id_ChangeIndicator.includeInLayout = true;
+				}
+				else
+				{
+					id_Header.id_ChangeIndicator.visible		 = false;
+					id_Header.id_ChangeIndicator.includeInLayout = false;
+				}
+			}
+			
+			public function get IsModelUpdated():Boolean
+			{
+				return m_bIsModelUpdated;
+			}
+			
+			public function set IsModelUpdated(value:Boolean):void
+			{
+				m_bIsModelUpdated = value;
+				
+				//hasChange = model.quicInputAllergyDTOList.length > 0; //check if there is data for Allergy, then show check mark
+				hasChange = model.QIAllergyDTOList.length > 0
+				if( value )
+				{								
+					var module:ModuleDictationDTO = QSUtilityFunctions.getModuleDictationDTO(moduleConstantName);					
+					var noteDto:ModuleNoteDTO = QSUtilityFunctions.getModuleNoteDTO( moduleConstantName);
+					
+					if(module.DictationID && module.DictationID != Constants.GUID_FORMAT)
+					{
+						id_Header.id_Voice.setStyle("skinClass", VBdictationBtnSelected);
+						id_Header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+						//id_dictationIndicator.visible = true;
+					}
+					
+					if(noteDto.Note && noteDto.Note != "")
+					{
+						id_Header.id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected);
+						id_Header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+						//id_noteIndicator.visible = true;
+					}								
+				}
+			}
+			
+			public override function set AllowOtherPopup(value:Boolean):void
+			{
+				super.AllowOtherPopup = value;				
+			}
+			//------ creation complete handler ------------------
+			protected function creationCompleteHandler():void
+			{
+				id_Header.id_OptionPopUp.displayPopUp = true;
+				id_Header.id_iconButtons.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					
+					//this.ToggleSlideOut();
+					this.ExpandedView = true;
+					
+					event.stopImmediatePropagation();
+					
+					/* if(allergyCollection && allergyCollection.length > 0)
+					{
+					if( (allergyCollection[0] as AllergDTO).isNKDA)
+					id_isNKDA.selected = true;
+					} */					
+					
+				});	
+				
+				id_Header.id_Voice.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if( QSSecurityUtil.Security.IsModuleEditable(QSSecurityUtil.QI_ALLERGIES ) )
+					{
+						id_notesDictation.notesDTO = QSUtilityFunctions.getModuleNoteDTO( moduleConstantName );
+						id_notesDictation.DictationDTO = QSUtilityFunctions.getModuleDictationDTO(moduleConstantName);
+						
+						id_notesDictation.id_Area.visible 		= true;
+						id_notesDictation.id_Area.includeInLayout = true;		
+						id_notesDictation.id_VBViews.selectedIndex = 1;						
+						//id_Header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						id_Header.id_iconButtons.selected = false;
+						id_Header.id_OptionPopUp.displayPopUp = false;
+						this.ExpandedView = true;
+						
+						ExpandedView  = true;
+						
+						id_notesDictation.dictationPanel.rec_btn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{													
+							id_Header.setIcons(true, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							hasChange = true;
+						});	
+						id_notesDictation.id_notesPanel.id_body.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{						
+							id_Header.setIcons(id_notesDictation.DictationDTO.DictationID && id_notesDictation.DictationDTO.DictationID != Constants.GUID_FORMAT, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							id_notesDictation.id_Area.visible 		= false;
+							id_notesDictation.id_Area.includeInLayout = false;
+						});
+						
+						if(this.ExpandedView)
+						{
+							//event.stopImmediatePropagation();
+						}
+						if(this.ExpandedView != true)
+						{
+							//this.ToggleSlideOut();
+							//this.ExpandedView = true;
+							//	this.ContentsVisible(true);
+						}
+					}
+				});			
+				
+				id_Header.id_NotesBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if( QSSecurityUtil.Security.IsModuleEditable(QSSecurityUtil.QI_ALLERGIES ) )
+					{
+						id_notesDictation.notesDTO = QSUtilityFunctions.getModuleNoteDTO( moduleConstantName );
+						id_notesDictation.DictationDTO = QSUtilityFunctions.getModuleDictationDTO(moduleConstantName);
+						
+						id_notesDictation.id_Area.visible 		= true;
+						id_notesDictation.id_Area.includeInLayout = true;						
+						id_notesDictation.id_VBViews.selectedIndex = 0;
+						//id_Header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						id_Header.id_iconButtons.selected = false;
+						id_Header.id_OptionPopUp.displayPopUp = false;	
+						this.ExpandedView = true;
+						
+						ExpandedView  = true;
+						
+						id_notesDictation.id_notesPanel.id_body.id_subject.setFocus();
+						
+						id_notesDictation.id_notesPanel.id_body.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{						
+							id_Header.setIcons(id_notesDictation.DictationDTO.DictationID && id_notesDictation.DictationDTO.DictationID != Constants.GUID_FORMAT, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							id_notesDictation.id_Area.visible 		= false;
+							id_notesDictation.id_Area.includeInLayout = false;
+						});
+						
+						id_notesDictation.dictationPanel.rec_btn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{												
+							id_Header.setIcons(true, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+						});		
+						
+						if(this.ExpandedView)
+						{
+							//event.stopImmediatePropagation();
+						}
+						if(this.ExpandedView != true)
+						{
+							//this.ToggleSlideOut();
+							//this.ExpandedView = true;
+							//this.ContentsVisible(true);
+						}
+					}
+				});
+				
+				id_Header.id_slideoutBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					ToggleSlideOut();					
+					event.stopImmediatePropagation();
+				});
+				id_Header.id_Pin.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if( QSSecurityUtil.Security.IsModuleEditable(QSSecurityUtil.QI_ALLERGIES ) )
+					{
+						PinView = event.currentTarget.selected;
+						event.stopImmediatePropagation();
+					}
+				});
+				
+				id_AllergiesGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				
+				QuivusCombineEventDispatcher.dispatchEventToGetAllergyEditURL();
+				id_Header.id_OptionPopUp.displayPopUp = false;
+				
+				if(model.QIAllergyDTOList && model.QIAllergyDTOList.length)
+				{
+					if(IsModelUpdated)
+						IsModelUpdated = false;
+					
+					IsModelUpdated = true;
+					if(hasChange)
+						hasChange = false;
+					
+					hasChange = true;
+				}
+			}
+			
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+				
+				if (curTar.selectedItem)
+				{
+					var gaID:String = AllergDTO(curTar.selectedItem).GaxenAllergyID;
+					
+					if ( ! UtilityFunctions.IsNullOrEmpty( gaID ) )
+					{
+						UtilityFunctions.AskMessage(  "Do you want to delete selected Allergy", function():void
+						{
+							var IDsXml:XML = <DeleteAllergies  />
+							
+							IDsXml.@GaxenAllergyIDS = "'"+ gaID +"'";
+							
+							callQSAllergyEvent(4, IDsXml, afterDelStatus);
+							hasChange = true;
+						});
+					}
+				}
+			}
+			// Call back method for Allergy delete
+			private function afterDelStatus(response:XML):void
+			{
+				if(UtilityFunctions.IsNotNullOrEmpty(model.gaxenID))
+				{
+					callQSAllergyEvent(2, model.gaxenID, callBackAllergy);
+				}
+			}
+			// call back allergy 
+			private function callBackAllergy(arrAllergy:ArrayCollection):void
+			{
+				model.ThirdSectionLabel = '';
+				if(model.QIAllergyDTOList)
+					model.QIAllergyDTOList.removeAll();
+				else
+					model.QIAllergyDTOList = new ArrayCollection();
+				
+				model.QIAllergyDTOList.addAll(arrAllergy);
+				
+				if(model.QIAllergyDTOList.length > 0)
+				{					
+					var allergyDto:AllergDTO = new AllergDTO();
+					allergyDto			= model.QIAllergyDTOList.getItemAt(0) as AllergDTO;
+					//Tahir Alvi - Set Third Section data && NKDA LAbel Flag
+					
+					if(!allergyDto.isNKDA)
+					{
+						model.ThirdSectionLabel = allergyDto.AllergyName;
+						model.AllergyNKDAFlag 	= false;
+					}
+					else if(allergyDto.isNKDA)
+					{
+						model.ThirdSectionLabel = 'No Known Drug Allergies';
+						model.AllergyNKDAFlag 	= true;
+					}
+				}				
+				loadAllergiesData();
+			}
+			//Load allergies from server after loading patient profile in edit mode
+			private function loadAllergiesData(response:XML = null):void
+			{
+				clearForm();// Clear all form 
+				if(model.QIAllergyDTOList.length == 0)
+				{
+					if(!IsModelUpdated)
+						IsModelUpdated = true;
+					
+					IsModelUpdated = false;
+					
+					if(!hasChange)
+						hasChange = true;
+					
+					hasChange = false;
+				}
+			}
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			private function statusLabelFunction(oItem:Object, iCol:int):String
+			{
+				if(id_isNKDA.selected == true)
+					return "N/A";
+				if((oItem as AllergyDTO).IsActive == true)
+					return "Active";
+				else
+					return "InActive";
+				
+				return "";  
+			}
+			
+			private function reactionLabelFunction(oItem:Object, iCol:int):String
+			{
+				var vd:String = (oItem as AllergyDTO).Reaction;
+				
+				if( UtilityFunctions.IsNullOrEmpty( vd ) )
+				{
+					oItem.Reaction = "N/A";
+					return "N/A";
+				}
+				
+				return vd; 
+			}
+			
+			protected function pinableslideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( event.viewState == QSViewStateEvent.EXPANDED_VIEW )
+				{
+					if( id_Header )
+					{
+						id_Header.HeadingLable = id_Header.HeadingLable.toUpperCase();
+						id_Header.id_pmhHeader.setStyle("skinClass", QIinternalBarFocusSkin);
+						id_Header.id_headingLbl.setStyle("color", 0xffffff);
+						id_Header.id_expandBtn.selected = true;
+					}
+				}
+				else
+				{
+					id_Header.id_iconButtons.selected = false;
+					id_Header.id_OptionPopUp.displayPopUp = false;
+					
+					id_Header.HeadingLable = AppUtils.TitleCase(id_Header.HeadingLable);
+					id_Header.id_pmhHeader.setStyle("skinClass", QIinternalBarSkin);
+					id_Header.id_headingLbl.setStyle("color", 0x000000);
+					id_Header.id_expandBtn.selected = false;
+				}
+			}
+			
+			protected function id_noteIndicator_clickHandler(event:MouseEvent):void
+			{
+				
+				/* var popup:NotesPopup = new NotesPopup();
+				popup.height = 30;
+				popup.ShowPopup( this );
+				popup.HeaderLabel = "Notes";
+				
+				var noteDto:ModuleNoteDTO = QSUtilityFunctions.getModuleNoteDTO( Constants.ALLERGY_MODULE_NAME );
+				if( noteDto.Note )
+				popup.id_message.text  = noteDto.Note;
+				
+				var pLoc:Point = id_IndicatorGrp.localToGlobal( new Point( id_noteIndicator.x - 15 +  (id_noteIndicator.width /2) , id_noteIndicator.y + 10) ); 
+				popup.move(pLoc.x,pLoc.y ); */
+			}
+			
+			protected function pinableslideoutpanel1_moveHandler(event:MoveEvent):void
+			{
+				
+			}
+			
+			private var saveAllergyDTO:AllergDTO;
+			protected function id_AddMoreBtn_clickHandler(event:MouseEvent):void
+			{
+				saveAllergyDTO = null;	
+				
+				if(id_isNKDA.selected)
+				{
+					if(allergyCollection && allergyCollection.length == 1 &&  (allergyCollection[0] as AllergDTO).isNKDA )
+					{
+						Alert.show("The existing entry is already NKDA.", "Duplicate Entry", Alert.OK, FlexGlobals.topLevelApplication.mainContainer);
+						return;
+					}
+					else if(allergyCollection && allergyCollection.length >= 1 && ! (allergyCollection[0] as AllergDTO).isNKDA )
+					{
+						Alert.show("Are you sure, you want to remove all existing allergies?","Confirmation", Alert.YES|Alert.NO, this, function( event:CloseEvent):void
+						{
+							if( event.detail == Alert.YES )
+							{
+								var patientAllergyIDs:String = "";
+								for each (var ad:AllergDTO in allergyCollection) 
+								{
+									patientAllergyIDs += ",'" + ad.GaxenAllergyID + "'";
+								}								
+								
+								var IDsXml:XML = <DeleteAllergies  />
+								
+								IDsXml.@GaxenAllergyIDS = patientAllergyIDs.substring(1);
+								
+								callQSAllergyEvent(4, IDsXml, deleteStatus);
+							}
+							else if(event.detail == Alert.NO)
+							{
+								id_isNKDA.selected 				= false;
+								id_onSet.enabled 				= true;
+								id_allergyList.enabled 			= true;
+								id_reaction.enabled 			= true;
+								id_Yes.enabled 					= true;
+								id_No.enabled 					= true;
+								return;
+							}
+							
+						});
+					}
+					else 
+					{
+						callQSAllergyEvent(3, NKDARecord.ToXML(), saveStatus);
+					}
+				}
+				else
+				{					
+					if( ! ValidationUtils.isValidDateFormat(id_onSet.text))
+					{
+						id_onSet.setFocus();
+						Alert.show("Please enter OnSet date in valid format: [MM/DD/YYYY]", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;						
+					}
+					
+					if(id_allergyList.selectedIndex < 0 )
+					{
+						id_allergyList.setFocus();
+						Alert.show("Please select Allergy.", "Required field", Alert.OK, FlexGlobals.topLevelApplication.mainContainer);
+						return;
+					}
+					
+					hasChange = true; 
+					
+					saveAllergyDTO  					= new AllergDTO();				
+					saveAllergyDTO.GaxenPatientID		= model.gaxenID;
+					saveAllergyDTO.modNotesID			= 0;
+					saveAllergyDTO.modDictationID		= 0;
+					saveAllergyDTO.AllergyName			= id_allergyList.selectedItem.DISPLAY_NAME;
+					saveAllergyDTO.isNKDA				= false;
+					saveAllergyDTO.isActive				= id_Yes.selected;
+					saveAllergyDTO.OnSet				= UtilityFunctions.FormatDate(id_onSet.text);
+					saveAllergyDTO.DictationID			= 0;
+					saveAllergyDTO.Note					= "";
+					saveAllergyDTO.GaxenAllergyID		= "";
+					saveAllergyDTO.VisitDate			= formatDateTime.format(model.visitDTO.VisitDate.toString());
+					saveAllergyDTO.Reaction				= id_reaction.text;
+					
+					saveAllergyDTO.LastName 			= model.patientProfileDTO.UserDTO.LastName;
+					saveAllergyDTO.FirstName 			= model.patientProfileDTO.UserDTO.FirstName;
+					saveAllergyDTO.Gender 				= model.patientProfileDTO.UserDTO.Gender.GenderName.substring(0,1);
+					saveAllergyDTO.DOB 					= formatDateTime.format(model.patientDTO.DateOfBirth.toString());
+					saveAllergyDTO.Phone 				= model.patientPrimaryPhoneDTO.PhoneNumber;
+					saveAllergyDTO.Address 				= model.patientDTO.Address;
+					saveAllergyDTO.ClinicID 			="sad";
+					saveAllergyDTO.UserName 			= "TESTUSER";
+					saveAllergyDTO.UserPassord 			= "TESTPASS";
+					saveAllergyDTO.SSN 					= model.patientProfileDTO.UserDTO.SSN;	
+					
+					callQSAllergyEvent(3, saveAllergyDTO.ToXML(), saveStatus);
+				}
+			}
+			
+			private function deleteStatus(response:XML):void
+			{
+				var msg:String = response.@Description;
+				var status:String = response.@status;
+				
+				if(status == "false" || status == "0" )
+				{
+					var alert:Alert = Alert.show(msg, "Allergy Status", 4, FlexGlobals.topLevelApplication.mainContainer);	
+					return;
+				}
+				else
+				{
+					callQSAllergyEvent(3, NKDARecord.ToXML(), saveStatus);
+				}
+				CursorManager.removeBusyCursor();
+			}
+			
+			private function saveStatus(response:XML):void
+			{
+				var msg:String     = response.@Description;
+				var status:String  = response.@status;
+				model.gaxenID 	   = response.@GaxenPatientID;
+				
+				if(status == "false" || status == "0" )
+				{
+					var alert:Alert = Alert.show(msg, "Allergy Status", 4, FlexGlobals.topLevelApplication.mainContainer);	
+					return;
+				}
+				else
+				{
+					if((model.gaxenID && model.gaxenID != "0") && (model.patientDTO.UserId.toString() != '' && model.patientDTO.UserId.toString() != '0') && !model.gaxenIDSaved)
+					{
+						var gEvent : SavePatientGaxenIdEvent = new SavePatientGaxenIdEvent(model.patientDTO.UserId.toString(), model.gaxenID ,callback);					
+						CairngormEventDispatcher.getInstance().dispatchEvent( gEvent );
+					}
+					
+					if(UtilityFunctions.IsNotNullOrEmpty(model.gaxenID))
+					{
+						callQSAllergyEvent(2, model.gaxenID, callBackAllergy);
+					}
+				}
+				
+				CursorManager.removeBusyCursor();
+				clearForm();// Clear all form 
+				id_onSet.setFocus(); ////Alvi - Focus on first field after adding a record
+			}
+			//--cal back of SavePatientGaxenIdEvent
+			private function callback(val:Boolean):void
+			{
+				model.isAtRegGaxenID = true;
+				if(model.isAtRegGaxenID)
+				{
+					model.gaxenIDSaved 			= false;
+					model.newRegGaxenID 		= '';
+				}
+			}
+			
+			private function clearForm():void
+			{
+				if(id_onSet.text)
+					id_onSet.text = '';
+				id_onSet.selectedDate = null;
+				
+				id_allergyList.selectedIndex = -1;
+				id_reaction.text = '';
+				id_Yes.selected = false;
+				id_No.selected = false;
+				
+			}
+			protected function pinableslideoutpanel1_QSSlideStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if(this.isSlideOut)
+				{
+					id_Header.id_pmhHeader.setStyle("skinClass", QIinternalBarBorderSkin);
+					id_AllergiesGrid.rowHeight = 23;
+					id_AllergiesGrid.headerHeight = 25;
+				}
+				else
+				{
+					id_Header.id_pmhHeader.setStyle("skinClass", QIinternalBarSkin);
+				}
+			}
+			
+			protected function id_dictationIndicator_clickHandler(event:MouseEvent):void
+			{
+			}
+			
+			[Bindable]
+			public function get allergyCollection():ArrayCollection
+			{
+				return _allergyCollection;
+			}
+			
+			public function set allergyCollection(value:ArrayCollection):void
+			{
+				_allergyCollection = value;
+				
+				if(_allergyCollection)
+				{
+					allergyCollection.addEventListener(CollectionEvent.COLLECTION_CHANGE, collectionChangeHandler, false, 0, true); 
+					if(_allergyCollection.length > 0)
+					{
+						if(hasChange)
+							hasChange = false;
+						
+						hasChange = true;
+						
+						if(!model.quickInputDataLoadedFlag)
+						{
+							id_isNKDA.selected 		= false;
+							id_onSet.enabled   		= true;
+							id_allergyList.enabled	= true;
+							id_reaction.enabled 	= true;
+							id_Yes.enabled 			= true;
+							id_No.enabled 			= true;
+						}
+					}
+				}
+			}
+			private function collectionChangeHandler(event:CollectionEvent):void
+			{
+				//tahir Alvi - whenevr allergy is added from PR Green mark show in QI Header
+				if(model.QIAllergyDTOList && model.QIAllergyDTOList.length)
+				{
+					if(IsModelUpdated)
+						IsModelUpdated = false;
+					
+					IsModelUpdated = true;
+					if(hasChange)
+						hasChange = false;
+					
+					hasChange = true;
+				}
+			}
+			
+			private function setOnSet(oItem:Object,iCol:int):String
+			{
+				var strVisitDate:String = '';
+				
+				if (oItem && oItem.OnSet)
+				{
+					var dateRecieved:Date = new Date(Date.parse(oItem.OnSet));
+					strVisitDate = formatDateTime.format(dateRecieved);
+					if( strVisitDate.indexOf('NaN',0) != -1)
+						strVisitDate = oItem.OnSet;
+				}
+				return strVisitDate;
+			}
+			
+			
+			protected function id_allergyList_keyUpHandler(event:KeyboardEvent):void
+			{
+				if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+				{
+					var searchString:String = id_allergyList.textInput.text;
+					if(searchString.length > 2)
+					{
+						callQSAllergyEvent(1, searchString, callbackList);
+					}		
+				}
+				
+			}
+			private function callbackList(arr:ArrayCollection):void
+			{
+				if(model.AllergyList)
+					model.AllergyList.removeAll();
+				else
+					model.AllergyList = new ArrayCollection();
+				
+				model.AllergyList.addAll(arr);
+			}
+			
+			protected function id_isNKDA_changeHandler(event:Event):void
+			{
+				var isEnabled:Boolean = ! id_isNKDA.selected;
+				
+				NKDARecord = null;
+				
+				if(id_isNKDA.selected)
+				{
+					if(model.QIAllergyDTOList && model.QIAllergyDTOList.length)
+					{
+						Alert.show("Do you want to delete all Allergies ?",	"Are you sure?", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, function( event:CloseEvent):void
+						{
+							if( event.detail == Alert.YES )
+							{
+								NKDARecord = new AllergDTO();
+								
+								NKDARecord.AllergyName 			= "N/A";
+								NKDARecord.DictationID 			= 0;
+								NKDARecord.GaxenAllergyID 		= "";
+								NKDARecord.GaxenPatientID 		= model.gaxenID;
+								NKDARecord.isActive 			= true;
+								NKDARecord.isNKDA 				= true;
+								NKDARecord.OnSet 				= "1900-01-01";					
+								NKDARecord.NKDA 				= "No Known Drug Allergies";
+								NKDARecord.VisitDate			= formatDateTime.format(Constants.NULL_DATE);
+								
+								NKDARecord.LastName 			= model.patientProfileDTO.UserDTO.LastName;
+								NKDARecord.FirstName 			= model.patientProfileDTO.UserDTO.FirstName;
+								NKDARecord.Gender 				= model.patientProfileDTO.UserDTO.Gender.GenderName.substring(0,1);
+								NKDARecord.DOB 					= formatDateTime.format(model.patientDTO.DateOfBirth.toString());
+								NKDARecord.Phone 				= model.patientPrimaryPhoneDTO.PhoneNumber;
+								NKDARecord.Address 				= model.patientDTO.Address;
+								NKDARecord.ClinicID 			="sad";
+								NKDARecord.UserName 			= "TESTUSER";
+								NKDARecord.UserPassord 			= "TESTPASS";
+								NKDARecord.SSN 					= model.patientProfileDTO.UserDTO.SSN;
+							}
+							else if( event.detail == Alert.NO )
+							{
+								id_isNKDA.selected 				= false;
+								id_onSet.enabled 				= true;
+								id_allergyList.enabled 			= true;
+								id_reaction.enabled 			= true;
+								id_Yes.enabled 					= true;
+								id_No.enabled 					= true;
+								return;
+							}
+						});
+					}
+					else
+					{
+						NKDARecord = new AllergDTO();
+						
+						NKDARecord.AllergyName 					= "N/A";
+						NKDARecord.DictationID 					= 0;
+						NKDARecord.GaxenAllergyID 				= "";
+						NKDARecord.GaxenPatientID 				= model.gaxenID;
+						NKDARecord.isActive 					= true;
+						NKDARecord.isNKDA 						= true;
+						NKDARecord.OnSet 						= "1900-01-01";					
+						NKDARecord.NKDA 						= "No Known Drug Allergies";
+						NKDARecord.VisitDate					= formatDateTime.format(Constants.NULL_DATE);
+						
+						NKDARecord.LastName 					= model.patientProfileDTO.UserDTO.LastName;
+						NKDARecord.FirstName 					= model.patientProfileDTO.UserDTO.FirstName;
+						NKDARecord.Gender 						= model.patientProfileDTO.UserDTO.Gender.GenderName.substring(0,1);
+						NKDARecord.DOB 							= formatDateTime.format(model.patientDTO.DateOfBirth.toString());
+						NKDARecord.Phone 						= model.patientPrimaryPhoneDTO.PhoneNumber;
+						NKDARecord.Address 						= model.patientDTO.Address;
+						NKDARecord.ClinicID 					="sad";
+						NKDARecord.UserName 					= "TESTUSER";
+						NKDARecord.UserPassord 					= "TESTPASS";
+						NKDARecord.SSN 							= model.patientProfileDTO.UserDTO.SSN;
+					}
+				}
+				
+				id_onSet.enabled = isEnabled;
+				id_allergyList.enabled = isEnabled;
+				id_reaction.enabled = isEnabled;
+				id_Yes.enabled = isEnabled;
+				id_No.enabled = isEnabled;
+			}
+			//--Tahir Alvi - Call Allergy Event
+			private function callQSAllergyEvent(param1:int, param2:*, param3:Function = null):void
+			{
+				var qSAllergyEvent : CombineAllergyEvent = new CombineAllergyEvent(param1, param2, param3);
+				CairngormEventDispatcher.getInstance().dispatchEvent( qSAllergyEvent );
+				CursorManager.setBusyCursor();
+			}
+			
+			[Bindable]
+			public function get isNKDAFlag():Boolean
+			{
+				return _isNKDAFlag;
+			}
+			
+			public function set isNKDAFlag(value:Boolean):void
+			{
+				_isNKDAFlag = value;
+				
+				if(_isNKDAFlag)
+				{
+					//id_AllergiesGrid.visible 			= false;
+					id_nkda.visible = true;
+				}
+				else
+				{
+					id_nkda.visible = false;
+					
+					//id_AllergiesGrid.visible 			= true;
+					id_isNKDA.selected 		= false;
+					id_onSet.enabled   		= true;
+					id_allergyList.enabled	= true;
+					id_reaction.enabled 	= true;
+					id_Yes.enabled 			= true;
+					id_No.enabled 			= true;
+				}
+				//tahir Alvi - whenevr allergy is added from PR Green mark show in QI Header
+				if(model.QIAllergyDTOList && model.QIAllergyDTOList.length)
+				{
+					if(IsModelUpdated)
+						IsModelUpdated = false;
+					
+					IsModelUpdated = true;
+					if(hasChange)
+						hasChange = false;
+					
+					hasChange = true;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YYYY" />
+	</fx:Declarations>
+	<fx:Binding source="model.quickInputDataLoadedFlag" destination="IsModelUpdated" /> 
+	<fx:Binding source="model.QIAllergyDTOList" destination="allergyCollection" />
+	<fx:Binding source="model.AllergyNKDAFlag" destination="isNKDAFlag" />
+	
+	
+	<custom:HeaderContents>
+		<!--<s:BorderContainer id="id_HeaderMain" width="100%" height="100%" minWidth="{ChromeUtil.topLevelMainContainer.width - 70}" backgroundAlpha="0" borderVisible="true" borderWeight="2" borderAlpha="{isSlideOut?1:0}" borderColor="#368CC3">
+		<s:layout>
+		<s:VerticalLayout verticalAlign="bottom"/>
+		</s:layout>-->
+		<s:Group width="100%" height="100%" minWidth="{ChromeUtil.topLevelMainContainer.width - 70}">
+			<s:layout>
+				<s:VerticalLayout verticalAlign="bottom" />
+			</s:layout>			
+			<quickInput:PMHSectionHeader id="id_Header"  width="100%" HeadingLable="Allergies" />
+			<!--</s:BorderContainer>-->
+		</s:Group>
+		
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		
+		<quickInput:QISectionSlideoutHeader width="100%" label="{id_Header.HeadingLable}" />
+		
+	</custom:SlideHeaderContents>
+	<custom:Contents>
+		
+		<s:SkinnableContainer skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.QISectionBGSkin" width="{id_Header.width}" >
+			<s:layout>
+				<s:VerticalLayout  verticalAlign="top" gap="0"   horizontalAlign="{isSlideOut? 'right':'center'}" paddingRight="3"
+								   paddingTop="{isSlideOut? -2:0}" paddingLeft="{isSlideOut? 1:1}"/>
+			</s:layout>
+			
+			<notes:QISectionLevelNotesDictation id="id_notesDictation" width="100%" />
+			
+			<s:VGroup  id="sc_allergies" horizontalAlign="center"  paddingLeft="5" paddingRight="5" paddingTop="8" paddingBottom="0" width="100%" height="100%" minHeight="75"
+					   visible="{model.securityProxyObject.PatientExam.QuickInput.PMH.Allergies.IsViewAllowed}" includeInLayout="{sc_allergies.visible}">
+				
+				<s:HGroup width="100%"  verticalAlign="middle">
+					
+					<s:HGroup width="70" verticalAlign="middle">
+						<s:CheckBox id="id_isNKDA"
+									change="id_isNKDA_changeHandler(event)" width="20" label="NKDA" tabIndex="0"/>
+						<s:Label color="#ffffff"  text="NKDA" toolTip="Slect NKDA"/>
+					</s:HGroup>
+					
+					<components1:LabelDateField  id="id_onSet" tabIndex="1"
+												width="30%" textInputStyleName="mandatoryDateSkin" prompt="OnSet"  selectableRange="{{rangeEnd : new Date()}}"
+												yearNavigationEnabled="true" editable="false" minYear="1901" />
+					<components1:LabelComboBox id="id_allergyList" tabIndex="2"
+											  width="30%"  labelField="DISPLAY_NAME" prompt="Allergy" required="true"
+											  dataProvider="{model.AllergyList}" keyUp="id_allergyList_keyUpHandler(event)"/>
+					<components1:LabelTextInput id="id_reaction" tabIndex="3"
+											   width="40%" prompt="Reaction" />
+					<s:Label text="Active" fontFamily="Calibri" fontSize="12" color="#ffffff"/>
+					
+					<s:HGroup gap="0">
+						<s:RadioButton id="id_Yes" tabIndex="4"
+									   buttonMode="true" skinClass="com.adobe.Quivus.view.controls.skins.radioButtonSkins.YRadioButton" toolTip="Active" />
+						<s:RadioButton id="id_No" tabIndex="5"
+									   buttonMode="true"  skinClass="com.adobe.Quivus.view.controls.skins.radioButtonSkins.NRadioButton" toolTip="Active"/>
+					</s:HGroup>
+					
+					<commons:AddRecord id="id_Add" visible="false" />
+					
+				</s:HGroup>
+				
+				<s:HGroup width="100%" horizontalAlign="right" >
+					<s:Button id="id_AddMoreBtn" tabIndex="6" 
+							  label="Add More" click="id_AddMoreBtn_clickHandler(event)" 
+							  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.AddMoreAllergiesBtn"
+							  buttonMode="true" useHandCursor="true" toolTip="Add More Allergies"/>
+					
+					<s:Button label="Next" tabIndex="7" 
+							  click="dispatchEvent( new SelectSection('SelectSection','id_QIAllergiesPanel', true, true) )"
+							  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QInextBtnSkin" buttonMode="true" toolTip="Next Section" />
+				</s:HGroup>
+				<s:Label id="id_nkda" text="NO KNOWN DRUG ALLERGIES" fontFamily="Calibri" fontSize="15"  textAlign="center" fontWeight="bold" verticalAlign="top" 
+						 visible="false" includeInLayout="{id_nkda.visible}" width="100%" color="#FFFFFF"/>
+				<components1:LabelDataGrid id="id_AllergiesGrid" 
+										  width="100%" dataProvider="{allergyCollection}" 
+										  rowCount="{id_AllergiesGrid.dataProvider.length? id_AllergiesGrid.dataProvider.length : 1}" 
+										  rowHeight="23" horizontalScrollPolicy="off"
+										  minHeight="70" maxHeight="250"
+										  verticalScrollPolicy="on"
+										  visible="{(!model.AllergyNKDAFlag) &amp;&amp; (!id_nkda.visible) &amp;&amp; (!id_lbl.visible)}"
+										  includeInLayout="{id_AllergiesGrid.visible}"
+										  columnWidths="{['10%','15%','15%','20%','20%','10%','10%']}">
+					<components:columns>
+						<mx:DataGridColumn headerText="NKDA" dataField="NKDA" headerRenderer="mx.controls.Label" wordWrap="true" />
+						<mx:DataGridColumn headerText="Visit Date" width="100" dataField="VisitDate" headerWordWrap="true"
+										   itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG"/>
+						<mx:DataGridColumn headerText="OnSet" dataField="OnSet" headerRenderer="mx.controls.Label" wordWrap="true" labelFunction="setOnSet"/>
+						<mx:DataGridColumn headerText="Allergy" dataField="AllergyName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+						<mx:DataGridColumn headerText="Reaction" dataField="Reaction" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+						<mx:DataGridColumn headerText="Status" dataField="Status" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+						<mx:DataGridColumn headerText=""	itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.AllergyDeleteRenderer"/>
+					</components:columns>
+				</components1:LabelDataGrid>
+				
+				<s:Label id="id_lbl" text="No Allergies" color="#FFFFFF" visible="{(!id_AllergiesGrid.dataProvider.length) &amp;&amp; (!id_nkda.visible)}"  includeInLayout="{id_lbl.visible}" fontFamily="Calibri" fontSize="14" width="100%" textAlign="center"/>
+				<s:HGroup width="100%" paddingBottom="6" paddingRight="5">					
+					<s:HGroup id="id_IndicatorGrp" width="100%" horizontalAlign="left" >
+						<s:Button id="id_noteIndicator" label="Notes" visible="false" includeInLayout="{id_noteIndicator.visible}"
+								  click="id_noteIndicator_clickHandler(event)" toolTip="View Notes" 
+								  useHandCursor="true" buttonMode="true" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.notesIndicatorBtnSkin" />
+						<s:Button id="id_dictationIndicator" label="Dictation" visible="false" includeInLayout="{id_dictationIndicator.visible}"
+								  click="id_dictationIndicator_clickHandler(event)" toolTip="Play Dictation" 
+								  useHandCursor="true" buttonMode="true" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.dictationIndicatorBtnSkin"/>
+					</s:HGroup>
+					<s:Group id="id_spacer" width="100%" height="2" />
+					<!--<s:Button id="id_AddMoreBtn" label="Add More" click="id_AddMoreBtn_clickHandler(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.AddMoreAllergiesBtn"
+					buttonMode="true" useHandCursor="true" toolTip="Add More Allergies"/>
+					<s:Button label="Next" click="dispatchEvent( new SelectSection('SelectSection','id_QIAllergiesPanel', true, true) )" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QInextBtnSkin" buttonMode="true" toolTip="Next Section" />-->
+				</s:HGroup>
+			</s:VGroup>
+			<!--</s:BorderContainer>-->
+		</s:SkinnableContainer>
+		<!--</s:SkinnableContainer>-->
+	</custom:Contents>
+	
+</custom:PinableSlideOutPanel>

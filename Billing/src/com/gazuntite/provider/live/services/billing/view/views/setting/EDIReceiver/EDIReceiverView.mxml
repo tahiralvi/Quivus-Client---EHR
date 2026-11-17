@@ -1,0 +1,404 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:components="com.gazuntite.controls.extended.components.*" 
+					  xmlns:common="com.gazuntite.provider.live.services.billing.view.common.*" 
+					  xmlns:itemEditors="com.gazuntite.provider.live.services.billing.view.common.itemEditors.*"
+					  creationComplete="creComp()" xmlns:components1="com.gazuntite.controls.extended.components.*"
+					  >
+	<s:layout>
+		<s:VerticalLayout gap="7" />
+	</s:layout>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.util.ValidationUtils;
+			import com.gazuntite.common.util.xml.XmlUtils;
+			import com.gazuntite.provider.live.services.billing.dto.settings.EDIReceiverDTO;
+			import com.gazuntite.provider.live.services.billing.event.BillingEventString;
+			import com.gazuntite.provider.live.services.billing.event.settings.LoadEDIReceiverByCriteriaEvent;
+			import com.gazuntite.provider.live.services.billing.event.settings.ManageEDIReceiverEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.util.BillingConstants;
+			import com.gazuntite.provider.live.services.billing.view.event.DataGridActionEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			[Bindable] 
+			private var SearchTypes:ArrayCollection = new ArrayCollection(["Name","Phone","Contact Person"]);
+			
+			protected function creComp():void
+			{
+				var lerEvent:LoadEDIReceiverByCriteriaEvent = new LoadEDIReceiverByCriteriaEvent(0,"0",1);
+				CairngormEventDispatcher.getInstance().dispatchEvent(lerEvent);
+				
+				addEventListeners();
+				
+				id_EDIReceiverGrid.addEventListener(DataGridActionEvent.EDIT_RECORD_CLICK, editEDIReceiver, false, 0, true);
+				id_EDIReceiverGrid.addEventListener(DataGridActionEvent.DELETE_RECORD_CLICK, deleteEDIReceiver, false, 0, true);
+				
+				id_FilterBar.id_FieldsCmbo.setFocus();
+			}
+			
+			protected function id_EDIReceiverGrid_itemDoubleClickHandler(event:ListEvent):void
+			{
+				// TODO Auto-generated method stub
+			}
+									
+			protected function id_Add_clickHandler(event:MouseEvent):void
+			{
+				model.CurrentEDIReceiver = new EDIReceiverDTO();
+				
+				model.CurrentEDIReceiver.Address = "";
+				model.CurrentEDIReceiver.ApplicationReceiverCode = "";
+				model.CurrentEDIReceiver.ApplicationSenderCode = "";
+				model.CurrentEDIReceiver.BaudRateTypeID = "3";
+				model.CurrentEDIReceiver.City = "";
+				model.CurrentEDIReceiver.CodeMatch = "false";
+				model.CurrentEDIReceiver.Comment = "";
+				model.CurrentEDIReceiver.ContactPerson = "";
+				model.CurrentEDIReceiver.CreatedBy = model.LoggedInUserId.toString();
+				model.CurrentEDIReceiver.DataBits = "8";
+				model.CurrentEDIReceiver.DataPhone = "";
+				model.CurrentEDIReceiver.DialingAttempt = "";
+				model.CurrentEDIReceiver.DialingPrefix = "";				
+				model.CurrentEDIReceiver.DialingSuffix = "";
+				model.CurrentEDIReceiver.EDIReceiverID = "0";
+				model.CurrentEDIReceiver.Email = "";
+				model.CurrentEDIReceiver.Extension = "";
+				model.CurrentEDIReceiver.Extra1 = "";
+				model.CurrentEDIReceiver.Extra2 = "";
+				model.CurrentEDIReceiver.Extra3 = "";
+				model.CurrentEDIReceiver.FAX = "";
+				model.CurrentEDIReceiver.FileName = "";
+				model.CurrentEDIReceiver.FileNameID = "0";
+				model.CurrentEDIReceiver.FilePath = "";
+				model.CurrentEDIReceiver.FTPAddress = "";
+				model.CurrentEDIReceiver.FTPPortNumber = "";
+				model.CurrentEDIReceiver.GroupCodeTypeID = "1";
+				model.CurrentEDIReceiver.Inactive = "false";
+				model.CurrentEDIReceiver.InterchangeReceiverID = "";
+				model.CurrentEDIReceiver.InterchangeSenderID = "";
+				model.CurrentEDIReceiver.IsDeleted = "false";
+				model.CurrentEDIReceiver.JulianDate = "";
+				model.CurrentEDIReceiver.ModifiedBy = "0";
+				model.CurrentEDIReceiver.Name = "";
+				model.CurrentEDIReceiver.ParityTypeID = "1";
+				model.CurrentEDIReceiver.Participating = "false";
+				model.CurrentEDIReceiver.Phone1 = "";
+				model.CurrentEDIReceiver.Phone2 = "";
+				model.CurrentEDIReceiver.ProgramFile = "";
+				model.CurrentEDIReceiver.ReasonCodes = "";
+				model.CurrentEDIReceiver.ReceiverType = "";
+				model.CurrentEDIReceiver.Region = "";
+				model.CurrentEDIReceiver.ReportFileType = "";
+				model.CurrentEDIReceiver.SerialPortTypeID = "1";
+				model.CurrentEDIReceiver.State = "";
+				model.CurrentEDIReceiver.StopBits = "1";
+				model.CurrentEDIReceiver.SubmitterID1 = "";
+				model.CurrentEDIReceiver.SubmitterID2 = "";
+				model.CurrentEDIReceiver.SubmitterPassword1 = "";
+				model.CurrentEDIReceiver.SubmitterPassword2 = "";
+				model.CurrentEDIReceiver.TransmissionMode = "T";
+				model.CurrentEDIReceiver.TransmitProtocolTypeID = "4";
+				model.CurrentEDIReceiver.UniqueSubmissionCount = "0";
+				model.CurrentEDIReceiver.VendorID = "";
+				model.CurrentEDIReceiver.WebAddress = "";
+				model.CurrentEDIReceiver.ZIP = "";
+				model.CurrentEDIReceiver.ModemInitialization = "";
+				model.CurrentEDIReceiver.ModemTermination = "";
+				model.CurrentEDIReceiver.OfficeContact = "";
+				
+				var newER:EDIReceiverPopup = new EDIReceiverPopup();
+				newER.title = "New EDI Receiver ";
+				newER.ShowPopup(FlexGlobals.topLevelApplication.mainContainer,true); 
+			}
+			
+			public function addEventListeners():void
+			{
+				id_FilterBar.id_FieldsCmbo.addEventListener(ListEvent.CHANGE,searchTypeChanged);
+				id_FilterBar.id_btnSearch.addEventListener(MouseEvent.CLICK, OnSearchClick);
+				//id_FilterBar.id_SearchTextInput.addEventListener(KeyboardEvent.KEY_UP, OnSearchKeyUp);
+				id_FilterBar.id_SearchTextInput.addEventListener(KeyboardEvent.KEY_DOWN, OnSearchKeyDown);
+				//id_FilterBar.addEventListener( BillingEventString.LIST_ONLY , 			id_FilterBar_ListOnlyHandler );
+				id_FilterBar.id_ListOnly.visible 			= false;
+				id_FilterBar.id_ListOnly.includeInLayout 	= false;
+				
+				
+				id_FilterBar.addEventListener( BillingEventString.GOTO_FIRST_PAGE , 	switchPageForPendingBills );
+				id_FilterBar.addEventListener( BillingEventString.GOTO_LAST_PAGE , 		switchPageForPendingBills );
+				id_FilterBar.addEventListener( BillingEventString.GOTO_NEXT_PAGE , 		switchPageForPendingBills );
+				id_FilterBar.addEventListener( BillingEventString.GOTO_PREVIOUS_PAGE ,  switchPageForPendingBills );
+				id_FilterBar.addEventListener( BillingEventString.REFRESH_VIEW , 		filterBar_RefreshViewHandler);
+			}
+			
+			public function filterBar_RefreshViewHandler(event:Event):void
+			{
+				var lerEvent:LoadEDIReceiverByCriteriaEvent = new LoadEDIReceiverByCriteriaEvent(model.ERSearchType,model.ERSearchString,model.EDIReceiverSearchPageNo,RecordStatus);
+				CairngormEventDispatcher.getInstance().dispatchEvent(lerEvent);	
+			}
+			
+			private function switchPageForPendingBills( event:Event ):void
+			{
+				//model.isPendingBillRemoved = false;
+				switch( event.type ) 
+				{
+					case BillingEventString.GOTO_FIRST_PAGE:
+						model.PendingBillSearchPageNo = 1;								
+						break;
+					case BillingEventString.GOTO_NEXT_PAGE:
+						model.PendingBillSearchPageNo += 1; 						
+						break;
+					case BillingEventString.GOTO_PREVIOUS_PAGE:
+						model.PendingBillSearchPageNo -= 1;						
+						break;
+					case BillingEventString.GOTO_LAST_PAGE:
+						model.PendingBillSearchPageNo = model.PendingBillTotalPageNo;						
+						break;
+				}
+				
+				var lerEvent:LoadEDIReceiverByCriteriaEvent = new LoadEDIReceiverByCriteriaEvent(model.ERSearchType,model.ERSearchString,model.EDIReceiverSearchPageNo,RecordStatus);
+				CairngormEventDispatcher.getInstance().dispatchEvent(lerEvent);	
+			}
+			
+			private function OnSearchKeyUp(event:KeyboardEvent): void
+			{
+				if(id_FilterBar.id_SearchTextInput.text.length == 0)
+					model.ERSearchString = "0";				
+			}	
+			
+			private function OnSearchKeyDown(event:KeyboardEvent): void
+			{
+				if(event.keyCode == 13)
+					OnSearchClick(null);
+				
+			}
+			
+			protected function OnSearchClick(MouseEvent:Event):void
+			{	
+				model.ERSearchType = 0;
+				model.ERSearchString = "0";
+				
+				var visitDate:String = "";
+				
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == -1)
+				{
+					Alert.show("Please select search type", "Search Type Not Selected",4,FlexGlobals.topLevelApplication.mainContainer);					
+					return;
+					id_FilterBar.id_FieldsCmbo.setFocus();
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex < 0 && id_FilterBar.id_FieldsCmbo.textInput.text.length > 0)
+				{
+					Alert.show("Please select proper search type from list", "Search Type Not Selected");					
+					return;
+					id_FilterBar.id_FieldsCmbo.setFocus();
+				}
+				if(UtilityFunctions.IsNullOrEmpty(id_FilterBar.id_SearchTextInput.text))	
+				{
+					Alert.show("Please enter something to search ", "Search Field Empty",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+					id_FilterBar.id_SearchTextInput.setFocus();
+				}
+				
+				id_FilterBar.id_SearchTextInput.text = UtilityFunctions.TrimString(id_FilterBar.id_SearchTextInput.text);
+				
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == 0 )
+				{					
+					if( !  ValidationUtils.isValidName(id_FilterBar.id_SearchTextInput.text))
+					{
+						Alert.show("Please enter correct name", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					}					
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 1 )
+				{
+					if( id_FilterBar.id_SearchTextInput.text.length > 10)
+					{
+						Alert.show("Please enter Phone upto 10 digits", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					}		
+					
+				}
+				else if(id_FilterBar.id_FieldsCmbo.selectedIndex == 2 )
+				{
+					if( ! ValidationUtils.isValidNameString(id_FilterBar.id_SearchTextInput.text))
+					{
+						Alert.show("Please enter correct contact name", "Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+						id_FilterBar.id_SearchTextInput.setFocus();
+					}					
+				}
+				
+				model.ERSearchType = id_FilterBar.id_FieldsCmbo.selectedIndex + 1;
+				model.ERSearchString = id_FilterBar.id_SearchTextInput.text;				
+				model.PendingBillSearchPageNo = 1;
+				
+				var lerEvent:LoadEDIReceiverByCriteriaEvent = new LoadEDIReceiverByCriteriaEvent(model.ERSearchType,model.ERSearchString,model.EDIReceiverSearchPageNo,RecordStatus);
+				CairngormEventDispatcher.getInstance().dispatchEvent(lerEvent);	
+			}
+			
+			private function searchTypeChanged( event:Event ):void
+			{
+				model.ERSearchType = 0;	
+				model.ERSearchString = "0";
+				id_FilterBar.id_SearchTextInput.text = "";	
+				
+				id_FilterBar.id_SearchTextInput.restrict = null;
+				
+				if(id_FilterBar.id_FieldsCmbo.selectedIndex == 1)
+					id_FilterBar.id_SearchTextInput.restrict = "[0-9]";
+			}
+			
+			private function RecordStatus():void
+			{
+				if(model.totalrecords_ER < BillingConstants.PAGE_SIZE)
+				{
+					id_FilterBar.id_GoToFirstPage.enabled = false;
+					id_FilterBar.id_GoToLastPage.enabled = false;
+					id_FilterBar.id_GoToNextPage.enabled = false;
+					id_FilterBar.id_GoToPreviousPage.enabled = false;
+				}
+				else
+				{
+					if(model.EDIReceiverSearchPageNo == 1)
+					{
+						id_FilterBar.id_GoToFirstPage.enabled = false;
+						id_FilterBar.id_GoToPreviousPage.enabled = false;
+					}
+					else
+					{
+						id_FilterBar.id_GoToFirstPage.enabled = true;
+						id_FilterBar.id_GoToPreviousPage.enabled = true;
+					}
+					if(model.EDIReceiverSearchPageNo == model.EDIReceiverTotalPageNo)
+					{
+						id_FilterBar.id_GoToNextPage.enabled = false;
+						id_FilterBar.id_GoToLastPage.enabled = false;
+					}
+					else
+					{
+						id_FilterBar.id_GoToNextPage.enabled = true;
+						id_FilterBar.id_GoToLastPage.enabled = true;
+					}
+				}
+				
+			}
+			
+			private function editEDIReceiver(event:DataGridActionEvent):void
+			{	
+				if(id_EDIReceiverGrid.selectedItems.length == 0)
+				{
+					Alert.show("Please select a record", "No record selected", 4, FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				model.CurrentEDIReceiver = id_EDIReceiverGrid.selectedItem as EDIReceiverDTO;
+				model.CurrentEDIReceiver.ModifiedBy = model.LoggedInUserId.toString();
+				var editER:EDIReceiverPopup = new EDIReceiverPopup();
+				editER.title = "Edit EDI Receiver " + model.CurrentEDIReceiver.Name;
+				editER.ShowPopup(FlexGlobals.topLevelApplication.mainContainer,true); 
+				editER.loadZipCityState(id_EDIReceiverGrid.selectedItem.ZIP); // load Zip city and State in edit case
+				editER.rowIndex = id_EDIReceiverGrid.selectedIndex;
+			}			
+			
+			private function deleteEDIReceiver(event:DataGridActionEvent):void
+			{				
+				Alert.show("Are you sure, you want to delete EDI Receiver ["+ (id_EDIReceiverGrid.selectedItem as EDIReceiverDTO).Name.toUpperCase() +"] ?","Confirmation", Alert.YES|Alert.NO, this, function( event:CloseEvent):void
+				{
+					if( event.detail == Alert.YES )
+					{
+						var dto:EDIReceiverDTO = id_EDIReceiverGrid.selectedItem as EDIReceiverDTO;
+						
+						dto.IsDeleted = "true";
+						dto.ModifiedBy = model.LoggedInUserId.toString();
+						
+						var updateXML:XML = XmlUtils.getNodeByTagName("EDIReceivers");
+						
+						updateXML.appendChild(dto.ToXML());							
+						
+						var rpEvent : ManageEDIReceiverEvent = new ManageEDIReceiverEvent(updateXML, deleteResult);				
+						CairngormEventDispatcher.getInstance().dispatchEvent( rpEvent ); 						
+					} 
+				});
+			}
+			
+			private function deleteResult(event:String):void
+			{
+				if(event == "true")
+				{
+					var alert:Alert = Alert.show("EDI Receiver deleted successfully.", "Confirmation", 4, FlexGlobals.topLevelApplication.mainContainer, function(event:Event):void{
+						
+					});
+					
+					model.isEDIReceiverGeneralList = false;
+					var lerEvent:LoadEDIReceiverByCriteriaEvent = new LoadEDIReceiverByCriteriaEvent(model.ERSearchType,model.ERSearchString,model.EDIReceiverSearchPageNo,loadGeneralList);
+					CairngormEventDispatcher.getInstance().dispatchEvent(lerEvent);				
+				}
+				else
+					Alert.show("EDI Receiver not deleted.","Confirmation", 4, FlexGlobals.topLevelApplication.mainContainer);			
+			}
+			
+			private function loadGeneralList():void
+			{
+				model.isEDIReceiverGeneralList = true;
+				var lerEvent:LoadEDIReceiverByCriteriaEvent = new LoadEDIReceiverByCriteriaEvent(0,"0",0);
+				CairngormEventDispatcher.getInstance().dispatchEvent(lerEvent);	
+			}
+			
+			private function getPhoneNo(item:Object, column:DataGridColumn):String
+			{
+				var result:String = '';
+				if(item.Phone1)
+					result = ValidationUtils.setPhoneNumberMasking(item.Phone1);
+				
+				return result;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<common:BillingGridFilterView width="100%" id="id_FilterBar"									
+								  PagingMessage="{ 'Page ' + model.EDIReceiverSearchPageNo + '/' + model.EDIReceiverTotalPageNo}" 
+								  MessageVisible="{ (model.EDIReceiverListForSetup != null &amp;&amp;  model.EDIReceiverListForSetup.length > 0 ) ? true : false}"
+								  RecordMessage="{model.totalRecordMessage_ER}" toolTip="EDI Receivers"
+								  DataProvider="{SearchTypes}" tabIndex="1"
+								  />
+	<components1:LabelDataGrid id="id_EDIReceiverGrid" width="100%" dataProvider="{model.EDIReceiverListForSetup}" 
+							  itemDoubleClick="id_EDIReceiverGrid_itemDoubleClickHandler(event)" height="100"
+							  useRollOver="false" editable="false" 
+							  styleName="QIGrid" verticalScrollPolicy="on" fontFamily="Verdana" horizontalScrollPolicy="auto"
+							  maxHeight="150" variableRowHeight="true" tabIndex="12"
+							  columnWidths="{['5%'],['25%'],['15%'],['5%'],['25%'],['25%']}"
+							  >
+		<components:columns>
+			<mx:DataGridColumn headerText="Sr.#" dataField="SNo" />
+			<mx:DataGridColumn headerText="Name" dataField="Name" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Phone" dataField="Phone1" width="100" labelFunction="getPhoneNo" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" />
+			<mx:DataGridColumn headerText="Ext." dataField="Extension" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Contact" dataField="ContactPerson" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Comment" dataField="Comment" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<itemEditors:DataGridColumnDel headerText="" editable="false" itemRenderer="com.gazuntite.provider.live.services.billing.view.common.itemEditors.EditDeleteItemRender"/>
+		</components:columns>
+	</components1:LabelDataGrid>
+	<s:HGroup width="100%" horizontalAlign="right" paddingRight="5">
+		<s:Spacer width="100%"/>						 
+		<s:Button id="id_Add" width="100" tabIndex="13" styleName="blackButtonSkin" useHandCursor="true" buttonMode="true"  toolTip="Add" 
+				  label="{(model.EDIReceiverListForSetup != null &amp;&amp; model.EDIReceiverListForSetup.length > 0) ?  '+ Add More' : '+ Add'}" click="id_Add_clickHandler(event)" />		
+	</s:HGroup>
+</s:SkinnableContainer>

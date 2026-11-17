@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="Init()"
+		 >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.search.searchEngine.ChangeDefaultSearchEngineEvent;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.events.search.searchEngine.LoadUserSearchEngineEvent;
+			import com.adobe.Quivus.events.staticData.LoadAllSearchEnginesEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.view.controls.custom.itemRenderer.IconDescriptionItemRenderer;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.addmoreBtn;
+			import com.adobe.Quivus.view.controls.skins.webBtnSelectedSkin;
+			import com.adobe.Quivus.view.controls.skins.webBtnSkin;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.controls.extended.components.PopupGroup;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.LinkButton;
+			import mx.core.FlexGlobals;
+			import mx.core.IFlexDisplayObject;
+			import mx.core.ScrollPolicy;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			import mx.utils.Base64Decoder;
+			
+			import spark.components.BorderContainer;
+			import spark.components.Button;
+			import spark.components.List;
+			import spark.components.VScrollBar;
+			import spark.layouts.VerticalLayout;
+			
+			import valueObjects.SearchEngineDTO;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			[Embed('assets/icons/dummy100x100.png')]
+			private var dummy:Class;
+			private var popGroupForList:PopupGroup;
+			private var seList:AddMoreSearchEngines;
+			private var _iconByteArray:ByteArray;
+			
+			private var m_acDataProvider:ArrayCollection = new ArrayCollection([
+				{icon:dummy, label:"Google", description:"This is link description"},
+				{icon:dummy, label:"link 1", description:"This is link description"},
+				{icon:dummy, label:"link 1", description:"This is link description"},
+				{icon:dummy, label:"link 1", description:"This is link description"}		
+			]);
+			
+			[Bindable]
+			public function get iconByteArray():ByteArray
+			{
+				return _iconByteArray;
+			}
+
+			public function set iconByteArray(value:ByteArray):void
+			{
+				_iconByteArray = value;
+			}
+
+			[Bindable]
+			public function get DataProvider():ArrayCollection
+			{
+				return m_acDataProvider;
+			}
+			
+			public function set DataProvider(value:ArrayCollection):void
+			{
+				m_acDataProvider = value;
+			}
+			
+			private function Init():void
+			{
+				
+				//this.DataProvider= model.userQuickLinks;
+				//BindingUtils.bindProperty(this,"DataProvider",model,"userSearchEngineDTOList");
+				FlexGlobals.topLevelApplication.addEventListener(MouseEvent.CLICK, function(event:Event):void
+				{
+					if( popGroupForList && popGroupForList.isPopUp )
+					{
+						PopUpManager.removePopUp( popGroupForList );
+						if( seList && seList.isPopUp )
+						{
+							PopUpManager.removePopUp( seList );							
+						}
+						////id_web.setStyle("skinClass", webBtnSkin);
+						//id_web.selected = false;
+						//id_BGRect.visible = false;
+					}
+				});
+			}
+			
+			private function LoadSearchEngine():void
+			{
+				if( ! LoadUserSearchEngineEvent.isAlreadyLoaded  )// load only if not loaded ... 
+				{
+					var seEvent : LoadUserSearchEngineEvent = new LoadUserSearchEngineEvent();
+					CairngormEventDispatcher.getInstance().dispatchEvent( seEvent );
+				}
+			}
+			
+			
+			protected function linkbutton1_clickHandler(event:MouseEvent):void
+			{
+				LoadSearchEngine();
+				if(popGroupForList && popGroupForList.isPopUp)
+				{
+					popGroupForList.removePopup();
+					id_searchEnginesList.selected = false;
+					if( seList && seList.isPopUp )
+					{
+						PopUpManager.removePopUp( seList );							
+					}
+					return;
+				}
+				
+				setWebSearchMode(false);
+			//	id_web.enabled = false;
+			//	id_web.selected = false;
+				
+				if(popGroupForList && popGroupForList.isPopUp)
+				{
+					popGroupForList.removePopup();
+					id_searchEnginesList.selected = false;
+					//id_web.setStyle("skinClass", webBtnSkin);
+					/* id_web.enabled = true;
+					id_web.selected = true; */
+					
+					return;
+				}
+				
+				
+				//	id_web.setStyle("skinClass", webBtnSelectedSkin);
+				
+				[Embed( source="com/adobe/Quivus/view/controls/skins/assets/calibri.ttf", fontFamily="Calibri" )]
+				var Calibri:Class;
+				
+				popGroupForList = new PopupGroup();
+				
+				var list:AddMoreList 		= new AddMoreList();
+				BindingUtils.bindProperty( list, "DataProvider", this, "DataProvider" );
+				list.DataProvider 			= this.DataProvider;
+				list.itemRendererClass		= IconDescriptionItemRenderer ;
+				list.itemClickListener 		= OnItemClick;
+				list.addMoreClickListener 	= ShowAddMoreSearchEngineList;
+				/* list.y = id_web.y;
+				list.x = id_web.x + id_web.width/2;
+				*/
+				list.width = 185;
+				//list.height = 155;
+				
+				
+				var pt:Point = localToGlobal(new Point(id_web.x, id_web.y));
+				
+				popGroupForList.addElement( list );
+				//PopUpManager.addPopUp( popGroup, FlexGlobals.topLevelApplication as DisplayObject );
+				popGroupForList.ShowPopup( this );
+				popGroupForList.x = pt.x + 80; //this.x; 
+				popGroupForList.y = pt.y + id_web.height - 12; //this.y + this.height; 
+				
+				event.stopImmediatePropagation();
+				
+				/* id_web.enabled = true;
+				id_web.selected = false; */
+				//id_web.setStyle("skinClass", webBtnSelectedSkin);
+				
+			}
+			
+			private function ShowAddMoreSearchEngineList(event:Event):void
+			{
+				if(seList && seList.isPopUp)
+				{
+					PopUpManager.removePopUp( seList );
+					return;
+				}
+				
+				var evt:LoadAllSearchEnginesEvent = new LoadAllSearchEnginesEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( evt );
+				
+				seList = new AddMoreSearchEngines();
+				
+				
+				seList.x = popGroupForList.x - id_web.width + 100;
+				seList.y = popGroupForList.y + popGroupForList.height -3;
+				
+				PopUpManager.addPopUp( seList, this );
+				
+				seList.addEventListener(CloseEvent.CLOSE, function(event:CloseEvent):void
+				{
+					PopUpManager.removePopUp( event.currentTarget as IFlexDisplayObject );
+					PopUpManager.removePopUp( popGroupForList );
+				});
+			}
+			
+			public function setWebSearchMode(connection:Boolean):void
+			{
+				model.CurrentSearchMode = Constants.WEB_SEARCH_MODE;
+				
+				
+				
+				if(connection)
+				{	
+					////id_web.setStyle("skinClass", webBtnSkin);
+					//id_web.selected = true;
+					//id_BGRect.visible = true;
+				}
+				
+				if(id_web.selected)
+				{
+					id_searchEnginesList.visible = true;
+					//id_searchEnginesList.y 			= 2;
+					//id_IconImage.y 		   			= 5;
+					//id_searchEnginesList.selected 	= true;
+					//id_BGRect.visible 				= false;
+				}
+				else
+				{
+					id_searchEnginesList.selected = false;
+					id_searchEnginesList.visible = false;
+					//id_searchEnginesList.y = 5;
+					//id_IconImage.y 		   = 8;
+					//id_searchEnginesList.selected = false;
+					//id_BGRect.visible = true; 
+				} 
+			}
+			
+			private function OnItemClick(event:MouseEvent):void
+			{
+				try
+				{
+					model.userPrefferedSearchEngineDTO = event.currentTarget.selectedItem as SearchEngineDTO;
+					//trace(model.userPrefferedSearchEngineDTO.label);
+					PopUpManager.removePopUp( popGroupForList );
+					if( seList && seList.isPopUp )
+					{
+						PopUpManager.removePopUp( seList );
+					}
+					// for changing he default search engine in db
+					var seEvent : ChangeDefaultSearchEngineEvent = new ChangeDefaultSearchEngineEvent(model.loggedInUserDTO.UserId,model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchIdSeq,model.userPrefferedSearchEngineDTO.UserSearchEngineID);
+					CairngormEventDispatcher.getInstance().dispatchEvent( seEvent );
+					
+					iconByteArray = AppUtils.getByteArray(model.userPrefferedSearchEngineDTO.icon);   // —>This will change the icon.
+				}
+				catch( e:Error )
+				{
+					trace( "\n[ START --> WebSearchOptions::OnItemClick --> ","event.target:", event.target, "\nevent.currentTarget.selectedItem:", event.currentTarget.selectedItem ,
+						"\nmodel.userPrefferedSearchEngineDTO:", model.userPrefferedSearchEngineDTO,
+						"\ne.message",e.message, e.toString() ," END ] \n");
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Binding source="model.userSearchEngineDTOList" destination="DataProvider" /> 
+	
+		<!--<mx:Button useHandCursor="true" id="id_web"   click="test()" 
+					   upSkin="@Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='btn_web')"
+					   overSkin="@Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='btn_web_over')"
+					   downSkin="@Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='btn_web_over')"
+					   />-->
+	<s:VGroup gap="-18" verticalAlign="top">
+		
+		<s:Group>
+			
+			
+			<!--<s:Rect id="id_BGRect" visible="false" height="43" width="96" x="0" y="3">
+				<s:fill>
+					<s:LinearGradient rotation="90">
+						<s:GradientEntry alpha="1.0" color="#A3A4BA" ratio="0"/>
+						<s:GradientEntry alpha="1.0" color="#B5B8E5" ratio="0.47058823529411764"/>
+						<s:GradientEntry alpha="1.0" color="#9B9ECE" ratio="0.47843137254901963"/>
+						<s:GradientEntry alpha="1.0" color="#DFDFEA" ratio="0.8980392156862745"/>
+						<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="1"/>
+					</s:LinearGradient>
+				</s:fill>
+				<s:filters>
+					<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+				</s:filters>
+				
+			</s:Rect>-->
+			
+			
+			<s:ToggleButton id="id_web" skinClass="com.adobe.Quivus.view.controls.skins.webBtnSkin"  
+							click="setWebSearchMode(true)" 
+							visible="{model.UserLoggedIn}"
+							label="WEB" buttonMode="true" useHandCursor="true" toolTip="Web Search"
+							/>
+			
+			
+			
+			
+			<s:ToggleButton id="id_searchEnginesList" x="{id_web.x + id_web.width - 20}" y="{id_web.y + 5}"
+							skinClass="com.adobe.Quivus.view.controls.skins.toggleButtonSkins.webSearchEngineButton" visible="false" 
+							buttonMode="true" useHandCursor="true" toolTip="Search Engines List" width="16" height="16"
+							click="linkbutton1_clickHandler(event)"/>
+			
+<!--			<mx:Image id="id_IconImage" source="{model.userPrefferedSearchEngineDTO.icon}" x="{id_web.x + 7 }" y="{id_web.y + 27}" height="14" width="15" creationComplete="id_IconImage_creationCompleteHandler(event)"/>-->
+			<mx:Image id="id_IconImage" source="{iconByteArray}" x="{id_web.x + 7 }" y="{id_web.y + 27}" height="14" width="15" />
+			
+			<!--<s:Rect height="40" id="rect20" radiusX="3" width="94" x="0" y="0">
+			<s:fill>
+			<s:LinearGradient rotation="90">
+			<s:GradientEntry alpha="1.0" color="#A3A4BA" ratio="0"/>
+			<s:GradientEntry alpha="1.0" color="#B5B8E5" ratio="0.47058823529411764"/>
+			<s:GradientEntry alpha="1.0" color="#9B9ECE" ratio="0.47843137254901963"/>
+			<s:GradientEntry alpha="1.0" color="#DFDFEA" ratio="0.8980392156862745"/>
+			<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="1"/>
+			</s:LinearGradient>
+			</s:fill>
+			<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+			</s:filters>
+			</s:Rect>-->
+			
+		</s:Group>
+	</s:VGroup>	
+	
+	
+</s:Group>

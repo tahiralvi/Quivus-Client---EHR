@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SparkSkin xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" 
+    xmlns:fb="http://ns.adobe.com/flashbuilder/2009" blendMode="normal" mouseEnabled="false" 
+    minWidth="131" minHeight="127" alpha.disabled="0.5" alpha.disabledWithControlBar="0.5">
+    <fx:Metadata>[HostComponent("com.gazuntite.controls.extended.components.SelectablePanel")]</fx:Metadata>
+    
+    <s:states>
+        <s:State name="normal" />
+        <s:State name="disabled" />
+        <s:State name="normalWithControlBar" stateGroups="withControls" />
+        <s:State name="disabledWithControlBar" stateGroups="withControls" />
+    </s:states>
+    
+    <!-- drop shadow can't be hittable so it stays sibling of other graphics -->
+    <!--- @private -->
+    
+    <!-- drop shadow can't be hittable so all other graphics go in this group -->
+    <s:Group left="0" right="0" top="0" bottom="0">
+        
+		<s:Path data="M 278 0 L 4 0 C 1.791 0 0 1.791 0 4 L 0 21 L 282 21 L 282 4 C 282 1.791 280.209 0 278 0 Z" height="20" id="path1" width="100%" winding="nonZero" x="3" y="3" >
+			<s:fill>
+				<s:LinearGradient rotation="90" scaleX="21" x="141" y="0">
+					<s:GradientEntry color="#99AAB4" ratio="0"/>
+					<s:GradientEntry color="#8599A4" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+		</s:Path>
+		
+		<s:Label id="titleDisplay" maxDisplayedLines="1"
+				 left="9" right="3" top="1" bottom="0" minHeight="30"
+				 verticalAlign="middle" fontWeight="bold">
+		</s:Label>
+    </s:Group>
+</s:SparkSkin>

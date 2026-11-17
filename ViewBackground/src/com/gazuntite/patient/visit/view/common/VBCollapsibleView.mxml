@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Metadata>
+		[DefaultProperty("contents")]
+		[Event(name="QSViewStateChange", type="com.gazuntite.common.view.events.QSViewStateEvent")]
+	</fx:Metadata>
+	<fx:Declarations>
+		
+			<s:Fade target="{id_PanelBodyWraper}" id="fadeEffect" duration="600" alphaFrom="0" alphaTo="1" />
+			<s:Animate id="scaleEffectX" repeatCount="1" target="{id_PanelBodyWraper}" duration="400">
+				
+				<s:SimpleMotionPath property="scaleX" valueFrom="0" valueTo="1" />
+				
+			</s:Animate>
+			
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			public var allowExpandedView:Boolean 	= true;
+			
+			[ArrayElementType("mx.core.IDeferredInstance")]
+			public var contents:Array;
+			
+			[ArrayElementType("mx.core.IDeferredInstance")]
+			public var headerContents:Array;
+			
+			private var _hasChanged:Boolean;
+			private var _headingLable:String;
+			private var _headingLableUpperCase:String;
+			private var _pinView:Boolean;
+			private var _expandedView:Boolean	= true;
+			
+			
+			[Bindable]
+			public function get hasChanged():Boolean
+			{
+				return _hasChanged;
+			}
+			
+			public function set hasChanged(value:Boolean):void
+			{
+				_hasChanged = value;
+			}
+			
+			[Bindable]
+			public function get headingLable():String
+			{
+				return _headingLable;
+			}
+			
+			public function set headingLable(value:String):void
+			{
+				_headingLable = value;
+			}
+			
+			public function get pinView():Boolean
+			{
+				return _pinView;
+			}
+			
+			public function set pinView(value:Boolean):void
+			{
+				_pinView = value;
+			}
+			
+			public function AllowMoveToNextPanel(callBack:Function):void
+			{	
+				callBack();
+			}
+			
+			[Bindable]
+			public function get expandedView():Boolean
+			{
+				return _expandedView;
+			}
+			
+			public function set expandedView(value:Boolean):void
+			{
+				if (!allowExpandedView || pinView) 
+					return;
+				_expandedView = value;
+				
+				contentsVisible( value );
+				
+				if( UtilityFunctions.IsNotNullOrEmpty(headingLable))
+					headingLable = value? headingLable.toUpperCase():UtilityFunctions.TitleCase(headingLable);
+				
+				var vstate:String = value ? QSViewStateEvent.EXPANDED_VIEW : QSViewStateEvent.COLLAPSED_VIEW;
+				var vse:QSViewStateEvent = new QSViewStateEvent(QSViewStateEvent.QS_VIEW_STATE_CHANGE, vstate);
+				dispatchEvent( vse );
+			}
+			
+			private function contentsVisible(value:Boolean):void
+			{
+				callLater(function():void
+				{
+					id_PanelBodyWraper.includeInLayout 	= value;
+					id_PanelBodyWraper.visible 			= value;
+					
+					if(value)
+					{
+						fadeEffect.play();
+					}
+				});
+			}
+			
+			private function onContentAreaInitialize(event:FlexEvent):void
+			{
+				if (contents)
+				{
+					for (var i:int = 0; i < contents.length; i++)
+						id_PanelBody.addElement(UIComponent(contents[i].getInstance()));
+				}
+			}
+			
+			private function onHeaderInitialize(event:FlexEvent):void
+			{
+				if (headerContents)
+					for (var i:int = 0; i < headerContents.length; i++)
+						id_HeaderView.addElement(UIComponent(headerContents[i].getInstance()));
+				
+			}
+			
+			private function onHeaderClick(event:MouseEvent):void
+			{
+				expandedView = !expandedView;
+			}
+			
+			protected function id_Header_pinPanelHandler(event:Event):void
+			{
+				this.pinView = ! this.pinView;
+			}
+		]]>
+	</fx:Script>
+	<s:layout>
+		<s:VerticalLayout verticalAlign="top" gap="0" paddingBottom="4" paddingTop="3" paddingLeft="0" paddingRight="0" />
+	</s:layout>
+	<s:HGroup id="id_HeaderView" width="100%" horizontalAlign="right" verticalAlign="top" tabChildren="true" initialize="onHeaderInitialize(event)" click="onHeaderClick(event)" maxHeight="22" 
+			  />
+	<s:VGroup id="id_PanelBodyWraper" width="100%" height="100%" >
+		<s:VGroup id="id_PanelBody" height="100%" width="100%" horizontalAlign="left" tabChildren="true" paddingTop="-2" initialize="onContentAreaInitialize(event)" clipAndEnableScrolling="true" 
+				  x="0" y="0"/>
+	</s:VGroup>
+</s:SkinnableContainer>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						xmlns:s="library://ns.adobe.com/flex/spark" 
+						xmlns:mx="library://ns.adobe.com/flex/mx" 
+						xmlns:components="com.zigron.controls.extended.components.*" xmlns:components1="com.gazuntite.controls.extended.components.*"
+						
+						>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.view.controls.skins.docViewerCustomSkin;
+			
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var currentDocument:File
+			
+			public function LoadDocument(file:File):void
+			{
+				try
+				{
+					var docTab:DocumentTab = new DocumentTab();
+					id_Views.addElement( docTab );
+					docTab.label = file.name + " (loading)";
+					//load document after adding Tab to view
+					id_Views.callLater( docTab.LoadDocument, [file] );
+					id_Views.selectedChild = docTab;
+				}
+				catch(error:Error)
+				{
+					trace( error.errorID, error.name, error.message );
+					cursorManager.removeBusyCursor();
+				}
+			}
+			
+			protected function id_close_clickHandler(event:MouseEvent):void
+			{
+				removePopup();
+			}
+			
+			
+			protected function skinnablecontainer1_mouseDownHandler(event:MouseEvent):void
+			{
+				
+			}
+			
+			protected function id_min_clickHandler(event:MouseEvent):void
+			{
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		
+	</fx:Declarations>
+	
+	<components:layout>
+		<s:VerticalLayout gap="20"  paddingBottom="3" paddingLeft="13" paddingRight="3"  paddingTop="10"  />
+	</components:layout>
+	
+	<!--<s:HGroup width="100%">
+		
+		<s:Label id="id_Title" text="{title}" fontFamily="Calibri"  fontSize="14" width="200" color="#ffffff" />
+		
+		<s:HGroup id="id_windowControlButtons" gap="0" width="100%" horizontalAlign="right" paddingTop="-5" >
+			<s:Button id="id_min"  useHandCursor="true" buttonMode="true"
+					  styleName="minimizeButtonSkin" height="15" width="16"
+					  click="id_min_clickHandler(event)" toolTip="Minimize"/>
+			
+			<s:Button id="id_close" styleName="blackCloseButtonSkin" height="15" width="16"
+					  click="id_close_clickHandler(event)" toolTip="Close" useHandCursor="true" buttonMode="true"/>
+		</s:HGroup>
+	</s:HGroup>-->
+	<s:VGroup gap="-1" width="100%" height="100%">
+		<components1:TerrificTabBar id="id_TabBar" dataProvider="{id_Views}" buttonMode="true" 			  
+								   skinClass="com.adobe.Quivus.view.controls.skins.TabBarSkins.closeableTabBar"/>
+		
+		<mx:ViewStack id="id_Views" width="100%" height="100%" backgroundAlpha="0" contentBackgroundAlpha="0" />
+	</s:VGroup>
+
+</components1:PopupWindow>

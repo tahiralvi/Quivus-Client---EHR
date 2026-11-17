@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/>
+	</s:states>
+	<s:Path data="M 25 20 L 5 20 C 2.238 20 0 17.761 0 15 L 0 5 C 0 2.239 2.238 0 5 0 L 25 0 C 24.948 0.052 25 20.333 25 20 Z" height="19" includeIn="down,over,up" rotation="180" visible.up="false" width="24" x="24" y="19">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1" color="#FFFFFF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" includeIn="down" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Path>
+	<s:BitmapImage height="9" includeIn="down,over,up,disabled" smooth="true" source="@Embed('../assets/icons/patienthistory.png')" width="8" x="7" y="8"/>
+	<s:BitmapImage smooth="true" source="@Embed('../assets/icons/pe_cross.png')" visible.down="false" visible.over="false" x="11" y="4">
+		<s:filters>
+			<s:DropShadowFilter alpha="0.75" angle="90" blurX="0" blurY="0" color="#14302F" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:BitmapImage>
+	<s:BitmapImage includeIn="down,over" smooth="true" source="@Embed('../assets/icons/pe_close_hover.png')" x="11" y="4"/>
+</s:Skin>

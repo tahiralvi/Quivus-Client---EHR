@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true" 
+				xmlns:extended="com.adobe.Quivus.view.controls.extended.*" 
+				xmlns:components="com.adobe.Quivus.view.controls.extended.components.*"
+				
+				>
+
+	<fx:Script>
+		<![CDATA[
+			
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.rowListBG;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.rowListBGOver;
+			
+			import mx.events.FlexEvent;				
+			
+			protected function id_bg_mouseOverHandler(event:MouseEvent):void
+			{
+				id_bg.setStyle("skinClass", rowListBGOver);
+			}
+			
+			
+			protected function id_bg_mouseOutHandler(event:MouseEvent):void
+			{
+				id_bg.setStyle("skinClass", rowListBG);
+			}
+			
+		]]>
+	</fx:Script>
+
+	
+	<!--<s:SkinnableContainer width="100%" skinClass="com.adobe.Quivus.view.controls.skins.contactlist_item_skin">
+	-->	
+	<!--<s:BorderContainer height="24" width="100%" backgroundAlpha="1" backgroundColor="#ffffff" borderColor="#cccccc" borderAlpha="0">
+		-->
+	<s:SkinnableContainer id="id_bg" height="25" width="100%" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.rowListBG"
+						  mouseOver="id_bg_mouseOverHandler(event)" mouseOut="id_bg_mouseOutHandler(event)" buttonMode="true" >
+		
+	<s:layout>
+		<s:HorizontalLayout verticalAlign="middle" horizontalAlign="left" gap="2"
+							paddingBottom="1" paddingLeft="1" paddingRight="1" paddingTop="1" /> 
+	</s:layout>	
+
+	<!--<s:VGroup>-->
+		
+	
+	<s:Label id="id_Name" width="106" text="{data.FirstName + ' ' + data.LastName}" fontSize="12" color="0x000000" fontFamily="Calibri"
+			  paddingLeft="3"/>
+
+		<!--<mx:HRule width="100%" strokeWidth="1" strokeColor="0xbbbbbb" />-->
+	<!--</s:VGroup>-->
+	<mx:Spacer width="100%" />
+	
+	<s:SkinnableContainer skinClass="com.adobe.Quivus.view.controls.skins.contactlist_icons_bg">
+		
+		<s:layout>
+			<s:HorizontalLayout verticalAlign="middle" horizontalAlign="left" gap="0" 
+								paddingBottom="2" paddingLeft="1" paddingRight="1" paddingTop="0" /> 
+		</s:layout>
+				
+		<s:Button id="id_mail" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.Btn_email"  useHandCursor="true" buttonMode="true" toolTip="Email" />
+			
+		
+		<s:Button id="id_1" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.Btn_snail"  useHandCursor="true" buttonMode="true" toolTip="Snailmail" />
+		
+	
+		<s:Button id="id_Message" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.Btn_Message"   useHandCursor="true" buttonMode="true" toolTip="SMS" />
+		
+		
+		<s:Button id="id_3" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.Btn_chat"  useHandCursor="true" buttonMode="true" toolTip="Chat" />
+		
+	
+		
+		<s:Button id="id_4" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.Btn_Cell"  useHandCursor="true" buttonMode="true" toolTip="Call" />
+		
+	</s:SkinnableContainer>
+	</s:SkinnableContainer>
+	<mx:Spacer height="1" />
+	<!--</s:BorderContainer>-->
+</s:ItemRenderer>

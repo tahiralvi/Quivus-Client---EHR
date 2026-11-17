@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:sections="com.adobe.Quivus.view.controls.custom.patientExamView.profile.sections.*" 
+		 xmlns:registeration="com.adobe.Quivus.view.controls.registeration.*"
+		 >
+	<s:layout>
+		<s:VerticalLayout gap="-1" horizontalAlign="center" verticalAlign="middle"
+						  paddingTop="0" paddingBottom="0"/>
+	</s:layout>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QuivusCombineEventDispatcher;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.registeration.userRegistrationForm;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.RegisterBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.SaveBtn;
+			
+			import mx.controls.Alert;
+			import mx.core.ContainerCreationPolicy;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			import valueObjects.AddressBookDTO;
+			import valueObjects.AddressDTO;
+			import valueObjects.PatientGuarantorDTO;
+			import valueObjects.PatientInsuranceDTO;
+			import valueObjects.PatientProfileDTO;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			public function ScrollUp(event:MouseEvent = null):void
+			{
+				if(id_ProfileEditor.visible == true)
+				{
+					id_ProfileEditor.ScrollUp();
+				}
+				else
+				{
+					switch(id_ProfileViews.selectedIndex)
+					{
+						case 0:
+							id_BasicScroller.viewport.verticalScrollPosition = id_BasicScroller.viewport.verticalScrollPosition + 15;
+							break;
+						case 1:
+							id_EmergencyScroller.viewport.verticalScrollPosition = id_EmergencyScroller.viewport.verticalScrollPosition + 15;
+							break;
+						case 2:
+							id_GuarantorScroller.viewport.verticalScrollPosition = id_GuarantorScroller.viewport.verticalScrollPosition + 15;
+							break;
+						case 3:
+							id_HealthHxScroller.viewport.verticalScrollPosition = id_HealthHxScroller.viewport.verticalScrollPosition + 15;
+							break;
+						case 4:
+							id_InsuranceScroller.viewport.verticalScrollPosition = id_InsuranceScroller.viewport.verticalScrollPosition + 15;
+							break;
+						default:
+							break;
+					}
+				}
+			}
+			
+			public function ScrollDown(event:MouseEvent = null):void
+			{
+				if(id_ProfileEditor.visible == true)
+				{
+					id_ProfileEditor.ScrollDown();
+				}
+				else
+				{
+					switch(id_ProfileViews.selectedIndex)
+					{
+						case 0:
+							id_BasicScroller.viewport.verticalScrollPosition = id_BasicScroller.viewport.verticalScrollPosition - 15;
+							break;
+						case 1:
+							id_EmergencyScroller.viewport.verticalScrollPosition = id_EmergencyScroller.viewport.verticalScrollPosition - 15;
+							break;
+						case 2:
+							id_GuarantorScroller.viewport.verticalScrollPosition = id_GuarantorScroller.viewport.verticalScrollPosition - 15;
+							break;
+						case 3:
+							id_HealthHxScroller.viewport.verticalScrollPosition = id_HealthHxScroller.viewport.verticalScrollPosition - 15;
+							break;
+						case 4:
+							id_InsuranceScroller.viewport.verticalScrollPosition = id_InsuranceScroller.viewport.verticalScrollPosition - 15;
+							break;
+						default:
+							break;
+					}
+				}
+			}
+			
+			
+			protected function basicsection1_EditProfileHandler(event:Event):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.PATIENT_PROFILE ) )//Tahir Alvi 
+				{
+					id_ProfileEditor.id_RegViews.creationPolicy = ContainerCreationPolicy.ALL;
+					id_ProfileEditor.visible = true;
+					id_ProfileViews.visible  = false;
+					id_ProfileEditor.id_btnSave.setStyle( "skinClass", SaveBtn );
+					id_ProfileEditor.id_btnSave.toolTip = "Update Patient Details";
+					callLater( id_ProfileEditor.loadDataEPP );
+					id_ProfileEditor.resultFunction = InitComponent; 
+					id_ProfileEditor.id_btnCancel.addEventListener( MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						InitComponent();
+					});
+					id_ProfileEditor.id_BasicInfo.id_Prefix.setFocus();
+						
+				}
+			}
+			
+			public function InitComponent():void
+			{
+				id_ProfileEditor.clearForm();
+				id_ProfileEditor.visible = false;
+				id_ProfileViews.visible  = true;
+				id_ProfileEditor.id_btnSave.setStyle( "skinClass", RegisterBtn );
+			}
+			
+			
+			private function set patientProfileDTOLoaded( value:AddressBookDTO ):void
+			{
+				if( value )
+				{
+					QuivusCombineEventDispatcher.loadRegistrationStaticData();
+					var a:AddressDTO = model.patientProfileDTO.PatientAddressBook.AddressDTOlist.getItemAt(0) as AddressDTO;
+					QuivusCombineEventDispatcher.getCitiesAndZipCodesByState(a.StateID, a.CityName, Constants.PERSONAL );
+				}
+			}
+			
+			private function set PatientGurantorLoaded( value:PatientGuarantorDTO ):void
+			{
+				if( value )
+				{
+//pending					var g:AddressDTO = model.patientProfileDTO.PatientGurantor.AddressBook.AddressDTOlist.getItemAt(0) as AddressDTO;
+//					QuivusCombineEventDispatcher.getCitiesAndZipCodesByState(g.StateID, g.CityName, Constants.GUARANTOR );
+				}
+			}
+			
+			protected function id_mainTanButtons_changeHandler(event:IndexChangeEvent):void
+			{
+				if(id_mainTanButtons.selectedIndex == 3)
+				{
+					if(model.QIAllergyDTOList.length && !model.AllergyNKDAFlag)
+						id_healthHx.id_allergyGrid.visible = true;
+					else if(model.QIAllergyDTOList.length == 0)
+						id_healthHx.id_allergyGrid.visible = false;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Binding source="model.patientProfileDTO.PatientAddressBook" destination="patientProfileDTOLoaded" />
+<!--pending	<fx:Binding source="model.patientProfileDTO.PatientGurantor" destination="PatientGurantorLoaded" />-->
+	
+	<s:Scroller id="id_Scroller" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off" >
+		<s:Group id="id_patientExamArea"  width="100%" height="100%" >
+			<s:layout>
+				<s:VerticalLayout paddingTop="2" horizontalAlign="center" verticalAlign="top" gap="-4" clipAndEnableScrolling="true" />
+			</s:layout>
+			<s:HGroup width="100%" paddingLeft="4" visible="{id_ProfileViews.visible}" includeInLayout="{id_ProfileViews.visible}">		
+				<s:TabBar id="id_mainTanButtons"  dataProvider="{ id_ProfileViews }" 
+						  skinClass="com.adobe.Quivus.view.controls.skins.TabBarSkins.ProfileTabBarSkin" 
+						  top="0" width="100%" 
+						  change="id_mainTanButtons_changeHandler(event)"/>
+			</s:HGroup>
+			
+			<mx:ViewStack id="id_ProfileViews" width="100%" height="100%" backgroundAlpha="0" resizeToContent="true" 
+						  visible="true" includeInLayout="{id_ProfileViews.visible}"  >
+				<s:NavigatorContent backgroundAlpha="0" width="100%" height="100%" label="Basic Information"  >
+					
+					<s:Scroller id="id_BasicScroller" width="100%" height="300" verticalScrollPolicy="off">
+						<s:Group width="100%" height="100%" >
+							<s:layout>
+								<s:VerticalLayout paddingTop="8" paddingLeft="5" paddingRight="3" paddingBottom="3" verticalAlign="top"  />
+							</s:layout>
+							
+							<sections:BasicSection id="id_basicSection" width="100%" EditProfile="basicsection1_EditProfileHandler(event)"
+												   skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin"/>
+							<sections:OtherInformationSection id="id_otherInfo" width="100%" skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin"/>
+							<sections:EDIInformationSection id="id_ediInfo" width="100%" skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin"/>
+						</s:Group>
+					</s:Scroller>
+					
+				</s:NavigatorContent>
+				
+				<s:NavigatorContent width="100%" height="100%" label="Emergency contact" fontFamily="Calibri" >
+					<s:Scroller id="id_EmergencyScroller" width="100%" height="300" verticalScrollPolicy="off">
+						<s:Group width="100%" height="100%" >
+							<s:layout>
+								<s:VerticalLayout paddingTop="8" paddingLeft="5" paddingRight="3" paddingBottom="3" verticalAlign="top"  />
+							</s:layout>
+							
+							<sections:EmergencyContactsSection width="100%"  skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin"  />
+						</s:Group>
+						
+					</s:Scroller>
+					
+				</s:NavigatorContent>
+				
+				<s:NavigatorContent width="100%" height="100%" label="Guarantor" fontFamily="Calibri Bold" >
+					<s:Scroller id="id_GuarantorScroller" width="100%" height="300" verticalScrollPolicy="off">
+						<s:Group width="100%" height="100%" >
+							<s:layout>
+								<s:VerticalLayout paddingTop="8" paddingLeft="5" paddingRight="3" paddingBottom="3" verticalAlign="top"  />
+							</s:layout>
+							
+							<sections:GuarantorInfoSection width="100%"   skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin"  />
+						</s:Group>
+					</s:Scroller>
+					
+					
+				</s:NavigatorContent>
+				
+				<s:NavigatorContent width="100%" height="100%" label="Health Hx" >
+					<s:Scroller id="id_HealthHxScroller" width="100%" height="300" verticalScrollPolicy="off">
+						<s:Group width="100%" height="100%" >
+							<s:layout>
+								<s:VerticalLayout paddingTop="8" paddingLeft="5" paddingRight="3" paddingBottom="3" verticalAlign="top"  />
+							</s:layout>
+							
+							<sections:HealthHxSection id="id_healthHx" width="100%"  />
+						</s:Group>
+					</s:Scroller>
+					
+				</s:NavigatorContent>
+				
+				<s:NavigatorContent width="100%" height="100%" label="Insurance" >
+					<s:Scroller id="id_InsuranceScroller" width="100%" height="300" verticalScrollPolicy="off">
+						<s:Group width="100%" height="100%" >
+							<s:layout>
+								<s:VerticalLayout paddingTop="8" paddingLeft="5" paddingRight="3" paddingBottom="3" verticalAlign="top"  />
+							</s:layout>
+							
+							<sections:InsuranceSection id="id_PrimInsurence" width="100%"  
+													   skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin" />
+							
+						</s:Group>
+						
+					</s:Scroller>
+					
+				</s:NavigatorContent>
+			</mx:ViewStack>
+			
+			<registeration:userRegistrationForm id="id_ProfileEditor" width="100%" backgroundColor="0xffffff" 
+												visible="false" includeInLayout="{id_ProfileEditor.visible}" /> 
+			
+		</s:Group>
+	</s:Scroller>
+	
+</s:Group>

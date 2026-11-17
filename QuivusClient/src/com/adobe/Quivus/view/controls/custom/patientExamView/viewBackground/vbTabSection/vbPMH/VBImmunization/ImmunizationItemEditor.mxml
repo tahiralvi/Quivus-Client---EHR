@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<itemEditors:ComboBoxItemEditor xmlns:fx="http://ns.adobe.com/mxml/2009" 
+								xmlns:s="library://ns.adobe.com/flex/spark" 
+								xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:itemEditors="com.adobe.Quivus.view.controls.custom.itemEditors.*"
+								keyUp="immunizationKeyUpHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.staticData.immunization.LoadImmunizationDoseStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.immunization.LoadImmunizationLotNumberStaticDataEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			
+			private var _immunizationField:String;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			public function get immunizationField():String
+			{
+				return _immunizationField;
+			}
+
+			public function set immunizationField(value:String):void
+			{
+				_immunizationField = value;
+			}
+			
+			private function immunizationKeyUpHandler(event:KeyboardEvent):void
+			{
+				if (event.keyCode != 9)//9 for tab
+				{
+					var searchString:String = event.currentTarget.textInput.text;
+					
+					if (_immunizationField == "Dose")
+					{
+						if (searchString.length > 2)
+						{
+							var doseEvent : LoadImmunizationDoseStaticDataEvent = new LoadImmunizationDoseStaticDataEvent(searchString);
+							CairngormEventDispatcher.getInstance().dispatchEvent(doseEvent);					
+						}
+					}
+					
+					else if (_immunizationField == "LotNumber")
+					{
+						if (searchString.length > 0)
+						{
+							var lotNoEvent : LoadImmunizationLotNumberStaticDataEvent = new LoadImmunizationLotNumberStaticDataEvent(searchString);
+							CairngormEventDispatcher.getInstance().dispatchEvent(lotNoEvent);					
+						}
+					}
+				}
+			}
+
+		]]>
+	</fx:Script>
+</itemEditors:ComboBoxItemEditor>

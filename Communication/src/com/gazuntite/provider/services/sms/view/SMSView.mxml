@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:appController="com.gazuntite.provider.services.sms.appController.*"
+		 xmlns:emailview="com.gazuntite.provider.services.sms.view.emailview.*"
+		 creationComplete="OnLoad();"  
+		 >
+
+	<fx:Script>
+		
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEvent;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.provider.services.email.model.EmailModelLocator;
+			import com.gazuntite.provider.services.sms.event.DeleteSMSEvent;
+			import com.gazuntite.provider.services.sms.event.GetSentSMSEvent;
+			import com.gazuntite.provider.services.sms.model.SMSModelLocator;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.ListCollectionView;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			private var _userID:int;
+			private var _senderID:int;
+			private var _clinicBranchID:String;
+			private var model : EmailModelLocator = EmailModelLocator.getInstance();
+
+			[Bindable]
+			public function get senderID():int
+			{
+				return _senderID;
+			}
+
+			public function set senderID(value:int):void
+			{
+				_senderID = value;
+			}
+
+			
+			[Bindable]
+			public function get userID():int
+			{
+				return _userID;
+			}
+			
+			public function set userID(value:int):void
+			{
+				_userID = value;
+			}
+			
+			[Bindable]
+			public function get BranchID():String
+			{
+				return _clinicBranchID;
+			}
+			
+			public function set BranchID(value:String):void
+			{
+				_clinicBranchID = value;
+			}
+			
+			//[Bindable]
+			//private var model: SMSModelLocator = SMSModelLocator.getInstance();
+			private function OnLoad():void
+			{
+				viewstack1.selectedIndex	=0;
+				btnCompose.selected 		= true ;
+				
+				//EnableNavigationButtons(1,1);
+			}
+
+			
+			protected function btnDelete_clickHandler(event:MouseEvent):void
+			{
+
+				if(id_SentSMS != null)
+				{
+					var selection:ArrayCollection = new ArrayCollection( id_SentSMS.dgSentSMS.selectedItems );
+					
+				//var allRows:int =	 id_SentSMS.model.smsResultList.ALLSentSMS.length;
+				var smsID:String = "";
+				if(selection.length > 0)
+				{
+				for (var i:int = 0; i < selection.length; i++)
+				{
+					//if(ListCollectionView(id_SentSMS.dgSentSMS.dataProvider).getItemAt(i)["isSelected"]==true)
+						smsID	+=  ListCollectionView(selection).getItemAt(i)["smsID"]+"^";//ListCollectionView(id_SentSMS.dgSentSMS.dataProvider).getItemAt(i)["smsID"]+"^";
+				}
+				
+				
+				if(smsID.length > 0)
+				{
+					//var smsID:String = "28^31";	
+					smsID = smsID.substring(0,smsID.length);
+					var smsDeleteEvent : DeleteSMSEvent = new DeleteSMSEvent(smsID,id_SentSMS.model.loggedInUserId,id_SentSMS.GetSMSValuesCallBack);
+					CairngormEventDispatcher.getInstance().dispatchEvent(smsDeleteEvent);
+				}
+				else
+					Alert.show("No SMS is selected for deletion.","SMS Sending Error" ,4,FlexGlobals.topLevelApplication.mainContainer);
+				
+				viewstack1.selectedIndex=1;
+				}
+				else
+					Alert.show("No row to delete.","SMS Sending Error" ,4,FlexGlobals.topLevelApplication.mainContainer);
+				}
+			}
+			
+			protected function CloseHandler(event:MouseEvent):void
+			{
+				//chUtil.removeWindowsCount();
+				dispatchEvent( new CloseEvent(CloseEvent.CLOSE) );
+			}
+			
+			/*
+			protected function btnRefresh_clickHandler(event:MouseEvent):void
+			{
+				CallServer(model.currentPage=1);
+			}
+
+			private function CallServer(currentPage:int):void
+			{
+				var smsSentEvent:GetSentSMSEvent =new GetSentSMSEvent(1,579,model.currentPage,GetSMSValuesCallBack);
+				CairngormEventDispatcher.getInstance().dispatchEvent(smsSentEvent);
+			}
+			
+			protected function btnGotoFirst_clickHandler(event:MouseEvent):void
+			{
+				CallServer(model.currentPage=1);
+				//var smsView:SentSMSView=new SentSMSView();
+				
+			}
+
+			protected function btnGotoLast_clickHandler(event:MouseEvent):void
+			{
+				CallServer(model.currentPage=model.totalPage);
+			}
+			
+			public  function GetSMSValuesCallBack(val:* = null):void
+			{
+				EnableNavigationButtons(model.currentPage,model.totalPage);
+			}
+			
+			public function  EnableNavigationButtons(currentPage:int, totalPages:int ):void //currentPage:int, totalPages:int ):void
+			{
+				
+				//currentPage =model.currentPage;
+				//totalPages = model.totalPage;
+				
+				btnGotoFirst.enabled = currentPage != 1;
+				btnGotoLast.enabled 		= currentPage != totalPages;
+				btnNext.enabled 		=  currentPage != totalPages;
+				btnPrevious.enabled 	=  currentPage != 1;
+			}
+			
+			
+
+			protected function btnPrevious_clickHandler(event:MouseEvent):void
+			{
+				CallServer(model.currentPage -=1);
+			}
+
+
+			protected function btnNext_clickHandler(event:MouseEvent):void
+			{
+				CallServer(model.currentPage +=1);
+			}
+*/
+			public function resetButtons():void
+			{
+				btnCompose.selected			= false ;
+				btnSentSMS.selected			= false ;
+				btnDelete.enabled 			= false ;
+				
+			}
+
+
+			protected function id_Test_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+			}
+
+
+			protected function btnCompose_clickHandler(event:MouseEvent):void
+			{
+				viewstack1.selectedIndex=0;
+				resetButtons () ;
+				btnCompose.selected = true ;
+				
+				if(id_Compose != null)
+				{
+					id_Compose.senderID = senderID;
+					id_Compose.userID = userID;
+					id_Compose.BranchID = BranchID;
+				}
+				
+			}
+
+
+			protected function btnSentSMS_clickHandler(event:MouseEvent):void
+			{
+				viewstack1.selectedIndex=1;
+				resetButtons () ;
+				btnDelete.enabled = true;
+				btnSentSMS.selected = true ;
+				if(id_SentSMS != null)
+				{
+					
+					//id_SentSMS.clinicBranchID = BranchID;
+					//id_SentSMS.userID = userID;
+				}
+			}
+
+		]]>
+	</fx:Script>
+<fx:Metadata>
+	[Event(name="close", type="mx.events.CloseEvent")]
+</fx:Metadata>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		
+	</fx:Declarations>
+
+	<s:layout>
+		<s:VerticalLayout paddingLeft="3"  paddingRight="3" gap="-1" paddingTop="5" paddingBottom="3"/>
+	</s:layout>
+	<s:SkinnableContainer styleName="gradientGreyExtendedHeaderBGContainerSkin" width="100%">
+		<s:layout>
+			<s:HorizontalLayout verticalAlign="middle" paddingLeft="5"/>
+		</s:layout>
+		<s:ToggleButton id="btnCompose"  label="Compose" buttonMode="true" toolTip="Compose"  click="btnCompose_clickHandler(event)" styleName="communicationHeaderToggleButtonSkin" />
+		<s:ToggleButton label="Sent SMS"  id="btnSentSMS" buttonMode="true" toolTip="Sent SMS" click="btnSentSMS_clickHandler(event)"  styleName="communicationHeaderToggleButtonSkin"/>
+		<s:Button label="Delete"  id="btnDelete" width="82" height="25" buttonMode="true" toolTip="Delete" click="btnDelete_clickHandler(event)" styleName="communicationButtonSkin"/>
+	</s:SkinnableContainer>
+	<!--
+	<s:HGroup verticalAlign="top" right="790">
+		<s:Button label="Delete" id="btnDelete" click="btnDelete_clickHandler(event)"/>
+	</s:HGroup>
+	<s:HGroup right="400" horizontalAlign="left">
+		<s:Button id="btnGotoFirst" label="GotoFirst" click="btnGotoFirst_clickHandler(event)"/>
+		<s:Button id="btnPrevious" label="Previous" click="btnPrevious_clickHandler(event)"/>
+		<s:Button id="btnNext" label="Next" click="btnNext_clickHandler(event)"/>
+		<s:Button id="btnGotoLast" label="GotoLast" click="btnGotoLast_clickHandler(event)"/>
+	</s:HGroup>
+	
+	<s:HGroup  right="600">
+		<s:Button id="btnRefresh"  label="Refresh" click="btnRefresh_clickHandler(event)">
+			
+		</s:Button>
+	</s:HGroup>
+	
+		
+	<mx:ToggleButtonBar dataProvider="{viewstack1}" horizontalGap="10"/>
+			-->
+	
+	<mx:ViewStack id="viewstack1" width="100%" height="100%">
+		<s:NavigatorContent width="100%" height="100%">
+			<emailview:ComposeSMSView id="id_Compose" width="100%" height="100%" BranchID="{BranchID}" userID="{userID}" senderID="{senderID}" />
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" height="100%">
+			<emailview:SentSMSView id="id_SentSMS" userID="{senderID}" clinicBranchID="{BranchID}" width="100%" height="100%"/>
+		</s:NavigatorContent>
+		
+	</mx:ViewStack>
+
+		<!--<s:Button id="id_CloseBtn" styleName="closeButtonSkin" label="Close"
+				  click="CloseHandler(event)" buttonMode="true" useHandCursor="true" toolTip="Close Email Section"/>-->
+		
+		
+</s:Group>

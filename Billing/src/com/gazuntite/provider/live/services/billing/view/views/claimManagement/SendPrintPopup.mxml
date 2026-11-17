@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						xmlns:s="library://ns.adobe.com/flex/spark" 
+						xmlns:mx="library://ns.adobe.com/flex/mx" 
+						xmlns:components="com.gazuntite.controls.extended.components.*"
+						creationComplete="popupwindow2_creationCompleteHandler(event)"
+						title="EDI Receiver Type" xmlns:components1="com.gazuntite.controls.extended.components.*"
+						>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.provider.live.services.billing.dto.settings.EDIReceiverDTO;
+			import com.gazuntite.provider.live.services.billing.event.settings.LoadEDIReceiverByCriteriaEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			[Bindable]
+			private var EDIReceivers:ArrayCollection = null;
+			
+			public function hide():void
+			{
+				removePopup();
+			}
+			
+			protected function id_ButtonChanged(event:Event):void
+			{
+				switch((event.currentTarget as RadioButton).label.substring(0,1))
+				{
+					case "P":
+					{
+						model.SendClaimInsuranceTypeId = 1;
+						break;
+					}
+						
+					case "S":
+					{
+						model.SendClaimInsuranceTypeId = 2;
+						break;
+					}
+						
+					case "T":
+					{
+						model.SendClaimInsuranceTypeId = 3;
+						break;
+					}
+				}				
+			}			
+			
+			
+			
+			protected function popupwindow2_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(model.EDIReceiverList == null || model.EDIReceiverList.length == 0)
+				{
+					var lerEvent:LoadEDIReceiverByCriteriaEvent = new LoadEDIReceiverByCriteriaEvent(0,"0",0);
+					CairngormEventDispatcher.getInstance().dispatchEvent(lerEvent);
+				}
+				
+				if(model.EDIReceiverList != null && model.EDIReceiverList.length > 0)
+				{
+					EDIReceivers = new ArrayCollection();
+					
+					for each (var receiver:EDIReceiverDTO in model.EDIReceiverList) 
+					{
+						EDIReceivers.addItem(receiver);
+					}					
+				}
+				
+				model.SendClaimInsuranceTypeId = 1;
+				//model.SendClaimMediaTypeId = 1;
+				
+				//until multiple claim printing implementation
+				model.SendClaimMediaTypeId = 2;	
+				id_electronc.selected = true;
+				id_paper.enabled = false
+				
+				model.SendClaimEDIReceiverId = 0;
+			}
+			
+			
+			
+			protected function id_Media_changeHandler(event:Event):void
+			{
+				if((event.currentTarget as RadioButton).label.substring(0,1) == "P")
+					model.SendClaimMediaTypeId = 1;
+				else
+					model.SendClaimMediaTypeId = 2;
+			}
+			
+			protected function id_EDIReceiverCmb_changeHandler(event:IndexChangeEvent):void
+			{
+				model.SendClaimEDIReceiverId = parseInt((id_EDIReceiverCmb.selectedItem as EDIReceiverDTO).EDIReceiverID);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<components:layout>
+		<s:VerticalLayout paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" gap="5" />
+	</components:layout>
+	<s:HGroup width="100%" horizontalAlign="center" >
+		<s:RadioButton id="id_Primary" label="Primary" fontFamily="Calibri" fontSize="11"  groupName="InsType" click="id_ButtonChanged(event)" selected="true" tabIndex="1" />
+		<s:RadioButton id="id_Secondary" label="Secondary" fontFamily="Calibri" fontSize="11"  groupName="InsType" click="id_ButtonChanged(event)" tabIndex="2" />
+		<s:RadioButton id="id_Tertiary" label="Tertiary" fontFamily="Calibri" fontSize="11" width="100%"  click="id_ButtonChanged(event)" groupName="InsType" 
+					   tabIndex="3" />
+	</s:HGroup>
+	<s:HGroup>		
+		<s:RadioButton id="id_paper" label="Paper" fontFamily="Calibri" fontSize="11"  groupName="mediaType"  click="id_Media_changeHandler(event)" selected="true" tabIndex="1" />
+		<s:RadioButton id="id_electronc" label="Electronic" fontFamily="Calibri" fontSize="11"  groupName="mediaType" click="id_Media_changeHandler(event)" tabIndex="2" />
+		<components1:LabelComboBox id="id_EDIReceiverCmb" prompt="Select EDI Receiver" width="150" dataProvider="{EDIReceivers}"
+								  change="id_EDIReceiverCmb_changeHandler(event)" labelField="Name"								  
+								  />
+	</s:HGroup>
+	<s:HGroup width="100%" horizontalAlign="center" >
+		<s:Button id="id_Ok" width="70"  label="Ok" styleName="blackButtonSkin" useHandCursor="true" buttonMode="true" toolTip="Ok" tabIndex="4" />
+		<s:Button id="id_Cancel" width="70"  label="Cancel" styleName="blackButtonSkin" useHandCursor="true" buttonMode="true" toolTip="Cancel" tabIndex="5" />
+	</s:HGroup>
+</components1:PopupWindow>

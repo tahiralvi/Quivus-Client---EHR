@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+			creationComplete="cc()" xmlns:validators="com.gazuntite.common.util.validators.*" xmlns:components="com.gazuntite.controls.extended.components.*" xmlns:itemEditors="com.gazuntite.common.view.itemEditors.*" xmlns:grid="com.gazuntite.common.view.components.grid.*" 
+		 >
+	<fx:Declarations>
+		<validators:ComboValidator id="comboValidator" property="selectedItem"/>
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YY" />
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.dto.pmh.compHistory.FamilyHistoryDTO;
+			import com.gazuntite.common.util.QSConstants;
+			import com.gazuntite.common.view.events.DataGridActionsEvent;
+			import com.gazuntite.common.view.itemEditors.SparkComboBoxItemEditor;
+			import com.gazuntite.common.view.itemEditors.YesNoItemEditor;
+			import com.gazuntite.controls.extended.components.LabelComboBox;
+			import com.gazuntite.patient.visit.model.VBModelLocator;
+			import com.gazuntite.patient.visit.utlis.VBGridController;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Label;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.events.CollectionEvent;
+			import mx.events.DataGridEvent;
+			import mx.events.ValidationResultEvent;
+			
+			[Bindable]
+			public var model:VBModelLocator = VBModelLocator.getInstance();
+			
+			[Bindable]
+			public var dataGridActionsData:Object;
+			
+			private var vbGridController:VBGridController;
+			private var _hasViewChanged:Boolean;
+			private var _hasGridChanged:Boolean;
+			private var m_bShowEditControls:Boolean;
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			
+			[Bindable]
+			public function get ShowEditControls():Boolean
+			{
+				return m_bShowEditControls;
+			}
+			
+			public function set ShowEditControls(value:Boolean):void
+			{
+				m_bShowEditControls = value;
+			}
+			
+			public function GridRowNumber(oItem:Object, iCol:int):String
+			{
+				var ret:String;
+				try
+				{
+					var rowNumber:int = id_DataGrid.dataProvider.getItemIndex(oItem) + 1; //Sort able column fails some how, don't know why?
+					ret = String(rowNumber);
+				}
+				catch(e:Error )
+				{
+					ret = "##";
+				}
+				return ret;
+			}
+			
+			private function cc():void
+			{
+				vbGridController = new VBGridController(null, null, null, doValidateRecord);
+				vbGridController.dataGrid = id_DataGrid;
+				
+				vbGridController.firstEditableColIdx = 2;
+				vbGridController.firstEditablePropertyName = "IsYesSelected";
+				
+				vbGridController.sectionName = QSConstants.FAMILY_HISTORY_MODULE_NAME;
+				
+				if (!dataGridActionsData)
+					dataGridActionsData = {};
+				
+				dataGridActionsData["noteDataFields"] = {subject: "NoteSubject", note: "Note", header: "FamilyHistoryType.Name", visitDate: "VisitDate"};
+				dataGridActionsData["dictationDataField"] = "DictationID";
+				//dataGridActionsData["recordIDField"] = "ID"; 
+				//dataGridActionsData["section"] = QIPopUpManager.VB_COMPREHENSIVE_HISTORY;
+			}
+			
+			public function doValidateRecord(event:DataGridEvent):void
+			{
+				var validationRes:ValidationResultEvent;
+				
+				var comboEditor:LabelComboBox;
+				var yesNoEditor:YesNoItemEditor;
+				
+				var fhDTO:FamilyHistoryDTO = event.itemRenderer.data as FamilyHistoryDTO;
+				
+				if (!fhDTO)
+					return;
+				
+				switch (event.dataField)
+				{
+					case "IsYesSelected":
+						
+						yesNoEditor = id_DataGrid.itemEditorInstance as YesNoItemEditor;
+						
+						if (yesNoEditor)
+						{
+							var canEdit:Boolean = true;
+							
+							if (yesNoEditor.isYes == QSConstants.STRING_FALSE)
+							{
+								fhDTO.DiseaseType = null;
+								//fhDTO.DiseaseType.Name = "";
+								
+								fhDTO.ReletionshipType = null;
+								//fhDTO.ReletionshipType.ID = "";
+								
+								canEdit = false;
+							}
+							
+							fhDTO.IsYesSelected = (yesNoEditor.isYes == QSConstants.STRING_TRUE)? QSConstants.STRING_TRUE : QSConstants.STRING_FALSE;
+							fhDTO.IsDirty = true;
+							
+							for (var i:int = 3; i < 6; i++)
+							{
+								id_DataGrid.columns[i].editable = canEdit;
+							}
+						}
+						
+						break;
+					
+					case "ReletionshipType.Name":
+						
+						comboEditor = SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor;
+						
+						comboValidator.source = comboEditor;
+						comboValidator.error = "Select reletionship from list";
+						
+						validationRes = comboValidator.validate(comboEditor.selectedItem);
+						
+						if (validationRes && !validationRes.results)
+						{
+							event.itemRenderer.data.ReletionshipType.Name = comboEditor.selectedItem.RelationshipName;
+							event.itemRenderer.data.ReletionshipType.ID = comboEditor.selectedItem.Code;
+							event.itemRenderer.data.IsDirty = true;
+							
+							hasViewChanged = _hasGridChanged = true;
+						}
+						
+						break;
+					
+					case "DiseaseType.ID":
+					case "DiseaseType.Name":
+						
+						comboEditor = SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor;
+						
+						comboValidator.source = comboEditor;
+						comboValidator.error = "Select disease name from list";
+						
+						validationRes = comboValidator.validate(comboEditor.selectedItem);
+						
+						if (validationRes && !validationRes.results)
+						{
+							event.itemRenderer.data.DiseaseType.ID = comboEditor.selectedItem.IcdCodeName;
+							event.itemRenderer.data.DiseaseType.Name = comboEditor.selectedItem.Description;
+							event.itemRenderer.data.IsDirty = true;
+							
+							hasViewChanged = _hasGridChanged = true;
+						}
+						
+						break;
+				}
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+			}
+			
+			private function myFilter(obj:*):Boolean
+			{
+				if (model.vbFilter == QSConstants.BY_VISIT)
+				{
+					if (model.vbVisitId == obj.VisitID)
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+				
+				return true;
+			}
+			
+			public function displayStatus(oItem:Object,iCol:int):String
+			{
+				var status:String = (oItem as FamilyHistoryDTO).IsYesSelected;
+				
+				if (status && status.toLowerCase() == QSConstants.STRING_TRUE)
+				{
+					return "Yes";
+				}
+				else if (status && status.toLowerCase() == QSConstants.STRING_FALSE)
+				{
+					return "No";
+				}
+				
+				return "";
+			}
+			
+			public function recordLevelNotesStatus(hasNotes:Boolean, data:Object):void
+			{
+				if( hasNotes ) 
+					data.IsYesSelected = QSConstants.STRING_FALSE;
+				else
+					data.IsYesSelected = QSConstants.STRING_TRUE;
+				
+				if (model.familyHistoryDTOListByPatient)
+					model.familyHistoryDTOListByPatient.refresh();
+			}
+			
+			private function setVisitDate(oItem:Object,iCol:int):String
+			{
+				var strVisitDate:String = '';
+				
+				if (oItem && oItem.VisitDate)
+				{
+					var dateRecieved:Date = new Date(Date.parse(oItem.VisitDate));
+					strVisitDate = formatDateTime.format(dateRecieved);
+					var nullDate:Date = QSConstants.NULL_DATE;
+					
+					if (dateRecieved.getFullYear() <= nullDate.getFullYear() && dateRecieved.getMonth() <= nullDate.getMonth())
+						strVisitDate = "";
+					
+					if(oItem.IsNA)
+						strVisitDate = 'N/A';
+				}
+				return strVisitDate;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+		<s:VerticalLayout gap="0" />
+	</s:layout> 
+	<s:Button label="Filter" click="button1_clickHandler(event)" visible="false" includeInLayout="false" id="id_applyFiler"/>
+	<components:LabelDataGrid id="id_DataGrid"
+							  rowCount="{id_DataGrid.dataProvider.length ? id_DataGrid.dataProvider.length : 1}" 
+							  width="100%" maxHeight="150" editable="false" useRollOver="false" horizontalScrollPolicy="off" verticalScrollPolicy="on"
+							  columnWidths="{[25,'20%','15%','15%','20%','10%', 80]}"
+							  dataProvider="{model.familyHistoryDTOListByPatient}">
+		<components:columns>
+			<mx:DataGridColumn headerText="Sr.#" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editable="false" labelFunction="GridRowNumber"/>
+			<mx:DataGridColumn headerText="Family History" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" 
+							   editable="false" dataField="FamilyHistoryType.Name"/>
+			<mx:DataGridColumn headerText="Status" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" 
+							   editorDataField="isYes" labelFunction="displayStatus" dataField="IsYesSelected">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:YesNoItemEditor width="100%" height="90%" property="IsYesSelected"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="ICD Code" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"
+							   editorDataField="editorText" dataField="DiseaseType.ID">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor width="100%" dataProvider="{outerDocument.model.icdCodeDTOList}" labelField="IcdCodeName"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Disease" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"
+							   editorDataField="editorText" dataField="DiseaseType.Name">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor width="100%" height="100%" dataProvider="{outerDocument.model.icdCodeDTOList}" labelField="Description"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Relation" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"
+							   editorDataField="editorText" dataField="ReletionshipType.Name">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor width="100%" height="100%" dataProvider="{outerDocument.model.relationshipTypeDTOList}" labelField="Name"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<grid:DataGridColumnEx headerText="" data="{dataGridActionsData}" editable="false"
+								   itemRenderer="com.gazuntite.patient.visit.view.itemrenderer.VBRenderer"/>
+		</components:columns>
+	</components:LabelDataGrid>
+</s:Group>

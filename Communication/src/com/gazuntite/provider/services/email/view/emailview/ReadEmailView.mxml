@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--- 
+<This File of Email Reading>
+This skin class for a CollapsiblePanel based on default Spark Panel skin.
+<author> Zahid Mehmood</author>
+-->
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:components="com.zigron.controls.extended.components.*"
+		 styleName="greyHeaderAliceBlueBGContainerSkin"
+		 creationComplete="group1_creationCompleteHandler(event)" 
+		 xmlns:emailview="com.gazuntite.provider.services.email.view.emailview.*" 
+		 xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 
+		 >
+
+	<fx:Metadata>
+		[Event(name="ReplyEmailEvent", type="com.gazuntite.provider.services.email.view.event.ReplyEmailEvent")]
+		[Event(name="RefreshEmailEvent", type="com.gazuntite.provider.services.email.view.event.RefreshInboxPanel")]
+		[Event(name="close", type="mx.events.CloseEvent")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.cairngorm.model.ModelLocator;
+			import com.adobe.gazuntite.skins.chrome.buttonSkins.userLabelButton;
+			import com.adobe.gazuntite.skins.chrome.textInputSkins.optionalTextArea;
+			import com.gazuntite.provider.services.email.dto.EmailDTO;
+			import com.gazuntite.provider.services.email.dto.EmailResultList;
+			import com.gazuntite.provider.services.email.event.ViewEmailEvent;
+			import com.gazuntite.provider.services.email.model.EmailModelLocator;
+			import com.gazuntite.provider.services.email.util.AttachmentArray;
+			import com.gazuntite.provider.services.email.util.EmailConstant;
+			import com.gazuntite.provider.services.email.util.EmailServiceMethods;
+			import com.gazuntite.provider.services.email.util.XmlConstants;
+			import com.gazuntite.provider.services.email.view.event.RefreshInboxPanel;
+			import com.gazuntite.provider.services.email.view.event.ReplyEmailEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.ArrayList;
+			import mx.collections.ListCollectionView;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.skins.spark.TextAreaSkin;
+			[Bindable]
+			private var model: EmailModelLocator = EmailModelLocator.getInstance();
+			
+			[Bindable]
+			public var fileAttachmentArray:ArrayCollection =new ArrayCollection();
+			
+			
+			private   var _emailID:int;
+
+			
+			public static var _subject:String;
+			private  var _message:String;
+			private  var _from:String;
+			private  var _sendto:String;
+			
+			public static var HasAttachment:Boolean;
+			
+			public function get emailID():int
+			{
+				return _emailID;
+			}
+			
+			public function set emailID(value:int):void
+			{
+				_emailID = value;
+			}
+
+			
+			
+			public  function get sendto():String
+			{
+				return _sendto;
+			}
+			
+			public  function set sendto(value:String):void
+			{
+				_sendto = value;
+				
+			}
+
+			public  function get from():String
+			{
+				return _from;
+			}
+			
+			public  function set from(value:String):void
+			{
+				//lblSenderAddress.text =value;
+				_from = value;
+			}
+			[Bindable]
+			public  function get message():String
+			{
+				return _message;
+			}
+			
+			public  function set message(value:String):void
+			{
+				//txtMailBody.text = model.message;
+				_message = value;
+			}
+			[Bindable]
+			public   function get subject():String
+			{
+				return _subject;
+			}
+
+			public    function set subject(value:String):void
+			{
+				_subject = value;
+				//lblSubject.text = value;
+			}
+
+			protected function btnReply_clickHandler(event:MouseEvent):void
+			{
+			var message:String= "\r\n\r\n"+" On "+ model.mailSentAt+ ", "+ model.from +" wrote: \r\n"+model.message ;
+				var emailReplyevent:ReplyEmailEvent  = new ReplyEmailEvent(emailID,model.senderID,message,model.from,model.sendto,model.subject,fileAttachmentArray);
+				dispatchEvent( emailReplyevent );
+				/*
+				//txtMailBody.editable=true;
+				//txtMailBody.text = "\r\n\r\n"+"On"+ model.mailSentAt+ ", "+ model.from +" wrote: \r\n"+model.message ;
+				
+				id_View.selectedIndex=0;
+				id_SendMail.visible=true;
+				
+				
+				
+				//var objSendMail:SendMailView =new SendMailView();
+				//PopUpManager.addPopUp(objSendMail,this,true);
+				id_SendMail.id_email.text = model.from;
+				id_SendMail.id_subject.text ="Re: "+ model.subject;
+				id_SendMail.id_message.text = "\r\n\r\n"+" On "+ model.mailSentAt+ ", "+ model.from +" wrote: \r\n"+model.message ;
+				
+				//this.visible=false;
+				//PopUpManager.removePopUp(this);
+				*/
+			}
+			
+			public function GetEmailDetails(emailID:int):void
+			{
+				//this.emailID = emailID;
+			}
+			
+		
+
+			public function GetEmailValues():void
+			{
+				txtMailBody.text = model.message;
+				lblSenderAddress.text = from;
+				lblRecieverAddress.text = _sendto;
+				lblSubject.text = subject;
+			//	txtMailBody.text=message;
+				if(model.hasAttachment)
+				{
+					btnAttachmentDownload.visible = true;
+					id_attachmentImage.visible = true;
+				}
+				else
+				{
+					btnAttachmentDownload.visible = false;
+					id_attachmentImage.visible = false;
+				}
+			}
+			
+			public function sendToServer():void
+			{
+				var emailViewEvent:ViewEmailEvent = new ViewEmailEvent(emailID,model.loggedInUserId,model.loggedInUserSelectedBranchId,model.loggedInUserSelectedStationID,model.IsInbox,GetEmailValuesCallBack);
+				CairngormEventDispatcher.getInstance().dispatchEvent(emailViewEvent);
+				
+				
+				id_AttachmentGrid.dataProvider = null;
+				
+			}
+			
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{ 
+				
+				//////////////////////user id, branch id, station id need to get dynamically ///////////////////////
+				
+				if(emailID > 0)
+				{
+				var emailViewEvent:ViewEmailEvent = new ViewEmailEvent(emailID,model.loggedInUserId,model.loggedInUserSelectedBranchId,model.loggedInUserSelectedStationID,model.IsInbox,GetEmailValuesCallBack);
+				CairngormEventDispatcher.getInstance().dispatchEvent(emailViewEvent);
+				event.stopImmediatePropagation();
+				}
+				//callLater(GetEmailValuesCallBack);
+				
+				//callLater(GetEmailValuesCallBack,null);
+			 	//GetEmailValues();
+				fileToDownload.addEventListener(Event.COMPLETE, fileRef_complete);
+				fileToDownload.addEventListener(ProgressEvent.PROGRESS, fileRef_progress);
+			}
+
+			public  function GetEmailValuesCallBack(val:* = null):void
+			{
+					//Alert.show("Values Got");
+				txtMailBody.text = model.message;
+				lblSubject.text = model.subject;
+				lblSenderAddress.text = model.from;
+				lblRecieverAddress.text = model.sendto;
+				btnAttachmentDownload.visible= model.hasAttachment;
+				lblSentDate.text=model.mailSentAt;
+				
+				if(!model.hasAttachment)
+				{
+					btnAttachmentDownload.visible = false;
+					id_attachmentImage.visible = false;
+					id_AttachmentGrid.visible = false;
+					id_AttachmentGrid.includeInLayout = false;
+				}
+				else
+				{
+					
+					btnAttachmentDownload.visible = true;
+					id_attachmentImage.visible = true;
+					id_AttachmentGrid.visible = true;
+					id_AttachmentGrid.includeInLayout = true;
+					if(model.fileName != "")
+					{
+						id_AttachmentGrid.dataProvider == null;
+						fileAttachmentArray.removeAll();
+						var fileArrary:Array = model.fileName.split(';',10);
+						for(var filesLength:int;filesLength < fileArrary.length;filesLength++)
+						{
+							if(fileArrary[filesLength].toString().length > 0)
+							fileAttachmentArray.addItem(new AttachmentArray(true,fileArrary[filesLength]));
+						}
+						id_AttachmentGrid.dataProvider=fileAttachmentArray;
+					}
+				}
+			}
+
+			protected function btnClose_clickHandler(event:MouseEvent):void
+			{
+				
+				
+			//	var refreshEmail:RefreshInboxPanel  = new RefreshInboxPanel();
+			//	dispatchEvent( refreshEmail );
+				
+				txtMailBody.text = "";
+				lblSubject.text = "";
+				lblSenderAddress.text = "";
+				lblRecieverAddress.text = "";
+				lblSentDate.text = "";
+				var refreshEmail:RefreshInboxPanel  = new RefreshInboxPanel();
+				dispatchEvent( refreshEmail );
+				
+				/* dispatchEvent(new CloseEvent(CloseEvent.CLOSE)); */
+				//this.visible=false;
+				//PopUpManager.removePopUp(this);
+			}
+
+
+			
+			private var fileToDownload:FileReference= new FileReference();
+			private var fileDownloadCount:int=0;
+			
+			public function OnDownloadClick():void
+			{
+				fileDownloadCount=0;
+				DownloadFile();
+			}
+			
+			
+			
+			public function DownloadFile():void
+			{
+				if(fileAttachmentArray.length > 0)
+				{
+					var filesName:String = "";
+					while(fileDownloadCount < fileAttachmentArray.length)
+					{
+						if(ListCollectionView(id_AttachmentGrid.dataProvider).getItemAt(fileDownloadCount)["isSelected"] == true)
+						{
+							filesName += ListCollectionView(id_AttachmentGrid.dataProvider).getItemAt(fileDownloadCount)["fileName"].toString()+";";
+							DownloadFileExample();
+							fileDownloadCount++;
+							break;
+							
+						}
+						fileDownloadCount++;
+					}
+				}
+				
+				
+			}
+			
+			private function fileRef_progress(event:ProgressEvent):void {
+				downloadProgress.setProgress(event.bytesLoaded, event.bytesTotal);	
+			}
+			
+			public function DownloadFileExample():void
+			{
+				var request:URLRequest = new URLRequest();
+				if(model.fileName.length > 0)
+				{
+					var filesAttached:Array= model.fileName.split(';',50);
+				
+				var fileparts:Array= filesAttached[fileDownloadCount].toString().split('.',2); //model.fileName.split('.',2);
+				if(fileparts.length > 1)
+				{
+					downloadProgress.visible=true;
+					downloadProgress.includeInLayout = true;
+					downloadProgress.setProgress(0,100);
+				var getDownload:String =EmailConstant.RESTFULL_SERVICE_BASE_URL + EmailServiceMethods.GET_ATTACHMENT_EMAIL;
+				request.url = getDownload +"/"+model.emailID+"/"+fileparts[0].toString()+"/"+fileparts[1].toString();
+				try
+				{
+					fileToDownload.download(request, filesAttached[fileDownloadCount]);
+				}
+				catch (error:Error)
+				{
+					trace("Unable to download file.");
+				}
+				}
+				}
+			}
+			
+			
+			private function fileRef_complete(evt:Event):void 
+			{
+				//fileDownloadCount= fileDownloadCount+1;
+				HasAttachment=true;
+				Alert.show("File Downloaded","Download Complete",4,FlexGlobals.topLevelApplication.mainContainer);
+				DownloadFile();
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		
+		
+	</fx:Declarations>
+	<s:layout>
+		<s:VerticalLayout paddingLeft="3" paddingRight="3" paddingTop="6" paddingBottom="3" gap="8"/>
+	</s:layout>
+	<s:HGroup  horizontalAlign="left" verticalAlign="middle" width="100%">
+		<s:Button id="btnClose" click="btnClose_clickHandler(event)" styleName="goBackButtonSkin" 
+				  buttonMode="true" toolTip="Go Back"/>
+		<s:Label id="lblSubject" fontFamily="Calibri" fontSize="16" color="#333333" />
+		<s:HGroup width="100%" horizontalAlign="right" >
+			<s:Button label="Reply" id="btnReply" click="btnReply_clickHandler(event)"  width="60" height="20"
+					  styleName="communicationButtonSkin" buttonMode="true" toolTip="Reply"/>
+			
+		</s:HGroup>
+	</s:HGroup>
+	
+	<s:HGroup  horizontalAlign="left" verticalAlign="middle" gap="5" width="100%" >
+		<s:Label id="lblFrom" text="From: " width="30" textAlign="left" fontFamily="Calibri" fontSize="12" />
+		<s:Label id="lblSenderAddress"  enabled="false" width="100%" color="#999999" fontFamily="Calibri" fontSize="12" />
+	</s:HGroup>
+	<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="5" width="100%">
+		<s:Label id="lblTo" text="To: " textAlign="left" width="30" fontFamily="Calibri" fontSize="12" />
+		<s:Label id="lblRecieverAddress" enabled="false" width="100%"   color="#999999" fontFamily="Calibri" fontSize="12" />
+		<mx:Spacer width="100%"/>
+		<s:Label id="lblSentDate"  enabled="false" fontFamily="Calibri" fontSize="12" />
+	</s:HGroup>
+	<s:HGroup horizontalAlign="left"  gap="5"  width="100%"  verticalAlign="middle" >
+		<mx:Spacer width="30" />
+		<s:BitmapImage id="id_attachmentImage" smooth="true"
+					   source="@Embed('../Skin/src/com/adobe/gazuntite/skins/chrome/assets/icons/attachmentpin.png')" />
+		<s:Button id="btnAttachmentDownload" label="Download" visible="true" click="OnDownloadClick()"
+				  styleName="peachDownloadButtonSkin"/>
+		<mx:ProgressBar id="downloadProgress" visible="false" includeInLayout="false" label="" mode="manual" width="100" height="6"  />
+	</s:HGroup>
+	<s:HGroup width="100%">
+		<mx:Spacer width="30" />
+		<mx:DataGrid id="id_AttachmentGrid" dataProvider="{fileAttachmentArray}"  verticalScrollPolicy="auto"  styleName="transparentGridStyle"
+					 headerHeight="0" rowCount="{id_AttachmentGrid.dataProvider.length ? id_AttachmentGrid.dataProvider.length :0 }" 
+					 width="100%" height="35" showHeaders="false"  includeInLayout="{id_AttachmentGrid.visible}" >
+			<mx:columns>
+				<mx:DataGridColumn id="id_col_IsSelected"  headerText="" editable="true" sortable="false" dataField="isSelected"
+								   width="20" itemRenderer="com.gazuntite.provider.services.email.view.ItemRenderer.DownloadFileItemRenderer" 
+								   rendererIsEditor="true" editorDataField="selected" />
+				<mx:DataGridColumn id="id_col_FileName" headerText="" width="300" dataField="fileName"/>
+			</mx:columns>
+		</mx:DataGrid>
+		
+	</s:HGroup>
+	
+	
+	
+	<components1:LabelTextArea id="txtMailBody" width="100%" height="100%"  minHeight="100"
+							  editable="false" skinClass="com.adobe.gazuntite.skins.chrome.textInputSkins.optionalTextArea"/>
+	
+	<mx:ViewStack id="id_View">
+		<s:NavigatorContent width="100%" height="100%" visible="false">
+			<emailview:SendMailView id="id_SendMail" visible="false" width="100%" height="100%"/>
+		</s:NavigatorContent>
+	</mx:ViewStack>
+	
+</s:SkinnableContainer>

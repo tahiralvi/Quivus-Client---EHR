@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:components="com.zigron.controls.extended.components.*" xmlns:commons="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.*" xmlns:components1="com.gazuntite.controls.extended.components.*">
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.staticData.immunization.LoadImmunizationDoseStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.immunization.LoadImmunizationLotNumberStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.immunization.LoadImmunizationManufacturerStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.immunization.LoadImmunizationRefusalReasonStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.immunization.LoadImmunizationRoutStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.immunization.LoadImmunizationSeriesStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.immunization.LoadImmunizationSiteStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.immunization.LoadImmunizationTypesStaticDataEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.managers.IFocusManagerComponent;
+			
+			private var _enable:Boolean;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var m_bIsRefused:Boolean = false;
+			
+			[Bindable]
+			public function get enable():Boolean
+			{
+				return _enable;
+			}
+
+			public function set enable(value:Boolean):void
+			{
+				_enable = value;
+			}
+
+			[Bindable]
+			public function get IsRefused():Boolean
+			{
+				return m_bIsRefused;
+			}
+
+			public function set IsRefused(value:Boolean):void
+			{
+				m_bIsRefused = value;
+			}
+
+			public function isInvalid() : Boolean 
+			{
+				var isNotValid:Boolean = false;
+				
+				ValidationUtils.Trim( id_ImmunizationCmbo.textInput );
+				ValidationUtils.Trim( id_DoseCmbo.textInput );
+				
+				var errorStr:String = ""; 
+				var toSetFocus:UIComponent;
+				
+				if( id_ImmunizationCmbo.textInput.text.length >= 3 )
+				{
+					if( id_ImmunizationCmbo.selectedIndex == -1 )
+					{
+						isNotValid = true;
+						errorStr += "please select from Immunization list\n";
+						
+						if (!toSetFocus)
+							toSetFocus = id_ImmunizationCmbo;
+					}
+				}
+				else
+				{
+					isNotValid = true;
+					errorStr += "Immunization should have minimum 3 characters\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_ImmunizationCmbo;
+				}
+				
+				
+				if( id_DoseCmbo.textInput.text.length >= 3 )
+				{
+					/* if( id_DoseCmbo.selectedIndex == -1 )
+					{
+						isNotValid = true;
+						errorStr += "please select valid Dose\n";
+						
+						if (!toSetFocus)
+							toSetFocus = id_DoseCmbo;
+					} */
+				}
+				else
+				{
+					isNotValid = true;
+					errorStr += "Dose should have minimum 3 characters\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_DoseCmbo;
+				}
+				
+				/**
+				 * Ayesha: 7th March 2011
+				 * changing limit from 3 to 1*/
+				if( id_LotNoCmbo.textInput.text.length >= 1 && id_LotNoCmbo.textInput.text.length <= 30 )
+				{
+					
+				}
+				else if(id_LotNoCmbo.textInput.text.length)
+				{
+					isNotValid = true;
+					errorStr += "Lot# should have minimum 1 and maximum of 30 characters\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_DoseCmbo;
+				}
+				
+				if( IsRefused )
+				{
+					if( id_ReasonOfRefusalCmbo.textInput.text.length >= 3 )
+					{
+						if( id_ReasonOfRefusalCmbo.selectedIndex == -1 )
+						{
+							isNotValid = true;
+							errorStr += "please select reason from list\n";
+							
+							if (!toSetFocus)
+								toSetFocus = id_ReasonOfRefusalCmbo;
+						}
+					}
+					else
+					{
+						isNotValid = true;
+						errorStr += "Reason of Refusal should have minimum 3 characters\n";
+						
+						if (!toSetFocus)
+							toSetFocus = id_ReasonOfRefusalCmbo;
+					}
+				}
+				
+				///////////////
+				if (isNotValid && errorStr.length)
+					Alert.show(errorStr,"Field entry error", 4, FlexGlobals.topLevelApplication.mainContainer, function(event:Event):void{
+						if (toSetFocus)
+							toSetFocus.setFocus();
+					});
+				
+				return isNotValid;
+				
+			}
+			
+			/**
+			 * Ayesha: 7th March 2011
+			 * Adding Method to reset all fields
+			 * */
+			
+			public function resetFields():void
+			{
+				id_ImmunizationCmbo.selectedIndex = -1;
+				id_ManufacturerCmbo.selectedIndex = -1;
+				id_ManufacturerCmbo.textInput.text = "";
+				
+				id_ReasonOfRefusalCmbo.selectedIndex = -1;
+				id_ReasonOfRefusalCmbo.textInput.text = "";
+				
+				id_DoseCmbo.selectedIndex = -1;
+				id_DoseCmbo.textInput.text = "";
+				
+				id_LotNoCmbo.selectedIndex = -1;
+				id_LotNoCmbo.textInput.text = "";
+				
+				id_BodySideRouteCmbo.selectedIndex = -1;
+				id_BodySideRouteCmbo.textInput.text = "";
+				
+				id_SiteCmbo.selectedIndex = -1;
+				id_SiteCmbo.textInput.text = "";
+				
+				id_DateAdmin.selectedDate = null;
+				id_DateAdmin.text = "";
+				
+				id_NextDue.selectedDate = null;
+				id_NextDue.text = "";
+				
+				id_ExpiryDate.selectedDate = null;
+				id_ExpiryDate.text = "";
+				
+				id_SeriesCmbo.selectedIndex = -1;
+				id_SeriesCmbo.textInput.text = "";
+				
+				enable = false;
+				id_Add.enableAll = false;
+			}
+			
+			public function isGetEdited():Boolean
+			{
+				if (id_ImmunizationCmbo.textInput.text.length || id_ImmunizationCmbo.selectedIndex != -1 || id_ImmunizationCmbo.selectedItem != null ||
+					id_DoseCmbo.textInput.text.length || id_DoseCmbo.selectedIndex != -1 || id_DoseCmbo.selectedItem != null ||
+					id_LotNoCmbo.textInput.text.length || id_LotNoCmbo.selectedIndex != -1 || id_LotNoCmbo.selectedItem != null ||
+					id_DateAdmin.text.length || id_DateAdmin.selectedItem != null ||
+					id_NextDue.text.length || id_NextDue.selectedItem != null ||
+					id_ManufacturerCmbo.textInput.text.length || id_ManufacturerCmbo.selectedIndex != -1 || id_ManufacturerCmbo.selectedItem != null ||
+					id_BodySideRouteCmbo.textInput.text.length || id_BodySideRouteCmbo.selectedIndex != -1 || id_BodySideRouteCmbo.selectedItem != null ||
+					id_ExpiryDate.text.length || id_ExpiryDate.selectedDate != null ||
+					id_ReasonOfRefusalCmbo.textInput.text.length || id_ReasonOfRefusalCmbo.selectedIndex != -1 || id_ReasonOfRefusalCmbo.selectedItem != null ||
+					id_SiteCmbo.textInput.text.length || id_SiteCmbo.selectedIndex != -1 || id_SiteCmbo.selectedItem != null ||
+					id_SeriesCmbo.textInput.text.length || id_SeriesCmbo.selectedIndex != -1 || id_SeriesCmbo.selectedItem != null)
+					
+					return true;
+				
+				return false;
+			}
+			
+			public function areRequiredFieldsProvidedAndValid():Boolean
+			{
+				var result:Boolean = false;
+				
+				if ((id_ImmunizationCmbo.textInput.text.length || id_ImmunizationCmbo.selectedIndex != -1 || id_ImmunizationCmbo.selectedItem != null) &&
+					(id_DoseCmbo.textInput.text.length || id_DoseCmbo.selectedIndex != -1 || id_DoseCmbo.selectedItem != null))
+				{
+					result = true;
+					
+					if (id_RefusalChk.selected)
+					{
+						if (!id_ReasonOfRefusalCmbo.textInput.text.length && id_ReasonOfRefusalCmbo.selectedIndex == -1 &&
+							id_ReasonOfRefusalCmbo.selectedItem == null)
+						{
+							result = false;
+						}
+					}
+				}
+				
+				return result;
+			}
+			
+			private function id_ImmunizationCmbo_ChangeHandler(event:Event):void
+			{
+				id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+			}
+			
+			protected function id_ImmunizationCmbo_keyUpHandler(event:KeyboardEvent):void
+			{
+				var searchString:String = event.currentTarget.textInput.text;
+				trace(searchString);
+				if( searchString.length > 2 )
+				{
+					var allergyEvent : LoadImmunizationTypesStaticDataEvent = new LoadImmunizationTypesStaticDataEvent();
+					CairngormEventDispatcher.getInstance().dispatchEvent( allergyEvent );					
+				}
+				
+				enable = isGetEdited();
+				id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+			}
+
+			protected function id_ManufacturerCmbo_keyUpHandler(event:KeyboardEvent):void
+			{
+				var searchString:String = event.currentTarget.textInput.text;
+				trace(searchString);
+				if( searchString.length > 2 )
+				{
+					var allergyEvent : LoadImmunizationManufacturerStaticDataEvent = new LoadImmunizationManufacturerStaticDataEvent( searchString );
+					CairngormEventDispatcher.getInstance().dispatchEvent( allergyEvent );				
+				}
+				
+				enable = isGetEdited();
+			}
+
+
+			protected function id_ReasonOfRefusalCmbo_keyUpHandler(event:KeyboardEvent):void
+			{
+				var searchString:String = event.currentTarget.textInput.text;
+				trace(searchString);
+				if( searchString.length > 2 )
+				{
+					var allergyEvent : LoadImmunizationRefusalReasonStaticDataEvent = new LoadImmunizationRefusalReasonStaticDataEvent( searchString );
+					CairngormEventDispatcher.getInstance().dispatchEvent( allergyEvent );					
+				}
+				
+				enable = isGetEdited();
+				id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+			}
+
+
+			protected function id_BodySideRouteCmbo_keyUpHandler(event:KeyboardEvent):void
+			{
+				var searchString:String = event.currentTarget.textInput.text;
+				trace(searchString);
+				if( searchString.length > 2 )
+				{
+					var allergyEvent : LoadImmunizationRoutStaticDataEvent = new LoadImmunizationRoutStaticDataEvent( searchString );
+					CairngormEventDispatcher.getInstance().dispatchEvent( allergyEvent );				
+				}
+				
+				enable = isGetEdited();
+			}
+
+
+			protected function id_SiteCmbo_keyUpHandler(event:KeyboardEvent):void
+			{
+				var searchString:String = event.currentTarget.textInput.text;
+				trace(searchString);
+				if( searchString.length > 2 )
+				{
+					var allergyEvent : LoadImmunizationSiteStaticDataEvent = new LoadImmunizationSiteStaticDataEvent( searchString );
+					CairngormEventDispatcher.getInstance().dispatchEvent( allergyEvent );					
+				}
+				
+				enable = isGetEdited();
+			}
+
+
+			protected function id_SeriesCmbo_keyUpHandler(event:KeyboardEvent):void
+			{
+				var searchString:String = event.currentTarget.textInput.text;
+				trace(searchString);
+				if( searchString.length > 2 )
+				{
+					var allergyEvent : LoadImmunizationSeriesStaticDataEvent = new LoadImmunizationSeriesStaticDataEvent( searchString );
+					CairngormEventDispatcher.getInstance().dispatchEvent( allergyEvent );					
+				}
+				
+				enable = isGetEdited();
+			}
+
+
+			protected function id_LotNoCmbo_keyUpHandler(event:KeyboardEvent):void
+			{
+				var searchString:String = event.currentTarget.textInput.text;
+				trace(searchString);
+				
+				/**
+				 * Ayesha: 7th March 2011
+				 * Changing limit from 3 to 1
+				 * */
+				if( searchString.length > 0 )
+				{
+					var allergyEvent : LoadImmunizationLotNumberStaticDataEvent = new LoadImmunizationLotNumberStaticDataEvent( searchString );
+					CairngormEventDispatcher.getInstance().dispatchEvent( allergyEvent );					
+				}
+				
+				enable = isGetEdited();
+			}
+
+
+			protected function id_DoseCmbo_keyUpHandler(event:KeyboardEvent):void
+			{
+				var searchString:String = event.currentTarget.textInput.text;
+				trace(searchString);
+				if( searchString.length > 2 )
+				{
+					var allergyEvent : LoadImmunizationDoseStaticDataEvent = new LoadImmunizationDoseStaticDataEvent( searchString );
+					CairngormEventDispatcher.getInstance().dispatchEvent( allergyEvent );					
+				}
+				
+				enable = isGetEdited();
+				id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+			}
+
+			private function refusalCheckBoxChangeHandler():void
+			{
+				id_ReasonOfRefusalCmbo.enabled = id_RefusalChk.selected;
+				id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+			}
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<mx:StringValidator id="id_ReqStringValidator" required="true" />
+		<mx:StringValidator id="id_StringValidator" required="false" maxLength="30" />
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:HorizontalLayout paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5"/>
+	</s:layout>
+	
+	<s:VGroup width="33%">
+		<components1:LabelComboBox id="id_ImmunizationCmbo" prompt="Immunization" width="100%" labelField="ImmunizationTypeName"
+								 dataProvider="{model.immunizationTypeDTOList}" keyUp="id_ImmunizationCmbo_keyUpHandler(event)" change="id_ImmunizationCmbo_ChangeHandler(event)"/>
+		<components1:LabelComboBox id="id_ManufacturerCmbo" prompt="Manufacturer" width="100%"
+								 dataProvider="{model.immunizationManufacturerList}" keyUp="id_ManufacturerCmbo_keyUpHandler(event)" />
+		<components1:LabelComboBox id="id_ReasonOfRefusalCmbo" prompt="Reason of Refusal" width="100%" enabled="{id_RefusalChk.selected}"
+								 dataProvider="{model.immunizationRefusalReasonList}" keyUp="id_ReasonOfRefusalCmbo_keyUpHandler(event)" />
+		
+	</s:VGroup>
+	
+	<s:VGroup width="33%">
+		<s:HGroup width="100%" >
+			<components1:LabelComboBox id="id_DoseCmbo" prompt="Dose" width="50%"
+									 dataProvider="{model.immunizationDoseList}" keyUp="id_DoseCmbo_keyUpHandler(event)" />
+			<components1:LabelComboBox id="id_LotNoCmbo" prompt="Lot#" width="50%"
+									 dataProvider="{model.immunizationLotNumberList}" keyUp="id_LotNoCmbo_keyUpHandler(event)" />
+		</s:HGroup>
+		<components1:LabelComboBox id="id_BodySideRouteCmbo" prompt="Body Side/Route" width="100%"
+								 dataProvider="{model.immunizationRoutList}" keyUp="id_BodySideRouteCmbo_keyUpHandler(event)" />
+		<components1:LabelComboBox id="id_SiteCmbo" prompt="Site" width="100%"
+								 dataProvider="{model.immunizationSitesList}" keyUp="id_SiteCmbo_keyUpHandler(event)"  />
+		
+	</s:VGroup>
+	
+	<s:VGroup width="34%">
+		<s:HGroup width="100%" >
+			<!--Ayesha: 7th March 2011
+			changing date control from DateField to LabelDateField to show watermark
+			-->
+			<components1:LabelDateField id="id_DateAdmin" prompt="Admin Date" toolTip="Admin Date" width="50%" yearNavigationEnabled="true" editable="true" maxYear="{new Date().getFullYear()}" minYear="1901"/>
+			<components1:LabelDateField id="id_NextDue" prompt="Next Due" toolTip="Next Due" width="50%"  yearNavigationEnabled="true" editable="true" maxYear="{new Date().getFullYear()}" minYear="1901"/>
+		</s:HGroup>
+		<s:HGroup width="100%" >
+			<mx:DateField id="id_VISDate" toolTip="Visit Date" width="50%" yearNavigationEnabled="true" editable="false" enabled="false" selectedDate="{model.createdVisitDate}" maxYear="{new Date().getFullYear()}" minYear="1901"/>
+			<components1:LabelDateField id="id_ExpiryDate" prompt="Expiry Date" toolTip="Expiry Date" width="50%"  yearNavigationEnabled="true" editable="true" maxYear="{new Date().getFullYear()}" minYear="1901"/>
+		</s:HGroup>
+		<components1:LabelComboBox id="id_SeriesCmbo" prompt="Series" width="100%"
+								 dataProvider="{model.immunizationSeriesList}" keyUp="id_SeriesCmbo_keyUpHandler(event)" />
+		
+	</s:VGroup>
+	
+	<!--Ayesha 5th April 2011-->
+	<s:VGroup verticalAlign="middle" horizontalAlign="center" width="10%">
+		<commons:AddRecord id="id_Add" enabled="{enable}"/>
+		<s:CheckBox id="id_RefusalChk" label="Refusal" change="refusalCheckBoxChangeHandler()"/>
+	</s:VGroup>
+</s:Group>

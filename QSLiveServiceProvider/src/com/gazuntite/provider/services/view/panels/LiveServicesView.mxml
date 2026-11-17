@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:document="com.zigron.provider.services.view.document.*" 
+		 xmlns:panels="com.gazuntite.provider.services.view.panels.*"
+		 xmlns:appController2="com.gazuntite.provider.live.services.documentMgmt.appController.*" 
+		 creationComplete="creationCompleteHandler(event)" 
+		 xmlns:appController3="com.gazuntite.provider.live.services.elab.appController.*" 
+		 xmlns:appControllerSCH="com.gazuntite.provider.live.services.scheduler.appControllerSCH.*" 
+		 xmlns:appControllerWR="com.gazuntite.provider.live.services.waitingRoom.appControllerWR.*" 
+		 xmlns:appController1="com.gazuntite.provider.live.services.billing.appController.*" 
+		 xmlns:appController4="com.gazuntite.provider.eprescription.services.patient.appController.*" 
+		 xmlns:appController="com.gazuntite.provider.live.services.administration.appController.*" 
+		 >
+
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.dataBridge.controller.LiveServicesController;
+			import com.gazuntite.provider.eprescription.services.patient.appController.EPrescriptionController;
+			import com.gazuntite.provider.eprescription.services.patient.view.ePrescription;
+			import com.gazuntite.provider.live.services.administration.appController.AdminController;
+			import com.gazuntite.provider.live.services.administration.view.Administration;
+			import com.gazuntite.provider.live.services.billing.appController.BillingController;
+			import com.gazuntite.provider.live.services.billing.view.Billing;
+			import com.gazuntite.provider.live.services.documentMgmt.appController.DMAppController;
+			import com.gazuntite.provider.live.services.documentMgmt.util.DMQuivusCombineEventDispatcher;
+			import com.gazuntite.provider.live.services.documentMgmt.view.document.DocumentView;
+			import com.gazuntite.provider.live.services.elab.appController.ELabsController;
+			import com.gazuntite.provider.live.services.elab.util.ELabsQuivusCombineEventDispatcher;
+			import com.gazuntite.provider.live.services.elab.view.eLabsView;
+			import com.gazuntite.provider.live.services.scheduler.appControllerSCH.SchedulerController;
+			import com.gazuntite.provider.live.services.scheduler.util.SCQuivusCombineEventDispatcher;
+			import com.gazuntite.provider.live.services.scheduler.view.Scheduler;
+			import com.gazuntite.provider.live.services.waitingRoom.appControllerWR.WRController;
+			import com.gazuntite.provider.live.services.waitingRoom.util.WRQuivusCombineEventDispatcher;
+			import com.gazuntite.provider.live.services.waitingRoom.view.WaitingRoom;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.utils.ObjectUtil;
+			
+			private var _userID:int;
+			private var _clinicBranchID:int;
+			
+			private var _userTypeDTO:XML;
+			
+			[Bindable]
+			public function get userTypeDTO():XML
+			{
+				return _userTypeDTO;
+			}
+
+			public function set userTypeDTO(value:XML):void
+			{
+				_userTypeDTO = value;
+			}
+
+			[Bindable]
+			public function get clinicBranchID():int
+			{
+				return _clinicBranchID;
+			}
+			
+			public function set clinicBranchID(value:int):void
+			{
+				_clinicBranchID = value;
+			}
+			
+			[Bindable]
+			public function get userID():int
+			{
+				return _userID;
+			}
+			
+			public function set userID(value:int):void
+			{
+				_userID = value;
+			}
+			private var _associatedVisits:ArrayCollection;
+			[Bindable]
+			public function get associatedVisits():ArrayCollection
+			{
+				return _associatedVisits;
+			}
+			
+			public function set associatedVisits(value:ArrayCollection):void
+			{
+				_associatedVisits = value;
+			}
+			
+			public var currentOpenView:Group;
+			private var _sectionLabel:String = "";
+			[Bindable]
+			public function get sectionLabel():String
+			{
+				return _sectionLabel;
+			}
+
+			public function set sectionLabel(value:String):void
+			{
+				_sectionLabel = value;
+			}
+
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				DMAppController.getInstance();
+				SchedulerController.getInstance();
+				WRController.getInstance();
+				ELabsController.getInstance();
+				AdminController.getInstance();
+				BillingController.getInstance();
+				EPrescriptionController.getInstance();
+				
+				id_ToolButtons.id_DocumentMgmtBtn.addEventListener(MouseEvent.CLICK, onDcumentMgmtClick);
+				id_ToolButtons.id_ScheduleBtn.addEventListener(MouseEvent.CLICK, onSchedulerClick);
+				id_ToolButtons.id_WaitingRoomBtn.addEventListener(MouseEvent.CLICK, onWaitingRoomClick);
+				id_ToolButtons.id_LabsBtn.addEventListener(MouseEvent.CLICK, onLabsClick);
+				id_ToolButtons.id_AdministrationBtn.addEventListener(MouseEvent.CLICK, onAdministrationClick);
+				id_ToolButtons.id_BillingBtn.addEventListener(MouseEvent.CLICK, onBillingBtnClick);
+				id_ToolButtons.id_PrescriptionBtn.addEventListener(MouseEvent.CLICK, onPrescriptionClick);
+				
+			}
+			
+			//for Billing 03/08/2012
+			private function onBillingBtnClick(event:MouseEvent):void
+			{
+				var toggleView:Boolean = currentOpenView is Billing; // same button click is a toggle effect
+				if(currentOpenView is Billing)
+				{					
+					(currentOpenView as Billing).removePopUp();
+				}
+				RemoveCurrentOpenView();
+				
+				if( toggleView) 
+					return;
+				
+				currentOpenView = new Billing();
+				currentOpenView.percentWidth = 100;
+				currentOpenView.height = 400; 
+				id_ContentArea.addElement( currentOpenView );				
+				
+				id_ToolButtons.id_BillingBtn.selected = true;
+				sectionLabel = id_ToolButtons.id_BillingBtn.label;	
+				id_ToolButtons.id_BillingBtn.label = id_ToolButtons.id_BillingBtn.label.toUpperCase();
+				
+			}
+			
+			private function onPrescriptionClick(event:MouseEvent):void
+			{
+				var toggleView:Boolean = currentOpenView is ePrescription; // same button click is a toggle effect
+				RemoveCurrentOpenView();
+				
+				if( toggleView ) 
+					return;
+				
+				currentOpenView = new ePrescription();				
+				
+				(currentOpenView as ePrescription).userID 			= userID;
+				(currentOpenView as ePrescription).clinicBranchID 	= clinicBranchID;
+				(currentOpenView as ePrescription).templateId 		= "1";
+				(currentOpenView as ePrescription).encounterTypeId 	= "1";
+				(currentOpenView as ePrescription).userTypeDTO 		= userTypeDTO;
+				
+				/* if(associatedVisits)
+					(currentOpenView as ePrescription).associatedVisits = new ArrayCollection( ObjectUtil.copy( associatedVisits.source ) as Array );  */
+							
+				
+				
+				currentOpenView.percentWidth = 100;
+				/* currentOpenView.height = 400; */
+				id_ContentArea.addElement( currentOpenView );				
+				
+				id_ToolButtons.id_PrescriptionBtn.selected = true;
+				sectionLabel = id_ToolButtons.id_PrescriptionBtn.label;	
+				id_ToolButtons.id_PrescriptionBtn.label = id_ToolButtons.id_PrescriptionBtn.label.toUpperCase();
+				
+			}
+			
+			private function onAdministrationClick(event:MouseEvent):void
+			{
+				//var model:LiveServicesController = LiveServicesController.getInstance();
+				//if(model.Authentication && model.Authentication.LiveProvider.IsViewAllowed)
+				{
+					var toggleView:Boolean = currentOpenView is Administration; // same button click is a toggle effect
+					RemoveCurrentOpenView();
+					
+					if( toggleView ) 
+						return;
+					
+					
+					currentOpenView = new Administration();
+					currentOpenView.height = 325; 
+					currentOpenView.percentWidth = 100;
+					id_ContentArea.addElement( currentOpenView ); 
+					
+					id_ToolButtons.id_AdministrationBtn.selected = true;
+					sectionLabel = id_ToolButtons.id_AdministrationBtn.label;
+					id_ToolButtons.id_AdministrationBtn.label = id_ToolButtons.id_AdministrationBtn.label.toUpperCase();
+					
+				}
+				/* else
+				{
+					Alert.show("You are not authorized.");
+				}  */
+				
+			}
+			
+			private function onWaitingRoomClick(event:MouseEvent):void
+			{
+				var toggleView:Boolean = currentOpenView is WaitingRoom; // same button click is a toggle effect
+				RemoveCurrentOpenView();
+				
+				if( toggleView ) 
+					return;
+				
+				
+				currentOpenView = new WaitingRoom();
+				currentOpenView.percentWidth = 100;
+				id_ContentArea.addElement( currentOpenView ); 
+				
+				WRQuivusCombineEventDispatcher.LoadWRStaticData();
+					
+				id_ToolButtons.id_WaitingRoomBtn.selected = true;
+				sectionLabel = id_ToolButtons.id_WaitingRoomBtn.label;
+				id_ToolButtons.id_WaitingRoomBtn.label = id_ToolButtons.id_WaitingRoomBtn.label.toUpperCase();
+				
+				// page 1 is send : but on 'next' btn it will chnage 
+				//var pageNumber:int = 1;
+				//ELabsQuivusCombineEventDispatcher.LoadLabOrdersByClinicList( pageNumber );
+				
+			}
+			
+			private function onLabsClick(event:MouseEvent):void
+			{
+
+				var toggleView:Boolean = currentOpenView is eLabsView; // same button click is a toggle effect
+
+				RemoveCurrentOpenView();
+				
+				if( toggleView ) 
+					return;
+				 
+				currentOpenView = new eLabsView();
+				currentOpenView.percentWidth = 100;
+				id_ContentArea.addElement( currentOpenView );
+				
+				// page 1 is send : but on 'next' btn it will chnage 
+				var pageNumber:int = 1;
+				ELabsQuivusCombineEventDispatcher.LoadLabOrderAndResultData( pageNumber ); 
+				
+				
+				id_ToolButtons.id_LabsBtn.selected = true;
+				sectionLabel = id_ToolButtons.id_LabsBtn.label;
+				id_ToolButtons.id_LabsBtn.label = id_ToolButtons.id_LabsBtn.label.toUpperCase();
+				
+				
+			}
+			
+			private function onSchedulerClick(event:MouseEvent):void
+			{
+				var toggleView:Boolean = currentOpenView is Scheduler; // same button click is a toggle effect
+				RemoveCurrentOpenView();
+				
+				if( toggleView ) 
+					return;
+				
+				currentOpenView = new Scheduler();
+				currentOpenView.percentWidth = 100;
+				id_ContentArea.addElement( currentOpenView );
+				
+				SCQuivusCombineEventDispatcher.LoadScheduleStaticData();
+				
+				id_ToolButtons.id_ScheduleBtn.selected = true;
+				
+				sectionLabel = id_ToolButtons.id_ScheduleBtn.label;
+				id_ToolButtons.id_ScheduleBtn.label = id_ToolButtons.id_ScheduleBtn.label.toUpperCase();
+				
+			}
+			
+			private function onDcumentMgmtClick(event:MouseEvent):void
+			{
+				var toggleView:Boolean = currentOpenView is DocumentView; // same button click is a toggle effect
+				RemoveCurrentOpenView();
+				
+				if( toggleView ) 
+					return;
+					
+				currentOpenView = new DocumentView();
+				currentOpenView.percentWidth = 100;
+				id_ContentArea.addElement( currentOpenView );
+				// page 1 is send : but on 'next' btn it will chnage 
+				var pageNumber:int = 1;
+				DMQuivusCombineEventDispatcher.LoadProviders();
+				//DMQuivusCombineEventDispatcher.LoadDocumentList(pageNumber);
+				DMQuivusCombineEventDispatcher.LoadDMStaticData();
+				
+				id_ToolButtons.id_DocumentMgmtBtn.selected = true;
+				sectionLabel = id_ToolButtons.id_DocumentMgmtBtn.label;
+				id_ToolButtons.id_DocumentMgmtBtn.label = id_ToolButtons.id_DocumentMgmtBtn.label.toUpperCase();
+			}
+			
+			public function RemoveCurrentOpenView():void
+			{
+				if(currentOpenView && id_ContentArea.contains( currentOpenView ) )
+				{
+					id_ContentArea.removeElement( currentOpenView );
+				}
+				
+				currentOpenView = null;
+				id_ToolButtons.ClearAllButtons();
+				sectionLabel = "";
+			}
+			
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!--
+		<appControllerDM:DMAppController 			id="appControllerDM" 			/>
+		<appControllerSCH:SchedulerController 		id="appSchedulerController" 	/>
+		<appControllerWR:WRController 				id="appWaitingRoomController" 	/>
+		<appControllerELab:ELabsController 			id="appELabsController" 		/>
+		<appControllerAdmin:AdminController 		id="adminController" 			/>
+		<appControllerBilling:BillingController 	id="appBillingController"		/>
+		<appControllerEPres:EPrescriptionController id="appPrescriptionController"	/>
+		-->
+		
+	</fx:Declarations>
+	
+	
+		<s:SkinnableContainer skinClass="com.gazuntite.provider.services.view.skins.liveServicesPanelSkin" width="100%" x="0.5">
+			<s:layout>
+				<s:VerticalLayout paddingTop="5" paddingBottom="5" />
+			</s:layout>
+			<s:Group>
+				<s:Group alpha="0.45">
+					<s:Rect height="1" width="100%">
+						<s:fill>
+							<s:SolidColor color="#585860"/>
+						</s:fill>
+					</s:Rect>
+				</s:Group>
+				
+				
+				<s:Group x="1" alpha="0.42">
+					<s:Rect height="1" width="100%">
+						<s:fill>
+							<s:SolidColor color="#FFFFFF"/>
+						</s:fill>
+					</s:Rect>
+				</s:Group>
+			</s:Group>
+		
+		<s:Group id="id_ContentArea" width="100%" maxWidth="{id_ToolButtons.width}" />
+		<panels:ToolButtons id="id_ToolButtons" width="100%" minWidth="550" />
+		</s:SkinnableContainer>	
+</s:Group>

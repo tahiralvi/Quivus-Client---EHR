@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009">
+	<fx:Metadata>[HostComponent("spark.components.RadioButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Path data="M 2.442 0.5 C 1.37 0.5 0.5 1.396 0.5 2.5 L 0.5 8.5 C 0.5 9.604 1.37 10.5 2.442 10.5 L 45.5 10.5 L 45.5 0.5 L 2.442 0.5 Z" height="14" id="path9" rotation="180" visible.disabledAndSelected="false" visible.downAndSelected="false" visible.overAndSelected="false" visible.upAndSelected="false" width="44" winding="nonZero" x="44.989" y="15.2">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#517892" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:LinearGradient rotation="90" rotation.over="270" rotation.up="90">
+				<s:GradientEntry alpha="1.0" color="#CCF1FF" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#9ABFCE" ratio="0.5333333333333333"/>
+				<s:GradientEntry alpha="1.0" color="#ACD1E0" ratio="0.5372549019607843"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" includeIn="down" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Path>
+	<s:Path data="M 2.442 0.5 C 1.37 0.5 0.5 1.396 0.5 2.5 L 0.5 8.5 C 0.5 9.604 1.37 10.5 2.442 10.5 L 45.5 10.5 L 45.5 0.5 L 2.442 0.5 Z" height="13" height.disabledAndSelected="14" height.downAndSelected="14" height.upAndSelected="14" id="path7" rotation="180" visible.disabled="false" visible.down="false" visible.over="false" visible.overAndSelected="false" visible.up="false" width="44" winding="nonZero" x="44.99" y="14.15" y.disabledAndSelected="15.2" y.downAndSelected="15.2" y.upAndSelected="15.2">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#517892" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#1F8AB7" ratio="0.43137254901960786"/>
+				<s:GradientEntry alpha="1.0" color="#1E7296" ratio="0.49019607843137253"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="1" angle="90" blurX="3" blurY="3" color="0x000000" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Path>
+	<s:Path data="M 2.442 0.5 C 1.37 0.5 0.5 1.396 0.5 2.5 L 0.5 8.5 C 0.5 9.604 1.37 10.5 2.442 10.5 L 45.5 10.5 L 45.5 0.5 L 2.442 0.5 Z" height="14" id="path0" includeIn="overAndSelected" rotation="180" width="44" winding="nonZero" x="44.99" y="15.2">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#517892" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#1F8AB7" ratio="0.45098039215686275"/>
+				<s:GradientEntry alpha="1.0" color="#56B9E2" ratio="0.45098039215686275"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="1" angle="90" blurX="3" blurY="3" color="0x000000" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Path>
+	<s:RichText color.disabledAndSelected="#FFFFFF" color.downAndSelected="#FFFFFF" color.overAndSelected="#FFFFFF" color.upAndSelected="#FFFFFF" fontFamily="Calibri" fontSize="10" tabStops="S0" text="English" x="7" y="3" color.up="#71A5C6" color.over="#3F6075" color.down="#71A5C6" color.disabled="#71A5C6"/>
+</s:Skin>

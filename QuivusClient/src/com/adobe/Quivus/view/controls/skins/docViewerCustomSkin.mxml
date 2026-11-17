@@ -1,0 +1,51 @@
+
+<s:SparkSkin xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" 
+    xmlns:fb="http://ns.adobe.com/flashbuilder/2009" alpha.disabledGroup="0.5" >
+     <fx:Metadata>[HostComponent("spark.components.Window")]</fx:Metadata>
+
+  
+    
+     <s:states>
+        <s:State name="normal" />
+        <s:State name="disabled" stateGroups="disabledGroup" />
+        <s:State name="normalAndInactive" stateGroups="inactiveGroup" />
+        <s:State name="disabledAndInactive" stateGroups="disabledGroup, inactiveGroup" />
+    </s:states>
+	<s:BitmapImage smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/slideout_hud.png')" y="2"  
+				   />
+	<s:Group width="100%" height="{this.height}" x="9">
+		<!--<s:BitmapImage source="@Embed('com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf', symbol='bg1')"
+		width="{this.width}" height="{this.height}"  />-->
+		<s:Path data="M 636.946 0 L 5 0 C 2.238 0 0 2.238 0 5 L 0 727 C 0 729.762 2.238 732 5 732 L 636.946 732 C 639.708 732 641.946 729.762 641.946 727 L 641.946 5 C 641.946 2.238 639.708 0 636.946 0 Z" width="100%" height="{this.height}">
+			<s:fill>
+				<s:SolidColor color="#373737"/>
+			</s:fill>
+			<s:filters>
+				<s:DropShadowFilter alpha="1" angle="90" blurX="255" blurY="255" color="0x000000" distance="0" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+			</s:filters>
+			<s:stroke>
+				<s:SolidColorStroke caps="none" color="#333333" joints="miter" miterLimit="4" weight="1"/>
+			</s:stroke>
+		</s:Path>
+	</s:Group>
+	
+	<s:Group width="{this.width - 5}" x="11.5" y="2.5">
+		<s:Path data="M 627 0 L 5 0 C 2.239 0 0 2.239 0 5 L 0 60.855 L 632 60.855 L 632 5 C 632 2.239 629.762 0 627 0 Z" height="35" width="{this.width - 5}">
+			<s:fill>
+				<s:LinearGradient rotation="90" scaleX="61.239" x="318" y="0">
+					<s:GradientEntry alpha="1.0" color="#959595" ratio="0"/>
+					<s:GradientEntry alpha="1.0" color="#757575" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+			<s:filters>
+				<s:DropShadowFilter alpha="0.15" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+				<s:DropShadowFilter alpha="0.5" angle="90" blurX="4.0" blurY="4.0" color="0x000000" distance="4.0" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			</s:filters>
+		</s:Path>
+	</s:Group>
+   
+        <!-- content -->
+        <!--- @copy spark.components.SkinnableContainer#contentGroup -->
+        <s:Group id="contentGroup" width="100%" height="100%" minHeight="0" minWidth="0"/>
+        
+</s:SparkSkin>

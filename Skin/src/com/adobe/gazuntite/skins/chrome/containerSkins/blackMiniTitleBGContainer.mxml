@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" 
+		xmlns:fb="http://ns.adobe.com/flashbuilder/2009" alpha.disabled="0.5">
+	
+	<fx:Metadata>
+		<![CDATA[ 
+		/** 
+		* @copy spark.skins.spark.ApplicationSkin#hostComponent
+		*/
+		[HostComponent("spark.components.SkinnableContainer")]
+		]]>
+	</fx:Metadata> 
+	
+	
+	
+	<s:states>
+		<s:State name="normal" />
+		<s:State name="disabled" />
+	</s:states>
+	
+	<s:VGroup gap="0" width="100%" height="100%">
+		<s:Rect id="background" left="0" right="0" top="0" bottom="0" width="100%" height="10">
+			<s:fill>
+				<s:LinearGradient rotation="270">
+					<s:GradientEntry alpha="1.0" color="#6A6F75" ratio="0"/>
+					<s:GradientEntry alpha="1.0" color="#2B323B" ratio="0.4980392156862745"/>
+					<s:GradientEntry alpha="1.0" color="#363E46" ratio="0.5529411764705883"/>
+					<s:GradientEntry alpha="1.0" color="#3F454E" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+			<s:filters>
+				<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			</s:filters>
+		</s:Rect>
+		
+		<s:Rect width="100%" height="100%" left="0" right="0" top="0" bottom="0" alpha="1">
+			<s:fill>
+				<s:LinearGradient rotation="270">
+					<s:GradientEntry alpha="1.0" color="#BCC3CF" ratio="0"/>
+					<s:GradientEntry alpha="1.0" color="#888F99" ratio="0.5254901960784314"/>
+					<s:GradientEntry alpha="1.0" color="#B3BAC4" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+			<s:filters>
+				<s:DropShadowFilter alpha="1" angle="90" blurX="5" blurY="5" color="#212121" distance="0" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+			</s:filters>
+			<s:stroke>
+				<s:SolidColorStroke caps="none" color="#375075" joints="miter" miterLimit="4" weight="1"/>
+			</s:stroke>
+		</s:Rect>
+	</s:VGroup>
+	<!--- @copy spark.components.SkinnableContainer#contentGroup -->
+	<s:Group id="contentGroup" left="0" right="0" top="0" bottom="0" minWidth="0" minHeight="0">
+		<s:layout>
+			<s:BasicLayout/>
+		</s:layout>
+	</s:Group>
+	
+</s:Skin>

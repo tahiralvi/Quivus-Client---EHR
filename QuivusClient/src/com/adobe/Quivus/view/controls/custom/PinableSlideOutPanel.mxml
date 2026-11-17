@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:SlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:custom="com.adobe.Quivus.view.controls.custom.*"
+					  QSSlideStateChange="slideoutpanel1_QSSlideStateChangeHandler(event)"
+					  >
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			
+			private var m_bPinView:Boolean;
+			private var m_bAllowOtherPopup:Boolean;
+			
+			public function get AllowOtherPopup():Boolean
+			{
+				return m_bAllowOtherPopup;
+			}
+
+			public function set AllowOtherPopup(value:Boolean):void
+			{
+				m_bAllowOtherPopup = value;
+				if( ! value && isSlideOut )
+					super.ToggleSlideOut();
+			}
+
+			public function get PinView():Boolean
+			{
+				return m_bPinView;
+			}
+			
+			public function set PinView(value:Boolean):void
+			{
+				m_bPinView 		= value;
+				super.ContentsVisible( value );
+			}
+			
+			
+		
+			public override function set ExpandedView(value:Boolean):void
+			{
+				if( ! allowExpandedView ) return;
+				if( PinView )
+				{
+					super.ContentsVisible( true );
+				}
+				else
+				{
+					super.ExpandedView = value;
+				}
+			}
+
+
+
+			protected function slideoutpanel1_QSSlideStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if(this.isSlideOut)
+				{
+					//id_PanelBody.paddingLeft = 70;
+				//	id_PanelBody.horizontalAlign = "right";
+				}
+				else
+				{
+				//	id_PanelBody.paddingLeft = 0;
+				//	id_PanelBody.horizontalAlign = "left";
+				}
+			}
+			
+			public function AllowMoveToNextPanel( callBack:Function ):void
+			{
+				callBack();
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+</custom:SlideOutPanel>

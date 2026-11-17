@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+	</s:states>
+	<s:Path data="M 0 57.184 L 13.493 28.592 L 0 0 L 103.016 0 L 119.523 28.592 L 103.016 57.184 L 0 57.184 Z" id="path3" includeIn="downAndSelected,overAndSelected,upAndSelected,disabled,down,over" winding="nonZero" x="-0.008" y="-0.5">
+		<s:fill>
+			<s:LinearGradient rotation="270" scaleX="57.1836" x="59.761" y="57.184">
+				<s:GradientEntry color="#55AA0A" ratio="0"/>
+				<s:GradientEntry color="#2C7D09" ratio="0.509202"/>
+				<s:GradientEntry color="#3F8F09" ratio="0.546012"/>
+				<s:GradientEntry color="#5DB20A" ratio="0.582822"/>
+				<s:GradientEntry color="#5DB20A" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Path>
+	<s:Path data="M 0 37.184 L 8.774 18.592 L 0 0 L 96.986 0 L 107.72 18.592 L 96.986 37.184 L 0 37.184 Z" id="path2" includeIn="up" winding="nonZero" x="0" y="10">
+		<s:fill>
+			<s:LinearGradient rotation="270" scaleX="37.1836" x="53.86" y="37.184">
+				<s:GradientEntry color="#438FCA" ratio="0"/>
+				<s:GradientEntry color="#2065B2" ratio="0.509202"/>
+				<s:GradientEntry color="#225C90" ratio="0.546012"/>
+				<s:GradientEntry color="#4693CB" ratio="0.582822"/>
+				<s:GradientEntry color="#4693CB" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Path>
+	<s:transitions>
+		<s:Transition fromState="disabled" toState="up" autoReverse="true">
+			<s:Parallel>
+				<s:Parallel target="{path3}">
+					<s:Fade duration="0"/>
+				</s:Parallel>
+				<s:Parallel target="{path2}">
+					<s:Fade duration="0"/>
+				</s:Parallel>
+			</s:Parallel>
+		</s:Transition>
+	</s:transitions>
+</s:Skin>

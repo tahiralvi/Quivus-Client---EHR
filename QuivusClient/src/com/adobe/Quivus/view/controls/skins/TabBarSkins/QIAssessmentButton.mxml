@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt">
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect height="28" id="rect18" radiusX="2" width="117" x="0" y="3" visible.upAndSelected="false" visible.overAndSelected="false" visible.downAndSelected="false" visible.disabledAndSelected="false">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#D8D8D8" ratio="0" color.over="#F9FAFA"/>
+				<s:GradientEntry alpha="1.0" color="#C0C0C0" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="1" angle="90" blurX="0" blurY="0" color="#666666" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter includeIn="down" blurX="4.0" blurY="4.0" distance="4.0" hideObject="false" color="0x000000" inner="true" strength="1" alpha="0.5" quality="2" knockout="false" angle="90"/>
+		</s:filters>
+	</s:Rect>
+	
+	<s:Rect height="29" id="rect1" radiusX="2" width="117" x="0" y="0" visible.up="false" visible.over="false" visible.down="false" visible.disabled="false">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#A39E8C" ratio="0" color.overAndSelected="#BFB48C"/>
+				<s:GradientEntry alpha="1.0" color="#827E71" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="1" angle="90" blurX="0" blurY="0" color="#666666" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter includeIn="downAndSelected" blurX="4.0" blurY="4.0" distance="4.0" hideObject="false" color="0x000000" inner="true" strength="1" alpha="0.5" quality="2" knockout="false" angle="94.76364169072616"/>
+		</s:filters>
+	</s:Rect>
+	<!--<s:RichText id="richtext1" tabStops="S0 S50" d:userLabel="Procedure" y="6" color="#FFFFFF" fontFamily="Calibri" fontSize="13" kerning="off" text="LAB OUT" x="23" visible.up="false" visible.over="false" visible.down="false" visible.disabled="false"/>
+	-->
+	<s:Label id="labelDisplay"
+			 textAlign="center" fontFamily="Calibri Bold"
+			 verticalAlign="middle" 
+			 typographicCase.upAndSelected="uppercase"
+			 typographicCase.overAndSelected ="uppercase"
+			 typographicCase.downAndSelected ="uppercase"
+			  fontSize="11"
+			 maxDisplayedLines="1" color="#ffffff" color.up="#111111" color.over="#222222"
+			 horizontalCenter="0" verticalCenter="1"
+			 left="5" right="5" top="2" bottom="2">
+	</s:Label>
+</s:Skin>

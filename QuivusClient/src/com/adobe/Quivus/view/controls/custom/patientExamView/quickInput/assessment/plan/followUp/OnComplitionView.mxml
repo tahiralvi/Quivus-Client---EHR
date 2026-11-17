@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:components="com.zigron.controls.extended.components.*" xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+		//	import com.adobe.Quivus.utils.UtilityFunctions;
+			
+			import mx.events.ItemClickEvent;
+			
+			import valueObjects.FollowUpMethodTypeDTO;
+			import valueObjects.FollowupLabsDTO;
+			import valueObjects.LabDTO;
+			import valueObjects.LabTestTypeDTO;
+			import valueObjects.MedicationDTO;
+			import valueObjects.MedicationPrescribedDTO;
+			import valueObjects.PatientFollowUpDTO;
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+
+			protected function rbSection_itemClickHandler(event:ItemClickEvent):void
+			{
+				if( event.item == "LabTest" )
+				{
+					id_ddlLabs.enabled 	= true;
+					id_ddlDrugs.enabled = false;
+					id_ddlLabs.setFocus();
+				}
+				else
+				{
+					id_ddlDrugs.enabled = true;
+					id_ddlLabs.enabled 	= false;
+					id_ddlDrugs.setFocus();
+				}
+			}
+
+			
+			//[Bindable]
+			public function labelFunction(item:FollowupLabsDTO) : String
+			{		
+				if( item )
+					return item.LabTestDescription;
+				else
+					return "";
+			}
+
+			protected function rbGroup_itemClickHandler(event:ItemClickEvent):void
+			{
+				// TODO Auto-generated method stub
+				
+				bindData();
+			}
+			
+			private function bindData():void
+			{
+				if(model.quickInputDTO.Assessment.PatientFollowUp ==  null)
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp = new PatientFollowUpDTO();
+				}
+				
+				//M
+				if(id_Office.selected)
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp.FollowUpMethodType = (QSUtilityFunctions.getFollowupMethodTypeDTOByName(Constants.OFFICE_FOLLOWUP_METHOD_NAME) as FollowUpMethodTypeDTO) ;
+				}
+				else if(id_Phone.selected)
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp.FollowUpMethodType = (QSUtilityFunctions.getFollowupMethodTypeDTOByName(Constants.PHONE_FOLLOWUP_METHOD_NAME) as FollowUpMethodTypeDTO) ;
+				}
+				else if(id_Email.selected)
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp.FollowUpMethodType = (QSUtilityFunctions.getFollowupMethodTypeDTOByName(Constants.EMAIL_FOLLOWUP_METHOD_NAME) as FollowUpMethodTypeDTO) ;
+				}
+				else if(id_Chat.selected)
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp.FollowUpMethodType = (QSUtilityFunctions.getFollowupMethodTypeDTOByName(Constants.CHAT_FOLLOWUP_METHOD_NAME) as FollowUpMethodTypeDTO) ;
+				}
+				else if(id_Video.selected)
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp.FollowUpMethodType = (QSUtilityFunctions.getFollowupMethodTypeDTOByName(Constants.VIDEO_FOLLOWUP_METHOD_NAME) as FollowUpMethodTypeDTO) ;
+				}				
+				
+				model.quickInputDTO.Assessment.PatientFollowUp.FollowUpDate = Constants.NULL_DATE.toDateString();
+				
+				model.quickInputDTO.Assessment.PatientFollowUp.IsByDate = false;				
+				model.quickInputDTO.Assessment.PatientFollowUp.IsOnCompletion =  true;
+				
+				if(model.quickInputDTO.Assessment.PatientFollowUp.PatientFollowUpID == 0)
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp.CreatedBy = model.loggedInUserDTO.UserId;
+					model.quickInputDTO.Assessment.PatientFollowUp.CreatedAt = new Date();
+					
+					model.quickInputDTO.Assessment.PatientFollowUp.ModifiedAt = Constants.NULL_DATE;
+				}
+				else
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp.ModifiedBy = model.loggedInUserDTO.UserId;
+					model.quickInputDTO.Assessment.PatientFollowUp.ModifiedAt = new Date();
+					
+					model.quickInputDTO.Assessment.PatientFollowUp.CreatedAt = Constants.NULL_DATE;
+				}
+				
+				
+				if(id_ddlLabs.selectedItem)
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp.LabTestID 				= (id_ddlLabs.selectedItem as FollowupLabsDTO).PatientFollowUpLabID;// .LabTestType.LabTestTypeID; on W. Baber 					
+					model.quickInputDTO.Assessment.PatientFollowUp.IsInHouseLabTestSelected = (id_ddlLabs.selectedItem as FollowupLabsDTO).IsInHouseLab;
+					model.quickInputDTO.Assessment.PatientFollowUp.IsLabTestSelected 		= true;
+					model.quickInputDTO.Assessment.PatientFollowUp.IsDrugselected 			= false;
+				}
+				else
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp.LabTestID = -1;
+				}
+				
+				if(id_ddlDrugs.selectedItem)
+				{	
+					model.quickInputDTO.Assessment.PatientFollowUp.DrugID = (id_ddlDrugs.selectedItem as MedicationDTO).PatientMedicationID ;//.PatientMedicationPrescribedID;on W. Baber 
+					model.quickInputDTO.Assessment.PatientFollowUp.IsDrugselected =  true;
+					
+					model.quickInputDTO.Assessment.PatientFollowUp.IsLabTestSelected =  false;
+				}
+				else
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp.DrugID = -1;
+				}
+				
+				model.quickInputDTO.Assessment.PatientFollowUp.VisitDate = model.visitDTO.VisitDate;
+				model.quickInputDTO.Assessment.PatientFollowUp.VisitID = model.visitDTO.VisitId;
+				model.quickInputDTO.Assessment.PatientFollowUp.PatientID = model.visitDTO.PatientId;
+			}
+
+			private function comboChangeHandler():void
+			{
+				bindData();
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<s:RadioButtonGroup id="rbSection" itemClick="rbSection_itemClickHandler(event)" />
+		<s:RadioButtonGroup id="rbGroup" itemClick="rbGroup_itemClickHandler(event)" />
+	</fx:Declarations>
+	
+	
+	<s:HGroup width="100%" gap="2">
+		
+		<s:HGroup>
+			<s:VGroup gap="20">
+				<s:HGroup>	
+					<s:Label text="Lab Test" fontFamily="Calibri" fontSize="11" color="#ffffff" />
+				<s:RadioButton id="id_rbLabTest" label="Lab Test" groupName="rbSection" value="LabTest" visible="true" fontFamily="Calibri" fontSize="11" 
+							   skinClass="com.adobe.Quivus.view.controls.skins.QIPaginationRadioBtn" buttonMode="true" useHandCursor="true"/>
+				</s:HGroup>
+				<s:HGroup>
+					<s:Label text="Drug" fontFamily="Calibri" fontSize="11" color="#ffffff" paddingRight="15" verticalAlign="middle" />
+				<s:RadioButton id="id_rbDrug" label="Drug" groupName="rbSection" value="Drug" visible="true" fontFamily="Calibri" fontSize="11" 
+							   skinClass="com.adobe.Quivus.view.controls.skins.QIPaginationRadioBtn" buttonMode="true" useHandCursor="true"/>
+				</s:HGroup>
+			</s:VGroup>
+			<s:VGroup gap="2">
+				<components1:LabelComboBox id="id_ddlLabs" width="150" dataProvider="{model.followupLabsDTOList}" labelFunction="labelFunction" 
+										  change="comboChangeHandler()" tabIndex="1" required="true"/>
+				<components1:LabelComboBox id="id_ddlDrugs" width="150" dataProvider="{model.medicationDTOList}" labelField="BrandName" 
+										  change="comboChangeHandler()" tabIndex="3"/>
+			</s:VGroup>
+		</s:HGroup >
+		<!--<s:Label text="Office" fontFamily="Calibri" fontSize="11" color="#000000" />-->
+		<s:RadioButton id="id_Office" label="Office" groupName="rbGroup" value="Office" visible="true" fontFamily="Calibri" fontSize="11" selected="true"
+					    buttonMode="true" useHandCursor="true" tabIndex="2" color="#ffffff"/>
+		<!--<s:Label text="Phone" fontFamily="Calibri" fontSize="11" color="#000000" />-->
+		<s:RadioButton id="id_Phone" label="Phone" groupName="rbGroup" value="Phone" visible="true" fontFamily="Calibri" fontSize="11"
+					   buttonMode="true" useHandCursor="true" color="#ffffff"/>
+		<!--<s:Label text="Email" fontFamily="Calibri" fontSize="11" color="#000000" />-->
+		<s:RadioButton id="id_Email" label="Email" groupName="rbGroup" value="Email" visible="true" fontFamily="Calibri" fontSize="11"
+					    buttonMode="true" useHandCursor="true" color="#ffffff"/>
+		<!--<s:Label text="Chat" fontFamily="Calibri" fontSize="11" color="#000000" />-->
+		<s:RadioButton id="id_Chat" label="Chat" groupName="rbGroup" value="Chat" visible="true" fontFamily="Calibri" fontSize="11"
+					    buttonMode="true" useHandCursor="true" color="#ffffff"/>
+		<!--<s:Label text="Video" fontFamily="Calibri" fontSize="11" color="#000000" />-->
+		<s:RadioButton id="id_Video" label="Video" groupName="rbGroup" value="Video" visible="true" fontFamily="Calibri" fontSize="11"
+					    buttonMode="true" useHandCursor="true" color="#ffffff"/>
+		
+	</s:HGroup>
+	
+</s:Group>

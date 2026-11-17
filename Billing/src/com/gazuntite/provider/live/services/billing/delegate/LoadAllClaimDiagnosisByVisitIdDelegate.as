@@ -1,0 +1,46 @@
+package com.gazuntite.provider.live.services.billing.delegate
+{
+	import com.gazuntite.provider.live.services.billing.util.BillingConstants;
+	import com.gazuntite.provider.live.services.billing.util.BillingServiceMethods;
+	
+	import mx.rpc.IResponder;
+	import mx.rpc.events.FaultEvent;
+	import mx.rpc.events.ResultEvent;
+	import mx.rpc.http.HTTPService;
+
+	public class LoadAllClaimDiagnosisByVisitIdDelegate
+	{
+		private var responder	:IResponder;
+		private var service		:HTTPService;
+		
+		public function LoadAllClaimDiagnosisByVisitIdDelegate(responder : IResponder)
+		{
+			this.responder 		= responder;
+			var url:String 		= BillingConstants.RESTFULL_SERVICE_BASE_URL + BillingServiceMethods.LOAD_ALL_CLAIM_DIAGNOSIS_BY_VISIT_ID;
+			service 			= new HTTPService(url);
+			service.url 		= url;	
+			
+			service.addEventListener(FaultEvent.FAULT,onFault);
+			service.addEventListener(ResultEvent.RESULT,onResult);
+		}
+		
+		public function SearchClaimDiagnoses(visitId:int ):void
+		{
+			
+			service.showBusyCursor = true;
+			service.url = service.url + "/" + visitId;
+			service.resultFormat = "e4x";
+			service.send();				
+			trace( "LoadAllClaimDiagnosisByVisitIdDelegate", service.url );		}
+		
+		private function onResult(event:ResultEvent):void
+		{
+			responder.result(event);			
+		}
+		
+		private function onFault(event:FaultEvent):void
+		{
+			responder.fault(event);			
+		}
+	}
+}

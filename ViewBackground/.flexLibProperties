@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<flexLibProperties includeAllClasses="true" useMultiPlatformConfig="false" version="3">
+  <includeClasses>
+    <classEntry path="com.gazuntite.patient.visit.controller.VBController"/>
+    <classEntry path="com.gazuntite.patient.visit.model.VBMobelLocator"/>
+    <classEntry path="com.gazuntite.patient.visit.event.TestEvent"/>
+    <classEntry path="com.gazuntite.patient.visit.utlis.VBConstants"/>
+    <classEntry path="com.gazuntite.patient.visit.command.TestCommand"/>
+    <classEntry path="com.gazuntite.patient.visit.delegate.TestDelegate"/>
+    <classEntry path="com.gazuntite.patient.visit.utlis.VBServiceMethods"/>
+  </includeClasses>
+  <includeResources/>
+  <namespaceManifests/>
+</flexLibProperties>

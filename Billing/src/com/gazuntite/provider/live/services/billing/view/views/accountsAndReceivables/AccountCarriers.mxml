@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  creationComplete="vgroup1_creationCompleteHandler(event)" xmlns:accountsAndReceivables="com.gazuntite.provider.live.services.billing.view.views.accountsAndReceivables.*"
+		  >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.provider.live.services.billing.dto.accountsAndReceiveables.AccountCarrierDTO;
+			import com.gazuntite.provider.live.services.billing.dto.accountsAndReceiveables.AgingDTO;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import spark.components.ButtonBarButton;
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			private var _Carriers:ArrayCollection;
+			private var _Primary:AgingDTO;
+			private var _Secondary:AgingDTO;
+			private var _Tertiary:AgingDTO;
+			private var _Patient:AgingDTO;
+			
+			private var _IsPrimary:Boolean;
+			private var _IsSecondary:Boolean;
+			private var _IsTertiary:Boolean;
+			private var _IsPatient:Boolean;
+			
+			
+			[Bindable]
+			public function get Patient():AgingDTO
+			{
+				return _Patient;
+			}
+
+			public function set Patient(value:AgingDTO):void
+			{
+				_Patient = value;
+			}
+
+			[Bindable]
+			public function get Tertiary():AgingDTO
+			{
+				return _Tertiary;
+			}
+
+			public function set Tertiary(value:AgingDTO):void
+			{
+				_Tertiary = value;
+			}
+			
+			[Bindable]
+			public function get Secondary():AgingDTO
+			{
+				return _Secondary;
+			}
+
+			public function set Secondary(value:AgingDTO):void
+			{
+				_Secondary = value;
+			}
+
+			[Bindable]
+			public function get Primary():AgingDTO
+			{
+				return _Primary;
+			}
+
+			public function set Primary(value:AgingDTO):void
+			{
+				_Primary = value;
+			}
+
+			[Bindable]
+			public function get Carriers():ArrayCollection
+			{
+				return _Carriers;
+			}
+
+			public function set Carriers(value:ArrayCollection):void
+			{
+				_Carriers = value;
+			}
+
+			public function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+								
+				id_Tabs.enabled = false;
+								
+				id_Primary.label = "Policy 1";
+				id_Secondary.label = "Policy 2";
+				id_Tertiary.label = "Policy 3";				
+				
+				id_Tabs.dataProvider.addItem(id_Primary);
+				id_Tabs.dataProvider.addItem(id_Secondary);
+				id_Tabs.dataProvider.addItem(id_Tertiary);
+				id_Tabs.dataProvider.addItem(id_Patient);
+				
+				if(Carriers && Carriers.length > 0)
+				{
+					id_Tabs.enabled = true;
+					
+					id_Tabs.dataProvider.removeAll();
+					
+					for each (var carrier:AccountCarrierDTO in Carriers) 
+					{
+						if(carrier.InsuranceTypeId == "1")
+						{							
+							id_Tabs.dataProvider.addItem(id_Primary);							
+							id_Primary.label = carrier.CarrierName;
+							Primary = carrier.Aging;
+						}
+						else if(carrier.InsuranceTypeId == "2")
+						{
+							id_Tabs.dataProvider.addItem(id_Secondary);	
+							id_Secondary.label = carrier.CarrierName
+							Secondary = carrier.Aging;
+						}
+						else if(carrier.InsuranceTypeId == "3")
+						{
+							id_Tabs.dataProvider.addItem(id_Tertiary);	
+							id_Tertiary.label = carrier.CarrierName
+							Tertiary = carrier.Aging;
+						}
+						else if(carrier.InsuranceTypeId == "4")
+						{
+							id_Tabs.dataProvider.addItem(id_Patient);							
+							Patient = carrier.Aging;
+						}						
+					}					
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:ButtonBar  id= "id_Tabs"   width="100%" dataProvider = "{id_vsViews}"  styleName="blackButtonBarSkin" buttonMode="true" useHandCursor="true" />	
+	
+	<mx:ViewStack id="id_vsViews" width = "100%" height = "100%"  
+				   resizeToContent="true"				  
+				  >
+		<s:NavigatorContent id="id_Primary" label="Policy 1" width = "100%" height = "100%" >
+			<accountsAndReceivables:AccountCarrierView width="100%" Aging="{Primary}" />
+		</s:NavigatorContent>
+		<s:NavigatorContent id="id_Secondary" label = "Policy 2" width = "100%" height = "100%"  >
+			<accountsAndReceivables:AccountCarrierView width="100%" Aging="{Secondary}" />
+		</s:NavigatorContent>
+		<s:NavigatorContent  id="id_Tertiary" label="Policy 3" width = "100%" height = "100%" >
+			<accountsAndReceivables:AccountCarrierView width="100%" Aging="{Tertiary}" />
+		</s:NavigatorContent>
+		<s:NavigatorContent  id="id_Patient" label="Patient" width = "100%" height = "100%"  >
+			<accountsAndReceivables:AccountCarrierView width="100%" Aging="{Patient}" />
+		</s:NavigatorContent>	
+	</mx:ViewStack>	
+	<s:VGroup width="100%">
+		<s:HGroup width="100%">
+			<s:Label text="Policy Copay:" width="104" />
+			<s:Label text="{model.CurrentPatienAccount.PolicyCopay}" width="60" />
+			<s:Label text="OA:" width="60" />
+			<s:Label text="{model.CurrentPatienAccount.OtherAdjustment}" width="60" />
+		</s:HGroup>
+		<s:HGroup width="100%">
+			<s:Label text="Annual Deductible:" width="104" />
+			<s:Label text="{Number(model.CurrentPatienAccount.AnnualDeductible).toFixed(2)}" width="60" />
+			<s:Label text="YTD:" width="60" />
+			<s:Label text="{Number(model.CurrentPatienAccount.YTD).toFixed(2)}" width="60" />
+		</s:HGroup>
+	</s:VGroup>
+</s:VGroup>

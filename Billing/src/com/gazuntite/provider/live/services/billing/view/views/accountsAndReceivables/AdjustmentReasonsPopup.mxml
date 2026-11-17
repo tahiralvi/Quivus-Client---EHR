@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						xmlns:s="library://ns.adobe.com/flex/spark" 
+						xmlns:mx="library://ns.adobe.com/flex/mx" 
+						xmlns:components="com.gazuntite.controls.extended.components.*" xmlns:components1="com.gazuntite.controls.extended.components.*"						
+						>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			
+			[Bindable]
+			public var Reasons:ArrayCollection = null;
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<components1:LabelDataGrid id="id_ReasonGrid" width="100%" dataProvider="{Reasons}"
+							  height="100" useRollOver="false" editable="false"  
+							  styleName="QIGrid" verticalScrollPolicy="on" fontFamily="Verdana" horizontalScrollPolicy="auto"
+							  maxHeight="100" variableRowHeight="true" 
+							  columnWidths="{['5%'],['25%'],['15%'],['5%'],['25%'],['25%']}"
+							  >
+		<components1:columns>
+			<!--<mx:DataGridColumn headerText="Sr.#" dataField="SNo" />-->
+			<mx:DataGridColumn headerText="Amount" dataField="AdjustmentAmount" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn headerText="Group Code" dataField="GroupCode" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" />
+			<mx:DataGridColumn headerText="Reason Code" dataField="ReasonCode" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>				
+		</components1:columns>
+	</components1:LabelDataGrid>	
+</components1:PopupWindow>

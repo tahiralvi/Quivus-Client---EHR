@@ -1,0 +1,715 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" 
+					  xmlns:registeration="com.adobe.Quivus.view.controls.registeration.*"
+					  xmlns:components="com.zigron.controls.extended.components.*"
+					  skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.patientProfileTabBG"
+					  creationComplete="bordercontainer1_creationCompleteHandler(event)" xmlns:components1="com.gazuntite.controls.extended.components.*"
+					  >
+	<s:layout>
+		<s:VerticalLayout gap="-3" horizontalAlign="left" paddingLeft="3" paddingRight="3" paddingBottom="10" paddingTop="3" />
+	</s:layout>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.registration.RegisterUserProfileEvent;
+			import com.adobe.Quivus.events.staticData.registration.LoadInsuranceOrganizationEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.DTOInitializationUtility;
+			import com.adobe.Quivus.utils.QuivusCombineEventDispatcher;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.topBarView.QuickLinks;
+			import com.adobe.Quivus.view.controls.skins.SkinnableContainers.patientProfileTabBG;
+			import com.adobe.Quivus.view.controls.skins.TabBarSkins.lightGreyTabBarSkin;
+			import com.adobe.Quivus.view.events.CloseFormEvent;
+			import com.adobe.Quivus.view.events.GetBasicInfoEvent;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.dto.CitiesDTO;
+			import com.gazuntite.common.dto.StatesDTO;
+			import com.gazuntite.common.dto.ZipsDTO;
+			import com.gazuntite.controls.extended.components.PopupWindow;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.events.ItemClickEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.events.IndexChangeEvent;
+			
+			import valueObjects.*;
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var isEditProfileView:Boolean = false;
+			private var isNewRegistration:Boolean = false;
+			public var resultFunction:Function;
+			private var StatusWindow:PopupWindow ;
+			public var quickLinks:QuickLinks= new QuickLinks();
+			
+			public function ShowStatusWindow(statusMessage :String ):void
+			{
+				StatusWindow = UtilityFunctions.ShowStatusMessage( statusMessage, this );
+			}
+			
+			public function RemoveStatusWindow():void
+			{
+				if( StatusWindow )
+					PopUpManager.removePopUp( StatusWindow );
+				
+				StatusWindow = null;
+			}
+			
+			public function loadDataEPP():void
+			{
+				if(model.patientBasicInfo)
+					model.patientBasicInfo = null;
+				isEditProfileView = true;
+				id_BasicInfo.loadDataBasicInfo();
+				id_OtherInfo.loadDataOtherInfo();
+ 				id_ediInfo.loadDataEDIInfo(); 
+				id_EmergencyContacts.loadDataEmergencyContacts();
+				id_Gurantor.loadDataGurantor();
+				id_HealthHx.loadDataHealthHX();
+				id_Insurance.LoadDataInsurance();
+				id_notRegisYet.visible = false;
+			}
+			
+			public function hideAllPopUps():void
+			{
+				if (id_BasicInfo)
+					id_BasicInfo.hideAllPopUps();
+				
+				if (id_OtherInfo)
+					id_OtherInfo.hideAllPopUps();
+				
+				if (id_Gurantor)
+					id_Gurantor.hideAllPopUps();
+			}
+			
+			public function showAllPopUps():void
+			{
+				if (id_RegViews)
+				{
+					switch(id_RegViews.selectedIndex)
+					{
+						case 0:
+							if (id_BasicInfo)
+								id_BasicInfo.showAllPopUps();
+							
+							if (id_OtherInfo && !id_OtherInfo.collapsed)
+								id_OtherInfo.showAllPopUps();
+							
+							break;
+						case 2:
+							if (id_Gurantor)
+								id_Gurantor.showAllPopUps();
+							
+							break;
+					}
+				}
+			}
+			
+			protected function id_btnSave_clickHandler(event:MouseEvent):void
+			{
+				if( isEditProfileView )
+				{
+					id_BasicInfo.SetIsDirty();
+					id_OtherInfo.SetIsDirty();
+					id_ediInfo.SetIsDirty();
+				}
+				
+				if (id_BasicInfo.isInvalid() || id_OtherInfo.isInvalid() || id_ediInfo.isInvalid())
+				{
+					id_RegViews.selectedIndex = 0;
+					return;
+				}
+				else if (id_OtherInfo && id_OtherInfo.isInvalid())
+				{
+					id_RegViews.selectedIndex = 1;
+					return;
+				}
+				
+				id_BasicInfo.getBasicInfo();
+				id_OtherInfo.getOtherInformation();
+				id_ediInfo.getEDIInformation();
+				
+				if(id_HealthHx)
+				{
+					if(id_HealthHx.id_SocialHistory && id_HealthHx.id_SocialHistory.isdata)
+					{
+						if(id_HealthHx.id_SocialHistory.isInvalid())
+							return;
+						else
+							id_HealthHx.id_SocialHistory.getSocialHistory();
+					}
+				}
+				
+				if( isEditProfileView ) // call to update old patient data
+				{
+					ShowStatusWindow( "Please wait while updating patient record." );
+					QuivusCombineEventDispatcher.updatePatientProfile( resultFunction );
+				}
+				else //cal to register new patient data
+				{
+					if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.PATIENT_REGISTRATION ) )//Tahir Alvi 
+					{
+						isNewRegistration = true;
+						ShowStatusWindow( "Please wait while registering patient." );
+						var rpEvent : RegisterUserProfileEvent = new RegisterUserProfileEvent(Constants.REGISTRATION_PURPOSE,clearForm);
+						CairngormEventDispatcher.getInstance().dispatchEvent( rpEvent );
+					}
+				}
+			}
+			//Tahir Alvi 27 April, 2012
+			public function clearForm():void
+			{
+				if(isNewRegistration)
+					dispatchEvent(new CloseFormEvent());
+				
+				id_BasicInfo.clearBasicInfo();
+				id_OtherInfo.clearOtherInformation();
+				id_ediInfo.clearEDIInformation();
+				
+				if( id_EmergencyContacts )
+					id_EmergencyContacts.clearEmergencyContacts();
+				if( id_Gurantor ){
+					id_Gurantor.clearGurantorRecords();
+					DTOInitializationUtility.InitializeRegistrationGuarantorDTOs();
+				}
+				if (id_HealthHx)
+					id_HealthHx.clearFormRecord();
+				if( id_Insurance )
+					id_Insurance.clearInsuranceRecords();
+				
+				model.patientRegImageDTO = new ImageDTO();
+				
+				id_RegViews.selectedIndex = 0;
+				//remove basic info object
+				if(model.patientBasicInfo)
+					model.patientBasicInfo = null;
+				RemoveStatusWindow();
+				model.isNewPatientReg   = false;
+			}
+			
+			protected function id_RegViews_changeHandler(event:IndexChangedEvent):void
+			{
+				switch(id_RegViews.selectedIndex)
+				{
+					case 0:
+						id_BasicInfo.id_Prefix.setFocus();
+						break;
+					case 1:
+						id_EmergencyContacts.id_Name.setFocus();
+						break;
+					case 2:
+						id_Gurantor.id_FName.setFocus();
+						break;
+					case 3:
+						if(model.isNewPatientReg)
+							id_BasicInfo.storePatientTempInfo();
+						
+						if(id_HealthHx.id_Allergies.id_AllergyNameList.enabled)
+							id_HealthHx.id_Allergies.id_AllergyNameList.setFocus();
+						break;
+					case 4:
+						id_Insurance.id_InsuranceTypes.setFocus();
+						break;
+				}
+				
+				selectAppropriateRadioButton(id_RegViews.selectedIndex);
+				
+				if (event.oldIndex == 0)
+				{
+					id_BasicInfo.hideAllPopUps();
+					id_OtherInfo.hideAllPopUps();
+				}
+				else if (event.oldIndex == 2)
+				{
+					id_Gurantor.hideAllPopUps();
+				}
+				
+				if (event.newIndex == 0)
+				{
+					id_BasicInfo.showAllPopUps();
+					id_OtherInfo.showAllPopUps();
+				}
+				else if (event.newIndex == 2)
+				{
+					id_Gurantor.showAllPopUps();
+				}
+			}
+			
+			protected function id_btnCancel_clickHandler(event:MouseEvent):void
+			{
+				//see UserRegisterationPanel::CloseHandler();
+				//reseting Quicklink button
+				/* quickLinks.id_linkbtn.selected = false; 
+				quickLinks.id_linkbtn.alpha = 0.5;  */
+				
+				quickLinks.toggleButtonSkin();
+				clearForm();
+			}
+			
+			protected function id_mainTabButtons_changingHandler(event:IndexChangeEvent):void
+			{
+				oldIndex = event.newIndex;
+				
+				if (doStop)
+				{
+					id_mainTabButtons.selectedIndex = event.oldIndex;
+					event.preventDefault();
+					event.stopImmediatePropagation();
+					oldIndex = event.oldIndex;
+				}
+			}
+			
+			private function changeHandler(e:IndexChangeEvent):void
+			{
+				e.stopImmediatePropagation();
+				e.preventDefault();
+			}
+			
+			private function tabButtonClick(e:MouseEvent):void
+			{
+				e.stopImmediatePropagation();
+				e.preventDefault();
+				e.currentTarget.selectedIndex = 0;
+			}
+			
+			private function paginationRadioGroupItemClickHandler(e:ItemClickEvent):void
+			{
+				doStop = false;
+				stopEventPropagation(e);
+				
+				if (!doStop)
+				{
+					id_RegViews.selectedIndex = e.index;
+					oldIndex = e.index;
+				}
+				else
+				{
+					selectAppropriateRadioButton(oldIndex);
+				}
+			}
+			
+			private var oldIndex:int;
+			private var doStop:Boolean;
+			
+			private function onTabBarMouseDownHandler(e:MouseEvent):void
+			{
+				doStop = false;
+				stopEventPropagation(e);
+			}
+			
+			private function stopEventPropagation(e:*):void
+			{
+				if (!isNaN(oldIndex))
+				{
+					switch(oldIndex)
+					{
+						case 0:
+							if (id_BasicInfo.isInvalid())
+							{
+								doStop = true;
+								id_RegViews.selectedIndex = 0;
+								e.preventDefault();
+								e.stopImmediatePropagation();
+							}
+							else
+							{
+								if (id_OtherInfo.isInvalid())
+								{
+									doStop = true;
+									id_RegViews.selectedIndex = 0;
+									e.preventDefault();
+									e.stopImmediatePropagation();
+								}
+								 else if (id_ediInfo.isInvalid())
+								{
+									doStop = true;
+									id_RegViews.selectedIndex = 0;
+									e.preventDefault();
+									e.stopImmediatePropagation();
+								} 
+								
+							}
+							
+							break;
+						/* case 1:
+						if (id_EmergencyContacts.isInvalid())
+						{
+						doStop = true;
+						id_RegViews.selectedIndex = 1;
+						e.preventDefault();
+						e.stopImmediatePropagation();
+						}
+						
+						break;
+						
+						case 2:
+						if (id_Gurantor.isInvalid())
+						{
+						doStop = true;
+						id_RegViews.selectedIndex = 2;
+						e.preventDefault();
+						e.stopImmediatePropagation();
+						}
+						
+						break; 
+						case 3:
+						if (id_HealthHx.isInvalid())
+						{
+						doStop = true;
+						id_RegViews.selectedIndex = 3;
+						e.preventDefault();
+						e.stopImmediatePropagation();
+						}
+						
+						break;
+						case 4:
+						if (id_Insurance.isInvalid())
+						{
+						doStop = true;
+						id_RegViews.selectedIndex = 4;
+						e.preventDefault();
+						e.stopImmediatePropagation();
+						}
+						
+						break; */
+					}
+				}
+				else
+				{
+					//if oldIndex is NaN, it means tab control is on 0 index
+					if (id_BasicInfo.isInvalid() || id_OtherInfo.isInvalid())
+					{
+						doStop = true;
+						id_RegViews.selectedIndex = 0;
+						e.preventDefault();
+						e.stopImmediatePropagation();
+					}
+				}
+			}
+			
+			private function nextButtonClickHandler(e:MouseEvent):void
+			{
+				if(id_RegViews.numChildren-1 >= id_RegViews.selectedIndex + 1)
+				{
+					doStop = false;
+					stopEventPropagation(e);
+					
+					if (!doStop)
+					{
+						id_RegViews.selectedIndex++;
+						oldIndex = id_RegViews.selectedIndex;
+					}
+				}
+			}
+			private function prevButtonClickHandler(e:MouseEvent):void
+			{
+				
+				if(id_RegViews.selectedIndex > 0 )
+				{
+					//if (!doStop)
+					{
+						id_RegViews.selectedIndex--;
+						oldIndex = id_RegViews.selectedIndex;
+					}
+				}
+			}
+			
+			private function selectAppropriateRadioButton(selectedIndex:int):void
+			{
+				if (!isNaN(selectedIndex))
+				{
+					switch(selectedIndex)
+					{
+						case 0:
+							pagination.selectedValue = "PersonalInfo";
+							break;
+						
+						case 1:
+							pagination.selectedValue = "EmergencyContacts";
+							break;
+						
+						case 2:
+							pagination.selectedValue = "Guarantor";
+							break;
+						
+						case 3:
+							pagination.selectedValue = "HealthHx";
+							break;
+						
+						case 4:
+							pagination.selectedValue = "Insurance";
+							break;
+					}
+				}
+				else
+				{
+					pagination.selectedValue = "PersonalInfo";
+				}
+			}
+			
+			private function previousButtonClickHandler(e:MouseEvent):void
+			{
+				if (id_RegViews.selectedIndex > 0)
+				{
+					doStop = false;
+					stopEventPropagation(e);
+					
+					if (!doStop)
+					{
+						id_RegViews.selectedIndex--;
+						oldIndex = id_RegViews.selectedIndex;
+					}
+				}
+			}
+			
+			protected function id_OtherInfo_clickHandler(event:MouseEvent):void
+			{
+			}
+			
+			protected function bordercontainer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				/* 	
+				FlexGlobals.topLevelApplication.mainContainer.addEventListener(MouseEvent.CLICK, function(event:Event):void
+				{
+				if(event.target as RichEditableText || event.target as Button)
+				{
+				return;
+				}
+				else 
+				
+				id_mainTabButtons.setFocus();
+				});  */
+				
+				DTOInitializationUtility.InitializeRegistrationDTOs();
+				addEventListener( GetBasicInfoEvent.GET_BASIC_INFO_EVENT, getBasicInfoEvent);
+			}
+			
+			public function ScrollUp(event:MouseEvent = null):void
+			{
+				switch(id_RegViews.selectedIndex)
+				{
+					case 0:
+						id_BasicScroller.viewport.verticalScrollPosition = id_BasicScroller.viewport.verticalScrollPosition + 15;
+						break;
+					case 1:
+						id_EmergencyScroller.viewport.verticalScrollPosition = id_EmergencyScroller.viewport.verticalScrollPosition + 15;
+						break;
+					case 2:
+						id_GuarantorScroller.viewport.verticalScrollPosition = id_GuarantorScroller.viewport.verticalScrollPosition + 15;
+						break;
+					case 3:
+						id_HealthHxScroller.viewport.verticalScrollPosition = id_HealthHxScroller.viewport.verticalScrollPosition + 15;
+						break;
+					case 4:
+						id_InsuranceScroller.viewport.verticalScrollPosition = id_InsuranceScroller.viewport.verticalScrollPosition + 15;
+						break;
+				}
+			}
+			public function ScrollDown(event:MouseEvent = null):void
+			{
+				switch(id_RegViews.selectedIndex)
+				{
+					case 0:
+						id_BasicScroller.viewport.verticalScrollPosition = id_BasicScroller.viewport.verticalScrollPosition - 15;
+						break;
+					case 1:
+						id_EmergencyScroller.viewport.verticalScrollPosition = id_EmergencyScroller.viewport.verticalScrollPosition - 15;
+						break;
+					case 2:
+						id_GuarantorScroller.viewport.verticalScrollPosition = id_GuarantorScroller.viewport.verticalScrollPosition - 15;
+						break;
+					case 3:
+						id_HealthHxScroller.viewport.verticalScrollPosition = id_HealthHxScroller.viewport.verticalScrollPosition - 15;
+						break;
+					case 4:
+						id_InsuranceScroller.viewport.verticalScrollPosition = id_InsuranceScroller.viewport.verticalScrollPosition - 15;
+						break;
+				}
+			}
+			
+			protected function id_nextBtn_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+			}
+			
+			//Tahir Alvi - Get Basic info of patient and populate in Guarantor Form if user click on Self Checkbox
+			private function getBasicInfoEvent(event:GetBasicInfoEvent):void
+			{
+				if(!model.patientBasicInfo){
+					model.patientBasicInfo = new Object();
+					model.patientBasicInfo.FirstName 	= id_BasicInfo.id_FName.text;
+					model.patientBasicInfo.LastName 	= id_BasicInfo.id_LName.text;
+					model.patientBasicInfo.DOB 			= id_BasicInfo.id_DOB.text;
+					model.patientBasicInfo.Address		= id_BasicInfo.id_Address.text;
+					model.patientBasicInfo.Gender 		= id_BasicInfo.id_Gender.selectedItem as GenderTypeDTO;
+					model.patientBasicInfo.State 		= id_BasicInfo.id_ZipCityStateCombine.id_State.selectedItem as StatesDTO;
+					model.patientBasicInfo.City			= id_BasicInfo.id_ZipCityStateCombine.id_City.selectedItem as CitiesDTO;
+					model.patientBasicInfo.Zip			= id_BasicInfo.id_ZipCityStateCombine.id_ZIP.selectedItem as ZipsDTO;
+					model.patientBasicInfo.PhoneNo 		= ValidationUtils.getPhoneNumberWithoutMasking(id_BasicInfo.id_PhoneNumberAddMore.id_TelNumber.text);
+					model.patientBasicInfo.PhoneEx 		= id_BasicInfo.id_PhoneNumberAddMore.id_ExtNumber.text;
+					//model.patientBasicInfo.PhoneType	= id_BasicInfo.id_PhoneNumberAddMore.id_TelNumberKind.textInput.text;
+					model.patientBasicInfo.PhoneType	= id_BasicInfo.id_PhoneNumberAddMore.id_TelNumberKind.selectedItem as PhoneNumberTypeDTO;
+				}else{
+					return;
+				}
+			}
+			
+			protected function id_mainTabButtons_changeHandler(event:IndexChangeEvent):void
+			{
+				if(id_RegViews.selectedIndex == 3)
+				{
+					if(id_HealthHx.id_Allergies)
+						id_HealthHx.id_Allergies.loadAllergiesData();
+				}
+				
+				if(id_RegViews.selectedIndex == 4)
+				{
+					var arr:ArrayCollection = new ArrayCollection();
+					arr.addItem(Constants.INSURANCE_ORGANIZATION_TYPE_REGISTERATION_STATIC_DATA);
+					var regSDEvent : LoadInsuranceOrganizationEvent = new LoadInsuranceOrganizationEvent(arr);
+					CairngormEventDispatcher.getInstance().dispatchEvent( regSDEvent );
+				}
+			}
+			//-- For first field focus -----
+			protected function id_BasicInfo_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_BasicInfo.id_Prefix.setFocus();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:RadioButtonGroup id="pagination" itemClick="paginationRadioGroupItemClickHandler(event);"/>
+	</fx:Declarations>
+	
+	<s:HGroup id="id_notRegisYet" horizontalAlign="right" width="98%" verticalAlign="middle" includeInLayout="{id_notRegisYet.visible}">
+		<s:Button styleName="updateInfoButtonSkin"/>
+		<s:Label  color="#DB1B1B" fontSize="13" text="NOT REGISTERED YET!" fontFamily="Calibri Bold" />
+	</s:HGroup>
+	<s:HGroup width="100%"  maxWidth="650" minWidth="600"
+			  horizontalAlign="center" verticalAlign="middle"
+			  paddingLeft="2" paddingRight="2" 
+			  >
+		<!--<s:HGroup>-->
+		<components1:IconButton id="id_Prev" label="Previous" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBPMHPrevBtn" 
+							   click="previousButtonClickHandler(event)" toolTip="Go to Previous Section" buttonMode="true" useHandCursor="true" />
+		<!--</s:HGroup>-->
+		<s:TabBar id="id_mainTabButtons"  skinClass="com.adobe.Quivus.view.controls.skins.TabBarSkins.lightGreyTabBarSkin" 
+				  dataProvider="{id_RegViews}" width="100%" 
+				  mouseDown="onTabBarMouseDownHandler(event)" changing="id_mainTabButtons_changingHandler(event)" change="id_mainTabButtons_changeHandler(event)"/>
+		<!--<s:HGroup >-->
+		
+		<components1:IconButton id="id_Next" toolTip="Go to Next Section" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBPMHNextBtn"  label="Next" 
+							   click="nextButtonClickHandler(event)" buttonMode="true" useHandCursor="true"/>
+	</s:HGroup>
+	<!--</s:HGroup>-->
+	
+	<s:SkinnableContainer width="100%" height="100%" >
+		<s:layout>
+			<s:VerticalLayout paddingTop="5" paddingLeft="0" paddingRight="0" paddingBottom="0"/>
+		</s:layout>
+		
+		<mx:ViewStack id="id_RegViews" width="100%" height="100%" resizeToContent="true" change="id_RegViews_changeHandler(event)"   creationPolicy="all">
+			
+			<s:NavigatorContent width="100%" label="Personal Profile"  >
+				<s:Scroller id="id_BasicScroller" width="100%" height="290" verticalScrollPolicy="off">
+					<s:Group width="100%" height="100%" >
+						<s:layout>
+							<s:VerticalLayout  />
+						</s:layout>
+						<registeration:BasicInfo id="id_BasicInfo" width="100%" skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin"	creationComplete="id_BasicInfo_creationCompleteHandler(event)"/>
+						<registeration:OtherInformation id="id_OtherInfo" width="100%" skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin"	 />	
+						<registeration:EDIInformation id="id_ediInfo" width="100%" skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin" />
+					</s:Group>
+				</s:Scroller>
+			</s:NavigatorContent>
+			
+			<s:NavigatorContent width="100%" label="Emrg.Contact"  toolTip="Emergency Contacts"  >
+				<s:Scroller id="id_EmergencyScroller" width="100%" height="100%" verticalScrollPolicy="off">
+					<s:Group width="100%" height="100%" >
+						<s:layout>
+							<s:VerticalLayout  />
+						</s:layout>
+						<registeration:EmergencyContacts id="id_EmergencyContacts" width="100%" skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin"/>
+					</s:Group>
+				</s:Scroller>
+			</s:NavigatorContent>
+			
+			<s:NavigatorContent width="100%" label="Guarantor" toolTip="Guarantor"  >
+				<s:Scroller id="id_GuarantorScroller" width="100%" height="100%" verticalScrollPolicy="off">
+					<s:Group width="100%" height="100%" >
+						<s:layout>
+							<s:VerticalLayout  />
+						</s:layout>
+						<registeration:GurantorInfo id="id_Gurantor" width="100%" skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin"/>
+					</s:Group>
+				</s:Scroller>
+			</s:NavigatorContent>
+			
+			<s:NavigatorContent width="100%" label="Health Hx" toolTip="HealthHx"  >
+				<s:Scroller id="id_HealthHxScroller" width="100%" height="290" verticalScrollPolicy="off">
+					<s:Group width="100%" height="100%" >
+						<s:layout>
+							<s:VerticalLayout  />
+						</s:layout>
+						<registeration:HealthHx id="id_HealthHx" width="100%" skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin" />
+					</s:Group>
+				</s:Scroller>
+			</s:NavigatorContent>
+			
+			<s:NavigatorContent width="100%" label="Insurance"  >
+				<s:Scroller id="id_InsuranceScroller" width="100%" height="290" verticalScrollPolicy="off">
+					<s:Group width="100%" height="100%" >
+						<s:layout>
+							<s:VerticalLayout  />
+						</s:layout>
+						<registeration:Insurance id="id_Insurance" tabIndex="0" width="100%" skinClass="com.gazuntite.controls.extended.skins.CollapsiblePanelSkin" />
+					</s:Group>
+				</s:Scroller>
+			</s:NavigatorContent>
+		</mx:ViewStack>
+		
+	</s:SkinnableContainer>
+	<mx:Spacer height="10" />
+	
+	<s:VGroup width="100%">
+		<s:Group width="100%" verticalCenter="0">
+			<s:HGroup width="100%" horizontalAlign="center">
+				<s:RadioButton id="id_PersonalInfo" groupName="pagination" selected="true" value="PersonalInfo" skinClass="com.adobe.Quivus.view.controls.skins.QIPaginationRadioBtn" buttonMode="true"
+							   toolTip="Personal Profile"/>
+				<s:RadioButton groupName="pagination" value="EmergencyContacts" skinClass="com.adobe.Quivus.view.controls.skins.QIPaginationRadioBtn" buttonMode="true"
+							   toolTip="Emergency Contacts"/>
+				<s:RadioButton groupName="pagination" value="Guarantor" skinClass="com.adobe.Quivus.view.controls.skins.QIPaginationRadioBtn" buttonMode="true"
+							   toolTip="Guarantor"/>
+				<s:RadioButton groupName="pagination" value="HealthHx" skinClass="com.adobe.Quivus.view.controls.skins.QIPaginationRadioBtn" buttonMode="true"
+							   toolTip="Health Hx"/>
+				<s:RadioButton groupName="pagination" value="Insurance" skinClass="com.adobe.Quivus.view.controls.skins.QIPaginationRadioBtn" buttonMode="true"
+							   toolTip="Insurance"/>
+				
+			</s:HGroup>
+			<s:HGroup width="100%" horizontalAlign="right"  paddingRight="5" gap="2" >
+				<s:Button id="id_prevBtn" label="Prev" useHandCursor="true" buttonMode="true" click="prevButtonClickHandler(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QIprevBtnSkin"
+						  toolTip="Previous Section" visible="{id_RegViews.selectedIndex > 0 ? true : false}" />
+				<s:Button id="id_nextBtn" label="Next" useHandCursor="true" buttonMode="true" click="nextButtonClickHandler(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QInextBtnSkin"
+						  toolTip="Next Section" visible="{id_RegViews.selectedIndex == 4 ? false : true}" includeInLayout="{id_RegViews.selectedIndex == 4 ? false : true}" />
+			</s:HGroup>
+		</s:Group>
+		<s:HGroup width="100%" verticalAlign="bottom" paddingBottom="1" paddingRight="2" horizontalAlign="center" >
+			<s:Button id="id_btnSave" click="id_btnSave_clickHandler(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.RegisterBtn"
+					  buttonMode="true" useHandCursor="true" toolTip="Register Patient" label="Register"/>
+			<s:Button id="id_btnCancel" click="id_btnCancel_clickHandler(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.addmoreCancelBtn"
+					  buttonMode="true" useHandCursor="true" toolTip="Cancel/Close Registeration" label="Cancel"/>
+			
+		</s:HGroup>
+	</s:VGroup>
+</s:SkinnableContainer>

@@ -1,0 +1,468 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   creationComplete="popupgroup1_creationCompleteHandler(event)" xmlns:components1="com.gazuntite.controls.extended.components.*"
+		  			   >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.util.xml.XmlUtils;
+			import com.gazuntite.provider.live.services.billing.event.ClaimManagement.ChangeClaimStatusEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.util.BillingPopUpManager;
+			import com.gazuntite.provider.live.services.billing.view.views.events.ListOnlySelectionEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			private var statusTypeIdFrom:int;
+			private var statusTypeIdTo:int;
+			private var mediaTypeIdFrom:int;
+			private var mediaTypeIdTo:int;
+			private var insuranceTypeId:int;
+			
+			private var m_sBathID:String;
+			
+			[Bindable]
+			public function get BatchId():String
+			{
+				return m_sBathID;
+			}
+			public function set BatchId(value:String):void
+			{
+				m_sBathID = value;
+			}
+			
+			private var m_aClaimIDs:ArrayCollection;
+			
+			[Bindable]
+			public function get ClaimIDs():ArrayCollection
+			{
+				return m_aClaimIDs;
+			}
+			public function set ClaimIDs(value:ArrayCollection):void
+			{
+				m_aClaimIDs = value;
+			}
+			
+			protected function RadioChangeHandler(event:Event):void
+			{				
+				var rdo:RadioButton = event.currentTarget as RadioButton;
+								
+				switch(rdo.id)
+				{					
+					case "id_AllIns":
+						if(rdo.selected == true)
+						{
+							insuranceTypeId = 0;
+						}
+						break;
+					case "id_Pri":
+						if(rdo.selected == true)
+						{							
+							insuranceTypeId = 1;
+						}
+						break;
+					case "id_Sec":
+						if(rdo.selected == true)
+						{							
+							insuranceTypeId = 2;
+						}
+						break;
+					case "id_Ter":
+						if(rdo.selected == true)
+						{							
+							insuranceTypeId = 3;
+						}
+						break;					
+					case "id_Pat":
+						if(rdo.selected == true)
+						{							
+							insuranceTypeId = 4;
+						}
+						break;					
+					case "id_Paper":
+						if(rdo.selected == true)
+						{								
+							mediaTypeIdFrom = 1;
+						}
+						break;
+					case "id_Electronic":
+						if(rdo.selected == true)
+						{								
+							mediaTypeIdFrom = 2;
+						}
+						break;
+					case "id_PaperTo":
+						if(rdo.selected == true)
+						{								
+							mediaTypeIdTo = 1;
+						}
+						break;
+					case "id_ElectronicTo":
+						if(rdo.selected == true)
+						{								
+							mediaTypeIdTo = 2;
+						}
+						break;
+					case "id_AnyStatus":
+						if(rdo.selected == true)
+						{
+							statusTypeIdFrom = 0;
+						}
+						break;					
+					case "id_Hold":
+						if(rdo.selected == true)
+						{
+							statusTypeIdFrom = 1;
+						}
+						break;
+					
+					case "id_Alert":
+						if(rdo.selected == true)
+						{
+							statusTypeIdFrom = 2;
+						}
+						break;
+					
+					case "id_Ready":
+						if(rdo.selected == true)
+						{
+							statusTypeIdFrom = 3;
+						}
+						break;					
+					case "id_Done":
+						if(rdo.selected == true)
+						{
+							statusTypeIdFrom = 4;
+						}
+						break;					
+					case "id_Sent":
+						if(rdo.selected == true)
+						{
+							statusTypeIdFrom = 5;
+						}						
+						break;					
+					case "id_Pending":
+						if(rdo.selected == true)
+						{
+							statusTypeIdFrom = 6;
+						}						
+						break;
+					case "id_Rejected":
+						if(rdo.selected == true)
+						{
+							statusTypeIdFrom = 7;
+						}
+						break;					
+					case "id_Challenge":
+						if(rdo.selected == true)
+						{
+							statusTypeIdFrom = 8;
+						}					
+						break;	
+					case "id_HoldTo":
+						if(rdo.selected == true)
+						{
+							statusTypeIdTo = 1;
+						}
+						break;
+					
+					case "id_AlertTo":
+						if(rdo.selected == true)
+						{
+							statusTypeIdTo = 2;
+						}
+						break;
+					
+					case "id_ReadyTo":
+						if(rdo.selected == true)
+						{
+							statusTypeIdTo = 3;
+						}
+						break;					
+					case "id_DoneTo":
+						if(rdo.selected == true)
+						{
+							statusTypeIdTo = 4;
+						}
+						break;					
+					case "id_SentTo":
+						if(rdo.selected == true)
+						{
+							statusTypeIdTo = 5;
+						}						
+						break;					
+					case "id_PendingTo":
+						if(rdo.selected == true)
+						{
+							statusTypeIdTo = 6;
+						}						
+						break;
+					case "id_RejectedTo":
+						if(rdo.selected == true)
+						{
+							statusTypeIdTo = 7;
+						}
+						break;					
+					case "id_ChallengeTo":
+						if(rdo.selected == true)
+						{
+							statusTypeIdTo = 8;
+						}					
+						break;	
+				}
+			}
+			
+			public function hide():void
+			{
+				removePopup();
+			}
+			
+			protected function Cancel_clickHandler(event:MouseEvent):void
+			{
+				removePopup();
+				BillingPopUpManager.removePopUp(this,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+			}
+			
+			protected function id_BatchId_focusInHandler(event:FocusEvent):void
+			{
+				id_forBatch.selected = true;
+				
+			}
+			
+			protected function popupgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				statusTypeIdFrom = 0;
+				statusTypeIdTo = 0;
+				mediaTypeIdFrom = 0;
+				mediaTypeIdTo = 0;
+				insuranceTypeId = 0;				
+			}
+			
+			protected function id_forBatch_changeHandler(event:Event):void
+			{
+				id_BatchId.setFocus();
+			}
+			
+			protected function id_Ok_clickHandler(event:MouseEvent):void
+			{
+				if(statusTypeIdFrom == 0 && statusTypeIdTo == 0 && mediaTypeIdFrom == 0 && mediaTypeIdTo == 0 )
+				{
+					Alert.show('No change found', 'No Change',4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				if(id_forBatch.selected == true && (UtilityFunctions.IsNullOrEmpty(id_BatchId.text) || parseInt(id_BatchId.text) == 0 ) )
+				{
+					Alert.show('Please enter valid Batch Number', 'Invalid Data',4,FlexGlobals.topLevelApplication.mainContainer);
+					id_BatchId.setFocus();
+					return;
+				}
+				
+				if(id_AnyStatus.selected == false && statusTypeIdFrom == 0 && statusTypeIdTo > 0 )
+				{
+					Alert.show('Please select Status From', 'Status From missing',4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				
+				if(statusTypeIdFrom > 0 && statusTypeIdTo == 0 )
+				{
+					Alert.show('Please select Status To', 'Status To missing',4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				
+				if(mediaTypeIdFrom > 0 && mediaTypeIdTo == 0 )
+				{
+					Alert.show('Please select Billing Method To', 'Billing Method To missing',4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				
+				if(mediaTypeIdFrom == 0 && mediaTypeIdTo > 0 )
+				{
+					Alert.show('Please select Billing Method From', 'Billing Method From missing',4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+								
+				if(id_forClaims.selected == true)
+				{
+					var claimIDsXML:XML = XmlUtils.getNodeByTagName( "ClaimIds" );
+					for(var i:int = 0; i < ClaimIDs.length; i++)
+					{		
+						claimIDsXML.appendChild(XML("<int>" + ClaimIDs[i] + "</int>"));						
+					}
+					
+					var se:ChangeClaimStatusEvent = new ChangeClaimStatusEvent(claimIDsXML,statusTypeIdFrom,statusTypeIdTo,mediaTypeIdFrom,mediaTypeIdTo,insuranceTypeId,model.LoggedInUserId,EventStatus);
+					CairngormEventDispatcher.getInstance().dispatchEvent(se);
+				}
+				else
+				{
+					var batchIDXML:XML = XmlUtils.getNodeByTagName( "BatchNumber" );
+					batchIDXML.appendChild(XML("<int>" + id_BatchId.text + "</int>"));
+					
+					var se2:ChangeClaimStatusEvent = new ChangeClaimStatusEvent(batchIDXML,statusTypeIdFrom,statusTypeIdTo,mediaTypeIdFrom,mediaTypeIdTo,insuranceTypeId,model.LoggedInUserId,EventStatus);
+					CairngormEventDispatcher.getInstance().dispatchEvent(se2);
+				}				
+			}
+			
+			private function EventStatus():void
+			{
+				if(model.Result == false)
+				{
+					Alert.show('Status not updated successfully', 'No Upadate from service',4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				var e:ListOnlySelectionEvent	= new ListOnlySelectionEvent();
+				
+				dispatchEvent(e);
+				removePopup();
+				BillingPopUpManager.removePopUp(this,BillingPopUpManager.CLAIM_MANAGEMENT_POPUPS);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:SkinnableContainer skinClass="com.adobe.gazuntite.skins.chrome.popUpSkins.listonlyPopupSkin" width="100%"
+						  maxWidth="475">
+		
+		<s:layout>
+			<s:VerticalLayout paddingLeft="12" paddingRight="12"  paddingBottom="10"  paddingTop="3"  gap="5"/>
+		</s:layout>
+		<s:HGroup  verticalAlign="middle"  width="100%">	
+			<s:Label text="Change Claim Status/Billing Method" fontFamily="Calibri" fontSize="12" color="#FFFFFF"/>
+			<s:Spacer width="100%"/>
+			<s:Button buttonMode="true" id="id_CloseBtn" skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.whiteCloseButton"  
+					  click="Cancel_clickHandler(event)"
+					  toolTip="Close"  height="25" width="16"/>		   		   
+		</s:HGroup>
+			<s:HGroup width="100%" >
+				<s:Label text="CHANGE STATUS/BILLING METHODS OF CLAIMS FOR" color="#333333" fontFamily="Calibri" fontSize="12"
+						 verticalAlign="middle" textAlign="left"   />		
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<s:RadioButton id="id_forBatch" label="Batch" groupName="SelectionType" color="#333333" fontFamily="Calibri" fontSize="11"
+							   change="id_forBatch_changeHandler(event)" tabIndex="1" />
+				<s:TextInput id="id_BatchId" text="{BatchId}" width="100" restrict="[0-9]" focusIn="id_BatchId_focusInHandler(event)" height="19" />
+				<s:Spacer width="40"/>
+				<s:RadioButton id="id_forClaims" color="#333333" fontFamily="Calibri" fontSize="11"  label="Selected Claim(s)" groupName="SelectionType" selected="true" />
+			</s:HGroup>
+		<mx:HRule width="100%"/>
+			<s:HGroup width="100%">
+				<s:VGroup width="50%">
+					<s:HGroup width="100%">
+						<s:Label text="STATUS FROM:"   textAlign="left" fontFamily="Calibri" fontSize="11"  />
+					</s:HGroup>
+					<s:HGroup width="100%">				
+						<s:RadioButton id="id_Hold" color="#333333" fontFamily="Calibri" fontSize="11" width="100" label="Hold" groupName="StatusFrom" change="RadioChangeHandler(event)" tabIndex="2" />
+						<s:RadioButton id="id_Challenge" color="#333333" fontFamily="Calibri" fontSize="11" width="100" label="Challenge" groupName="StatusFrom" change="RadioChangeHandler(event)" tabIndex="3" />
+					</s:HGroup>
+					<s:HGroup width="100%">
+						<s:RadioButton id="id_Ready" width="100" label="Ready to Send" groupName="StatusFrom" color="#333333" fontFamily="Calibri" fontSize="11"
+									   change="RadioChangeHandler(event)" tabIndex="4" />
+						<s:RadioButton id="id_Alert" width="100" label="Alert" groupName="StatusFrom" color="#333333" fontFamily="Calibri" fontSize="11"
+									   change="RadioChangeHandler(event)" tabIndex="5" />
+					</s:HGroup>
+					<s:HGroup width="100%">
+						<s:RadioButton id="id_Sent" width="100" label="Sent" groupName="StatusFrom" color="#333333" fontFamily="Calibri" fontSize="11"
+									   change="RadioChangeHandler(event)" tabIndex="6"  />
+						<s:RadioButton id="id_Done" width="100" label="Done" groupName="StatusFrom"  color="#333333" fontFamily="Calibri" fontSize="11"
+									   change="RadioChangeHandler(event)" tabIndex="7" />
+					</s:HGroup>
+					<s:HGroup width="100%">
+						<s:RadioButton id="id_Rejected" width="100" label="Rejected" groupName="StatusFrom" color="#333333" fontFamily="Calibri" fontSize="11"
+									   change="RadioChangeHandler(event)" tabIndex="8" />
+						<s:RadioButton id="id_Pending" width="100" label="Pending" groupName="StatusFrom" color="#333333" fontFamily="Calibri" fontSize="11"
+									   change="RadioChangeHandler(event)" tabIndex="9" />
+					</s:HGroup>
+					<s:HGroup width="100%">
+						<s:RadioButton id="id_AnyStatus" width="150" label="Any Status Type" groupName="StatusFrom" color="#333333" fontFamily="Calibri" fontSize="11"
+									   change="RadioChangeHandler(event)" tabIndex="10" />				
+					</s:HGroup>
+				</s:VGroup>
+				<mx:VRule  height="100%"/>
+				<s:VGroup width="50%">
+					<s:HGroup width="100%">
+						<s:Label text="STATUS TO:" verticalAlign="middle" textAlign="left" fontFamily="Calibri" fontSize="11"  />
+					</s:HGroup>
+					<s:HGroup width="100%">
+						<s:RadioButton id="id_HoldTo" width="100" label="Hold" groupName="StatusTo" tabIndex="11"
+									   change="RadioChangeHandler(event)" color="#333333" fontFamily="Calibri" fontSize="11" />
+						<s:RadioButton id="id_ChallengeTo" width="100" label="Challenge" groupName="StatusTo" tabIndex="12"
+									   change="RadioChangeHandler(event)" color="#333333" fontFamily="Calibri" fontSize="11" />
+					</s:HGroup>
+					<s:HGroup width="100%">
+						<s:RadioButton id="id_ReadyTo" width="100" label="Ready to Send" groupName="StatusTo" tabIndex="13"
+									   change="RadioChangeHandler(event)" color="#333333" fontFamily="Calibri" fontSize="11"  />
+						<s:RadioButton id="id_AlertTo" width="100" label="Alert" groupName="StatusTo" tabIndex="14"
+									   change="RadioChangeHandler(event)" color="#333333" fontFamily="Calibri" fontSize="11" />
+					</s:HGroup>
+					<s:HGroup width="100%">
+						<s:RadioButton id="id_SentTo" width="100" label="Sent" groupName="StatusTo" color="#333333" fontFamily="Calibri" fontSize="11" 
+									   change="RadioChangeHandler(event)" tabIndex="15" />
+						<s:RadioButton id="id_DoneTo" width="100" label="Done" groupName="StatusTo" color="#333333" fontFamily="Calibri" fontSize="11" 
+									   change="RadioChangeHandler(event)" tabIndex="16" />
+					</s:HGroup>
+					<s:HGroup width="100%" >
+						<s:RadioButton id="id_RejectedTo" width="100" label="Rejected" groupName="StatusTo"  color="#333333" fontFamily="Calibri" fontSize="11"
+									   change="RadioChangeHandler(event)" tabIndex="17" />
+						<s:RadioButton id="id_PendingTo" width="100" label="Pending" groupName="StatusTo" color="#333333" fontFamily="Calibri" fontSize="11"
+									   change="RadioChangeHandler(event)" tabIndex="18" />
+					</s:HGroup>
+				</s:VGroup>		
+			</s:HGroup>
+		<mx:HRule width="100%"/>
+			<s:HGroup width="100%" >
+				<s:VGroup width = "50%">
+						<s:Label text="BILLING METHOD FROM:"  textAlign="left" fontFamily="Calibri" fontSize="11" />
+					<s:HGroup width="100%">
+						<s:RadioButton id="id_Paper"  label="Paper" groupName="MethodFrom" tabIndex="19"
+									   change="RadioChangeHandler(event)" color="#333333" fontFamily="Calibri" fontSize="11"  />
+						<s:RadioButton id="id_Electronic" label="Electronic" groupName="MethodFrom" tabIndex="20"
+									   change="RadioChangeHandler(event)" color="#333333" fontFamily="Calibri" fontSize="11" />
+					</s:HGroup>
+				</s:VGroup>
+				<mx:VRule  height="28"/>
+				<s:VGroup width = "50%">
+						<s:Label text="BILLING METHOD TO:" textAlign="left" fontFamily="Calibri" fontSize="11"  />
+					<s:HGroup width="100%">
+						<s:RadioButton id="id_PaperTo"  label="Paper" groupName="MethodTo" tabIndex="21"
+									   change="RadioChangeHandler(event)" color="#333333" fontFamily="Calibri" fontSize="11"  />
+						<s:RadioButton id="id_ElectronicTo" label="Electronic" groupName="MethodTo"  tabIndex="22"
+									   change="RadioChangeHandler(event)" color="#333333" fontFamily="Calibri" fontSize="11" />
+					</s:HGroup>
+				</s:VGroup>
+			</s:HGroup>
+		<mx:HRule width="100%"/>
+			<s:HGroup width="100%" verticalAlign="middle" >
+				<s:Label text="FOR CARRIER:"  textAlign="left" fontFamily="Calibri" fontSize="11"  />
+				<s:RadioButton id="id_AllIns"  label="All" groupName="InsType" selected="true" change="RadioChangeHandler(event)"
+							   color="#333333" fontFamily="Calibri" fontSize="11" tabIndex="23" />
+				<s:RadioButton id="id_Pri"  label="Primary" groupName="InsType" change="RadioChangeHandler(event)"
+							   color="#333333" fontFamily="Calibri" fontSize="11" tabIndex="24" />
+				<s:RadioButton id="id_Sec"  label="Secondary" groupName="InsType" change="RadioChangeHandler(event)"
+							   color="#333333" fontFamily="Calibri" fontSize="11" tabIndex="25" />
+				<s:RadioButton id="id_Ter"  label="Tertiary" groupName="InsType" change="RadioChangeHandler(event)"
+							   color="#333333" fontFamily="Calibri" fontSize="11" tabIndex="26" />
+				<s:RadioButton id="id_Pat"  label="Patient" groupName="InsType" change="RadioChangeHandler(event)"
+							   color="#333333" fontFamily="Calibri" fontSize="11" tabIndex="26" />
+			</s:HGroup>
+		<mx:HRule width="100%"/>
+			<s:HGroup width="100%" horizontalAlign="right">
+				<s:Button id="id_Ok" label="OK" width="45" click="id_Ok_clickHandler(event)" styleName="blackButtonSkin" tabIndex="27" />
+				<s:Button id="id_Cancel" label="Cancel" width="60" click="Cancel_clickHandler(event)" styleName="blackButtonSkin" tabIndex="28" />
+			</s:HGroup>			
+		
+	</s:SkinnableContainer>
+	
+</components1:PopupGroup>

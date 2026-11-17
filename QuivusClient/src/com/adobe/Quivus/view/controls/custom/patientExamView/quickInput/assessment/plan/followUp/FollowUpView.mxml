@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:followUp="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.plan.followUp.*"
+		 >
+	<s:layout>
+		<s:VerticalLayout gap="10" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5" verticalAlign="middle"/>
+	</s:layout>
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.logging.LoggingUtil;
+			import com.adobe.Quivus.model.AppModelLocator;
+			
+			import mx.events.ItemClickEvent;
+			import mx.logging.ILogger;
+			
+			import valueObjects.PatientFollowUpDTO;
+			
+			
+			private var _hasGridChanged:Boolean;
+			private var _hasViewChanged:Boolean;
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+			private var logger:ILogger = LoggingUtil.getLogger( this );
+			
+			private var m_bIsModelUpdated:Boolean;
+			
+			public function get IsModelUpdated():Boolean
+			{
+				return m_bIsModelUpdated;
+			}
+			
+			public function set IsModelUpdated(value:Boolean):void
+			{
+				m_bIsModelUpdated = value;
+				callLater(LoadData);
+			}
+			
+			public function LoadData():void
+			{
+				try
+				{
+					if(model.quickInputDTO.Assessment.PatientFollowUp.IsByDate)
+					{
+						id_Views.selectedIndex = 0;
+					}
+					else if(model.quickInputDTO.Assessment.PatientFollowUp.IsOnCompletion)
+					{
+						id_Views.selectedIndex = 1;
+						id_Views.callLater( function():void
+						{
+							id_ComplitionView.id_ddlLabs.enabled 	= true;
+							id_ComplitionView.id_ddlDrugs.enabled 	= false;
+							id_ComplitionView.id_rbLabTest.selected = true;
+							id_ComplitionView.id_ddlLabs.setFocus();
+						});
+					}
+					
+				}
+				catch( e:Error )
+				{
+					logger.error( "FollowUpView::LoadData() errorID:" + e.errorID + ", errorName:" + e.name + ", errorMessage:" + e.message );
+				}
+			}
+			
+			protected function id_FollowUpType_changeHandler(event:ItemClickEvent):void
+			{
+				if(model.quickInputDTO.Assessment.PatientFollowUp ==  null)
+				{
+					model.quickInputDTO.Assessment.PatientFollowUp = new PatientFollowUpDTO();
+					model.quickInputDTO.Assessment.PatientFollowUp.LabTestID 		= -1;
+					model.quickInputDTO.Assessment.PatientFollowUp.DrugID 			= -1;
+				}
+				
+				if( event.item == "ByDate" )
+				{
+					id_Views.selectedIndex = 0;
+					model.quickInputDTO.Assessment.PatientFollowUp.IsByDate 		= true;
+					model.quickInputDTO.Assessment.PatientFollowUp.IsOnCompletion 	= false;
+					//id_FollowUpAlertView.setIndex=3;
+				}
+				else if( event.item == "OnCompletion" )
+				{
+					id_Views.selectedIndex = 1;
+					model.quickInputDTO.Assessment.PatientFollowUp.IsOnCompletion 	= true;
+					model.quickInputDTO.Assessment.PatientFollowUp.IsByDate 		= false;
+					
+
+					//id_FollowUpAlertView.setIndex=4;
+
+					id_Views.callLater( function():void
+					{
+						id_ComplitionView.id_ddlLabs.enabled 	= true;
+						id_ComplitionView.id_ddlDrugs.enabled 	= false;
+						id_ComplitionView.id_rbLabTest.selected = true;
+						id_ComplitionView.id_ddlLabs.setFocus();
+					});
+				}
+				
+			}
+			
+			public function set SelectByDate(value:Boolean):void
+			{
+				if( value )
+					id_Views.selectedIndex = 0;
+			}
+
+			public function set OnCompletion(value:Boolean):void
+			{
+				if( value )
+					id_Views.selectedIndex = 1;
+			}
+
+			private function radioButtonClickHandler(event:MouseEvent):void
+			{
+				switch (event.currentTarget.id)
+				{
+					case "id_ByDate":
+						id_Views.selectedIndex = 0;
+						break;
+					case "id_OnCompletion":
+						id_Views.selectedIndex = 1;
+						id_Views.callLater( function():void
+						{
+							id_ComplitionView.id_ddlLabs.enabled 	= true;
+							id_ComplitionView.id_ddlDrugs.enabled 	= false;
+							id_ComplitionView.id_rbLabTest.selected = true;
+							id_ComplitionView.id_ddlLabs.setFocus();
+						});
+						break;
+				}
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:RadioButtonGroup id="id_FollowUpType" itemClick="id_FollowUpType_changeHandler(event)" />
+	</fx:Declarations>
+	
+	<fx:Binding source="model.quickInputDataLoadedFlag" destination="IsModelUpdated" /> 
+	
+	<s:HGroup>
+		<!--<s:Label text="By Date" fontFamily="Calibri" color="#000000" />-->
+		<s:RadioButton id="id_ByDate" label="By Date" value="ByDate" selected="true" fontFamily="Calibri" fontSize="11"
+					   groupName="id_FollowUpType"
+					   buttonMode="true" useHandCursor="true" toolTip="By Date" color="#ffffff" />
+		<!--<s:Label text="Upon Completion of" fontFamily="Calibri" color="#000000" />-->
+		<s:RadioButton id="id_OnCompletion" label="Upon Completion of" value="OnCompletion" fontFamily="Calibri" fontSize="11"
+					   groupName="id_FollowUpType" 
+					   buttonMode="true" useHandCursor="true" toolTip="Upon Completion of" color="#ffffff" />
+	</s:HGroup>
+	<mx:ViewStack id="id_Views" width="100%" resizeToContent="true" >
+
+		<s:NavigatorContent width="100%">
+			<followUp:ByDateView id="id_DateView" width="100%"/>
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%">
+			<followUp:OnComplitionView id="id_ComplitionView" width="100%"/>
+		</s:NavigatorContent>
+
+	
+		
+	</mx:ViewStack>
+	
+	<followUp:FollowUpAlertView width="100%" id="id_FollowUpAlertView" />
+</s:Group>

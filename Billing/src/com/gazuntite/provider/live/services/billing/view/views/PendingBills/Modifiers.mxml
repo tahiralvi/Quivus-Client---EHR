@@ -1,0 +1,490 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						xmlns:s="library://ns.adobe.com/flex/spark" 
+						xmlns:mx="library://ns.adobe.com/flex/mx" 
+						xmlns:components="com.gazuntite.controls.extended.components.*" 
+						skinClass="com.adobe.gazuntite.skins.chrome.containerSkins.TitleWindowSkin"
+						creationComplete="popupwindow1_creationCompleteHandler(event)"
+						close="popupwindow1_closeHandler(event)" xmlns:components1="com.gazuntite.controls.extended.components.*"
+						>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.CPTModifierTypeDTO;
+			import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadCPTModifierTypesEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.util.BillingPopUpManager;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			public function hide():void
+			{
+				removePopup();
+			}
+			
+			[Bindable]
+			private var m_adataProvider:ArrayCollection;
+			
+			[Bindable]
+			public function get DataProvider():ArrayCollection
+			{
+				 return m_adataProvider;
+			}
+			
+			public function set DataProvider(value:ArrayCollection):void
+			{
+				 m_adataProvider = value;
+			}
+			
+			private function modi1KeyUpHandler(event:KeyboardEvent):void
+			{
+				if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+				{
+					var searchString:String = id_Modi1Cmbo.textInput.text;
+					if(searchString.length > 0)
+					{
+						var modiEvent : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,1);
+						CairngormEventDispatcher.getInstance().dispatchEvent( modiEvent );
+					}					
+				}
+			}
+			
+			private function modi2KeyUpHandler(event:KeyboardEvent):void
+			{
+				if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+				{
+					var searchString:String = id_Modi2Cmbo.textInput.text;
+					if(searchString.length > 0)
+					{
+						var modiEvent : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,2);
+						CairngormEventDispatcher.getInstance().dispatchEvent( modiEvent );
+					}					
+				}
+			}
+			
+			private function modi3KeyUpHandler(event:KeyboardEvent):void
+			{
+				if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+				{
+					var searchString:String = id_Modi3Cmbo.textInput.text;
+					if(searchString.length > 0)
+					{
+						var modiEvent : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,3);
+						CairngormEventDispatcher.getInstance().dispatchEvent( modiEvent );
+					}					
+				}
+			}
+			private function modi4KeyUpHandler(event:KeyboardEvent):void
+			{
+				if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+				{
+					var searchString:String = id_Modi4Cmbo.textInput.text;
+					if(searchString.length > 0)
+					{
+						var modiEvent : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,4);
+						CairngormEventDispatcher.getInstance().dispatchEvent( modiEvent );
+					}					
+				}
+			}
+						
+			private function CheckForSameModifiers():Boolean
+			{
+				if(id_Modi1Cmbo.selectedIndex > -1 && id_Modi2Cmbo.selectedIndex > -1 && id_Modi3Cmbo.selectedIndex > -1 && id_Modi4Cmbo.selectedIndex > -1)
+				{				
+					if( 
+						( 
+							id_Modi1Cmbo.selectedItem.ModifierTypeId == id_Modi2Cmbo.selectedItem.ModifierTypeId ||
+							id_Modi1Cmbo.selectedItem.ModifierTypeId == id_Modi3Cmbo.selectedItem.ModifierTypeId ||
+							id_Modi1Cmbo.selectedItem.ModifierTypeId == id_Modi4Cmbo.selectedItem.ModifierTypeId 					  
+						) ||
+						( 
+							id_Modi2Cmbo.selectedItem.ModifierTypeId == id_Modi1Cmbo.selectedItem.ModifierTypeId ||
+							id_Modi2Cmbo.selectedItem.ModifierTypeId == id_Modi3Cmbo.selectedItem.ModifierTypeId ||
+							id_Modi2Cmbo.selectedItem.ModifierTypeId == id_Modi4Cmbo.selectedItem.ModifierTypeId 					  
+						)||
+						( 
+							id_Modi3Cmbo.selectedItem.ModifierTypeId == id_Modi1Cmbo.selectedItem.ModifierTypeId ||
+							id_Modi3Cmbo.selectedItem.ModifierTypeId == id_Modi2Cmbo.selectedItem.ModifierTypeId ||
+							id_Modi3Cmbo.selectedItem.ModifierTypeId == id_Modi4Cmbo.selectedItem.ModifierTypeId 					  
+						)||
+						( 
+							id_Modi4Cmbo.selectedItem.ModifierTypeId == id_Modi1Cmbo.selectedItem.ModifierTypeId ||
+							id_Modi4Cmbo.selectedItem.ModifierTypeId == id_Modi3Cmbo.selectedItem.ModifierTypeId ||
+							id_Modi4Cmbo.selectedItem.ModifierTypeId == id_Modi2Cmbo.selectedItem.ModifierTypeId 					  
+						)
+					)
+					{						
+						return false;
+					}	
+				}
+				else if(id_Modi1Cmbo.selectedIndex > -1 && id_Modi2Cmbo.selectedIndex > -1 && id_Modi3Cmbo.selectedIndex > -1 
+					&& id_Modi4Cmbo.selectedIndex == -1)
+				{				
+					if( 
+						( 
+							id_Modi1Cmbo.selectedItem.ModifierTypeId == id_Modi2Cmbo.selectedItem.ModifierTypeId ||
+							id_Modi1Cmbo.selectedItem.ModifierTypeId == id_Modi3Cmbo.selectedItem.ModifierTypeId 					  
+						) ||
+						( 
+							id_Modi2Cmbo.selectedItem.ModifierTypeId == id_Modi1Cmbo.selectedItem.ModifierTypeId ||
+							id_Modi2Cmbo.selectedItem.ModifierTypeId == id_Modi3Cmbo.selectedItem.ModifierTypeId 					  
+						)||
+						( 
+							id_Modi3Cmbo.selectedItem.ModifierTypeId == id_Modi1Cmbo.selectedItem.ModifierTypeId ||
+							id_Modi3Cmbo.selectedItem.ModifierTypeId == id_Modi2Cmbo.selectedItem.ModifierTypeId 					  
+						)
+					)
+					{						
+						return false;
+					}	
+				}
+					
+				else if(id_Modi1Cmbo.selectedIndex > -1 && id_Modi2Cmbo.selectedIndex > -1 
+					&& id_Modi3Cmbo.selectedIndex == -1 
+					&& id_Modi4Cmbo.selectedIndex > -1)
+				{				
+					if( 
+						( 
+							id_Modi1Cmbo.selectedItem.ModifierTypeId == id_Modi2Cmbo.selectedItem.ModifierTypeId  ||
+							id_Modi1Cmbo.selectedItem.ModifierTypeId == id_Modi4Cmbo.selectedItem.ModifierTypeId 					  
+						) ||
+						( 
+							id_Modi2Cmbo.selectedItem.ModifierTypeId == id_Modi1Cmbo.selectedItem.ModifierTypeId ||
+							id_Modi2Cmbo.selectedItem.ModifierTypeId == id_Modi4Cmbo.selectedItem.ModifierTypeId 					  
+						)||
+						( 
+							id_Modi4Cmbo.selectedItem.ModifierTypeId == id_Modi1Cmbo.selectedItem.ModifierTypeId  ||
+							id_Modi4Cmbo.selectedItem.ModifierTypeId == id_Modi2Cmbo.selectedItem.ModifierTypeId 					  
+						)
+					)
+					{						
+						return false;
+					}					
+				}
+				
+				else if(id_Modi1Cmbo.selectedIndex > -1 && id_Modi2Cmbo.selectedIndex == -1 
+					&& id_Modi3Cmbo.selectedIndex > -1 
+					&& id_Modi4Cmbo.selectedIndex > -1)
+				{
+					if( 
+						( 							
+							id_Modi1Cmbo.selectedItem.ModifierTypeId == id_Modi3Cmbo.selectedItem.ModifierTypeId ||
+							id_Modi1Cmbo.selectedItem.ModifierTypeId == id_Modi4Cmbo.selectedItem.ModifierTypeId 					  
+						) ||
+						( 
+							id_Modi3Cmbo.selectedItem.ModifierTypeId == id_Modi1Cmbo.selectedItem.ModifierTypeId  ||
+							id_Modi3Cmbo.selectedItem.ModifierTypeId == id_Modi4Cmbo.selectedItem.ModifierTypeId 					  
+						)||
+						( 
+							id_Modi4Cmbo.selectedItem.ModifierTypeId == id_Modi1Cmbo.selectedItem.ModifierTypeId ||
+							id_Modi4Cmbo.selectedItem.ModifierTypeId == id_Modi3Cmbo.selectedItem.ModifierTypeId 					  
+						)
+					)
+					{						
+						return false;
+					}
+				}
+				else if(id_Modi1Cmbo.selectedIndex == -1 && id_Modi2Cmbo.selectedIndex > -1 
+					&& id_Modi3Cmbo.selectedIndex > -1 
+					&& id_Modi4Cmbo.selectedIndex > -1)
+				{
+					if( 
+						( 							
+							id_Modi2Cmbo.selectedItem.ModifierTypeId == id_Modi3Cmbo.selectedItem.ModifierTypeId ||
+							id_Modi2Cmbo.selectedItem.ModifierTypeId == id_Modi4Cmbo.selectedItem.ModifierTypeId 					  
+						)||
+						( 							
+							id_Modi3Cmbo.selectedItem.ModifierTypeId == id_Modi2Cmbo.selectedItem.ModifierTypeId ||
+							id_Modi3Cmbo.selectedItem.ModifierTypeId == id_Modi4Cmbo.selectedItem.ModifierTypeId 					  
+						)||
+						( 							
+							id_Modi4Cmbo.selectedItem.ModifierTypeId == id_Modi3Cmbo.selectedItem.ModifierTypeId ||
+							id_Modi4Cmbo.selectedItem.ModifierTypeId == id_Modi2Cmbo.selectedItem.ModifierTypeId 					  
+						)
+					)
+					{						
+						return false;
+					}	
+				}
+				else if(id_Modi1Cmbo.selectedIndex > -1 && id_Modi2Cmbo.selectedIndex > -1 
+					&& id_Modi3Cmbo.selectedIndex == -1 
+					&& id_Modi4Cmbo.selectedIndex == -1)
+				{
+					if(id_Modi1Cmbo.selectedItem.ModifierTypeId == id_Modi2Cmbo.selectedItem.ModifierTypeId)
+						return false;
+				}
+				else if(id_Modi1Cmbo.selectedIndex > -1 && id_Modi2Cmbo.selectedIndex == -1 
+					&& id_Modi3Cmbo.selectedIndex > -1 
+					&& id_Modi4Cmbo.selectedIndex == -1)
+				{
+					if(id_Modi1Cmbo.selectedItem.ModifierTypeId == id_Modi3Cmbo.selectedItem.ModifierTypeId)
+						return false;
+				}
+				else if(id_Modi1Cmbo.selectedIndex == -1 && id_Modi2Cmbo.selectedIndex > -1 
+					&& id_Modi3Cmbo.selectedIndex > -1 
+					&& id_Modi4Cmbo.selectedIndex == -1)
+				{
+					if(id_Modi2Cmbo.selectedItem.ModifierTypeId == id_Modi3Cmbo.selectedItem.ModifierTypeId)
+						return false;
+				}
+				else if(id_Modi1Cmbo.selectedIndex > -1 && id_Modi2Cmbo.selectedIndex == -1 
+					&& id_Modi3Cmbo.selectedIndex == -1 
+					&& id_Modi4Cmbo.selectedIndex > -1)
+				{
+					if(id_Modi1Cmbo.selectedItem.ModifierTypeId == id_Modi4Cmbo.selectedItem.ModifierTypeId)
+						return false;
+				}
+				else if(id_Modi1Cmbo.selectedIndex == -1 && id_Modi2Cmbo.selectedIndex > -1 
+					&& id_Modi3Cmbo.selectedIndex == -1 
+					&& id_Modi4Cmbo.selectedIndex > -1)
+				{
+					if(id_Modi2Cmbo.selectedItem.ModifierTypeId == id_Modi4Cmbo.selectedItem.ModifierTypeId)
+						return false;
+				}
+				else if(id_Modi1Cmbo.selectedIndex == -1 && id_Modi2Cmbo.selectedIndex == -1 
+					&& id_Modi3Cmbo.selectedIndex > -1 
+					&& id_Modi4Cmbo.selectedIndex > -1)
+				{
+					if(id_Modi3Cmbo.selectedItem.ModifierTypeId == id_Modi4Cmbo.selectedItem.ModifierTypeId)
+						return false;
+				}
+				
+				return true;
+			}
+			
+			protected function id_ADD_clickHandler(event:MouseEvent):void
+			{
+				if(id_Modi1Cmbo.selectedIndex == -1 && id_Modi2Cmbo.selectedIndex == -1 && id_Modi3Cmbo.selectedIndex == -1 && id_Modi4Cmbo.selectedIndex == -1  )
+				{
+					Alert.show("Please select at least one modifier","Info",4,FlexGlobals.topLevelApplication.mainContainer);					
+					return;
+					id_Modi1Cmbo.setFocus();
+				}
+				if(CheckForSameModifiers() == false)
+				{
+					Alert.show("Modifiers can not be same","Info",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				
+				if( id_Modi1Cmbo.selectedIndex == -1 )
+				{
+					Alert.show("please select Modifier 1","Info",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+					id_Modi1Cmbo.setFocus();
+				}	
+				else if( id_Modi1Cmbo.selectedIndex > -1 && 
+					    (id_Modi2Cmbo.selectedIndex == -1 &&
+						 (id_Modi3Cmbo.selectedIndex > -1 || id_Modi4Cmbo.selectedIndex > -1)
+						)
+				      )
+				{
+					Alert.show("please select Modifier 2 then modifier 3 or 4","Info",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+					id_Modi2Cmbo.setFocus();
+				} 
+				else if( (id_Modi1Cmbo.selectedIndex > -1 && id_Modi2Cmbo.selectedIndex > -1 ) && 
+					(id_Modi3Cmbo.selectedIndex == -1 &&
+						id_Modi4Cmbo.selectedIndex > -1 )
+					
+				)
+				{
+					Alert.show("please select Modifier 3 then modifier 4","Info",4,FlexGlobals.topLevelApplication.mainContainer);
+					return;
+					id_Modi3Cmbo.setFocus();
+				}
+				var newModifiers:ArrayCollection = new ArrayCollection();
+				if(id_Modi1Cmbo.selectedIndex > -1)
+				{
+					var modi1:CPTModifierTypeDTO = new CPTModifierTypeDTO();
+					modi1.ModifierTypeId = id_Modi1Cmbo.selectedItem.ModifierTypeId;
+					modi1.ModifierDescription =id_Modi1Cmbo.selectedItem.ModifierDescription;
+					newModifiers.addItem(modi1);
+				}
+				if(id_Modi2Cmbo.selectedIndex > -1)
+				{
+					var modi2:CPTModifierTypeDTO = new CPTModifierTypeDTO();
+					modi2.ModifierTypeId = id_Modi2Cmbo.selectedItem.ModifierTypeId;
+					modi2.ModifierDescription =id_Modi2Cmbo.selectedItem.ModifierDescription;
+					newModifiers.addItem(modi2);
+				}
+				if(id_Modi3Cmbo.selectedIndex > -1)
+				{
+					var modi3:CPTModifierTypeDTO = new CPTModifierTypeDTO();
+					modi3.ModifierTypeId = id_Modi3Cmbo.selectedItem.ModifierTypeId;
+					modi3.ModifierDescription =id_Modi3Cmbo.selectedItem.ModifierDescription;
+					newModifiers.addItem(modi3);
+				}
+				if(id_Modi4Cmbo.selectedIndex > -1)
+				{
+					var modi4:CPTModifierTypeDTO = new CPTModifierTypeDTO();
+					modi4.ModifierTypeId = id_Modi4Cmbo.selectedItem.ModifierTypeId;
+					modi4.ModifierDescription =id_Modi4Cmbo.selectedItem.ModifierDescription;
+					newModifiers.addItem(modi1);
+				}
+				
+				if(newModifiers.length > 0)
+				{
+					model.CurrentModifiers = newModifiers;
+					//Alert.show(newModifiers.length +" Modifiers Added successfully to CPT","Info",4,FlexGlobals.topLevelApplication.mainContainer);
+				}
+				//else model.CurrentModifiers = null;	
+				
+				this.removePopup();
+			}
+
+			protected function id_Cancel_clickHandler(event:MouseEvent):void
+			{
+				if(model.CurrentModifiers != null && model.CurrentModifiers.length > 0)
+					Alert.show("Do you want to cancel already saved Modifier(s)?", "Confirmation", Alert.YES | Alert.NO, null, alertListener, null, Alert.NO);
+				
+				function alertListener(eventObj:CloseEvent):void 
+				{					
+					if (eventObj.detail==Alert.YES) 
+					{
+						model.CurrentModifiers = null;
+					}
+				}
+				
+				this.removePopup();
+			}
+			
+			protected function popupwindow1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(model.CurrentModifiers != null && model.CurrentModifiers.length > 0)
+				{
+					for(var i:int = 0; i < model.CurrentModifiers.length > 0; i++)
+					{						
+						if(i == 0)
+						{
+							var mDTO1:CPTModifierTypeDTO = model.CurrentModifiers[i] as CPTModifierTypeDTO;
+							var modiEvent : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(UtilityFunctions.TrimString(mDTO1.ModifierDescription.split('-')[0]),1,back1);
+							CairngormEventDispatcher.getInstance().dispatchEvent( modiEvent );
+							function back1():void
+							{
+								for(var j:int = 0; j < model.CPTModifierTypeList1.length; j++)
+								{
+									var dto1:CPTModifierTypeDTO = model.CPTModifierTypeList1[j] as CPTModifierTypeDTO;
+									if(mDTO1.ModifierTypeId == dto1.ModifierTypeId)	
+									{
+										id_Modi1Cmbo.selectedItem = dto1;
+										id_Modi1Cmbo.selectedIndex = j;
+									}
+								}
+							}
+						}
+						else if(i==1)
+						{
+							var mDTO2:CPTModifierTypeDTO = model.CurrentModifiers[i] as CPTModifierTypeDTO;
+							var modiEvent2 : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(UtilityFunctions.TrimString(mDTO2.ModifierDescription.split('-')[0]),2,back2);
+							CairngormEventDispatcher.getInstance().dispatchEvent( modiEvent2 );
+							function back2():void
+							{
+								for(var j:int = 0; j < model.CPTModifierTypeList2.length; j++)
+								{
+									var dto2:CPTModifierTypeDTO = model.CPTModifierTypeList2[j] as CPTModifierTypeDTO;
+									if(mDTO2.ModifierTypeId == dto2.ModifierTypeId)	
+									{
+										id_Modi2Cmbo.selectedItem = dto2;
+										id_Modi2Cmbo.selectedIndex = j;
+									}
+								}
+							}
+						}
+						else if(i==2)
+						{
+							var mDTO3:CPTModifierTypeDTO = model.CurrentModifiers[i] as CPTModifierTypeDTO;
+							var modiEvent3 : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(UtilityFunctions.TrimString(mDTO3.ModifierDescription.split('-')[0]),3,back3);
+							CairngormEventDispatcher.getInstance().dispatchEvent( modiEvent3 );
+							function back3():void
+							{
+								for(var j:int = 0; j < model.CPTModifierTypeList3.length; j++)
+								{
+									var dto3:CPTModifierTypeDTO = model.CPTModifierTypeList3[j] as CPTModifierTypeDTO;
+									if(mDTO3.ModifierTypeId == dto3.ModifierTypeId)	
+									{
+										id_Modi3Cmbo.selectedItem = dto3;
+										id_Modi3Cmbo.selectedIndex = j;
+									}
+								}
+							}
+						}
+						else if(i==3)
+						{
+							var mDTO4:CPTModifierTypeDTO = model.CurrentModifiers[i] as CPTModifierTypeDTO;
+							var modiEvent4 : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(UtilityFunctions.TrimString(mDTO4.ModifierDescription.split('-')[0]),4,back4);
+							CairngormEventDispatcher.getInstance().dispatchEvent( modiEvent4 );
+							function back4():void
+							{
+								for(var j:int = 0; j < model.CPTModifierTypeList4.length; j++)
+								{
+									var dto4:CPTModifierTypeDTO = model.CPTModifierTypeList4[j] as CPTModifierTypeDTO;
+									if(mDTO4.ModifierTypeId == dto4.ModifierTypeId)	
+									{
+										id_Modi4Cmbo.selectedItem = dto4;
+										id_Modi4Cmbo.selectedIndex = j;
+									}
+								}
+							}
+						}
+							
+					}
+				}
+				
+				id_Modi4Cmbo.setFocus();
+				id_Modi3Cmbo.setFocus();
+				id_Modi2Cmbo.setFocus();
+				id_Modi1Cmbo.setFocus();
+			}
+			
+			protected function popupwindow1_closeHandler(event:CloseEvent):void
+			{
+				if(model.CurrentModifiers != null && model.CurrentModifiers.length > 0)
+					Alert.show("Do you want to cancel already saved Modifier(s)?", "Confirmation", Alert.YES | Alert.NO, null, alertListener, null, Alert.NO);
+				
+				function alertListener(eventObj:CloseEvent):void 
+				{					
+					if (eventObj.detail==Alert.YES) 
+					{
+						model.CurrentModifiers = null;
+					}
+				}	
+				BillingPopUpManager.removePopUp(this,BillingPopUpManager.SUPER_BILL_POPUPS);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<components:layout>
+		<s:VerticalLayout gap="1" paddingBottom="5" paddingLeft="5"  paddingRight="5" paddingTop="5"/>
+	</components:layout>
+	<s:HGroup width="100%">
+		<components1:LabelComboBox id="id_Modi1Cmbo"  labelField="ModifierDescription" width="100" dataProvider="{model.CPTModifierTypeList1}"
+								  keyUp="modi1KeyUpHandler(event)" tabIndex="1"
+								  prompt="Modifier1" focusAlpha="0" focusEnabled="false" focusRect="false"/>
+		<components1:LabelComboBox id="id_Modi2Cmbo"  labelField="ModifierDescription" width="100" dataProvider="{model.CPTModifierTypeList2}"
+								  keyUp="modi2KeyUpHandler(event)" tabIndex="2"
+								  prompt="Modifier2" focusAlpha="0" focusEnabled="false" focusRect="false"/> 
+		<components1:LabelComboBox id="id_Modi3Cmbo"  labelField="ModifierDescription" width="100" dataProvider="{model.CPTModifierTypeList3}"
+								  keyUp="modi3KeyUpHandler(event)" tabIndex="3"
+								  prompt="Modifier3" focusAlpha="0" focusEnabled="false" focusRect="false"/>
+		<components1:LabelComboBox id="id_Modi4Cmbo"  labelField="ModifierDescription" width="100" dataProvider="{model.CPTModifierTypeList4}"
+								  keyUp="modi4KeyUpHandler(event)" tabIndex="4"
+								  prompt="Modifier4" focusAlpha="0" focusEnabled="false" focusRect="false"/> 
+	</s:HGroup>
+	<s:HGroup width="100%" horizontalAlign="center">
+		<s:Button width="60" styleName="blackButtonSkin" id="id_ADD" label="ADD" click="id_ADD_clickHandler(event)" toolTip="Add" useHandCursor="true" buttonMode="true" tabIndex="5" />
+		<s:Button width="60" styleName="blackButtonSkin" id="id_Cancel" label="Cancel" click="id_Cancel_clickHandler(event)" tabIndex="6" />
+	</s:HGroup>
+	
+</components1:PopupWindow>

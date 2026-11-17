@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt">
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect height="19" id="rect16" radiusX="3" width="147" x="0.5" y="0.5" visible.over="false" visible.down="false" visible.upAndSelected="false" visible.overAndSelected="false" visible.downAndSelected="false" visible.disabledAndSelected="false">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#777462" joints="miter" miterLimit="4" weight="1" color.disabled="#999999"/>
+		</s:stroke>
+	</s:Rect>
+	
+	<s:Rect height="19" id="rect64" includeIn="disabled,disabledAndSelected,down,downAndSelected,over,overAndSelected,upAndSelected, up" radiusX="3" width="147" x="0.5" y="0.5" visible.disabled="false">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#0D90C6" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#EF8989" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#9B1010" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1" includeIn="down"/>
+		</s:filters>
+	</s:Rect>
+	<s:RichText color="#FFFFFF" fontFamily="Calibri" fontSize="11" id="richtext0" kerning="off" tabStops="S0 S50 S100" text="{hostComponent.label}" d:userLabel="ChronicMedication" x="15" y="5"/>
+	
+</s:Skin>

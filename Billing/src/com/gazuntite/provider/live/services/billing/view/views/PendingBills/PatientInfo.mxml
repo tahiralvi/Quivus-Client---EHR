@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"  width="100%"
+		 styleName="torquiseTitleLightGreyBGContainerSkin"
+		 creationComplete="skinnablecontainer1_creationCompleteHandler(event)"
+		 >
+	<fx:Script>
+		<![CDATA[
+			import mx.core.BitmapAsset;
+			import mx.events.FlexEvent;
+			import mx.utils.Base64Decoder;
+			
+			private var m_sPatientName:String
+			private var m_sQuivusId:String
+			private var m_sSSN:String
+			private var m_sDOB:String
+			private var m_sGender:String
+			private var m_sPhone:String
+			private var m_sPreferredLocation:String
+			private var _ImageData:String;
+			
+			public function get ImageData():String
+			{
+				return _ImageData;
+			}
+
+			public function set ImageData(value:String):void
+			{
+				_ImageData = value;
+			}
+
+			[Bindable]
+			public function get PreferredLocation():String
+			{
+				return m_sPreferredLocation;
+			}			
+			public function set PreferredLocation(value:String):void
+			{
+				m_sPreferredLocation = value;
+			}
+			
+			[Bindable]
+			public function get Phone():String
+			{
+				return m_sPhone;
+			}			
+			public function set Phone(value:String):void
+			{
+				m_sPhone = value;
+			}
+			
+			[Bindable]
+			public function get PatientName():String
+			{
+				return m_sPatientName;
+			}			
+			public function set PatientName(value:String):void
+			{
+				m_sPatientName = value;
+			}
+			
+			[Bindable]
+			public function get QuivusId():String
+			{
+				return m_sQuivusId;
+			}			
+			public function set QuivusId(value:String):void
+			{
+				m_sQuivusId = value;
+			}
+			
+			[Bindable]
+			public function get SSN():String
+			{
+				return m_sSSN;
+			}			
+			public function set SSN(value:String):void
+			{
+				m_sSSN = value;
+			}
+			
+			[Bindable]
+			public function get DOB():String
+			{
+				return m_sDOB;
+			}			
+			public function set DOB(value:String):void
+			{
+				m_sDOB = value;
+			}
+			
+			[Bindable]
+			public function get Gender():String
+			{
+				return m_sGender;
+			}			
+			public function set Gender(value:String):void
+			{
+				m_sGender = value;
+			}
+			
+			protected function label1_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+			}
+			
+			[Embed(source="com/gazuntite/provider/live/services/billing/view/assets/sampleuser.png")]
+			[Bindable]
+			public var dummyImg:Class;
+			
+			protected function skinnablecontainer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(ImageData != null)
+				{
+					if(ImageData.length > 0){
+						id_PatientImage.source = getByteArray(ImageData); 
+					}
+				}else 
+				{
+					var imgObj:BitmapAsset = new dummyImg() as BitmapAsset;
+					id_PatientImage.source = imgObj ; 
+				}
+				
+			}
+			
+			protected function getByteArray(val:String):ByteArray
+			{
+				var base64Dec:Base64Decoder = new Base64Decoder();;
+				var byteArr:ByteArray		= new ByteArray();
+				base64Dec.decode(val);
+				byteArr = base64Dec.toByteArray();
+				
+				return byteArr;
+			}
+			
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:layout>
+		<s:VerticalLayout paddingLeft="2" paddingRight="2" paddingTop="2" paddingBottom="3" />
+	</s:layout>
+	<s:HGroup paddingTop="5" paddingLeft="5">		
+		<s:Label text="PATIENT INFO" fontFamily="Calibri Bold" />
+	</s:HGroup>
+	
+	<s:HGroup width="100%">	
+	<s:Group  width="50" height="100%">		
+			<s:Rect height="55" radiusX="5" width="55" x="0" y="0">
+				<s:fill>
+					<s:LinearGradient rotation="90">
+						<s:GradientEntry alpha="1.0" color="#94A0B2" ratio="0"/>
+						<s:GradientEntry alpha="1.0" color="#A6B4C0" ratio="1"/>
+					</s:LinearGradient>
+				</s:fill>
+				<s:filters>
+					<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+				</s:filters>
+			</s:Rect>
+			<s:BitmapImage smooth="true" source="@Embed('com/gazuntite/provider/live/services/billing/view/assets/picbgtransparent.png')" x="0" y="1"/>
+		<mx:Image id="id_PatientImage" maintainAspectRatio="false"  height="50" width="50"
+				  source="{dummyImg}" x="0" y="1"/>
+	</s:Group>
+	<s:VGroup width="100%" gap="1">			
+		<s:Label width="100%" text="{PatientName}"  fontFamily="Calibri" fontSize="12" color="#333333" maxWidth="30" 
+				 maxDisplayedLines="1" toolTip="{PatientName}" />
+		<s:HGroup width="100%" >			
+			<s:Label width="80" text="GID:" color="#666666" fontFamily="Calibri"  fontSize="11"  />
+			<s:Label width="100%" text="{QuivusId}" fontFamily="Calibri"  fontSize="11"  color="#000000"  />
+		</s:HGroup>
+		<s:HGroup width="100%">			
+			<s:Label width="80" text="SSN #:"  color="#666666" fontFamily="Calibri"  fontSize="11"  />
+			<s:Label width="100%" text="{SSN}" fontFamily="Calibri"  fontSize="11"  color="#000000" />
+		</s:HGroup>
+		<s:HGroup width="100%">			
+			<s:Label width="80" text="DOB:" color="#666666" fontFamily="Calibri"  fontSize="11" />
+			<s:Label width="100%" text="{DOB}" fontFamily="Calibri"  fontSize="11"  color="#000000" />
+		</s:HGroup>
+		<s:HGroup width="100%">			
+			<s:Label width="80" text="Gender:" color="#666666" fontFamily="Calibri"  fontSize="11" />
+			<s:Label width="100%" text="{Gender}" fontFamily="Calibri"  fontSize="11"  color="#000000" />
+		</s:HGroup>
+		<s:HGroup width="100%">			
+			<s:Label width="80" text="Phone:" color="#666666"  fontFamily="Calibri"  fontSize="11" />
+			<s:Label width="100%" text="{Phone}" fontFamily="Calibri"  fontSize="11"  color="#000000" />
+		</s:HGroup>
+		<s:HGroup width="100%">			
+			<s:Label width="80" text="Preferred Loc:" color="#666666" fontFamily="Calibri"  fontSize="11" />
+			<s:Label width="100%" text="{PreferredLocation}" fontFamily="Calibri"  fontSize="11"  color="#000000" maxDisplayedLines="1" />
+		</s:HGroup>
+	</s:VGroup>
+   </s:HGroup>
+	</s:SkinnableContainer>

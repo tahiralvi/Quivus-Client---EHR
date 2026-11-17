@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:extended="com.adobe.Quivus.view.controls.extended.*" 
+		 xmlns:components="com.gazuntite.controls.extended.components.*" 
+		 resize="group1_resizeHandler(event)"
+		 creationComplete="group1_creationCompleteHandler(event)" >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.authenticate.UpdateUserSessionStatusEvent;
+			import com.adobe.Quivus.events.staticData.LoadUserSessionEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.gazuntite.skins.chrome.comboBoxSkins.statusDropDown;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable] private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			public var activatedIcon:String = "Refill";
+			private var popGroup:Group;
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				var list:StatusList 		= new StatusList();				
+				
+				if( popGroup && popGroup.isPopUp )
+				{
+					PopUpManager.removePopUp( popGroup );
+					return;
+				}
+				popGroup = new Group();
+				popGroup.addElement( list );
+				PopUpManager.addPopUp( popGroup, FlexGlobals.topLevelApplication as DisplayObject );
+			}			
+			
+			protected function id_userPic_mouseOverHandler(event:MouseEvent):void
+			{
+				id_userRollOver.visible = true;
+				id_lbl.visible = true;
+			}
+			
+			protected function id_userPic_mouseOutHandler(event:MouseEvent):void
+			{
+				id_userRollOver.visible = false;
+				id_lbl.visible = false;
+			}
+			
+			protected function id_userPic_clickHandler(event:MouseEvent):void
+			{
+				id_userRollOver2.visible = !id_userRollOver2.visible;
+				if(!id_connectorPic.visible)
+				{
+					id_connectorPic.visible = true;
+					//id_lbl.visible = true;
+				}
+				else
+				{
+					id_connectorPic.visible = false;
+					//id_lbl.visible = false;
+				}
+			}
+			
+			protected function group1_resizeHandler(event:ResizeEvent):void
+			{
+				if( popGroup && popGroup.isPopUp )
+				{
+					PopUpManager.removePopUp( popGroup );
+					//	id_statusBtn.selected = false;
+					return;
+				}
+			}
+			
+			protected function id_Status_changeHandler(event:IndexChangeEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.STATUS ) )//Tahir Alvi - on status combo click implement security check
+				{
+					model.sessionDTO.UserSessionStatusID = id_Status.dataProvider[event.newIndex].userSessionStatusID;											
+					id_Status.selectedIndex = event.newIndex;
+					
+					var updateSessionStatus:UpdateUserSessionStatusEvent =new UpdateUserSessionStatusEvent(model.sessionDTO);
+					CairngormEventDispatcher.getInstance().dispatchEvent(updateSessionStatus);
+					
+					/* var updateUserSession:UpdateUserSessionCommand =new UpdateUserSessionCommand();
+					dispatchEvent(updateUserSession); */
+				}else
+				{
+					if(event)
+						event.stopImmediatePropagation();
+				}
+			}
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				//var event:LoadUserSessionEvent = new LoadUserSessionEvent();
+				//Commented on 5/15/2012 ... Optimize performance ... need extra checking here
+				var eventLoadUser:LoadUserSessionEvent = new LoadUserSessionEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent(eventLoadUser); 
+			}
+			
+			protected function id_Status_clickHandler(event:MouseEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.STATUS ) )//Tahir Alvi - on status combo click implement security check
+				{
+					if(event)
+						event.stopImmediatePropagation();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:layout>
+		<s:HorizontalLayout horizontalAlign="left" gap="0" paddingBottom="1" paddingLeft="1" paddingRight="1" paddingTop="0" />
+	</s:layout>
+	
+	<s:BorderContainer width="52" height="52"  borderAlpha="0.0" borderColor="yellow" borderWeight="2" backgroundAlpha="0"   >
+		<s:layout>
+			<s:HorizontalLayout gap="5" paddingBottom="1" paddingLeft="5" paddingRight="1" paddingTop="0" />
+		</s:layout>
+		
+		<s:SkinnableContainer height="47" width="43" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.imageBGSkin">
+			<s:Group id="id_userRollOver2" visible="false">
+				<s:Rect height="47" id="rect2" width="42" x="0.5" y="0.5">
+					<s:stroke>
+						<s:SolidColorStroke caps="none" color="#00A2FF" joints="miter" miterLimit="4" weight="1"/>
+					</s:stroke>
+				</s:Rect>
+			</s:Group>
+			
+			<s:VGroup gap="-6">
+				<s:Group id="id_userPic"  
+						 mouseOut="id_userPic_mouseOutHandler(event)" mouseOver="id_userPic_mouseOverHandler(event)"
+						 click="id_userPic_clickHandler(event)" buttonMode="true" useHandCursor="true" toolTip="Edit User Profile and Settings" >
+					
+					<s:HGroup paddingTop="1" paddingLeft="1" horizontalAlign="center">
+						<mx:Image   source="{AppUtils.getByteArray(model.userImageData)}" width="42" height="53"  />
+					</s:HGroup>	
+					<s:Group id="id_userRollOver" visible="false">
+						<s:Rect height="47.6" width="43" x="0" y="0">
+							<s:stroke>
+								<s:SolidColorStroke caps="none" joints="miter" miterLimit="4" weight="1" color="#6593D5"/>
+							</s:stroke>
+						</s:Rect>
+						<s:Rect height="12" width="24" x="19" y="35">
+							<s:fill>
+								<s:LinearGradient rotation="90">
+									<s:GradientEntry color="#AFD1FF" alpha="1.0" ratio="0"/>
+									<s:GradientEntry color="#6593D5" alpha="1.0" ratio="1"/>
+								</s:LinearGradient>
+							</s:fill>
+							<s:filters>
+								<s:DropShadowFilter blurX="2" blurY="2" distance="4.0" hideObject="false" color="0x000000" inner="false" strength="1" alpha="0.5" quality="2" knockout="false" angle="240"/>
+							</s:filters>
+						</s:Rect>
+						
+						<s:RichText id="id_lbl" columnCount="1" fontSize="10" kerning="on" text="Edit" whiteSpaceCollapse="preserve" x="23" y="37" color="#000000" tabStops="S0"  fontFamily="Calibri Bold">
+							<s:filters>
+								<s:DropShadowFilter blurX="0" blurY="0" distance="1" hideObject="false" color="#FFFFFF" inner="false" strength="1" alpha="0.5" quality="2" knockout="false" angle="90"/>
+							</s:filters>
+						</s:RichText>
+					</s:Group>
+				</s:Group>		
+				
+				<s:Rect id="id_connectorPic" height="9" visible="false" radiusX="1" width="44" x="0" y="0">
+					<s:fill>
+						<s:LinearGradient rotation="90">
+							<s:GradientEntry alpha="1.0" color="#A3A4BA" ratio="0"/>
+							<s:GradientEntry alpha="1.0" color="#DFDFEA" ratio="0.6"/>
+							<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="1"/>
+						</s:LinearGradient>
+					</s:fill>
+				</s:Rect>
+				
+			</s:VGroup>
+		</s:SkinnableContainer>
+	</s:BorderContainer>
+	
+	<s:VGroup id="id_status_vgroup" resizeMode="noScale" width="100%" gap="5" paddingLeft="4" paddingTop="12" horizontalAlign="right">
+		<s:DropDownList id="id_Status" 
+						width="90" fontFamily="Calibri Bold" color="#000000" labelField="Description" 
+						change="id_Status_changeHandler(event)" click="id_Status_clickHandler(event)"
+						skinClass="com.adobe.gazuntite.skins.chrome.comboBoxSkins.statusDropDown"
+						itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.UserSessionStatusItemRenderer" 
+						dataProvider="{model.UserSessionStatus}" selectedIndex="0" toolTip="Status"
+						requireSelection="true" buttonMode="true" useHandCursor="true"	/>
+		<s:Button id="id_SignOut" 
+				  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.signOutButton" 
+				  buttonMode="true" useHandCursor="true" toolTip="Sign out" label="Sign Out "   />
+	</s:VGroup>
+</s:Group>

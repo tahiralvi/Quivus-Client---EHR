@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:components="com.gazuntite.controls.extended.components.*" 
+		 xmlns:registeration="com.adobe.Quivus.view.controls.registeration.*"
+		 creationComplete="group1_creationCompleteHandler(event)" 
+		 xmlns:controls="com.gazuntite.provider.eprescription.services.patient.view.controls.*" 
+		 xmlns:skins="com.zigron.common.view.skins.*" 
+		 xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.controls.extended.skins.LabelTextInputRequiredSkin;
+			import com.gazuntite.controls.extended.skins.comboBoxRegisterationRequiredSkin;
+			import com.gazuntite.provider.eprescription.services.patient.appController.EPrescriptionController;
+			import com.gazuntite.provider.eprescription.services.patient.event.GetOutboxEvent;
+			import com.gazuntite.provider.eprescription.services.patient.event.DeleteOutBoxEvent;
+			import com.gazuntite.provider.eprescription.services.patient.event.SendOutboxEvent;
+			import com.gazuntite.provider.eprescription.services.patient.model.EPrescriptionModelLocator;
+			import com.gazuntite.provider.eprescription.services.patient.view.ePrescription;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;							
+			
+			private var _SPI:String;
+			[Bindable]
+			public function get SPI():String
+			{
+				return _SPI;
+			}
+			
+			public function set SPI(value:String):void
+			{
+				_SPI = value;
+				
+				var getOutbox: GetOutboxEvent = new GetOutboxEvent(SPI, outboxLoaded);				
+				getOutbox.data = securityHeaderXML; 				
+				CairngormEventDispatcher.getInstance().dispatchEvent(getOutbox);  
+			}
+			
+			public function setSPI(value:String):void
+			{
+				_SPI = value;
+				
+				var getOutbox: GetOutboxEvent = new GetOutboxEvent(SPI, outboxLoaded);				
+				getOutbox.data = securityHeaderXML; 				
+				CairngormEventDispatcher.getInstance().dispatchEvent(getOutbox);  
+			}
+			
+			private var securityHeaderXML:XML;
+			[Bindable]
+			private var model : EPrescriptionModelLocator = EPrescriptionModelLocator.getInstance();						
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				securityHeaderXML	 			= <Header />;					
+				securityHeaderXML.@EUserName	= "TESTUSER";
+				securityHeaderXML.@EPassword	= "TESTPASS";
+				securityHeaderXML.@ClinicID		= "sad";
+				
+				//SPI = (parent as ePrescription).SPI;
+			}
+			
+			public function outboxLoaded(response:XML):void
+			{
+				//DOSAGE FORMS
+				var outboxAC:ArrayCollection = new ArrayCollection();
+				for(var i:uint=0; i<response.OutBoxMessages.OutBoxMessage.length(); i++)
+				{
+					
+					var Patient:String 			= response.OutBoxMessages.OutBoxMessage[i].@Name.toString();
+					var Drug:String 			= response.OutBoxMessages.OutBoxMessage[i].@DRUGNAME.toString();
+					var Dose:String 			= response.OutBoxMessages.OutBoxMessage[i].@Dose.toString();
+					var Quantity:String 		= response.OutBoxMessages.OutBoxMessage[i].@Quantity.toString();
+					var Refills:String 			= response.OutBoxMessages.OutBoxMessage[i].@Refill.toString();
+					var Sig:String 				= response.OutBoxMessages.OutBoxMessage[i].@SIG.toString();
+					var isPRN:String 			= response.OutBoxMessages.OutBoxMessage[i].@isPRN.toString();
+					
+					var ReferenceNumber:String 	= response.OutBoxMessages.OutBoxMessage[i].@ReferenceNumber.toString();
+					
+					outboxAC.addItem({ Patient:Patient, Drug:Drug, Dose:Dose, Sig:Sig, Quantity:Quantity, Refills:Refills, isPRN:isPRN, ReferenceNumber:ReferenceNumber});
+				}
+				id_outBoxGrid.dataProvider 		= outboxAC;
+				id_outBoxGrid.rowCount 			= outboxAC.length; 
+				
+			}
+			
+			public function linkbutton1_clickHandler(event:MouseEvent):void
+			{
+				Alert.show("Do you want to remove ?",	"Are you sure?", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, function( event:CloseEvent):void
+				{
+					if( event.detail == Alert.YES )
+					{
+						if(!item)
+						{
+							item = new Object();
+						}
+						
+						item = (id_outBoxGrid.dataProvider as ArrayCollection).getItemAt(id_outBoxGrid.selectedIndex);							
+						
+						//
+						var referenceNumber:String = (item.ReferenceNumber as String);				
+						var remOutboxEvent: DeleteOutBoxEvent = new DeleteOutBoxEvent(referenceNumber, function():void
+						{
+							trace("Outbox removed ");			
+						});
+						remOutboxEvent.data = securityHeaderXML;
+						CairngormEventDispatcher.getInstance().dispatchEvent(remOutboxEvent); 
+						
+						//REMOVE from grid
+						(id_outBoxGrid.dataProvider as ArrayCollection).removeItemAt(id_outBoxGrid.selectedIndex);
+						
+					}
+					else if( event.detail == Alert.NO )
+					{
+						
+					}
+				});
+			} 
+			
+			public function refillLabel(item:Object, iCol:int):String
+			{
+				var result:String = "";
+				var isPRN:String = "";
+				
+				if (item.hasOwnProperty("Refills"))
+				{
+					result = item.Refills ;
+				}
+				if (item.hasOwnProperty("isPRN"))
+				{
+					isPRN = item.isPRN ;
+					
+					if(isPRN == "true")
+					{
+						result = "As Needed";
+					}					
+				}
+				
+				
+				return result;
+				
+			}
+			
+			public var item:Object;
+			
+			public function linkbutton2_clickHandler(event:MouseEvent):void
+			{
+				Alert.show("Do you want to send ?",	"Are you sure?", Alert.YES|Alert.NO, FlexGlobals.topLevelApplication.mainContainer, function( event:CloseEvent):void
+				{
+					if( event.detail == Alert.YES )
+					{
+						if(!item)
+						{
+							item = new Object();
+						}
+						
+						item = (id_outBoxGrid.dataProvider as ArrayCollection).getItemAt(id_outBoxGrid.selectedIndex);							
+						//
+						var referenceNumber:String = (item.ReferenceNumber as String);				
+						var remOutboxEvent: SendOutboxEvent = new SendOutboxEvent(referenceNumber, function():void
+						{
+							trace("Outbox sent ");			
+						});
+						remOutboxEvent.data = securityHeaderXML;
+						CairngormEventDispatcher.getInstance().dispatchEvent(remOutboxEvent); 
+						
+						//REMOVE from grid
+						(id_outBoxGrid.dataProvider as ArrayCollection).removeItemAt(id_outBoxGrid.selectedIndex);
+						
+					}
+					else if( event.detail == Alert.NO )
+					{
+						
+					}
+				});
+				
+				/* 				var evt:FavPharmacySelectedEvent = new FavPharmacySelectedEvent( FavPharmacySelectedEvent.PHARMACY_SELECTED);
+				this.dispatchEvent( evt );
+			*/			}
+			
+		]]>
+	</fx:Script>
+	<s:layout>
+		<s:VerticalLayout paddingBottom="3" paddingLeft="3" paddingRight="3" paddingTop="35" gap="1"/>
+	</s:layout>
+	
+	
+	<components1:LabelDataGrid id="id_outBoxGrid"  width="100%" 
+							   styleName="dataGridStyle" rowHeight="24"				  
+							   headerStyleName="MyDataGridStyleHeader"
+							   verticalGridLines="false"
+							   verticalScrollBarStyleName="VScrollBar"
+							   horizontalScrollPolicy="off"
+							   columnWidths="{['10%','10%','10%','15%','10%','5%','140']}" >
+		<components:columns>
+			<mx:DataGridColumn  dataField="Patient" headerText="Patient" itemRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn  dataField="Drug" headerText="Drug" itemRenderer="mx.controls.Label"/>					
+			<mx:DataGridColumn  dataField="Dose" headerText="Dose" itemRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn  dataField="Sig" headerText="Sig" itemRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn  dataField="Quantity" headerText="Quantity" itemRenderer="mx.controls.Label"/>
+			<mx:DataGridColumn  dataField="Refills" headerText="Refills" itemRenderer="mx.controls.Label" labelFunction="refillLabel"/>
+			<mx:DataGridColumn  headerText="" resizable="false">
+				<mx:itemRenderer>
+					<fx:Component>	
+						<mx:HBox width="100%" paddingBottom="2" horizontalAlign="center" verticalAlign="middle">													
+							<s:Button width="65" click="outerDocument.linkbutton1_clickHandler(event)"  styleName="blackButtonSkin" label="Remove"
+									  buttonMode="true" useHandCursor="true" toolTip="Remove"/>
+							<s:Button width="65"  styleName="blackButtonSkin" label="Send" click="outerDocument.linkbutton2_clickHandler(event)"
+									  buttonMode="true" useHandCursor="true" toolTip="Send"/>							
+						</mx:HBox>
+					</fx:Component>
+				</mx:itemRenderer>
+			</mx:DataGridColumn>
+		</components:columns>
+	</components1:LabelDataGrid>
+</s:Group>

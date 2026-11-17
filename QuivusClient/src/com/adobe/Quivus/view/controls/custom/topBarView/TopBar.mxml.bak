@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+		 xmlns:extended="com.adobe.Quivus.view.controls.extended.*" 
+		 xmlns:components="com.zigron.controls.extended.components.*"
+  	     xmlns:topBarView="com.adobe.Quivus.view.controls.custom.topBarView.*" 
+		  
+		  skinClass="com.adobe.Quivus.view.controls.skins.topBarSkin"
+		  
+		  creationComplete="skinnablecontainer1_creationCompleteHandler(event)" 
+		  width="100%"
+		 >
+	<fx:Metadata>
+		[Event(name="mailClick", type="com.adobe.Quivus.view.events.mailClickEvent")]
+		[Event(name="searchWeb", type="com.adobe.Quivus.view.events.WebSearchEvent")]
+		[Event(name="userSignOutEvent", type="com.adobe.Quivus.view.events.UserSignOutEvent")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.command.patientProfileCustomization.ManageUserPatientProfileBarSettingCommand;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppEventStrings;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.view.controls.skins.topBarSkin;
+			import com.adobe.Quivus.view.controls.skins.webBtnSkin;
+			import com.adobe.Quivus.view.events.UserSignOutEvent;
+			import com.adobe.Quivus.view.events.WebSearchEvent;
+			import com.adobe.Quivus.view.events.mailClickEvent;
+			
+			import mx.collections.ArrayList;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			import spark.components.List;
+			import spark.events.TextOperationEvent;
+			
+			[Bindable]
+			[Embed(source='assets/icons/close.png')]
+			private var closeIcon:Class;
+			
+			private var isContactSearch:Boolean = true;
+			
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var innerTimer = new Timer(10,0);
+
+			protected function textinput1_changeHandler(event:TextOperationEvent):void
+			{
+				/* if( model.CurrentSearchMode == Constants.CONTACTS_SEARCH_MODE )
+				{
+					var e:TextOperationEvent = new TextOperationEvent( AppEventStrings.SEARCH_CONTACTS, true, true, event.operation );
+					this.dispatchEvent( e );
+				} */
+				
+				//id_SearchArea.showAutoCompleteList();
+			}
+			
+			public var max_restore_tooltip:String = "";
+			
+		 	public function getToolTip():String
+			{
+			 
+				max_restore_tooltip = "Restore";
+			 
+				/* if(ChromeUtil.isMaximized)
+				{
+					max_restore_tooltip = "Restore";
+				}
+				else
+				{
+					max_restore_tooltip = "Maximize";					
+				} */
+				return max_restore_tooltip;
+				
+			} 
+			
+			public function showUserControl(value:Boolean):void
+			{
+				id_userView.visible = value;
+			}
+			
+			public function showSearchControl(value:Boolean):void
+			{
+				id_SearchArea.visible = value;
+				id_SearchArea.id_contacts.selected = true;
+				id_SearchArea.id_WebSearchOptions.id_web.selected = false;
+				
+				id_SearchArea.id_WebSearchOptions.id_web.setStyle("skinClass", webBtnSkin);
+			}
+			
+			protected function skinnablecontainer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				//id_SearchArea.id_SearchTextInput.addEventListener(TextOperationEvent.CHANGE, textinput1_changeHandler);
+				id_SearchArea.mailListener = mailClick;
+				id_SearchArea.id_btnSearch.addEventListener(MouseEvent.CLICK, OnWebSearchButtonClick);
+			//	id_SearchArea.id_WebSearchOptions.id_web.addEventListener(MouseEvent.CLICK, OnWebButtonClick);
+				id_userView.id_SignOut.addEventListener(MouseEvent.CLICK, OnSignOutClick);
+				
+				
+				
+				
+			}			
+			
+			private function OnWebSearchButtonClick(event:MouseEvent):void
+			{
+				if( model.CurrentSearchMode == Constants.WEB_SEARCH_MODE )
+				{
+					var query:String = id_SearchArea.id_SearchTextInput.text;
+					var webSearch:WebSearchEvent = new WebSearchEvent( AppEventStrings.SEARCH_WEB, query, true, true);
+					this.dispatchEvent( webSearch );
+					
+					
+					id_SearchArea.id_WebSearchOptions.id_web.selected = !id_SearchArea.id_contacts.selected;
+					
+					if(id_SearchArea.id_WebSearchOptions.id_web.selected)
+					{
+						id_SearchArea.id_WebSearchOptions.id_searchEnginesList.y = 5;
+						id_SearchArea.id_WebSearchOptions.id_IconImage.y 		   = 8;
+						id_SearchArea.id_WebSearchOptions.id_searchEnginesList.selected = false;
+						id_SearchArea.id_WebSearchOptions.id_BGRect.visible = true;
+						id_SearchArea.id_WebSearchOptions.id_web.selected = false;
+					}
+					else
+					{
+						id_SearchArea.id_WebSearchOptions.id_searchEnginesList.y = 2;
+						id_SearchArea.id_WebSearchOptions.id_IconImage.y 		   = 5;
+						id_SearchArea.id_WebSearchOptions.id_searchEnginesList.selected = true;
+						id_SearchArea.id_WebSearchOptions.id_BGRect.visible = false;
+						id_SearchArea.id_WebSearchOptions.id_web.selected = true;
+					}
+					
+				} 
+			}
+			
+			
+			
+			private function OnSignOutClick(event:MouseEvent):void
+			{
+				QSUtilityFunctions.signOut();
+			}
+			
+			public function dispatchSignOutEvent():void
+			{
+				var usoe:UserSignOutEvent = new UserSignOutEvent( "" );
+				this.dispatchEvent( usoe );
+			}
+
+
+			protected function id_restore_rollOverHandler(event:MouseEvent):void
+			{
+				event.currentTarget.toolTip = getToolTip();
+			}
+			
+			private function mailClick(event:mailClickEvent ):void
+			{
+				var e:mailClickEvent = event.clone() as mailClickEvent;
+				
+				dispatchEvent( e );
+			}
+
+
+			protected function id_close_clickHandler(event:MouseEvent):void
+			{
+				//M
+				
+				trace("DICTATION COUNT -- " + model.dictationUploadInProcessCount);
+				
+				
+				if(model.dictationUploadInProcessCount != 0)
+				{	
+					NativeApplication.nativeApplication.autoExit = false;					
+					NativeWindow(this.stage.nativeWindow).visible = false;
+					
+					innerTimer = new Timer(1000);
+					innerTimer.addEventListener(TimerEvent.TIMER, checkDictationUploaded);
+					//Alert.show("Please wait while dictation upload gets complete");
+				}
+				else
+				{
+					if(model.UserLoggedIn && !model.setAsDefault && model.userPatientProfileBarSettingTemp!=null){
+						
+						ManageUserPatientProfileBarSettingCommand.setFirstSectionOldData();
+						ManageUserPatientProfileBarSettingCommand.setSecondSectionOldData();
+						ManageUserPatientProfileBarSettingCommand.setThirdSectionOldData();
+						
+					}
+					ChromeUtil.closeWindow();
+				}
+			}
+			
+			// Mansoor
+			private function checkDictationUploaded(event:TimerEvent):void 
+			{	
+				if(model.dictationUploadInProcessCount != 0)
+				{	
+					
+				}
+				else
+				{
+					innerTimer.removeElement(TimerEvent.TIMER, checkDictationUploaded);
+					
+					NativeApplication.nativeApplication.autoExit = true;
+					
+					if(model.UserLoggedIn && !model.setAsDefault && model.userPatientProfileBarSettingTemp!=null){
+						
+						ManageUserPatientProfileBarSettingCommand.setFirstSectionOldData();
+						ManageUserPatientProfileBarSettingCommand.setSecondSectionOldData();
+						ManageUserPatientProfileBarSettingCommand.setThirdSectionOldData();
+						
+					}
+					ChromeUtil.closeWindow();
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<s:layout>
+		<s:HorizontalLayout gap="0" horizontalAlign="left" verticalAlign="top" />
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+
+	<s:Group resizeMode="noScale"  x="{id_logo.x}" width="35%">		
+		<topBarView:Logo id="id_logo"  />
+		<topBarView:QuickLinks id="id_QuickLinks" />
+	</s:Group>
+	
+	
+
+	<topBarView:searchArea id="id_SearchArea" width="30%" height="65"  />
+	
+	<s:VGroup paddingTop="2" horizontalAlign="right" minWidth="210" width="35%" gap="-14" paddingRight="6">	
+		<s:HGroup id="id_windowControlButtons" gap="0" width="50" horizontalAlign="right" paddingTop="-3">
+			
+			<s:Button id="id_min" height="15" width="16" useHandCursor="true" buttonMode="true" 
+					  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.minButton" 
+					  click="ChromeUtil.minimizeWindow()" toolTip="Minimize"/>
+					
+			<s:Button id="id_restore" height="15" width="16" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.restoreButton"
+					  click="ChromeUtil.toggleMaximizeWindow()" toolTip="Restore" useHandCursor="true" buttonMode="true"/>					
+						
+			<s:Button id="id_close" height="15" width="16" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.closeButton"
+					  click="id_close_clickHandler(event)" toolTip="Close" useHandCursor="true" buttonMode="true"/>
+		</s:HGroup>
+	<topBarView:TopBarUserView id="id_userView" width="210" height="100%" />
+	</s:VGroup>
+	<!--<mx:Spacer width="100%" />-->
+	
+		
+		<!--mouseDown="id_windowControlButtons_mouseDownHandler(event)"-->
+<!--	<s:Group id="id_windowControlButtons" width="32" height="15" >
+
+		<s:layout>
+			<s:HorizontalLayout gap="-9" horizontalAlign="right" verticalAlign="top" paddingTop="-3" paddingRight="5"  />
+		</s:layout>	-->
+		
+		
+	
+		
+	<!--</s:Group>-->
+
+		
+</s:SkinnableContainer>

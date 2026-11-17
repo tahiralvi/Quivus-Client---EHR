@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						xmlns:s="library://ns.adobe.com/flex/spark" 
+						xmlns:mx="library://ns.adobe.com/flex/mx" 
+						xmlns:components="com.zigron.controls.extended.components.*"
+						xmlns:CheckBoxGrid="com.zigron.controls.extended.components.CheckBoxGrid.*" 
+						xmlns:itemEditors="com.adobe.Quivus.view.controls.custom.itemEditors.*" 
+						xmlns:diagnosis="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.*"
+						skinClass="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.TitleWindowSkin"
+						creationComplete="popupwindow1_creationCompleteHandler(event)" 
+						title="Import Chronic Diagnosis" xmlns:CheckBoxGrid1="com.gazuntite.controls.extended.components.CheckBoxGrid.*" xmlns:components1="com.gazuntite.controls.extended.components.*"
+						>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.quickInput.diagnosis.LoadPatientAllChronicDiagnosisByPatientIdEvent;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Label;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			import valueObjects.PatientDiagnosisDTO;
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			protected function popupwindow1_creationCompleteHandler(event:FlexEvent):void
+			{
+				var evt:LoadPatientAllChronicDiagnosisByPatientIdEvent = new LoadPatientAllChronicDiagnosisByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent( evt );
+			}
+			
+			public function chronicLabelFunction(oItem:Object,iCol:int):String
+			{
+				var label:String = ""; 
+				if (oItem.hasOwnProperty("IsChronic"))
+				{
+					if (oItem.IsChronic)
+						label = "Yes";
+					else
+						label = "No";
+				}
+				
+				return label;
+			}
+			
+			protected function ImportClickHandler(event:MouseEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_DIAGNOSIS ) )
+				{
+					var i:int, selection:ArrayCollection = new ArrayCollection( id_DiagnosisGrid.selectedItems );
+					if( selection.length > 0 )
+					{
+						for( i = 0; i<selection.length; i++ )
+						{
+							var d:PatientDiagnosisDTO = selection.getItemAt( i ) as PatientDiagnosisDTO;
+							d.VisitDate = formatDateTime.format(model.DiagnosisAssociatedVisit.VisitDate);//datetostring(Tahir)
+							d.VisitID = model.DiagnosisAssociatedVisit.ID;
+							//Tahir Alvi 7 June, 2012- set diagnosis ID 0 - Records which are added by Import Diagnosis feature not shown in VB grid (newly added record replace the previous one)
+							d.PatientDiagnosisID = 0;
+							model.quickInputDTO.Assessment.Diagnosis.addItem( d );
+						}
+						CloseClickHandler(event);
+					}
+					else
+					{
+						Alert.show("please select record to import.");
+					}
+					
+				}
+			}
+			
+			protected function CloseClickHandler(event:MouseEvent):void
+			{
+				dispatchEvent( new CloseEvent(CloseEvent.CLOSE, true));
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YYYY" />
+	</fx:Declarations>
+	<components:layout>
+		<s:VerticalLayout />
+	</components:layout>
+	
+	<CheckBoxGrid1:CheckBoxDataGrid id="id_DiagnosisGrid" 
+								   rowCount="{id_DiagnosisGrid.dataProvider.length + 1}"
+								   width="100%" verticalScrollPolicy="on"
+								   dataProvider="{model.patientDiagnosisDTOAllChronicListByPatientId}" 
+								   draggableColumns="false" 
+								   useRollOver="false"
+								   allowMultipleSelection="true"
+								   maxHeight="150" >
+		<CheckBoxGrid:columns>
+			<mx:DataGridColumn dataField="" 
+							   headerText="" 
+							   rendererIsEditor="true"
+							   sortable="false" 
+							   wordWrap="true"
+							   itemRenderer="com.gazuntite.controls.extended.components.CheckBoxGrid.CheckBoxRenderer" 
+							   headerRenderer="com.gazuntite.controls.extended.components.CheckBoxGrid.CheckBoxHeaderRenderer" 
+							   editorDataField="selected"
+							   />
+			<mx:DataGridColumn headerText="On Set" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="OnSet" editorDataField="selectedDate" />
+			<mx:DataGridColumn headerText="ICD Code"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="ICDCode.IcdCodeName" editorDataField="editorText" />
+			<mx:DataGridColumn headerText="Diagnosis"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="ICDCode.IcdCodeDescription" editorDataField="editorText" />
+			<mx:DataGridColumn headerText="Chronic" dataField="IsChronic"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editorDataField="isYes" labelFunction="chronicLabelFunction" />
+			
+		</CheckBoxGrid:columns>
+	</CheckBoxGrid1:CheckBoxDataGrid>
+	
+	<s:HGroup width="100%" horizontalAlign="center" verticalAlign="middle" paddingBottom="5">
+		<s:Button id="id_btnImport" label="Import" buttonMode="true" toolTip="Import selected" click="ImportClickHandler(event)" skinClass="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.TitleWindowButtonSkin"/>
+		<s:Button id="id_btnClose" label="Cancel" buttonMode="true" toolTip="Close" click="CloseClickHandler(event)" skinClass="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.TitleWindowButtonSkin"/>
+	</s:HGroup>
+	
+	
+</components1:PopupWindow>

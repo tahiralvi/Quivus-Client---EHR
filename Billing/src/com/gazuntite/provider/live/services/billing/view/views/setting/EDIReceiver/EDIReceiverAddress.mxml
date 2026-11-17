@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  gap="5" xmlns:components="com.zigron.controls.extended.components.*"
+		  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5"
+		  xmlns:components1="com.zigron.common.view.components.*"
+		  creationComplete="vgroup1_creationCompleteHandler(event)" xmlns:components2="com.gazuntite.common.view.components.*" xmlns:components3="com.gazuntite.controls.extended.components.*"
+		  >
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.common.util.ValidationUtils;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.events.FlexEvent;
+			
+			import spark.events.TextOperationEvent;
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			//Tahir Alvi - in Edit case
+			public function loadCityStateZip(zip:String):void
+			{
+				id_ZipCityStateCombine.loadStateCityZipCodeCombineEvent('0', '0', zip);
+			} 
+			protected function textchangeHandler(event:TextOperationEvent):void
+			{
+				var txt:TextInput  = event.target as TextInput;
+				
+				switch(txt.id)
+				{
+					case "id_Name":
+					{
+						model.CurrentEDIReceiver.Name =  UtilityFunctions.TrimString(txt.text);
+						break;
+					}
+					case "id_street1":
+					{
+						model.CurrentEDIReceiver.Address = UtilityFunctions.TrimString(txt.text);
+						break;
+					}
+					case "id_street2":
+					{
+						model.CurrentEDIReceiver.Address += " " + UtilityFunctions.TrimString(txt.text);
+						break;
+					}
+					case "id_city":
+					{
+						model.CurrentEDIReceiver.City = UtilityFunctions.TrimString(txt.text);
+						break;
+					}
+					/* case "id_state":
+					{
+						model.CurrentEDIReceiver.State = UtilityFunctions.TrimString(txt.text);.toUpperCase();
+						break;
+					} */
+					case "id_zip":
+					{
+						model.CurrentEDIReceiver.ZIP = UtilityFunctions.TrimString(txt.text);
+						break;
+					}					
+					case "id_email":
+					{
+						model.CurrentEDIReceiver.Email = UtilityFunctions.TrimString(txt.text);
+						break;
+					}	
+					case "id_webAddress":
+					{
+						model.CurrentEDIReceiver.WebAddress = UtilityFunctions.TrimString(txt.text);
+						break;
+					}
+					case "id_contact":
+					{
+						model.CurrentEDIReceiver.ContactPerson = UtilityFunctions.TrimString(txt.text);
+						break;
+					}
+					case "id_comment":
+					{ 
+						model.CurrentEDIReceiver.Comment = UtilityFunctions.TrimString(txt.text);
+						break;
+					}
+					case "id_extension":
+					{ 
+						model.CurrentEDIReceiver.Extension = UtilityFunctions.TrimString(txt.text);
+						break;
+					}
+				}
+				
+			}
+			
+			protected function id_inactive_changeHandler(event:Event):void
+			{
+				model.CurrentEDIReceiver.Inactive = id_inactive.selected.toString();
+			}
+			
+			protected function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				id_Name.setFocus();
+			}
+			
+			public function applyMask(textBox:LabelTextInput):void
+			{
+				var s:String      = textBox.text.replace(/[^0-9]/g,"");
+				textBox.text = '('+s.substring(0,3) + (s.length>3?")"+s.substring(3,6) + (s.length>6?"-"+s.substring(6,10):""):"");
+				textBox.selectRange(textBox.text.length, textBox.text.length);
+				
+				if(textBox.text.length == 1 && textBox.text == '(')
+					textBox.text = '';
+			}
+			
+			protected function id_phoneOne_changeHandler(event:TextOperationEvent):void
+			{
+				applyMask(id_phoneOne);
+				//model.CurrentEDIReceiver.Phone1 = UtilityFunctions.TrimString(id_phoneOne.text.replace(/[^0-9]/g,""));
+			}
+			
+			protected function id_phoneTwo_changeHandler(event:TextOperationEvent):void
+			{
+				applyMask(id_phoneTwo);
+				//model.CurrentEDIReceiver.Phone2 = UtilityFunctions.TrimString(id_phoneTwo.text.replace(/[^0-9]/g,""));
+				
+			}
+			
+			protected function id_fax1_changeHandler(event:TextOperationEvent):void
+			{
+				applyMask(id_fax1);
+				//model.CurrentEDIReceiver.FAX = UtilityFunctions.TrimString(id_fax1.text.replace(/[^0-9]/g,""));
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:VGroup width="100%">
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Name:" width="100" fontFamily="Calibri" fontSize="12" />
+			<components3:LabelTextInput id="id_Name" text="{model.CurrentEDIReceiver.Name}" width="100%" change="textchangeHandler(event)" maxChars="100" 
+						 fontFamily="Calibri" fontSize="12" required="true" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Street:" width="100" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_street1" text="{model.CurrentEDIReceiver.Address}"
+						 width="100%" change="textchangeHandler(event)" maxChars="55" fontFamily="Calibri" fontSize="12"  />
+		</s:HGroup>	
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="" width="100" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_street2" width="100%"  change="textchangeHandler(event)"  maxChars="45" fontFamily="Calibri" fontSize="12" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Zip/City/State:" width="100" fontFamily="Calibri" fontSize="12" />
+			<components2:ZipCityStateCombine id="id_ZipCityStateCombine" width="100%" />
+			<!--<components:LabelComboBox id="id_StateCB" prompt="State" width="100%" labelField="stateName"
+									  change="id_StateCB_changeHandler(event)" required="true" toolTip="States"/>			
+			<s:Label text="City:" width="44" fontFamily="Calibri" fontSize="12" />
+			<components:LabelComboBox id="id_CitiesCB" prompt="City" width="100%" labelField="CityName" change="id_CitiesCB_changeHandler(event)" enabled="false" required="true"
+									  toolTip="Cities"/>-->				
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Inactive:" width="100" fontFamily="Calibri" fontSize="12" />
+			<!--<components:LabelComboBox id="id_ZIPCB" prompt="Zip" width="100%" labelField="ZipCode" enabled="false" required="true"
+									  toolTip="Zip" change="id_ZIPCB_changeHandler(event)" />		-->	
+			<s:CheckBox id="id_inactive" label="Inactive" selected="{model.CurrentEDIReceiver.Inactive == 'true' ? true : false}" 
+						 change="id_inactive_changeHandler(event)" />
+		</s:HGroup>
+	</s:VGroup>
+	<s:VGroup width="100%">
+		<s:HGroup width="100%" verticalAlign="middle" >
+			<s:Label text="Phone 1:" width="100" fontFamily="Calibri" fontSize="12" />
+			<components3:LabelTextInput id="id_phoneOne" text="{ValidationUtils.setPhoneNumberMasking(model.CurrentEDIReceiver.Phone1)}" width="50%" 
+									   change="id_phoneOne_changeHandler(event)" restrict="[0-9]" prompt="Phone 1" toolTip="Enter phone 1" 	 />
+			<s:Label text="Extension:" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_extension" text="{model.CurrentEDIReceiver.Extension}" width="50%" change="textchangeHandler(event)"  restrict="[0-9]"	maxChars="4"  />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Phone 2:" width="100" fontFamily="Calibri" fontSize="12" />
+			<components3:LabelTextInput id="id_phoneTwo" text="{ValidationUtils.setPhoneNumberMasking(model.CurrentEDIReceiver.Phone2)}" width="100%"  
+									   change="id_phoneTwo_changeHandler(event)" restrict="[0-9]" prompt="Phone 2" toolTip="Enter phone 2"  />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Fax Phone:" width="100" fontFamily="Calibri" fontSize="12" />
+			<components3:LabelTextInput id="id_fax1" text="{ValidationUtils.setPhoneNumberMasking(model.CurrentEDIReceiver.FAX)}" width="100%"  
+									   change="id_fax1_changeHandler(event)" restrict="[0-9]" prompt="Fax phone" toolTip="Enter fax phone"  />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="E-Mail:" width="100" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_email" text="{model.CurrentEDIReceiver.Email}" width="100%" change="textchangeHandler(event)" maxChars="50"  />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Web Address:" width="100" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_webAddress" text="{model.CurrentEDIReceiver.WebAddress}" width="100%" change="textchangeHandler(event)" maxChars="50"  />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Contact:" width="100" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_contact" text="{model.CurrentEDIReceiver.ContactPerson}" width="100%" change="textchangeHandler(event)" restrict="[A-Z a-z , . 0-9]"	maxChars="50"  />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Comment:" width="100" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_comment" text="{model.CurrentEDIReceiver.Comment}" width="100%" change="textchangeHandler(event)" restrict="[A-Z a-z , . 0-9]"	maxChars="100"  />
+		</s:HGroup>
+	</s:VGroup>
+	
+</s:VGroup>

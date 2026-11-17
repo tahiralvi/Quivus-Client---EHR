@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt">
+	
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	
+	<s:states>
+		
+		<s:State name="up"/>
+		
+		<s:State name="over"/>
+		
+		<s:State name="down"/>
+		
+		<s:State name="disabled"/>
+		
+		<s:State name="upAndSelected"/>
+		
+		<s:State name="overAndSelected"/>
+		
+		<s:State name="downAndSelected"/>
+		
+		<s:State name="disabledAndSelected"/>
+		
+	</s:states>
+	
+	<s:Rect height="20" id="rect8" includeIn="downAndSelected,overAndSelected,up,upAndSelected" radiusX="0" width="19" x="0" y="0" visible.up="false">
+		
+		<s:fill>
+			
+			<s:LinearGradient rotation="90">
+				
+				<s:GradientEntry alpha="1.0" color="#A1A3C3" ratio="0"/>
+				
+				<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="0.7215686274509804"/>
+				
+			</s:LinearGradient>
+			
+		</s:fill>
+		
+		<s:filters>
+			
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="3" strength="1"/>
+			
+			<s:DropShadowFilter alpha="0.5" angle="270" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			
+		</s:filters>
+		
+	</s:Rect>
+	
+	<s:Path data="M 11.016 2 L 9.969 2 L 9.969 1 L 8.969 1 L 8.969 0 L 0 0 L 0 11 L 11 11 L 11.016 2 Z" visible.down="false" visible.downAndSelected="false" visible.over="false" visible.overAndSelected="false" visible.upAndSelected="false" winding="nonZero" x="4" y="3">
+		
+		<s:fill>
+			
+			<s:LinearGradient rotation="90">
+				
+				<s:GradientEntry alpha="1" color="#FFFFFF" ratio="0"/>
+				
+				<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="1"/>
+				
+			</s:LinearGradient>
+			
+		</s:fill>
+		
+		<s:filters>
+			
+			<s:DropShadowFilter alpha="0.75" angle="93.17983011986423" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			
+		</s:filters>
+		
+	</s:Path>
+	
+	<s:Path data="M 11.016 2 L 9.969 2 L 9.969 1 L 8.969 1 L 8.969 0 L 0 0 L 0 11 L 11 11 L 11.016 2 Z" includeIn="downAndSelected,overAndSelected,upAndSelected" winding="nonZero" x="4" y="4">
+		
+		<s:fill>
+			
+			<s:LinearGradient rotation="90">
+				
+				<s:GradientEntry alpha="1.0" color="#999999" ratio="0"/>
+				
+				<s:GradientEntry alpha="1.0" color="#666666" ratio="1"/>
+				
+			</s:LinearGradient>
+			
+		</s:fill>
+		
+		<s:filters>
+			
+			<s:DropShadowFilter alpha="0.75" angle="93.17983011986423" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			
+		</s:filters>
+		
+	</s:Path>
+	
+	<s:Path data="M 11.016 2 L 9.969 2 L 9.969 1 L 8.969 1 L 8.969 0 L 0 0 L 0 11 L 11 11 L 11.016 2 Z" visible.disabled="false" visible.disabledAndSelected="false" visible.downAndSelected="false" visible.overAndSelected="false" visible.up="false" visible.upAndSelected="false" winding="nonZero" x="4" y="3">
+		
+		<s:fill>
+			
+			<s:LinearGradient rotation="90">
+				
+				<s:GradientEntry alpha="1.0" color="#AFD1FF" ratio="0"/>
+				
+				<s:GradientEntry alpha="1.0" color="#6593D5" ratio="1"/>
+				
+			</s:LinearGradient>
+			
+		</s:fill>
+		
+		<s:filters>
+			
+			<s:DropShadowFilter alpha="0.75" angle="93.17983011986423" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			
+		</s:filters>
+		
+	</s:Path>
+	
+	<s:Rect height="1" width="7" x="6" y.upAndSelected="7" y.overAndSelected="7" y.downAndSelected="7" y.up="6" y.over="6" y.down="6" y.disabled="6" y.disabledAndSelected="6">
+		
+		<s:fill>
+			
+			<s:SolidColor color="#878787" color.down="#FFFFFF" color.downAndSelected="#FFFFFF" color.over="#FFFFFF" color.overAndSelected="#FFFFFF" color.upAndSelected="#FFFFFF"/>
+			
+		</s:fill>
+		
+	</s:Rect>
+	
+	<s:Rect height="1" width="7" x="6" y.upAndSelected="9" y.overAndSelected="9" y.downAndSelected="9" y.up="8" y.over="8" y.down="8" y.disabled="8" y.disabledAndSelected="8">
+		
+		<s:fill>
+			
+			<s:SolidColor color="#878787" color.down="#FFFFFF" color.downAndSelected="#FFFFFF" color.over="#FFFFFF" color.overAndSelected="#FFFFFF" color.upAndSelected="#FFFFFF"/>
+			
+		</s:fill>
+		
+	</s:Rect>
+	
+	<s:Rect height="1" width="7" x="6" y.upAndSelected="11" y.overAndSelected="11" y.downAndSelected="11" y.up="10" y.over="10" y.down="10" y.disabled="10" y.disabledAndSelected="10">
+		
+		<s:fill>
+			
+			<s:SolidColor color="#878787" color.down="#FFFFFF" color.downAndSelected="#FFFFFF" color.over="#FFFFFF" color.overAndSelected="#FFFFFF" color.upAndSelected="#FFFFFF"/>
+			
+		</s:fill>
+		
+	</s:Rect>
+	
+</s:Skin>

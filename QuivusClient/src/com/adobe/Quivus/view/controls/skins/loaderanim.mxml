@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:mx="library://ns.adobe.com/flex/mx">
+	
+	
+	<mx:SWFLoader source="@Embed('com/adobe/Quivus/view/controls/skins/assets/loader.swf')" />
+	<!--<s:BitmapImage smooth="true" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/loader.swf')" width="50" height="50" />-->
+</s:Skin>

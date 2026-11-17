@@ -1,0 +1,909 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						xmlns:s="library://ns.adobe.com/flex/spark" 
+						xmlns:mx="library://ns.adobe.com/flex/mx" 
+						xmlns:components="com.gazuntite.controls.extended.components.*"
+						creationComplete="popupwindow1_creationCompleteHandler(event)" 
+						xmlns:itemEditors="com.gazuntite.provider.live.services.billing.view.common.itemEditors.*" xmlns:components1="com.gazuntite.controls.extended.components.*"
+						>
+	<fx:Metadata>
+		[Event(name="saveClick", type="mx.events.Event")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.util.xml.XmlUtils;
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.SuperBillProcedureInfoDTO;
+			import com.gazuntite.provider.live.services.billing.dto.accountsAndReceiveables.AccountCarrierDTO;
+			import com.gazuntite.provider.live.services.billing.dto.accountsAndReceiveables.AdjustmentReasonCodeDTO;
+			import com.gazuntite.provider.live.services.billing.dto.accountsAndReceiveables.ClaimAdjustmentDTO;
+			import com.gazuntite.provider.live.services.billing.dto.accountsAndReceiveables.ClaimPaymentDTO;
+			import com.gazuntite.provider.live.services.billing.event.SuperBill.LoadCPTModifierTypesEvent;
+			import com.gazuntite.provider.live.services.billing.event.accountsAndReceiveables.ManageClaimPaymentEvent;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.provider.live.services.billing.view.event.DataGridActionEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			public var EditPaymentDTO:ClaimPaymentDTO = null;
+			
+			public var ClaimID:String = null;
+			public var PatientID:String = null;
+			public var VisitDate:String = null;
+			
+			private var WODeletedReasons:ArrayCollection = null;
+			private var RJDeletedReasons:ArrayCollection = null;
+			private var WOSelectedIndex:int;			
+			private var WOoldAmount:String;			
+			private var RJSelectedIndex:int;
+			private var RJoldAmount:String;
+			
+			public var ClaimPaymentID:String = null;
+			
+			[Bindable]
+			public var ClaimProcedures:ArrayCollection = null;
+			
+			[Bindable]
+			public var WOReasons:ArrayCollection = null;
+			
+			[Bindable]
+			public var RJReasons:ArrayCollection = null;
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			[Bindable]
+			private var EntryTypes:ArrayCollection =  new ArrayCollection(["Manual", "Electronic"]);
+			
+			[Bindable]
+			private var ModeTypes:ArrayCollection =  new ArrayCollection(["Check", "Cash","Credit Card"]);
+			
+			[Bindable]
+			private var PaymentTypes:ArrayCollection =  new ArrayCollection(["Copay", "Disallowed","Additional Payment","Procedure Payment","Comment"]);			
+			
+			[Bindable]
+			private var SourceTypes:ArrayCollection =  new ArrayCollection(["Primary Insurance", "Secondary Insurance","Tertiary Insurance", "Patient"]);			
+			
+			protected function id_Modifer1List_keyUpHandler(event:KeyboardEvent):void
+			{
+				if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+				{
+					var searchString:String = id_Modifer1List.textInput.text;
+					if(searchString.length > 0)
+					{
+						var modiEvent : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,1);
+						CairngormEventDispatcher.getInstance().dispatchEvent( modiEvent );
+					}					
+				}
+			}
+			
+			protected function id_Modifer2List_keyUpHandler(event:KeyboardEvent):void
+			{
+				if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+				{
+					var searchString:String = id_Modifer2List.textInput.text;
+					if(searchString.length > 0)
+					{
+						var modiEvent : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,2);
+						CairngormEventDispatcher.getInstance().dispatchEvent( modiEvent );
+					}					
+				}
+			}
+			
+			protected function id_Modifer3List_keyUpHandler(event:KeyboardEvent):void
+			{
+				if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+				{
+					var searchString:String = id_Modifer3List.textInput.text;
+					if(searchString.length > 0)
+					{
+						var modiEvent : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,3);
+						CairngormEventDispatcher.getInstance().dispatchEvent( modiEvent );
+					}					
+				}
+			}
+			
+			protected function id_Modifer4List_keyUpHandler(event:KeyboardEvent):void
+			{
+				if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8) //including only alphabets, digits, special characters, del n backspace
+				{
+					var searchString:String = id_Modifer4List.textInput.text;
+					if(searchString.length > 0)
+					{
+						var modiEvent : LoadCPTModifierTypesEvent = new LoadCPTModifierTypesEvent(searchString,4);
+						CairngormEventDispatcher.getInstance().dispatchEvent( modiEvent );
+					}					
+				}
+			}
+			
+			protected function id_AddWriteOffReason_clickHandler(event:MouseEvent):void
+			{
+				if(id_AddWriteOffReason.label == "Add")
+				{
+					id_WOAmount.enabled = true;
+					id_WOGroupList.enabled = true;
+					id_WOReasonList.enabled = true;
+					
+					id_AddWriteOffReason.label = "Save";
+					
+				}				
+				else
+				{
+					if(UtilityFunctions.IsNullOrEmpty(id_WOAmount.text) || UtilityFunctions.TrimString(id_WOAmount.text) == "0")
+					{
+						id_WOAmount.setFocus();
+						Alert.show("Please Enter Amount","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+					}
+					
+					if(id_WOGroupList.selectedIndex < 0)
+					{
+						id_WOGroupList.setFocus();
+						Alert.show("Please Select Group Code","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+					}
+					
+					if(id_WOReasonList.selectedIndex < 0)
+					{
+						id_WOReasonList.setFocus();
+						Alert.show("Please Select Reason Code","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+					}
+					
+					if(id_AddWriteOffReason.label == "Save Update")
+					{
+						(WOReasons[WOSelectedIndex] as ClaimAdjustmentDTO).AdjustmentAmount = id_WOAmount.text;
+						(WOReasons[WOSelectedIndex] as ClaimAdjustmentDTO).AdjustmentGroupCodeTypeID = String(id_WOGroupList.selectedIndex + 1);
+						(WOReasons[WOSelectedIndex] as ClaimAdjustmentDTO).AdjustmentReasonCodeID = (id_WOReasonList.selectedItem as AdjustmentReasonCodeDTO).AdjustmentReasonCodeID;
+						(WOReasons[WOSelectedIndex] as ClaimAdjustmentDTO).GroupCode =  UtilityFunctions.TrimString(id_WOGroupList.textInput.text.split('-')[0]);
+						(WOReasons[WOSelectedIndex] as ClaimAdjustmentDTO).ReasonCode =  (id_WOReasonList.selectedItem as AdjustmentReasonCodeDTO).AdjustmentReasonCode;
+						(WOReasons[WOSelectedIndex] as ClaimAdjustmentDTO).ModifiedBy = model.LoggedInUserId.toString();
+						
+						id_writeOff.text = String(Number(id_writeOff.text) - Number(WOoldAmount) );
+						id_writeOff.text = String(Number(id_writeOff.text) + Number(id_WOAmount.text) );
+						
+						id_WOGrid.validateNow();
+						id_WOGrid.scrollToIndex(WOSelectedIndex);
+						
+						id_woEditDel.visible = true;	
+					}
+					else
+					{
+						var reason:ClaimAdjustmentDTO = new ClaimAdjustmentDTO();
+						
+						reason.AdjustmentTypeID = "1";
+						reason.ReasonDescription = "";
+						reason.GroupDescription = "";
+						reason.AdjustmentAmount = id_WOAmount.text;
+						reason.AdjustmentGroupCodeTypeID = String(id_WOGroupList.selectedIndex + 1);
+						reason.AdjustmentReasonCodeID = (id_WOReasonList.selectedItem as AdjustmentReasonCodeDTO).AdjustmentReasonCodeID;
+						reason.GroupCode =  UtilityFunctions.TrimString(id_WOGroupList.textInput.text.split('-')[0]);
+						reason.ReasonCode =  (id_WOReasonList.selectedItem as AdjustmentReasonCodeDTO).AdjustmentReasonCode
+						reason.ClaimAdjustmentID = "0";
+						reason.ClaimPaymentID = ClaimPaymentID;
+						reason.CreatedBy = model.LoggedInUserId.toString();
+						reason.ModifiedBy = model.LoggedInUserId.toString();
+						reason.IsDeleted = "false";
+						
+						if(WOReasons == null)
+							WOReasons = new ArrayCollection();
+						
+						WOReasons.addItem(reason);
+						id_writeOff.text = String(Number(id_writeOff.text) + Number(id_WOAmount.text) );
+					}					
+					
+					id_AddWriteOffReason.label = "Add";
+					id_WOAmount.enabled = false;
+					id_WOGroupList.enabled = false;
+					id_WOReasonList.enabled = false;
+					
+					id_WOAmount.text = "0";
+					id_WOGroupList.selectedIndex = -1;
+					id_WOReasonList.selectedIndex = -1;
+				}
+			}
+			
+			protected function id_AddRJReason_clickHandler(event:MouseEvent):void
+			{
+				if(id_AddRJReason.label == "Add")
+				{
+					id_RJAmount.enabled = true;
+					id_RJGroupList.enabled = true;
+					id_RJReasonList.enabled = true;					
+					
+					id_AddRJReason.label = "Save";
+					
+				}
+				else
+				{
+					if(UtilityFunctions.IsNullOrEmpty(id_RJAmount.text) || UtilityFunctions.TrimString(id_RJAmount.text) == "0")
+					{
+						id_RJAmount.setFocus();
+						Alert.show("Please Enter Amount","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+					}
+					
+					if(id_RJGroupList.selectedIndex < 0)
+					{
+						id_RJGroupList.setFocus();
+						Alert.show("Please Select Group Code","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+					}
+					
+					if(id_RJReasonList.selectedIndex < 0)
+					{
+						id_RJReasonList.setFocus();
+						Alert.show("Please Select Reason Code","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+					}
+					
+					/* if(id_Modifer1List.selectedIndex < 0 && UtilityFunctions.TrimString(id_Modifer1List.textInput.text).length > 0 )
+					{
+						id_RJReasonList.setFocus();
+						Alert.show("Please Select valid modifier","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+						return;
+					} */
+					
+					if(id_AddRJReason.label == "Save Update")
+					{
+						(RJReasons[RJSelectedIndex] as ClaimAdjustmentDTO).AdjustmentAmount = id_RJAmount.text;
+						(RJReasons[RJSelectedIndex] as ClaimAdjustmentDTO).AdjustmentGroupCodeTypeID = String(id_RJGroupList.selectedIndex + 1);
+						(RJReasons[RJSelectedIndex] as ClaimAdjustmentDTO).AdjustmentReasonCodeID = (id_RJReasonList.selectedItem as AdjustmentReasonCodeDTO).AdjustmentReasonCodeID;
+						(RJReasons[RJSelectedIndex] as ClaimAdjustmentDTO).GroupCode =  UtilityFunctions.TrimString(id_RJGroupList.textInput.text.split('-')[0]);
+						(RJReasons[RJSelectedIndex] as ClaimAdjustmentDTO).ReasonCode =  (id_RJReasonList.selectedItem as AdjustmentReasonCodeDTO).AdjustmentReasonCode;
+						(RJReasons[RJSelectedIndex] as ClaimAdjustmentDTO).ModifiedBy = model.LoggedInUserId.toString();
+						
+						id_Rejected.text = String(Number(id_Rejected.text) - Number(RJoldAmount) );
+						id_Rejected.text = String(Number(id_Rejected.text) + Number(id_RJAmount.text) );
+						
+						id_PRGrid.validateNow();
+						id_PRGrid.scrollToIndex(RJSelectedIndex);
+						id_rjEditDel.visible = true;
+					}
+					else
+					{
+						var reason:ClaimAdjustmentDTO = new ClaimAdjustmentDTO();
+						
+						reason.AdjustmentTypeID = "2";
+						reason.ReasonDescription = "";
+						reason.GroupDescription = "";
+						reason.AdjustmentAmount = id_RJAmount.text;
+						reason.AdjustmentGroupCodeTypeID = String(id_RJGroupList.selectedIndex + 1);
+						reason.AdjustmentReasonCodeID = (id_RJReasonList.selectedItem as AdjustmentReasonCodeDTO).AdjustmentReasonCodeID;
+						reason.GroupCode =  UtilityFunctions.TrimString(id_RJGroupList.textInput.text.split('-')[0]);
+						reason.ReasonCode =  (id_RJReasonList.selectedItem as AdjustmentReasonCodeDTO).AdjustmentReasonCode
+						reason.ClaimAdjustmentID = "0";
+						reason.ClaimPaymentID = ClaimPaymentID;
+						reason.CreatedBy = model.LoggedInUserId.toString();
+						reason.ModifiedBy = model.LoggedInUserId.toString();
+						reason.IsDeleted = "false";
+						
+						if(RJReasons == null)
+							RJReasons = new ArrayCollection();
+						
+						RJReasons.addItem(reason);
+						
+						id_Rejected.text = String(Number(id_Rejected.text) + Number(id_RJAmount.text) );
+					}
+					
+					id_AddRJReason.label = "Add";
+					id_RJAmount.enabled = false;
+					id_RJGroupList.enabled = false;
+					id_RJReasonList.enabled = false;
+					
+					id_RJAmount.text = "0";
+					id_RJGroupList.selectedIndex = -1;
+					id_RJReasonList.selectedIndex = -1;
+				}			
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				removePopup();
+			}
+			
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				if( ! isValidData()) return;
+				
+				var claimPayment:ClaimPaymentDTO = new ClaimPaymentDTO();
+				
+				claimPayment.AdjustedAmount = id_writeOff.text;
+				claimPayment.AllowedAmount =  id_AllowedAmount.text;
+				claimPayment.ChargedProcedure = id_ProcedureList.selectedIndex > -1 ? id_ProcedureList.textInput.text:"";
+				claimPayment.CheckNumber = id_check.text;
+				claimPayment.ClaimID = ClaimID;				
+				if( EditPaymentDTO == null)
+				{
+					claimPayment.ClaimPaymentID = ClaimPaymentID;
+					claimPayment.CreatedBy = model.LoggedInUserId.toString();
+					claimPayment.EntryDate = UtilityFunctions.FormatDate(new Date());
+				}
+				else
+				{
+					claimPayment.ClaimPaymentID = EditPaymentDTO.ClaimPaymentID;
+					claimPayment.CreatedBy = "0";
+					claimPayment.EntryDate = UtilityFunctions.FormatDate(EditPaymentDTO.EntryDate);
+				}
+				
+				claimPayment.ModifiedBy = model.LoggedInUserId.toString();
+				
+				claimPayment.FilingDate = UtilityFunctions.FormatDate(id_filingDate.text);
+				
+				var insOrgId:String = "0";
+					
+				if(model.CurrentPatienAccount.PatientCarrirs != null && model.CurrentPatienAccount.PatientCarrirs.length > 0 )
+				{
+					switch(id_SourceList.selectedIndex + 1)
+					{
+						case 1:
+						{
+							for (var i:int = 0; i < model.CurrentPatienAccount.PatientCarrirs.length; i++) 
+							{
+								if((model.CurrentPatienAccount.PatientCarrirs[i] as AccountCarrierDTO).InsuranceTypeId == "1" )
+								{
+									insOrgId = (model.CurrentPatienAccount.PatientCarrirs[i] as AccountCarrierDTO).InsOrganizationID;
+									break;
+								}
+							}
+							
+							break;
+						}
+							
+						case 2:
+						{
+							for (var i2:int = 0; i2 < model.CurrentPatienAccount.PatientCarrirs.length; i2++) 
+							{
+								if((model.CurrentPatienAccount.PatientCarrirs[i2] as AccountCarrierDTO).InsuranceTypeId == "2" )
+								{
+									insOrgId = (model.CurrentPatienAccount.PatientCarrirs[i2] as AccountCarrierDTO).InsOrganizationID;
+									break;
+								}
+							}
+							
+							break;
+						}
+						case 3:
+						{
+							for (var i1:int = 0; i1 < model.CurrentPatienAccount.PatientCarrirs.length; i1++) 
+							{
+								if((model.CurrentPatienAccount.PatientCarrirs[i1] as AccountCarrierDTO).InsuranceTypeId == "3" )
+								{
+									insOrgId = (model.CurrentPatienAccount.PatientCarrirs[i1] as AccountCarrierDTO).InsOrganizationID;
+									break;
+								}
+							}
+							
+							break;
+						}
+					}
+				}
+				claimPayment.InsOrganizationID = insOrgId;
+				claimPayment.IsDeleted = "false";				
+								
+				claimPayment.Modifier1 = id_Modifer1List.textInput.text.indexOf("-") > -1 ? UtilityFunctions.TrimString(id_Modifer1List.textInput.text.split('-')[0]):id_Modifer1List.textInput.text;
+				claimPayment.Modifier2 = id_Modifer2List.textInput.text.indexOf("-")  > -1 ? UtilityFunctions.TrimString(id_Modifer2List.textInput.text.split('-')[0]):id_Modifer2List.textInput.text;
+				claimPayment.Modifier3 = id_Modifer3List.textInput.text.indexOf("-")  > -1 ? UtilityFunctions.TrimString(id_Modifer3List.textInput.text.split('-')[0]):id_Modifer3List.textInput.text;
+				claimPayment.Modifier4 = id_Modifer4List.textInput.text.indexOf("-")  > -1 ? UtilityFunctions.TrimString(id_Modifer4List.textInput.text.split('-')[0]):id_Modifer4List.textInput.text;
+				
+				claimPayment.PaidAmount = id_paidAmount.text;
+				if(UtilityFunctions.TrimString(id_Unit.text).length > 0 )
+					claimPayment.Unit = id_Unit.text;
+				else
+					claimPayment.Unit = "1";
+				claimPayment.PaymentEntryTypeID = String(id_MediaTypeList.selectedIndex + 1);
+				claimPayment.PaymentModeTypeID = String(id_ModeTypeList.selectedIndex + 1);
+				claimPayment.PaymentSourceTypeID = String(id_SourceList.selectedIndex + 1);
+				claimPayment.PaymentTypeID = id_OtherList.selectedIndex  > -1 ? String(id_OtherList.selectedIndex + 1) : "0";
+				claimPayment.RejectedAmount = id_Rejected.text;
+				claimPayment.PaidProcedure = id_paidProcedure.text;
+				
+				if(WOReasons != null && WOReasons.length > 0)
+				{					
+					claimPayment.PaymentAdjustments = WOReasons;
+					
+					if(RJReasons != null && RJReasons.length > 0)
+					{					
+						claimPayment.PaymentAdjustments.addAll(RJReasons);
+					}
+				}
+				else if(RJReasons != null && RJReasons.length > 0)
+				{					
+					claimPayment.PaymentAdjustments = RJReasons;
+					
+					if(WOReasons != null && WOReasons.length > 0)
+					{					
+						claimPayment.PaymentAdjustments.addAll(WOReasons);
+					}					
+				}
+				
+				if(WODeletedReasons != null && WODeletedReasons.length > 0)
+				{	
+					if(claimPayment.PaymentAdjustments != null )
+						claimPayment.PaymentAdjustments.addAll(WODeletedReasons);
+					else
+						claimPayment.PaymentAdjustments = WODeletedReasons;
+				}
+				
+				if(RJDeletedReasons != null && RJDeletedReasons.length > 0)
+				{	
+					if(claimPayment.PaymentAdjustments != null )
+						claimPayment.PaymentAdjustments.addAll(RJDeletedReasons);
+					else
+						claimPayment.PaymentAdjustments = RJDeletedReasons;
+				}
+				
+				claimPayment.PaymentEntryTypeName = "";
+				claimPayment.PaymentModeName = "";
+				claimPayment.PaymentSourceName = "";
+				claimPayment.PaymentTypeName = "";	
+				claimPayment.ServiceDateFrom = VisitDate;
+				claimPayment.ServiceDateTo = VisitDate;
+				
+				var updateXML:XML = XmlUtils.getNodeByTagName("ClaimPayments");
+				
+				updateXML.appendChild(claimPayment.ToXML());							
+				
+				var rpEvent : ManageClaimPaymentEvent = new ManageClaimPaymentEvent(updateXML, saveResult);				
+				CairngormEventDispatcher.getInstance().dispatchEvent( rpEvent ); 
+			}
+			
+			private function saveResult(result:String):void
+			{
+				if(result == "true")
+				{
+					var alert:Alert = Alert.show("Claim Payment saved successfully.", "Confirmation", 4, FlexGlobals.topLevelApplication.mainContainer, function(event:Event):void{
+						dispatchEvent( new Event("saveClick", true, true ));
+						removePopup();						
+					});
+					
+				}
+				else
+					Alert.show("Claim Payment not saved.","Confirmation", 4, FlexGlobals.topLevelApplication.mainContainer);			
+			}
+			
+			private function PatientAccountStatus():void
+			{
+				cursorManager.removeBusyCursor();
+				dispatchEvent( new Event("saveClick", true, true ));
+			}
+			
+			private function isValidData():Boolean
+			{
+				var charges:Number = 0;
+				if(id_rdoProcedure.selected && id_ProcedureList.selectedIndex < 0)
+				{
+					id_ProcedureList.setFocus();
+					Alert.show("Please select procedure.","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+					return false;
+				}
+				
+				if(id_rdoOther.selected && id_OtherList.selectedIndex < 0)
+				{
+					id_OtherList.setFocus();
+					Alert.show("Please select payment type.","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+					return false;
+				}
+				
+				if(id_rdoProcedure.selected )
+				{
+					charges = Number((id_ProcedureList.selectedItem as SuperBillProcedureInfoDTO).Fee) * Number((id_ProcedureList.selectedItem as SuperBillProcedureInfoDTO).Unit);
+				}
+				
+				if(id_MediaTypeList.selectedIndex < 0)
+				{
+					id_MediaTypeList.setFocus();
+					Alert.show("Please select entry type.","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+					return false;
+				}
+				
+				if(id_SourceList.selectedIndex < 0)
+				{
+					id_SourceList.setFocus();
+					Alert.show("Please select payment source.","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+					return false;
+				}			
+				
+				if(id_ModeTypeList.selectedIndex < 0)
+				{
+					id_SourceList.setFocus();
+					Alert.show("Please select payment mode.","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+					return false;
+				}
+				
+				if(id_ModeTypeList.selectedIndex == 0 && UtilityFunctions.TrimString(id_check.text).length == 0)
+				{
+					id_check.setFocus();
+					Alert.show("Please enter check number.","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+					return false;
+				}
+				
+				if(UtilityFunctions.TrimString(id_filingDate.text).length == 0)
+				{
+					id_filingDate.setFocus();
+					Alert.show("Please enter filing date.","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+					return false;
+				}
+				
+				if(id_ProcedureList.selectedIndex > -1 && UtilityFunctions.TrimString(id_paidProcedure.text).length == 0)
+				{
+					id_paidProcedure.setFocus();
+					Alert.show("Please enter paid procedure.","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+					return false;
+				}
+				
+				if(UtilityFunctions.TrimString(id_paidProcedure.text).length > 0 && UtilityFunctions.TrimString(id_paidProcedure.text).length != 5)
+				{
+					id_paidProcedure.setFocus();
+					Alert.show("Please enter a valid paid procedure.","Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+					return false;
+				}
+				
+				if(UtilityFunctions.TrimString(id_AllowedAmount.text).length == 0 )
+				{
+					id_AllowedAmount.setFocus();
+					Alert.show("Please enter allowed amount.","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+					return false;
+				}
+				
+				if(id_rdoProcedure.selected && Number(id_AllowedAmount.text) > charges)
+				{
+					id_AllowedAmount.setFocus();
+					Alert.show("Please enter allowed amount must be less than or equal to procedure charges [" + charges + "]" ,"Invalid Data",4,FlexGlobals.topLevelApplication.mainContainer);
+					return false;
+				}
+				
+				if(UtilityFunctions.TrimString(id_paidAmount.text).length == 0 )
+				{
+					id_paidAmount.setFocus();
+					Alert.show("Please enter paid amount.","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+					return false;
+				}
+				
+				if(Number(id_AllowedAmount.text) < Number(id_paidAmount.text) )
+				{
+					id_paidAmount.setFocus();
+					Alert.show("Paid amount must be less or equal to allowed amount.","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+					return false;
+				}
+				
+				if(id_ProcedureList.selectedIndex > -1 && (UtilityFunctions.TrimString(id_Unit.text).length == 0 || UtilityFunctions.TrimString(id_Unit.text) == "0" ) )
+				{
+					id_Unit.setFocus();
+					Alert.show("Please enter unit.","Mandatory Field",4,FlexGlobals.topLevelApplication.mainContainer);
+					return false;
+				}
+				
+				return true;
+			}
+			
+			protected function popupwindow1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(EditPaymentDTO != null)
+				{
+					if(EditPaymentDTO.PaymentTypeID == "4")
+					{
+						id_rdoProcedure.selected = true;
+						for each (var cpt:SuperBillProcedureInfoDTO in ClaimProcedures) 
+						{
+							if(UtilityFunctions.TrimString(EditPaymentDTO.ChargedProcedure) == UtilityFunctions.TrimString(cpt.ProcedureCode) )
+							{
+								id_ProcedureList.selectedItem = cpt;								
+								break;
+							}
+						}
+					}
+					else
+					{
+						id_rdoOther.selected = true;
+																	
+					}
+					
+					id_OtherList.selectedIndex = parseInt(EditPaymentDTO.PaymentTypeID) - 1;
+					id_MediaTypeList.selectedIndex = parseInt(EditPaymentDTO.PaymentEntryTypeID) - 1;
+					id_SourceList.selectedIndex = parseInt(EditPaymentDTO.PaymentSourceTypeID) - 1;
+					id_ModeTypeList.selectedIndex = parseInt(EditPaymentDTO.PaymentModeTypeID) - 1;
+					id_check.text = EditPaymentDTO.CheckNumber;
+					if( ! UtilityFunctions.IsNullOrEmpty( EditPaymentDTO.FilingDate ) )
+					{
+						id_filingDate.selectedDate = UtilityFunctions.toDate(EditPaymentDTO.FilingDate);
+						id_filingDate.text = UtilityFunctions.FormatDate(id_filingDate.selectedDate,"MM/DD/YYYY");
+					}
+					id_paidProcedure.text = EditPaymentDTO.PaidProcedure;
+					id_AllowedAmount.text = EditPaymentDTO.AllowedAmount;
+					id_paidAmount.text = EditPaymentDTO.PaidAmount;
+					id_Unit.text = EditPaymentDTO.Unit;
+					id_writeOff.text = EditPaymentDTO.AdjustedAmount;
+					id_Rejected.text = EditPaymentDTO.RejectedAmount;
+					
+					WOReasons = new ArrayCollection();
+					RJReasons = new ArrayCollection();
+					
+					for each (var adj:ClaimAdjustmentDTO in EditPaymentDTO.PaymentAdjustments) 
+					{
+						if(adj.AdjustmentTypeID == "1")
+							WOReasons.addItem(adj);
+						else
+							RJReasons.addItem(adj);
+					}
+															
+					id_Modifer1List.textInput.text = EditPaymentDTO.Modifier1; 
+					id_Modifer2List.textInput.text = EditPaymentDTO.Modifier2;
+					id_Modifer3List.textInput.text = EditPaymentDTO.Modifier3;
+					id_Modifer4List.textInput.text = EditPaymentDTO.Modifier4; 
+					
+				}
+				else
+				{
+					id_OtherList.selectedIndex = 3;
+					WOReasons = new ArrayCollection();
+					RJReasons = new ArrayCollection();
+				}
+				
+				id_WOGrid.addEventListener(DataGridActionEvent.EDIT_RECORD_CLICK, editWOReason, false, 0, true);
+				id_WOGrid.addEventListener(DataGridActionEvent.DELETE_RECORD_CLICK, deleteWOReason, false, 0, true);
+				
+				id_PRGrid.addEventListener(DataGridActionEvent.EDIT_RECORD_CLICK, editRJReason, false, 0, true);
+				id_PRGrid.addEventListener(DataGridActionEvent.DELETE_RECORD_CLICK, deleteRJReason, false, 0, true);
+			}
+			
+			private function deleteRJReason(event:DataGridActionEvent):void
+			{				
+				Alert.show("Are you sure, you want to delete selected reason?","Confirmation", Alert.YES|Alert.NO, this, function( event:CloseEvent):void
+				{
+					if( event.detail == Alert.YES )
+					{						
+						var dto:ClaimAdjustmentDTO = id_PRGrid.selectedItem as ClaimAdjustmentDTO;
+						id_Rejected.text = String(Number(id_Rejected.text) - Number(dto.AdjustmentAmount) );
+						if(dto.ClaimAdjustmentID != "0")
+						{							
+							dto.IsDeleted = "true";
+							dto.ModifiedBy = model.LoggedInUserId.toString();						
+							
+							if(RJDeletedReasons == null)
+								RJDeletedReasons = new ArrayCollection();
+							
+							RJDeletedReasons.addItem(dto);
+							RJReasons.removeItemAt(id_PRGrid.selectedIndex);
+						}
+						else						
+							RJReasons.removeItemAt(id_PRGrid.selectedIndex);
+						
+					} 
+				});
+			}	
+			
+			private function editRJReason(event:DataGridActionEvent):void
+			{	
+				if(id_PRGrid.selectedItems.length == 0)
+				{
+					Alert.show("Please select a record", "No record selected", 4, FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				
+				var dto:ClaimAdjustmentDTO = id_PRGrid.selectedItem as ClaimAdjustmentDTO;
+				
+				RJSelectedIndex = id_PRGrid.selectedIndex;
+				RJoldAmount = dto.AdjustmentAmount;
+				
+				id_RJAmount.text = dto.AdjustmentAmount;
+				
+				for each (var reason:AdjustmentReasonCodeDTO in model.AdjustmentReasonCodeListADJ) 
+				{
+					if(dto.ReasonCode == reason.AdjustmentReasonCode)
+					{
+						id_RJReasonList.selectedItem = reason;
+						break;
+					}
+				}				
+				id_RJGroupList.selectedIndex = parseInt(dto.AdjustmentGroupCodeTypeID) - 1;
+				id_RJAmount.enabled = true
+				id_RJGroupList.enabled = true;	
+				id_RJReasonList.enabled = true;
+				id_AddRJReason.label = "Save Update";				
+				id_rjEditDel.visible = false;
+			}
+			
+			private function deleteWOReason(event:DataGridActionEvent):void
+			{				
+				Alert.show("Are you sure, you want to delete selected reason?","Confirmation", Alert.YES|Alert.NO, this, function( event:CloseEvent):void
+				{
+					if( event.detail == Alert.YES )
+					{						
+						var dto:ClaimAdjustmentDTO = id_WOGrid.selectedItem as ClaimAdjustmentDTO;
+						id_writeOff.text = String(Number(id_writeOff.text) - Number(dto.AdjustmentAmount) );
+						if(dto.ClaimAdjustmentID != "0")
+						{							
+							dto.IsDeleted = "true";
+							dto.ModifiedBy = model.LoggedInUserId.toString();						
+							
+							if(WODeletedReasons == null)
+								WODeletedReasons = new ArrayCollection();
+							
+							WODeletedReasons.addItem(dto);
+							WOReasons.removeItemAt(id_WOGrid.selectedIndex);
+						}
+						else						
+							WOReasons.removeItemAt(id_WOGrid.selectedIndex);
+						
+					} 
+				});
+			}	
+			
+			private function editWOReason(event:DataGridActionEvent):void
+			{	
+				if(id_WOGrid.selectedItems.length == 0)
+				{
+					Alert.show("Please select a record", "No record selected", 4, FlexGlobals.topLevelApplication.mainContainer);
+					return;
+				}
+				
+				var dto:ClaimAdjustmentDTO = id_WOGrid.selectedItem as ClaimAdjustmentDTO;
+				
+				WOSelectedIndex = id_WOGrid.selectedIndex;
+				WOoldAmount = dto.AdjustmentAmount;
+				
+				id_WOAmount.text = dto.AdjustmentAmount;
+				
+				for each (var reason:AdjustmentReasonCodeDTO in model.AdjustmentReasonCodeListWOF) 
+				{
+					if(dto.ReasonCode == reason.AdjustmentReasonCode)
+					{
+						id_WOReasonList.selectedItem = reason;
+						break;
+					}
+				}				
+				id_WOGroupList.selectedIndex = parseInt(dto.AdjustmentGroupCodeTypeID) - 1;
+				id_WOAmount.enabled = true
+				id_WOGroupList.enabled = true;	
+				id_WOReasonList.enabled = true;
+				id_AddWriteOffReason.label = "Save Update";
+				id_woEditDel.visible = false;				
+			}
+			
+			protected function id_ProcedureList_changeHandler(event:IndexChangeEvent):void
+			{
+				if(id_ProcedureList.selectedIndex > -1)
+					id_paidProcedure.text = (id_ProcedureList.selectedItem as SuperBillProcedureInfoDTO).ProcedureCode;
+			}
+			
+						
+			protected function id_rdoProcedure_changeHandler(event:Event):void
+			{
+				//id_OtherList.selectedIndex = -1;
+				id_OtherList.selectedIndex = 3;
+			}
+			
+			protected function id_rdoOther_changeHandler(event:Event):void
+			{
+				id_ProcedureList.selectedIndex = -1;
+				id_OtherList.selectedIndex = -1;
+			}
+			
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<!--<s:SkinnableContainer skinClass="com.zigron.common.view.skins.listonlyPopupSkin" width="100%"
+						  maxWidth="296">-->
+	
+	<s:SkinnableContainer  width="100%"  maxWidth="475">
+		
+		<s:layout>
+			<s:VerticalLayout paddingLeft="12" paddingRight="12"  paddingBottom="10"  paddingTop="3"  gap="15"/>
+		</s:layout>
+		
+		<s:HGroup width="100%" >
+			<s:VGroup width="50%">
+				<s:RadioButton id="id_rdoProcedure" label="Procedure Payment" selected="true" width="100%" change="id_rdoProcedure_changeHandler(event)" />
+				<s:RadioButton id="id_rdoOther" label="Other Payment"  width="100%" change="id_rdoOther_changeHandler(event)" />
+			</s:VGroup>
+			<s:VGroup width="50%">
+				<components1:LabelComboBox id="id_ProcedureList" width="100%" prompt="Charged Procedure" required="{id_rdoProcedure.selected}"
+										  dataProvider="{ClaimProcedures}" labelField="ProcedureCode" enabled="{id_rdoProcedure.selected}" 
+										  change="id_ProcedureList_changeHandler(event)"
+										  />
+				<components1:LabelComboBox id="id_OtherList" width="100%" prompt="Payment Type" required="{id_rdoOther.selected}"
+										  dataProvider="{PaymentTypes}" enabled="{id_rdoOther.selected}" />										  
+			</s:VGroup>	
+			<s:VGroup width="50%">
+				<components1:LabelComboBox id="id_MediaTypeList" width="100%" prompt="Entry Type" dataProvider="{EntryTypes}" required="true" />
+				<components1:LabelComboBox id="id_SourceList" width="100%" prompt="Payment Source" dataProvider="{SourceTypes}" required="true" />
+												  
+			</s:VGroup>	
+		</s:HGroup>	
+		<s:HGroup width="100%" >
+			<components1:LabelComboBox id="id_ModeTypeList" width="100%" prompt="Payment Mode" dataProvider="{ModeTypes}" required="true" />	
+			<components1:LabelTextInput id="id_check" width="100%" prompt="Check/EFT Number" />									
+		</s:HGroup>	
+		<s:HGroup width="100%" >	
+			<components1:LabelDateField id="id_filingDate" prompt="Filing Date" selectableRange="{{rangeEnd:new Date()}}" width="100%" 									   
+									   tabIndex="4" toolTip="Select Filing Date" yearNavigationEnabled="true" editable="false"  
+									   maxYear="{new Date().getFullYear()}" minYear="1901" restrict="[0-9 /]" IsEditAllow="false"  />
+			<components1:LabelTextInput id="id_paidProcedure" width="100%" prompt="Paid Procedure" restrict="[0-9 a-z A-Z]" maxChars="5" enabled="{id_rdoProcedure.selected}" />
+			<components1:LabelTextInput id="id_AllowedAmount" width="100%" prompt="Allowed Amount" restrict="[0-9]\." />
+		</s:HGroup>		
+		<s:HGroup width="100%" >			
+			<components1:LabelTextInput id="id_paidAmount" width="100%" prompt="Paid Amount" restrict="[0-9]\."/>
+			<components1:LabelTextInput id="id_Unit" width="100%" prompt="Unit" restrict="[0-9]\." />
+			<components1:LabelTextInput id="id_writeOff" width="100%" prompt="Write Off " text="0"  enabled="false" />
+			<components1:LabelTextInput id="id_Rejected" width="100%" prompt="Rejected Amount" text="0" enabled="false" />			
+		</s:HGroup>		
+		<s:VGroup width="100%">
+			<s:HGroup width="100%" >			
+				<s:Label width="100%" text="Write Off Reasons"/>
+				<components1:LabelTextInput id="id_WOAmount" text="0" width="50" prompt="Amount" restrict="[0-9]\." enabled="false" />
+				<components1:LabelComboBox id="id_WOGroupList" width="100%" prompt="Group Code" enabled="false"
+										  dataProvider="{model.AdjustmentGroupCodeListWOF}" />
+				<components1:LabelComboBox id="id_WOReasonList" width="100%" prompt="Reason Code" enabled="false"
+										  labelField="AdjustmentReasonName" dataProvider="{model.AdjustmentReasonCodeListWOF}" />				
+				<s:Button id="id_AddWriteOffReason" label="Add" width="100" click="id_AddWriteOffReason_clickHandler(event)" />			
+			</s:HGroup>			
+			<components1:LabelDataGrid id="id_WOGrid" width="100%" dataProvider="{WOReasons}"
+									  height="60" useRollOver="false" editable="false"  
+									  styleName="QIGrid" verticalScrollPolicy="on" fontFamily="Verdana" horizontalScrollPolicy="auto"
+									  maxHeight="100" variableRowHeight="true" tabIndex="12"
+									  columnWidths="{['5%'],['25%'],['15%'],['5%'],['25%'],['25%']}"
+									  >
+				<components:columns>
+					<!--<mx:DataGridColumn headerText="Sr.#" dataField="SNo" />-->
+					<mx:DataGridColumn headerText="Amount" dataField="AdjustmentAmount" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Group code" dataField="GroupCode" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" />
+					<mx:DataGridColumn headerText="Reason Code" dataField="ReasonCode" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<itemEditors:DataGridColumnDel id="id_woEditDel" headerText="" editable="false" itemRenderer="com.gazuntite.provider.live.services.billing.view.common.itemEditors.EditDeleteItemRender"/>
+				</components:columns>
+			</components1:LabelDataGrid>	
+		</s:VGroup>		
+		<s:VGroup width="100%">
+			<s:HGroup width="100%" >			
+				<s:Label width="100%" text="Rejection Reasons"/>
+				<components1:LabelTextInput id="id_RJAmount" text="0" width="50" prompt="Amount" restrict="[0-9]\." enabled="false" />
+				<components1:LabelComboBox id="id_RJGroupList" width="100%" prompt="Group Code" dataProvider="{model.AdjustmentGroupCodeListADJ}" enabled="false" />
+				<components1:LabelComboBox id="id_RJReasonList" width="100%" prompt="Reason Code" labelField="AdjustmentReasonName"  dataProvider="{model.AdjustmentReasonCodeListADJ}" enabled="false" />				
+				<s:Button id="id_AddRJReason" label="Add" width="100" click="id_AddRJReason_clickHandler(event)" />			
+			</s:HGroup>		
+			<components1:LabelDataGrid id="id_PRGrid" width="100%" dataProvider="{RJReasons}"
+									  height="60" useRollOver="false" editable="false"  
+									  styleName="QIGrid" verticalScrollPolicy="on" fontFamily="Verdana" horizontalScrollPolicy="auto"
+									  maxHeight="100" variableRowHeight="true" tabIndex="12"
+									  columnWidths="{['5%'],['25%'],['15%'],['5%'],['25%'],['25%']}"
+									  >
+				<components:columns>
+					<!--<mx:DataGridColumn headerText="Sr.#" dataField="SNo" />-->
+					<mx:DataGridColumn headerText="Amount" dataField="AdjustmentAmount" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>
+					<mx:DataGridColumn headerText="Group Code" dataField="GroupCode" width="100" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" />
+					<mx:DataGridColumn headerText="Reason Code" dataField="ReasonCode" width="110" sortable="true" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label"/>					
+					<itemEditors:DataGridColumnDel id="id_rjEditDel" headerText="" editable="false" itemRenderer="com.gazuntite.provider.live.services.billing.view.common.itemEditors.EditDeleteItemRender"/>
+				</components:columns>
+			</components1:LabelDataGrid>	
+		</s:VGroup>
+		<s:HGroup width="100%" >			
+			<components1:LabelComboBox id="id_Modifer1List" width="100%" prompt="Modifier 1" labelField="ModifierDescription"
+									  keyUp="id_Modifer1List_keyUpHandler(event)"  dataProvider="{model.CPTModifierTypeList1}" />
+			<components1:LabelComboBox id="id_Modifer2List" width="100%" prompt="Modifier 2" labelField="ModifierDescription"
+									  keyUp="id_Modifer2List_keyUpHandler(event)" dataProvider="{model.CPTModifierTypeList2}" />					
+		</s:HGroup>
+		<s:HGroup width="100%" >			
+			<components1:LabelComboBox id="id_Modifer3List" width="100%" prompt="Modifier 3" labelField="ModifierDescription"
+									  keyUp="id_Modifer3List_keyUpHandler(event)" dataProvider="{model.CPTModifierTypeList3}" />
+			<components1:LabelComboBox id="id_Modifer4List" width="100%" prompt="Modifier 4" labelField="ModifierDescription"
+									  keyUp="id_Modifer4List_keyUpHandler(event)"  dataProvider="{model.CPTModifierTypeList4}" />					
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="right" paddingRight="6">			
+			<s:Button label="Apply"  width="50" toolTip="Apply" click="button2_clickHandler(event)"  skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.ListBtn" buttonMode="true"  />
+			<s:Button label="Cancel"  width="70" toolTip="Cancel" click="button1_clickHandler(event)"  skinClass="com.adobe.gazuntite.skins.chrome.buttonSkins.ListBtn" buttonMode="true"  />
+		</s:HGroup>
+	</s:SkinnableContainer>
+	
+</components1:PopupWindow>

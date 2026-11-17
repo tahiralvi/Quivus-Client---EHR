@@ -1,0 +1,644 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:itemEditors="com.adobe.Quivus.view.controls.custom.itemEditors.*"
+		 xmlns:commons="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.*"
+		 xmlns:diagnosis="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.*"
+		 xmlns:validators="com.adobe.Quivus.utils.validators.*" 
+		 creationComplete="cc()"
+		 preinitialize="preInitializeHandler()" 
+		 xmlns:components1="com.gazuntite.controls.extended.components.*" 
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.staticData.immunization.LoadImmunizationDoseStaticDataEvent;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.events.staticData.immunization.LoadImmunizationLotNumberStaticDataEvent;
+			import com.adobe.Quivus.events.viewBackground.comprehensiveHistory.ManagePatientFamilyHistoryEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.view.controls.custom.itemEditors.SparkComboBoxItemEditor;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.YesNoItemEditor;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.gazuntite.patient.visit.view.itemrenderers.DeleteRecordRenderer;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.controls.extended.components.LabelComboBox;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Label;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.events.CollectionEvent;
+			import mx.events.DataGridEvent;
+			import mx.events.ValidationResultEvent;
+			
+			import valueObjects.FamilyHistoryDTO;
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			[Bindable]
+			public var deleteColumnData:Object;
+			
+			private var _hasViewChanged:Boolean;
+			private var _hasGridChanged:Boolean;
+			private var m_bShowEditControls:Boolean;
+			
+			[Bindable]
+			public function get ShowEditControls():Boolean
+			{
+				return m_bShowEditControls;
+			}
+			
+			public function set ShowEditControls(value:Boolean):void
+			{
+				m_bShowEditControls = value;
+			}
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			
+			public function GridRowNumber(oItem:Object, iCol:int):String
+			{
+				var ret:String;
+				try
+				{
+					var rowNumber:int = id_DataGrid.dataProvider.getItemIndex(oItem) + 1; //Sort able column fails some how, don't know why?
+					ret = String(rowNumber);
+				}
+				catch(e:Error )
+				{
+					ret = "##";
+				}
+				return ret;
+			}
+			
+			
+			/**
+			 * Ayesha: 26th May 2011
+			 * */
+			private function preInitializeHandler():void
+			{
+				if (!deleteColumnData)
+					deleteColumnData = {};
+				
+				deleteColumnData["noteDataFields"] = {subject: "NoteSubject", note: "FamilyHistoryNote", header: "FamilyHistoryTypeName", statusFunction:RecordLevelNotesStatus};
+				deleteColumnData["dictationDataField"] = "DictationID";
+				deleteColumnData["recordIDField"] = "PatientFamilyHistoryID";
+				deleteColumnData["section"] = QIPopUpManager.VB_COMPREHENSIVE_HISTORY;
+			}
+			
+			private function vbFamilyGridItemEditBeginHandler(event:DataGridEvent):void
+			{
+				if (event.columnIndex == 2)
+				{
+					var rowIndex:int = id_DataGrid.selectedIndex;
+					var itemToSetInEditableMode:IListItemRenderer = id_DataGrid.indexToItemRenderer(rowIndex);
+					
+					var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+					ev.columnIndex = 3;
+					ev.rowIndex = rowIndex;
+					ev.itemRenderer = itemToSetInEditableMode;
+					ev.dataField = "Status";
+					id_DataGrid.dispatchEvent(ev);
+					
+					event.preventDefault();
+					event.stopImmediatePropagation();
+					return; //don't allow edit on this column
+				}
+				else if (event.columnIndex > 3 )
+				{
+					if( event.itemRenderer.data["IsYesSelected"] == Constants.STRING_FALSE )
+					{
+						id_DataGrid.editable = false;
+						event.preventDefault();
+						event.stopImmediatePropagation();
+						return; //don't allow edit until yes selected
+					}
+				}
+				id_DataGrid.createItemEditor(event.columnIndex, event.rowIndex);
+				
+				/* if (event.columnIndex == 4)
+				{
+				SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).data = event.itemRenderer.data; 
+				} */
+				
+				if(event.columnIndex == 5)
+				{
+					try{
+						trace("FamilyHistoryTypeName: ",event.itemRenderer.data["FamilyHistoryTypeName"]);					
+						if(event.itemRenderer.data["FamilyHistoryTypeName"] == Constants.FAMILY_HEART_DISEASE_MODULE_NAME)
+						{
+							//id_DataGrid.createItemEditor(event.columnIndex, event.rowIndex);
+							SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.dataProvider = model.heartDiseaseDiseaseTypesDTOList;
+						}
+						else if(event.itemRenderer.data["FamilyHistoryTypeName"] == Constants.FAMILY_DIABETES_MODULE_NAME)
+						{
+							//id_DataGrid.createItemEditor(event.columnIndex, event.rowIndex);
+							SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.dataProvider = model.diabetesDiseaseTypesDTOList;
+						}
+						else if(event.itemRenderer.data["FamilyHistoryTypeName"] == Constants.FAMILY_CANCER_MODULE_NAME)
+						{
+							//id_DataGrid.createItemEditor(event.columnIndex, event.rowIndex);
+							//SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.dataProvider = model.cancerDiseaseTypesDTOList;
+							SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.dataProvider = model.cancerDiseaseTypesDTOList;
+						}
+						else if(event.itemRenderer.data["FamilyHistoryTypeName"] == Constants.FAMILY_HYPERTENSION_MODULE_NAME)
+						{
+							//id_DataGrid.createItemEditor(event.columnIndex, event.rowIndex);
+							SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.dataProvider = model.hypertensionDiseaseTypesDTOList;
+						}
+						else if(event.itemRenderer.data["FamilyHistoryTypeName"] == Constants.FAMILY_OTHER_MODULE_NAME)
+						{
+							//id_DataGrid.createItemEditor(event.columnIndex, event.rowIndex);
+							SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor.dataProvider = model.otherDiseaseTypesDTOList;
+						}
+						
+					}
+					catch(error:*)
+					{
+						
+					}
+				}
+				
+				if (event.columnIndex == 3)
+				{
+					try{
+						if(id_DataGrid.selectedItem["IsYesSelected"] == Constants.STRING_TRUE)
+						{
+							(id_DataGrid.itemEditorInstance as YesNoItemEditor).isYes = id_DataGrid.selectedItem["IsYesSelected"];
+						}
+						else if(id_DataGrid.selectedItem["IsYesSelected"] == Constants.STRING_FALSE)
+						{
+							(id_DataGrid.itemEditorInstance as YesNoItemEditor).isYes = 'false';
+						}
+						/* else if((id_DataGrid.itemEditorInstance).data["IsYesSelected"] == "false")
+						{
+						(id_DataGrid.itemEditorInstance).data["IsYesSelected"] = "No";
+						} */
+					}
+					catch(error:*)
+					{
+						
+					}
+				}
+				
+				
+				if (event.columnIndex == 4)
+				{
+					try{
+						if((id_DataGrid.itemEditorInstance).data["Current"] == true)
+						{
+							(id_DataGrid.itemEditorInstance).data["Current"] = "Yes";
+						}
+						else if((id_DataGrid.itemEditorInstance).data["Current"] == false)
+						{
+							(id_DataGrid.itemEditorInstance).data["Current"] = "No";
+						}
+					}
+					catch(error:*)
+					{
+						
+					}
+				}
+			}
+			
+			private var isAsking:Boolean = false; //@see --- ItemEditEndHandler
+			private function vbFamilyGridItemEditEndHandler(event:DataGridEvent):void
+			{
+				var validationRes:ValidationResultEvent;
+				var FHTID:int = FamilyHistoryDTO(event.currentTarget.selectedItem).FamilyHistoryTypeID;
+				
+				if (event.dataField == "ReletionshipTypeName" || event.dataField == "DiseaseName")
+				{
+					var editor:LabelComboBox = SparkComboBoxItemEditor(id_DataGrid.itemEditorInstance).id_ComboEditor;
+					
+					comboValidator.source = editor;
+					
+					if (event.dataField == "ReletionshipTypeName")
+					{
+						comboValidator.error = "Select reletionship from list";
+					}
+					else if (event.dataField == "DiseaseName")
+					{
+						comboValidator.error = "Select disease name from list";
+					}
+					
+					validationRes = comboValidator.validate(editor.selectedItem);
+					
+					if (validationRes && !validationRes.results)
+					{
+						if (event.dataField == "ReletionshipTypeName")
+						{
+							event.itemRenderer.data.ReletionshipTypeName 	= editor.selectedItem.RelationshipName;
+							event.itemRenderer.data.ReletionshipTypeID 		= editor.selectedItem.RelationshipId;
+						}
+						else if (event.dataField == "DiseaseName")
+						{
+							event.itemRenderer.data.DiseaseName 	= editor.selectedItem.Description;
+							event.itemRenderer.data.DiseaseID 		= editor.selectedItem.DiseaseTypeID;
+						}
+						
+						if (FHTID != 0)
+							event.itemRenderer.data.IsDirty = true;
+						
+						hasViewChanged = _hasGridChanged = true;
+					}
+					/*else
+					{
+					id_DiagnosisGrid.destroyItemEditor();
+					
+					event.stopImmediatePropagation();
+					event.preventDefault();
+					}*/
+					
+					id_DataGrid.destroyItemEditor();
+					
+					event.stopImmediatePropagation();
+					event.preventDefault();
+				}
+					
+				else if (event.dataField == "IsYesSelected")
+				{
+					var isYes:String = (id_DataGrid.itemEditorInstance as YesNoItemEditor).isYes;
+					
+					if( isYes == Constants.STRING_FALSE && isAsking == false &&
+						(
+							event.itemRenderer.data.DictationID != Constants.GUID_FORMAT || 
+							!AppUtils.IsNullOrEmpty( event.itemRenderer.data.NoteSubject ) ||
+							!AppUtils.IsNullOrEmpty( event.itemRenderer.data.FamilyHistoryNote ) ||
+							!AppUtils.IsNullOrEmpty( event.itemRenderer.data.ReletionshipTypeID ) ||
+							!AppUtils.IsNullOrEmpty( event.itemRenderer.data.DiseaseID ) 
+						)
+					)
+					{
+						isAsking = true; // work around -- don't know why this event is firing twice --- look for real cause
+						UtilityFunctions.AskMessage( "This action will remove any related data, notes and dictation on the current selected record.", function():void //if yes is selected
+						{
+							//isAsking = false;
+							//event.itemRenderer.data.IsNone 				= Constants.STRING_FALSE;
+							event.itemRenderer.data.NoteSubject 			= "";
+							event.itemRenderer.data.FamilyHistoryNote 		= "";
+							event.itemRenderer.data.DictationID 			= Constants.GUID_FORMAT;
+							
+							event.itemRenderer.data.ReletionshipTypeName 	= "";
+							event.itemRenderer.data.ReletionshipTypeID 		= "";
+							event.itemRenderer.data.DiseaseName 			= "";
+							event.itemRenderer.data.DiseaseID 				= "";
+							
+							
+							event.itemRenderer.data.DictationID 		= Constants.GUID_FORMAT;
+						}, null,function():void //if no is selected
+						{
+							isAsking = false;
+							//event.itemRenderer.data.IsNone 				= Constants.STRING_TRUE;
+							//event.itemRenderer.data["IsDirty"] 			= true;
+							id_DataGrid.invalidateDisplayList();
+						});
+					}
+				}
+				
+				
+				event.stopImmediatePropagation();
+				event.preventDefault();
+				
+				//id_DataGrid.editable = false;
+				id_DataGrid.destroyItemEditor();
+				
+			}
+			private function cc():void
+			{
+				//addEventListener("addRecordClick", addRecordClickHandler, false, 0, true);
+				//addEventListener("writeDictationClick", writeDictationClickHandler, false, 0, true);
+				id_DataGrid.addEventListener(DataGridActionsEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+				id_DataGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				id_DataGrid.addEventListener(DataGridActionsEvent.WRITE_NOTES_CLICK, writeNotesClickHandler, false, 0, true);
+				id_DataGrid.addEventListener(DataGridActionsEvent.ITEM_EDIT_KEY_UP, itemEditKeyUpHandler, false, 0, true);
+				
+				
+			}
+			
+			private function writeNotesClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_COMPREHENSIVE_HISTORY ) )//Tahir Alvi - implement security check 
+				{
+					
+				}
+				
+				
+			}
+			private function itemEditKeyUpHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_COMPREHENSIVE_HISTORY ) )//Tahir Alvi - implement security check 
+				{
+					var lblFld:String = SparkComboBoxItemEditor(event.target).labelField;
+					
+					if (lblFld == "Dose")
+					{
+						if( event.searchString.length > 2 )
+						{
+							var doseEvent : LoadImmunizationDoseStaticDataEvent = new LoadImmunizationDoseStaticDataEvent( event.searchString );
+							CairngormEventDispatcher.getInstance().dispatchEvent( doseEvent );					
+						}
+					}
+					else if (lblFld == "LotNumber")
+					{
+						if( event.searchString.length > 0 )
+						{
+							var lotNumberEvent : LoadImmunizationLotNumberStaticDataEvent = new LoadImmunizationLotNumberStaticDataEvent( event.searchString );
+							CairngormEventDispatcher.getInstance().dispatchEvent( lotNumberEvent );					
+						}
+					}
+					
+				}
+			}
+			
+			private function editRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				id_DataGrid.editable = true;
+				var rowIndex:int = id_DataGrid.selectedIndex;
+				var itemToSetInEditableMode:IListItemRenderer = id_DataGrid.indexToItemRenderer(rowIndex);
+				
+				var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+				ev.columnIndex = 3;
+				ev.rowIndex = rowIndex;
+				ev.itemRenderer = itemToSetInEditableMode;
+				ev.dataField = "Status";
+				id_DataGrid.dispatchEvent(ev);
+			}
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.VB_COMPREHENSIVE_HISTORY ) )//Tahir Alvi - implement security check 
+				{
+					var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+					
+					if (curTar.selectedItem)
+					{
+						var fhID:int = FamilyHistoryDTO(curTar.selectedItem).PatientFamilyHistoryID;
+						
+						if (fhID == 0)
+						{
+							model.familyHistoryDTOListByPatient.removeItemAt(curTar.selectedIndex);
+							if (model.familyHistoryDTOListByPatient.length <= 0)
+							{
+								_hasGridChanged = false;
+								//hasViewChanged = isGetEdited();
+							}
+						}
+						else
+						{
+							UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+							{
+								var dto:FamilyHistoryDTO = curTar.selectedItem as FamilyHistoryDTO;
+								dto.IsDeleted = true;
+								model.familyHistoryDTOListByPatient.filterFunction = filterDeletedItems;
+								model.familyHistoryDTOListByPatient.refresh();
+								
+								hasViewChanged = _hasGridChanged = true;
+							});
+						}
+					}
+					
+					
+				}
+			}
+			
+			private var _familyHistoryDTOCollection:ArrayCollection;
+			private var _includeInLayout:Boolean;
+			private var _includeInLayoutChanged:Boolean = true;
+			[Bindable]
+			public function get familyHistoryDTOCollection():ArrayCollection
+			{
+				return _familyHistoryDTOCollection;
+			}
+			[Bindable]
+			public function get includeGridInLayout():Boolean
+			{
+				return _includeInLayout;
+			}
+			
+			public function set includeGridInLayout(value:Boolean):void
+			{
+				_includeInLayout = value;
+				_includeInLayoutChanged = true;
+				
+				invalidateProperties();
+			}
+			public function set familyHistoryDTOCollection(value:ArrayCollection):void
+			{
+				_familyHistoryDTOCollection = value;
+				
+				if (_familyHistoryDTOCollection)
+				{
+					if (!_familyHistoryDTOCollection.hasEventListener(CollectionEvent.COLLECTION_CHANGE))
+					{
+						familyHistoryDTOCollection.addEventListener(CollectionEvent.COLLECTION_CHANGE, familyHistoryDTOCollectionChangeHandler, false, 0, true);
+					}
+					
+					if (familyHistoryDTOCollection.length)
+					{
+						includeGridInLayout = true;
+					}
+					else
+					{
+						includeGridInLayout = false;
+					}
+				}
+				else
+				{
+					includeGridInLayout = false;
+				}
+			}
+			
+			private function familyHistoryDTOCollectionChangeHandler(event:CollectionEvent):void
+			{
+				if (familyHistoryDTOCollection && familyHistoryDTOCollection.length)
+					includeGridInLayout = true;
+					
+				else
+					includeGridInLayout = false;
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				if(familyHistoryDTOCollection!=null){
+					familyHistoryDTOCollection.filterFunction=myFilter;
+					familyHistoryDTOCollection.refresh();
+				}
+			}
+			
+			private function myFilter(obj:*):Boolean
+			{
+				if(model.vbFilter == Constants.BY_VISIT)
+				{
+					if(model.vbVisitId == obj.VisitID)
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+				
+				return true;
+				
+			}
+			
+			
+			public function displayStatus(oItem:Object,iCol:int):String
+			{
+				//H
+				
+				var vd:String = (oItem as FamilyHistoryDTO).IsYesSelected;
+				if( vd && vd.toLowerCase() == Constants.STRING_TRUE )
+				{
+					return "Yes";
+				}
+				else if( vd && vd.toLowerCase() == Constants.STRING_FALSE )
+				{
+					return "No";
+				}
+				return ""; 
+				
+			}
+			
+			public function displayCurrent(oItem:Object,iCol:int):String
+			{
+				//H
+				var obj:FamilyHistoryDTO = (oItem as FamilyHistoryDTO);
+				var vd:Boolean = (oItem as FamilyHistoryDTO).IsPresent;
+				if(obj.IsYesSelected == "true" || obj.IsYesSelected == "True")
+				{
+					if(vd == true)
+					{
+						return "Present";
+					}
+					else if(vd == false)
+					{
+						return "Past";
+					}
+				}
+				return ""; 
+				
+			}
+			
+			private function RecordLevelNotesStatus(hasNotes:Boolean, data:Object):void
+			{
+				if( hasNotes ) 
+					data.IsYesSelected = Constants.STRING_FALSE;
+				else
+					data.IsYesSelected = Constants.STRING_TRUE;
+				
+				familyHistoryDTOCollection.refresh();
+			}
+			
+			private function setVisitDate(oItem:Object,iCol:int):String
+			{
+				var strVisitDate:String = '';
+				
+				if (oItem && oItem.VisitDate)
+				{
+					var dateRecieved:Date = new Date(Date.parse(oItem.VisitDate));
+					strVisitDate = formatDateTime.format(dateRecieved);
+					var nullDate:Date = Constants.NULL_DATE;
+					
+					if (dateRecieved.getFullYear() <= nullDate.getFullYear() && dateRecieved.getMonth() <= nullDate.getMonth())
+						strVisitDate = "";
+					
+					if(oItem.IsNA)
+						strVisitDate = 'N/A';
+				}
+				return strVisitDate;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<validators:ComboValidator id="comboValidator" property="selectedItem"/>
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YY" />
+	</fx:Declarations>
+	<fx:Binding source="model.familyHistoryDTOListByPatient" destination="familyHistoryDTOCollection"  />
+	<s:layout>
+		<s:VerticalLayout gap="0" />
+	</s:layout> 
+	
+	<!--<s:Group>	
+	<s:Rect height="33" radiusX="3" width="109" x="1" y="0">
+	<s:fill>
+	<s:LinearGradient rotation="90">
+	<s:GradientEntry alpha="1.0" color="#FFFFFF" ratio="0"/>
+	<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="0.41568627450980394"/>
+	<s:GradientEntry alpha="1.0" color="#EDEDED" ratio="0.6196078431372549"/>
+	</s:LinearGradient>
+	</s:fill>
+	<s:filters>
+	<s:DropShadowFilter alpha="0.5" angle="270" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+	</s:filters>
+	</s:Rect>
+	<s:RichText color="#A32F58" fontFamily="Calibri Bold" fontSize="13" tabStops="S0 S50" text="Family History" x="8" y="5"/>
+	</s:Group>-->
+	<!--<s:Button label="Done" click="button1_clickHandler(event)"/>-->
+	<s:Button label="Filter" click="button1_clickHandler(event)" visible="false" includeInLayout="false" id="id_applyFiler"/>
+	<components1:LabelDataGrid id="id_DataGrid" width="100%" useRollOver="false"
+							  dataProvider="{familyHistoryDTOCollection}" rowCount="{id_DataGrid.dataProvider.length ? id_DataGrid.dataProvider.length : 1}" 
+							  verticalScrollPolicy="on"
+							  itemEditBegin="vbFamilyGridItemEditBeginHandler(event)" 
+							  itemEditEnd="vbFamilyGridItemEditEndHandler(event)"
+							  maxHeight="150" columnWidths="{[25,'20%','15%','15%','10%','20%',100]}">
+		
+		<components1:columns>
+			<mx:DataGridColumn headerText="Sr.#" editable="false"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" labelFunction="GridRowNumber"/>
+			<!--<mx:DataGridColumn headerText="Visit Date" headerWordWrap="true"  wordWrap="true" labelFunction="setVisitDate" width="80" editable="false" dataField="VisitDate" />-->
+			<mx:DataGridColumn headerText="Family History" editable="false" dataField="FamilyHistoryTypeName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"  />
+			<mx:DataGridColumn headerText="Status" dataField="IsYesSelected" editorDataField="isYes" labelFunction="displayStatus" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" >
+				<mx:itemEditor>
+					<fx:Component>
+						<diagnosis:YesNoItemEditor width="100%" height="90%" property="IsYesSelected" />
+						
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="ICD Code" dataField="IcdCodeName"  editable="false" sortable="false" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<!--<mx:DataGridColumn headerText="Current"			dataField="IsPresent" labelFunction="displayCurrent"/>-->
+			<mx:DataGridColumn headerText="Relation"  dataField="ReletionshipTypeName" editorDataField="editorText" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.registrationStaticDataDTO.RelationshipTypes}" labelField="RelationshipName" width="100%" height="100%"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Disease" dataField="IcdCodeDescription" editorDataField="editorText" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor width="100%" height="100%" labelField="Description"   />
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<!--<mx:DataGridColumn headerText="Notes" width="50" dataField="FamilyHistoryNote" editable="false"/>-->
+			<commons:DataGridColumnEx data="{deleteColumnData}" headerText="" editable="false" visible="{ShowEditControls}"
+									  itemRenderer="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DeleteRecordRendererCH"/>
+		</components1:columns>
+	</components1:LabelDataGrid>
+	
+	
+</s:Group>

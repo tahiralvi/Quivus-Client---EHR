@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   xmlns:components1="com.gazuntite.controls.extended.components.*"					   
+					   >
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.popupCloseBtnSkin;
+			
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var date1:Date = new Date(model.userPatientProfileBarInfoPopUpData.PatientProfileBasicInfoData.DateOfBirth);
+			private var dateDisp:String = date1.getDate()+"-"+date1.getMonth()+"-"+date1.getFullYear();
+			
+			protected function id_CloseBtn_clickHandler(event:MouseEvent):void
+			{
+				this.removePopup();
+			}
+
+			protected function id_Eligible_creationCompleteHandler(event:FlexEvent):void
+			{
+				if( model.userPatientProfileBarInfoPopUpData && 
+					model.userPatientProfileBarInfoPopUpData.PatientInsuracneInfoData && 
+					model.userPatientProfileBarInfoPopUpData.PatientInsuracneInfoData.IsEligible )
+				{
+					id_Eligible.setStyle("color", "#66bb46");
+					id_Eligible.text = "Yes";
+				}else
+				{
+					id_Eligible.setStyle("color", "#ff0000");
+					id_Eligible.text = "No";
+				}
+			}
+
+		]]>
+	</fx:Script>
+
+	<components1:layout>
+		<s:HorizontalLayout paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" />
+	</components1:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+
+	
+	<s:Group>
+		<s:filters>
+			<s:DropShadowFilter blurX="4.0" blurY="4.0" distance="4.0" hideObject="false" inner="false" color="0x000000" strength="1" alpha="0.5" quality="2" knockout="false" angle="90"/>
+		</s:filters>		
+		
+		
+		<s:Rect height="89" radiusX="3" width="182" x="0" y="0">
+			<s:fill>
+				<s:LinearGradient rotation="270">
+					<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="0"/>
+					<s:GradientEntry alpha="1" color="#FFFFFF" ratio="0.25882352941176473"/>
+					<s:GradientEntry alpha="1.0" color="#E4E4E4" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+			<s:filters>
+				<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			</s:filters>
+		</s:Rect>
+		
+		<s:Rect height="17" radiusX="1" width="175" x="3" y="3">
+			<s:fill>
+				<s:LinearGradient rotation="90">
+					<s:GradientEntry alpha="1.0" color="#B4BFCD" ratio="0"/>
+					<s:GradientEntry ratio="0.5254901960784314" color="#899BB2" alpha="1.0"/>
+					<s:GradientEntry ratio="0.5294117647058824" color="#7F94B0" alpha="1.0"/>
+					<s:GradientEntry alpha="1.0" color="#6E84A1" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+		</s:Rect>
+		<s:RichText color="#000000" fontFamily="Calibri" fontSize="14" id="textDisplay1" kerning="off" lineHeight="150%" tabStops="S0 S50 S100" 
+					text="{model.userPatientProfileBarInfoPopUpData.PatientProfileBasicInfoData.FirstName + ' ' +  model.userPatientProfileBarInfoPopUpData.PatientProfileBasicInfoData.LastName}" width="125" x="4" y="5"/>
+		
+		<s:BitmapImage height="64" width="57" smooth="true" visible="{model.imageDTO.ImageData.length > 0 ? false : true}" source="@Embed('com/adobe/Quivus/view/controls/skins/assets/profilepic02.png')" x="5" y="17"/>
+			<mx:Image height="64" width="57" x="5" y="17" source="{model.imageDTO.ImageData}" >
+				<mx:filters>
+					<mx:DropShadowFilter alpha="0.5" angle="90" blurX="4.0" blurY="4.0" color="#666666" distance="0" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+				</mx:filters>
+			</mx:Image>
+
+		
+			<s:Button buttonMode="true" id="button1" click="id_CloseBtn_clickHandler(event)" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.popupCloseBtnSkin" 
+					  tabIndex="0" x="160" y="4" toolTip="Close Profile Popup" height="16" width="16"/>
+			
+			
+		
+		
+		<s:Group y="25" x="0">
+			
+		
+	
+		
+			
+	
+			
+			<s:Label text="DOB" width="100"  x="66" y="0" fontFamily="Calibri" fontSize="11"  alpha="0.8"/>
+			<s:Label id="id_DOB" text="{this.dateDisp}" width="80"  x="106" y="0" fontSize="10" alpha="0.8"/>
+			
+			<s:Label text="Phone" width="100"  x="66" y="14" fontFamily="Calibri" fontSize="11"  alpha="0.8"/>
+			<s:Label id="id_Phone" text="{model.userPatientProfileBarInfoPopUpData.PrimaryPhoneNo.PhoneNumber}" showTruncationTip="true" width="64" maxDisplayedLines="1"  x="106" y="14" fontFamily="Calibri" fontSize="11"  alpha="0.8"/>
+			
+			
+			
+			<s:Label text="Insurance" width="100"  x="66" y="28" fontFamily="Calibri" fontSize="11" alpha="0.8"/>
+			<s:HGroup width="100%" clipAndEnableScrolling="true" x="80" y="28" >
+				<s:Label id="id_Insurance" text="{model.userPatientProfileBarInfoPopUpData.PatientInsuracneInfoData.PolicyNumber}" showTruncationTip="true" width="64" maxDisplayedLines="1"  fontFamily="Calibri" fontSize="11" alpha="0.8"/>
+			</s:HGroup>
+			
+			
+			
+			
+			<s:Label text="Eligible" width="100"  x="66" y="42" fontFamily="Calibri" fontSize="11"  alpha="0.8"/>
+			<s:Label id="id_Eligible"  text="{model.userPatientProfileBarInfoPopUpData.PatientInsuracneInfoData.IsEligible}" width="80"  x="106" y="42" fontFamily="Calibri" fontSize="11" alpha="0.8"
+					 creationComplete="id_Eligible_creationCompleteHandler(event)"/>
+		</s:Group>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+	</s:Group>
+	
+	
+</components1:PopupGroup>

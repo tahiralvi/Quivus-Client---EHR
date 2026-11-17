@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" 
+		xmlns:fb="http://ns.adobe.com/flashbuilder/2009" alpha.disabled="0.5" height.normal="138">
+	
+	<fx:Metadata>
+		<![CDATA[ 
+		/** 
+		* @copy spark.skins.spark.ApplicationSkin#hostComponent
+		*/
+		[HostComponent("spark.components.SkinnableContainer")]
+		]]>
+	</fx:Metadata> 
+	
+	<s:states>
+		<s:State name="normal" />
+		<s:State name="disabled" />
+	</s:states>
+	
+	<!--- Defines the appearance of the SkinnableContainer class's background. -->
+	<!--<s:Group alpha="0.7" width="100%" x="0" y="0">-->
+		
+	<s:Rect height="154" width="100%" x="0" y="23.5">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#A0A9B5" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:SolidColor color="#FFFFFF"/>
+		</s:fill>
+	</s:Rect>
+	<s:Rect height="21" width="100%" x="0" y="2">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#A2A4A7" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#7F848B" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:RichText color="#FFFFFF" fontFamily="CalibriCFFBold" fontSize="12" typographicCase="uppercase"
+				kerning="off" lineHeight="225%" tabStops="S0 S50 S100" text="Personal Information" x="9" y="7"/>
+	<s:Rect height="19" width="100%"  x="0" y="118.5">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#A0A9B5" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:SolidColor alpha="1" color="#CBD1D9"/>
+		</s:fill>
+	</s:Rect>
+	<s:Rect height="19" width="100%"  x="0" y="42.5">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#A0A9B5" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:SolidColor alpha="1" color="#CBD1D9"/>
+		</s:fill>
+	</s:Rect>
+	<s:Rect height="19" width="100%"  x="0" y="81.5">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#A0A9B5" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:SolidColor alpha="1" color="#CBD1D9"/>
+		</s:fill>
+	</s:Rect>
+	<s:Rect height="19" width="100%"  x="0" y="157.5">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#A0A9B5" joints="miter" miterLimit="4" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:SolidColor alpha="1" color="#CBD1D9"/>
+		</s:fill>
+	</s:Rect>
+	<!--</s:Group>-->
+	<!--- @copy spark.components.SkinnableContainer#contentGroup -->
+	<s:Group id="contentGroup" left="0" right="0" top="0" bottom="0" minWidth="0" minHeight="0" >
+		<s:layout>
+			<s:BasicLayout/>
+		</s:layout>
+	</s:Group>
+	
+</s:Skin>

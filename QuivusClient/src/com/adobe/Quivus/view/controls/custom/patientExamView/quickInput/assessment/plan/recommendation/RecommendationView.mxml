@@ -1,0 +1,1037 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:components="com.zigron.controls.extended.components.*" 
+		 xmlns:commons="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.*"
+		 xmlns:itemEditors="com.adobe.Quivus.view.controls.custom.itemEditors.*" 
+		 xmlns:diagnosis="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.*" 
+		 xmlns:validators="com.adobe.Quivus.utils.validators.*"
+		 creationComplete="cc()" xmlns:components1="com.gazuntite.controls.extended.components.*" 
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.quickInput.diagnosis.LoadDiagnosisForRecommendationByPatientIdEvent;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.events.staticData.recommendation.LoadAllDurationTypesEvent;
+			import com.adobe.Quivus.events.staticData.recommendation.LoadAllLinksEvent;
+			import com.adobe.Quivus.events.staticData.recommendation.LoadAllMethodTypesEvent;
+			import com.adobe.Quivus.events.staticData.recommendation.LoadAllPlanTypesEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.Quivus.view.controls.custom.DictationPopup;
+			import com.adobe.Quivus.view.controls.custom.itemEditors.SparkComboBoxItemEditor;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPanel;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.assessment.diagnosis.YesNoItemEditor;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.dictation.QIDictationManager;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.ImmunizationSpeakerBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.QIDictationBtn;
+			import com.adobe.Quivus.view.controls.skins.radioButtonSkins.NRadioButton;
+			import com.adobe.Quivus.view.controls.skins.radioButtonSkins.YRadioButton;
+			import com.adobe.Quivus.view.controls.skins.textAreaReqSkin;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.ImmunizationNotesFilledBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.ImmunizationWriteNotesBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.QIWriteNotes;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.QIWriteNotesSelected;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.quivus.skins.chrome.textInputSkins.requiredTextArea;
+			import com.gazuntite.patient.visit.view.itemrenderers.DeleteRecordRenderer;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.accessibility.DataGridAccImpl;
+			import mx.binding.utils.ChangeWatcher;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Label;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.events.CollectionEvent;
+			import mx.events.DataGridEvent;
+			import mx.events.PropertyChangeEvent;
+			import mx.events.ValidationResultEvent;
+			
+			import spark.components.ComboBox;
+			
+			import valueObjects.AssessmentDTO;
+			import valueObjects.DurationTypeDTO;
+			import valueObjects.MethodTypeDTO;
+			import valueObjects.ModuleDictationDTO;
+			import valueObjects.ModuleNoteDTO;
+			import valueObjects.PatientDiagnosisDTO;
+			import valueObjects.PatientRecommendationDTO;
+			import valueObjects.PlanTypeDTO;
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var _includeInLayout:Boolean;
+			private var _includeInLayoutChanged:Boolean = true;
+			
+			private var recordNotesDTO:ModuleNoteDTO;
+			public var recordNotesPanel:NotesPanel;
+			
+			private var _hasGridChanged:Boolean;
+			private var _hasViewChanged:Boolean;
+			
+			[Bindable]
+			public var deleteColumnData:Object;
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			
+			public function isGetEdited():Boolean
+			{
+				var edited:Boolean = false;
+				
+				if ((id_Plan.selectedIndex >= 0 || id_Plan.textInput.text.length > 3) ||
+					(id_Method.selectedIndex >= 0 || id_Method.textInput.text.length > 3) ||
+					(id_Links.selectedIndex >= 0 || id_Links.textInput.text.length > 3) ||
+					(id_Duration.selectedIndex >= 0 || id_Duration.textInput.text.length > 3))
+					
+					edited = true;
+				
+				//hasViewChanged = (_hasGridChanged)? _hasGridChanged : edited;
+				
+				return edited;
+			}
+			
+			public function isInvalid():Boolean
+			{
+				var notValid:Boolean = false;
+				
+				if (!(id_Plan.selectedIndex >= 0 || id_Plan.textInput.text.length > 3))//Free text
+					notValid = true;
+					
+				else if (!(id_Method.selectedIndex >= 0 || id_Method.textInput.text.length > 3))//Free text
+					notValid = true;
+					
+				else if (!(id_Duration.selectedIndex >= 0 || id_Duration.textInput.text.length > 3))//Free text
+					notValid = true;
+				
+				return notValid && ( id_DescriptionArea.text.length == 0 );
+			}
+			
+			/* public function displayRowNum(oItem:Object,iCol:int):String
+			{
+			var rowNumber:int = id_RecommendationGrid.dataProvider.getItemIndex(oItem) + 1;
+			return String(rowNumber);
+			} */
+			
+			public function GridRowNumber(oItem:Object, iCol:int):String
+			{
+				var ret:String;
+				try
+				{
+					var rowNumber:int = id_RecommendationGrid.dataProvider.getItemIndex(oItem) + 1; //Sort able column fails some how, don't know why?
+					ret = String(rowNumber);
+				}
+				catch(e:Error )
+				{
+					ret = "##";
+				}
+				return ret;
+			}
+			
+			public function discussedWithPatientLabel(oItem:Object, icol:int):String
+			{
+				/* var label:String = "";
+				
+				if (oItem.hasOwnProperty("IsDiscussedWithPatient"))
+				{
+				if (oItem.IsDiscussedWithPatient == Constants.STRING_TRUE)
+				label = "Yes";
+				
+				else if (oItem.IsDiscussedWithPatient == Constants.STRING_FALSE)
+				label = "No";
+				}
+				
+				return label; */
+				var label:String = "";
+				if (oItem.hasOwnProperty("IsDiscussedWithPatient"))
+				{
+					if (oItem.IsDiscussedWithPatient == Constants.STRING_TRUE)
+						label = "Yes";
+					else
+						label = "No";
+				}
+				
+				return label;
+				
+			}
+			
+			public function showNotes(loc:Point):void
+			{
+				if (loc)
+				{
+					if( recordNotesPanel )
+						recordNotesPanel.removePopup();
+					
+					if (!recordNotesDTO)
+						recordNotesDTO = new ModuleNoteDTO();
+					
+					recordNotesPanel 					= new NotesPanel();
+					recordNotesPanel.width			= 550
+					recordNotesPanel.height			= 150
+					recordNotesPanel.HeadingLable 	= id_Plan.textInput.text;
+					recordNotesPanel.VisitDateLable = model.FormatedVisitDate;
+					recordNotesPanel.notesDTO	= recordNotesDTO;
+					recordNotesPanel.ShowPopup( this );
+					recordNotesPanel.move( loc.x, loc.y );
+					
+					recordNotesPanel.id_header.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						recordNotesPanel.SaveNotes();
+						recordNotesPanel.removePopup();
+						event.stopImmediatePropagation();	
+						
+						if(recordNotesPanel.id_body.id_message.text.length > 0)
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", ImmunizationNotesFilledBtn);
+							
+						}
+						else
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", ImmunizationWriteNotesBtn);
+						}
+					});
+				}
+			}
+			
+			private var _recommendationCollection:ArrayCollection;
+			[Bindable]
+			public function get recommendationCollection():ArrayCollection
+			{
+				return _recommendationCollection;
+			}
+			
+			public function set recommendationCollection(value:ArrayCollection):void
+			{
+				_recommendationCollection = value;
+				
+				if (_recommendationCollection)
+				{
+					_recommendationCollection.addEventListener(CollectionEvent.COLLECTION_CHANGE, recommendationCollectionChanged, false, 0, true);
+					
+					if (_recommendationCollection.length)
+						includeGridInLayout = true;
+						
+					else
+						includeGridInLayout = false;
+				}
+				else
+					includeGridInLayout = false;
+			}
+			
+			private function recommendationCollectionChanged(event:CollectionEvent):void
+			{
+				if (recommendationCollection && recommendationCollection.length)
+				{
+					includeGridInLayout = true;
+					if(hasViewChanged)
+						hasViewChanged = false;
+					
+					hasViewChanged = true;
+				}
+				else
+				{
+					includeGridInLayout = false;
+					hasViewChanged = false;
+				}
+			}
+			
+			public function get includeGridInLayout():Boolean
+			{
+				return _includeInLayout;
+			}
+			
+			public function set includeGridInLayout(value:Boolean):void
+			{
+				_includeInLayout = value;
+				_includeInLayoutChanged = true;
+				
+				invalidateProperties();
+			}
+			
+			private function resetFields():void
+			{
+				id_Plan.selectedIndex = -1;
+				id_Plan.textInput.text = "";
+				
+				id_AssociatedDiagnosis.selectedIndex = -1;
+				id_AssociatedDiagnosis.textInput.text = "";
+				
+				id_Method.selectedIndex = -1;
+				id_Method.textInput.text = "";
+				
+				id_Duration.selectedIndex = -1;
+				id_Duration.textInput.text = "";
+				
+				id_Links.selectedIndex = -1;
+				id_Links.textInput.text = "";
+				
+				id_DescriptionArea.text = "";
+				
+				id_Yes.selected = false;
+				id_No.selected = false;
+				
+				id_Add.enableAll = false;
+				
+				id_Add.notesDTO = new ModuleNoteDTO();
+				id_Add.dictationDTO = new ModuleDictationDTO();
+				
+				recordNotesDTO = new ModuleNoteDTO();
+				
+				if (recordNotesPanel)
+					recordNotesPanel.removePopup();
+				
+				//id_Add.id_WriteNotes.setStyle("skinClass", ImmunizationWriteNotesBtn);
+				//id_Add.id_WriteDictation.setStyle("skinClass", ImmunizationDictationBtn);
+			}
+			
+			private function cc():void
+			{
+				
+				
+				
+				//addEventListener("writeDictationClick", writeDictationClickHandler, false, 0, true);
+				
+				id_RecommendationGrid.addEventListener(DataGridActionsEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+				id_RecommendationGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, false, 0, true);
+				id_RecommendationGrid.addEventListener(DataGridActionsEvent.ITEM_EDIT_KEY_UP, itemEditKeyUpHandler, false, 0, true);
+				id_RecommendationGrid.addEventListener(DataGridActionsEvent.WRITE_NOTES_CLICK, writeNotesClickHandler, false, 0, true);
+				
+				if (!deleteColumnData)
+					deleteColumnData = {};
+				
+				deleteColumnData["noteDataFields"] = {subject: "NoteSubject", note: "Note", header: "Plan.PlanName"};
+				deleteColumnData["dictationDataField"] = "DictationID";
+				deleteColumnData["recordIDField"] = "PatientRecommendationID";
+				deleteColumnData["section"] = QIPopUpManager.RECOMMENDATION;
+			}
+			
+			private function writeNotesClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_RECOMMENDATION ) )//Tahir Alvi - implement security check 
+				{
+					
+				}
+			}
+			
+			private function editRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_RECOMMENDATION ) )//Tahir Alvi - implement security check 
+				{
+					id_RecommendationGrid.editable = true;
+					
+					var rowIndex:int = LabelDataGrid(event.currentTarget).selectedIndex;
+					
+					var itemToSetInEditableMode:IListItemRenderer = id_RecommendationGrid.indexToItemRenderer(rowIndex);
+					
+					var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+					ev.columnIndex = 2;
+					ev.rowIndex = rowIndex;
+					ev.itemRenderer = itemToSetInEditableMode;
+					ev.dataField = "Plan.PlanName";
+					id_RecommendationGrid.dispatchEvent(ev);
+				}
+			}
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_RECOMMENDATION ) )//Tahir Alvi - implement security check 
+				{
+					var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+					
+					var recommendationID:int = PatientRecommendationDTO(event.currentTarget.selectedItem).PatientRecommendationID;
+					
+					UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+					{
+						if (recommendationID == 0)
+						{
+							model.quickInputDTO.Assessment.Recommendation.removeItemAt(curTar.selectedIndex);
+							if (model.quickInputDTO.Assessment.Recommendation.length <= 0)
+							{
+								_hasGridChanged = false;
+								hasViewChanged = isGetEdited();
+							}
+						}
+						else
+						{
+							id_RecommendationGrid.selectedItem.IsDeleted = true;
+							model.quickInputDTO.Assessment.Recommendation.filterFunction = filterDeletedItems;
+							model.quickInputDTO.Assessment.Recommendation.refresh();
+							
+							hasViewChanged = _hasGridChanged = true;
+						}
+					});
+					
+				}
+				
+			}
+			
+			private function itemEditKeyUpHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_RECOMMENDATION ) )//Tahir Alvi - implement security check 
+				{
+					
+					var lblFld:String = SparkComboBoxItemEditor(event.target).labelField;
+					
+					if (lblFld == "Links")
+					{
+						if (event.searchString.length > 2)
+						{
+							var loadLinksEv:LoadAllLinksEvent = new LoadAllLinksEvent(event.searchString);
+							CairngormEventDispatcher.getInstance().dispatchEvent(loadLinksEv);
+						}
+					}
+				}
+			}
+			
+			private function addRecordClickHandler():void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_RECOMMENDATION ) )//Tahir Alvi - implement security check 
+				{
+					var patientRecommendationDTO:PatientRecommendationDTO = new PatientRecommendationDTO();
+					if( id_Plan.selectedIndex >= 0 )
+					{
+						patientRecommendationDTO.Plan = new PlanTypeDTO(); //(id_Plan.selectedItem);
+						patientRecommendationDTO.Plan.RecommendationPlanTypeID 	= id_Plan.selectedItem.RecommendationPlanTypeID;
+						patientRecommendationDTO.Plan.PlanName 					= id_Plan.selectedItem.PlanName;
+					}
+					else if( id_Plan.textInput.text.length > 2)//free text
+					{
+						patientRecommendationDTO.Plan = new PlanTypeDTO(); //(id_Plan.selectedItem);
+						patientRecommendationDTO.Plan.RecommendationPlanTypeID 	= 0;
+						patientRecommendationDTO.Plan.PlanName 					= id_Plan.textInput.text;
+					}
+					
+					if( id_Method.selectedIndex >= 0 )
+					{
+						patientRecommendationDTO.Method = new MethodTypeDTO();
+						patientRecommendationDTO.Method.RecommendationMethodTypeID = MethodTypeDTO(id_Method.selectedItem).RecommendationMethodTypeID;
+						patientRecommendationDTO.Method.MethodName = MethodTypeDTO(id_Method.selectedItem).MethodName;
+					}
+					else if( id_Method.textInput.text.length > 2 )//free text
+					{
+						patientRecommendationDTO.Method = new MethodTypeDTO();
+						patientRecommendationDTO.Method.RecommendationMethodTypeID = 0;
+						patientRecommendationDTO.Method.MethodName = id_Method.textInput.text;
+					}
+					
+					if( id_Duration.selectedIndex >= 0 )
+					{
+						patientRecommendationDTO.Duration = new DurationTypeDTO();
+						patientRecommendationDTO.Duration.RecommendationDurationTypeID = DurationTypeDTO(id_Duration.selectedItem).RecommendationDurationTypeID;
+						patientRecommendationDTO.Duration.DurationName = DurationTypeDTO(id_Duration.selectedItem).DurationName;
+					}
+					else if( id_Duration.textInput.text.length > 2 )//free text
+					{
+						patientRecommendationDTO.Duration = new DurationTypeDTO();
+						patientRecommendationDTO.Duration.RecommendationDurationTypeID = 0;
+						patientRecommendationDTO.Duration.DurationName = id_Duration.textInput.text;
+					}
+					
+					if( id_AssociatedDiagnosis.selectedItem )
+					{
+						var label:String = "";
+						label += id_AssociatedDiagnosis.selectedItem.ICDCode.IcdCodeName + ", ";
+						label += id_AssociatedDiagnosis.selectedItem.ICDCode.IcdCodeDescription + ", ";
+						label += id_AssociatedDiagnosis.selectedItem.ICDCode.IsChronic ? " (Chronic) " : " (Acute) ";
+						patientRecommendationDTO.DiagnosisInfo = label;
+						patientRecommendationDTO.PatientDiagnosisID = ( id_AssociatedDiagnosis.selectedItem as PatientDiagnosisDTO ).PatientDiagnosisID;
+					}
+					
+					patientRecommendationDTO.PatientID = model.loadedPatientId;
+					
+					if (id_Yes.selected)
+						patientRecommendationDTO.IsDiscussedWithPatient = Constants.STRING_TRUE;
+					else if (id_No.selected)
+						patientRecommendationDTO.IsDiscussedWithPatient = Constants.STRING_FALSE;
+					
+					
+					patientRecommendationDTO.Description = id_DescriptionArea.text;
+					
+					patientRecommendationDTO.ClinicBranchID = model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchIdSeq;
+					patientRecommendationDTO.VisitDate = formatDateTime.format(Constants.NULL_DATE);//datetostring(Tahir)
+					
+					patientRecommendationDTO.CreatedAt = formatDateTime.format(new Date());//datetostring(Tahir)
+					patientRecommendationDTO.ModifiedAt = new Date();
+					patientRecommendationDTO.DictationID = Constants.GUID_FORMAT;
+					
+					
+					if (id_Add.notesDTO)
+					{
+						patientRecommendationDTO.Note = id_Add.notesDTO.Note;
+						patientRecommendationDTO.NoteSubject = id_Add.notesDTO.NoteSubject;
+					}
+					//H
+					if (id_Add.dictationDTO && id_Add.dictationDTO.DictationID != null)
+					{
+						patientRecommendationDTO.DictationID = id_Add.dictationDTO.DictationID;
+					}
+					
+					var linkRef:String = ValidationUtils.TrimString(id_Links.textInput.text);
+					
+					if (linkRef.length)
+					{
+						patientRecommendationDTO.Links = linkRef;
+						model.linksList.addItem(linkRef);
+					}
+					
+					if(model.quickInputDTO.Assessment==null)
+						model.quickInputDTO.Assessment = new AssessmentDTO();
+					
+					if(model.quickInputDTO.Assessment.Recommendation==null)
+					{
+						model.quickInputDTO.Assessment.Recommendation =new ArrayCollection();
+					}	
+					
+					model.quickInputDTO.Assessment.Recommendation.addItem(patientRecommendationDTO);
+					resetFields();
+					
+					if(hasViewChanged)
+						hasViewChanged = false;
+					
+					_hasGridChanged = true;
+					hasViewChanged  = true;
+					
+					
+					id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotes);
+					id_Add.id_WriteDictation.setStyle("skinClass", QIDictationBtn);
+					
+				}
+			}
+			
+			private var recordLevelDicPanel:DictationPopup;
+			private function writeDictationClickHandler(event:Event):void
+			{
+				var addRecord:AddRecord = AddRecord(event.target);
+				
+				recordLevelDicPanel = QIDictationManager.show(addRecord, recordLevelDicPanel, addRecord.dictationDTO, addRecord.id_WriteDictation);
+				
+				QIPopUpManager.addPopUp(recordLevelDicPanel, QIPopUpManager.RECOMMENDATION);
+				recordLevelDicPanel.move( recordLevelDicPanel.x - 81, recordLevelDicPanel.y);
+				recordLevelDicPanel.addEventListener(MouseEvent.CLICK, function():void
+				{
+					QIPopUpManager.removePopUp(recordLevelDicPanel, QIPopUpManager.RECOMMENDATION);
+					
+					if(recordLevelDicPanel && recordLevelDicPanel.DictationID)
+					{
+						id_Add.id_WriteDictation.setStyle("skinClass", ImmunizationSpeakerBtn);
+					}
+					
+				}, true, 0, false);
+			}
+			
+			private function comboKeyUpHandler(event:KeyboardEvent):void
+			{
+				if (event.charCode >= 32 && event.charCode <= 127 || event.charCode == 8)
+				{
+					if (event.currentTarget.id != "id_Links")
+					{
+						id_Add.enableAll = false;
+					}
+					if (event.currentTarget.id == "id_Plan" && ( event.currentTarget.textInput.text.length == 3 || event.currentTarget.textInput.text.length == 5) )
+					{
+						var laptEvent : LoadAllPlanTypesEvent = new LoadAllPlanTypesEvent();
+						CairngormEventDispatcher.getInstance().dispatchEvent( laptEvent );
+					}
+					if (event.currentTarget.id == "id_Method" && ( event.currentTarget.textInput.text.length == 3 || event.currentTarget.textInput.text.length == 5) )
+					{
+						var lmtEvent : LoadAllMethodTypesEvent = new LoadAllMethodTypesEvent();
+						CairngormEventDispatcher.getInstance().dispatchEvent( lmtEvent );
+					}
+					if (event.currentTarget.id == "id_Duration" && ( event.currentTarget.textInput.text.length == 3 || event.currentTarget.textInput.text.length == 5) )
+					{
+						var ladtEvent : LoadAllDurationTypesEvent = new LoadAllDurationTypesEvent();
+						CairngormEventDispatcher.getInstance().dispatchEvent( ladtEvent );
+					}
+					if( event.currentTarget.id == "id_AssociatedDiagnosis" && ( event.currentTarget.textInput.text.length == 3 || event.currentTarget.textInput.text.length == 5) )
+					{
+						var ldrbpid:LoadDiagnosisForRecommendationByPatientIdEvent = new LoadDiagnosisForRecommendationByPatientIdEvent();
+						CairngormEventDispatcher.getInstance().dispatchEvent(ldrbpid);
+					}
+					else
+					{
+						var searchString:String = event.currentTarget.textInput.text;
+						
+						if (searchString.length > 2)
+						{
+							var loadLinksEv:LoadAllLinksEvent = new LoadAllLinksEvent(searchString);
+							CairngormEventDispatcher.getInstance().dispatchEvent(loadLinksEv);
+						}
+					}
+					
+					id_Add.enabled = true;
+				}
+				
+				/* calling isGetEdited() to check whether is there any change in view or not
+				just to set hasViewChanged boolean
+				*/
+				isGetEdited();
+			}
+			
+			private function comboChangeHandler():void
+			{
+				id_Add.enableAll = !isInvalid();
+				id_Add.enabled = isGetEdited();
+			}
+			
+			private function recommendationItemEditBeginHandler(event:DataGridEvent):void
+			{
+				/* if (event.columnIndex == 6 && id_RecommendationGrid.itemEditorInstance )
+				{
+				//	id_RecommendationGrid.createItemEditor(event.columnIndex, event.rowIndex);
+				if(event.columnIndex == 6)
+				YesNoItemEditor(id_RecommendationGrid.itemEditorInstance).property = "IsDiscussedWithPatient";
+				else 
+				YesNoItemEditor(id_RecommendationGrid.itemEditorInstance).property = "IsActive";
+				
+				YesNoItemEditor(id_RecommendationGrid.itemEditorInstance).data = event.itemRenderer.data;
+				} */
+				if (event.columnIndex == 6 )
+				{
+					id_RecommendationGrid.createItemEditor(event.columnIndex, event.rowIndex);
+					
+					YesNoItemEditor(id_RecommendationGrid.itemEditorInstance).property = "IsDiscussedWithPatient";
+					
+					YesNoItemEditor(id_RecommendationGrid.itemEditorInstance).data = event.itemRenderer.data;
+				}
+			}
+			
+			private function recommendationItemEditEndHandler(event:DataGridEvent):void
+			{
+				var validationRes:ValidationResultEvent;
+				var recommendationID:int = PatientRecommendationDTO(event.currentTarget.selectedItem).PatientRecommendationID;
+				
+				if (event.dataField == "Plan.PlanName")
+				{
+					var planEditor:LabelComboBox = SparkComboBoxItemEditor(id_RecommendationGrid.itemEditorInstance).id_ComboEditor;
+					
+					comboValidator.error = "Invalid Plan";
+					comboValidator.source = planEditor;
+					
+					validationRes = comboValidator.validate(planEditor.selectedItem);
+					
+					if (validationRes && !validationRes.results)
+					{
+						event.itemRenderer.data.Plan = planEditor.selectedItem;
+						
+						if (recommendationID != 0)
+							event.itemRenderer.data.IsDirty = true;
+						
+						hasViewChanged = _hasGridChanged = true;
+					}
+					/*else
+					{
+					//event.itemRenderer.data.Plan = editor.previouslySelectedItem;
+					id_RecommendationGrid.destroyItemEditor();
+					event.stopImmediatePropagation();
+					event.preventDefault();
+					}*/
+					id_RecommendationGrid.destroyItemEditor();
+					event.stopImmediatePropagation();
+					event.preventDefault();
+					
+				}
+				else if (event.dataField == "Method.MethodName")
+				{
+					var methodEditor:LabelComboBox = SparkComboBoxItemEditor(id_RecommendationGrid.itemEditorInstance).id_ComboEditor;
+					
+					comboValidator.error = "Invalid Method";
+					comboValidator.source = methodEditor;
+					
+					validationRes = comboValidator.validate(methodEditor.selectedItem);
+					
+					if (validationRes && !validationRes.results)
+					{
+						event.itemRenderer.data.Method = methodEditor.selectedItem;
+						
+						if (recommendationID != 0)
+							event.itemRenderer.data.IsDirty = true;
+						
+						hasViewChanged = _hasGridChanged = true;
+					}
+					/*else
+					{
+					//event.itemRenderer.data.Method = editor.previouslySelectedItem;
+					id_RecommendationGrid.destroyItemEditor();
+					event.stopImmediatePropagation();
+					event.preventDefault();
+					}*/
+					id_RecommendationGrid.destroyItemEditor();
+					event.stopImmediatePropagation();
+					event.preventDefault();
+				}
+					
+				else if (event.dataField == "Links")
+				{
+					var linksEditor:LabelComboBox = SparkComboBoxItemEditor(id_RecommendationGrid.itemEditorInstance).id_ComboEditor;
+					
+					event.itemRenderer.data.Links = ValidationUtils.TrimString(linksEditor.textInput.text);
+					
+					if (recommendationID != 0)
+						event.itemRenderer.data.IsDirty = true;
+					
+					hasViewChanged = _hasGridChanged = true;
+					
+					id_RecommendationGrid.destroyItemEditor();
+					event.stopImmediatePropagation();
+					event.preventDefault();
+				}
+					
+				else if (event.dataField == "Duration.DurationName")
+				{
+					var durationEditor:LabelComboBox = SparkComboBoxItemEditor(id_RecommendationGrid.itemEditorInstance).id_ComboEditor;
+					
+					comboValidator.error = "Invalid Duration";
+					comboValidator.source = durationEditor;
+					
+					validationRes = comboValidator.validate(durationEditor.selectedItem);
+					
+					if (validationRes && !validationRes.results)
+					{
+						event.itemRenderer.data.Duration = durationEditor.selectedItem;
+						
+						if (recommendationID != 0)
+							event.itemRenderer.data.IsDirty = true;
+						hasViewChanged = _hasGridChanged = true;
+					}
+					/*else
+					{
+					//event.itemRenderer.data.Duration = editor.selectedItem;
+					id_RecommendationGrid.destroyItemEditor();
+					event.stopImmediatePropagation();
+					event.preventDefault();
+					}*/
+					id_RecommendationGrid.destroyItemEditor();
+					event.stopImmediatePropagation();
+					event.preventDefault();
+				}
+				else if (event.dataField == "IsDiscussedWithPatient")
+				{
+					hasViewChanged = _hasGridChanged = true;
+				}
+			}
+			
+			override protected function commitProperties():void
+			{
+				super.commitProperties();
+				
+				if (_includeInLayoutChanged)
+				{
+					_includeInLayoutChanged = false;
+					
+					id_RecommendationGrid.includeInLayout = _includeInLayout;
+					id_RecommendationGrid.visible = _includeInLayout;
+					
+					if (_includeInLayout)
+					{
+						id_RecommendationGrid.horizontalScrollPolicy="on";
+						id_RecommendationGrid.columns[0].width = 40;
+						id_RecommendationGrid.columns[1].width = 40;
+						id_RecommendationGrid.columns[2].width = 40;
+						id_RecommendationGrid.columns[3].width = 60;
+						id_RecommendationGrid.columns[4].width = 60;
+						id_RecommendationGrid.columns[5].width = 70;
+						id_RecommendationGrid.columns[6].width = 60;
+						id_RecommendationGrid.columns[7].width = 50;
+						id_RecommendationGrid.horizontalScrollPolicy="off";
+						
+						
+						id_RecommendationGrid.invalidateProperties();
+						id_RecommendationGrid.invalidateSize();
+						id_RecommendationGrid.invalidateDisplayList();
+					}
+				}
+			}
+			
+			private function DescriptionChangeHandler(event:Event):void
+			{
+				//id_Add.enableAll = ( id_DescriptionArea.text.length > 0 )
+				id_Add.enableAll = !isInvalid();
+			}
+			
+			public function associatedDiagnosisLabel(oItem:Object):String
+			{
+				var label:String = "";
+				if( oItem is String )
+				{
+					id_AssociatedDiagnosis.selectedIndex = -1;
+				}
+				else if ( oItem is PatientDiagnosisDTO )
+				{
+					label += oItem.ICDCode.IcdCodeName + ", ";
+					label += oItem.ICDCode.IcdCodeDescription + ", ";
+					label += oItem.IsChronic ? " (Chronic) " : " (Acute) ";
+				}
+				return label;
+			}
+			
+			
+			protected function id_AssociatedDiagnosis_clickHandler(event:MouseEvent):void
+			{
+				var ldrbpid:LoadDiagnosisForRecommendationByPatientIdEvent = new LoadDiagnosisForRecommendationByPatientIdEvent();
+				CairngormEventDispatcher.getInstance().dispatchEvent(ldrbpid);
+			}
+			
+			
+			private var recordGridNotesPopUp:NotesPanel;
+			private var section:String;
+			
+			private function onWriteNotesClick(event:Event):void
+			{
+				if (!recordGridNotesPopUp)
+					recordGridNotesPopUp = new NotesPanel();
+				
+				if (!recordGridNotesPopUp.isPanelShown)
+				{
+					//gridNotesDTO = new ModuleNoteDTO();
+					var headingLabel:String = "";
+					
+					//extractDataForNotes();
+					
+					
+					var addRecord:AddRecord = AddRecord(event.target);
+					
+					//recordLevelDicPanel = QIDictationManager.show(addRecord, recordLevelDicPanel, addRecord.dictationDTO, addRecord.id_WriteDictation);
+					
+					//headingLabel = deriveComplexData(headerField);
+					recordGridNotesPopUp 				= new NotesPanel();
+					recordGridNotesPopUp.width			= 250;
+					recordGridNotesPopUp.height			= 110;
+					recordGridNotesPopUp.HeadingLable 	= id_AssociatedDiagnosis.textInput.text;
+					recordGridNotesPopUp.VisitDateLable = model.FormatedVisitDate;//new Date().toDateString();
+					recordGridNotesPopUp.ShowPopup(this);
+					
+					
+					
+					recordGridNotesPopUp.notesDTO		=  addRecord.notesDTO; //gridNotesDTO;
+					//recordGridNotesPopUp.onNotesSaved = updateNotesData;
+					
+					QIPopUpManager.addPopUp(recordGridNotesPopUp, section);
+					
+					//var pt:Point = localToGlobal(new Point(recordGridNotesPopUp.x, recordGridNotesPopUp.y));
+					
+					var pt:Point = id_Add.localToGlobal(new Point(id_Add.id_WriteNotes.x ,id_Add.id_WriteNotes.y));
+					
+					recordGridNotesPopUp.move(pt.x - 195, pt.y + 20);
+					
+					//recordGridNotesPopUp.move( recordGridNotesPopUp.x , recordGridNotesPopUp.y);
+					/*recordGridNotesPopUp.addEventListener("notesSaved", function(event:Event):void
+					{
+					updateNotesData();
+					
+					}, false, 0, true);*/
+					
+					recordGridNotesPopUp.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						//recordGridNotesPopUp.removePopup();
+						QIPopUpManager.removePopUp(recordGridNotesPopUp, section);
+						
+					}, false, 0, true);
+					
+					recordGridNotesPopUp.id_header.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						recordGridNotesPopUp.SaveNotes();
+						//if(recordNotesDTO)
+						if(recordGridNotesPopUp.id_body.id_message.text.length > 0)
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotesSelected);
+							
+						}
+						else
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotes);
+							
+						}
+						recordGridNotesPopUp.removeNotePanel();
+						QIPopUpManager.removePopUp(recordGridNotesPopUp, section);
+					});
+					
+					recordGridNotesPopUp.addEventListener("notesSaved", function(event:Event):void
+					{
+						if(recordGridNotesPopUp.id_body.id_message.text.length > 0)
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotesSelected);								
+						}
+						else
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotes);
+						}
+					});
+				}
+			}
+			
+			public function AllowMoveToNextPanel( callBack:Function ):void
+			{
+				if( id_Add.enableAll )
+				{
+					UtilityFunctions.AskMessage( "There are changes in the form, do you still want to leave form in current state?", function ():void
+					{
+						callBack(); 
+					}); 
+				}
+				else
+				{
+					callBack();
+				}
+			}
+			
+			public function LoadStaticData():void
+			{
+				if(model.planTypesList==null || model.planTypesList.length==0)
+				{
+					var laptEvent : LoadAllPlanTypesEvent = new LoadAllPlanTypesEvent();
+					CairngormEventDispatcher.getInstance().dispatchEvent( laptEvent );
+				}
+				
+				if(model.durationTypesList==null || model.durationTypesList.length==0)
+				{
+					var ladtEvent : LoadAllDurationTypesEvent = new LoadAllDurationTypesEvent();
+					CairngormEventDispatcher.getInstance().dispatchEvent( ladtEvent );
+				}
+				
+				if(model.methodTypesList==null || model.methodTypesList.length==0)
+				{
+					var lmtEvent : LoadAllMethodTypesEvent = new LoadAllMethodTypesEvent();
+					CairngormEventDispatcher.getInstance().dispatchEvent( lmtEvent );
+				}
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<validators:ComboValidator id="comboValidator" property="selectedItem"/>
+		<mx:DateFormatter id="formatDateTime" formatString="MM/DD/YYYY" />
+	</fx:Declarations>
+	
+	<fx:Binding source="model.quickInputDTO.Assessment.Recommendation" destination="recommendationCollection"/>
+	
+	<s:layout>
+		<s:VerticalLayout paddingLeft="3" paddingRight="3" paddingTop="3" paddingBottom="0" verticalAlign="middle" gap="1"/>
+	</s:layout>
+	
+	<s:HGroup width="100%" gap="1">
+		<components1:LabelComboBox id="id_Plan" prompt="Select Plan" width="200" dataProvider="{model.planTypesList}" labelField="PlanName" 
+								  change="comboChangeHandler()" keyUp="comboKeyUpHandler(event)"
+								  skinClass="com.gazuntite.controls.extended.skins.comboBoxRegisterationRequiredSkin" tabIndex="1"/>
+		
+		<!--dataProvider="{model.patientAllDiagnosisForRecommendationList}" labelFunction="associatedDiagnosisLabel"-->
+		<components1:LabelComboBox id="id_AssociatedDiagnosis" prompt="Associated Diagnosis" width="90%" 
+								  dataProvider="{model.quickInputDTO.Assessment.Diagnosis}" labelFunction="associatedDiagnosisLabel"
+								  change="comboChangeHandler()" keyUp="comboKeyUpHandler(event)" click="id_AssociatedDiagnosis_clickHandler(event)"
+								  tabIndex="2"/>
+		<commons:AddRecord id="id_Add" verticalAlign="middle" writeNotesClick="onWriteNotesClick(event)"  writeDictationClick="writeDictationClickHandler(event)" 
+						   tabIndex="3" paddingLeft="8" enableAll="false" enabled="false"/>
+		
+	</s:HGroup>
+	<s:HGroup width="100%" gap="2">
+		<components1:LabelComboBox id="id_Links" prompt="Web Links" width="200" dataProvider="{model.linksList}"
+								  maxChars="500" change="comboChangeHandler()" keyUp="comboKeyUpHandler(event)" tabIndex="5"/>
+		<components1:LabelComboBox id="id_Method" prompt="Method" width="100%" dataProvider="{model.methodTypesList}" labelField="MethodName"
+								  change="comboChangeHandler()" keyUp="comboKeyUpHandler(event)"
+								  skinClass="com.gazuntite.controls.extended.skins.comboBoxRegisterationRequiredSkin" tabIndex="6"/>
+		<components1:LabelComboBox id="id_Duration" prompt="Duration" width="100%" dataProvider="{model.durationTypesList}" labelField="DurationName"
+								  change="comboChangeHandler()" keyUp="comboKeyUpHandler(event)"
+								  skinClass="com.gazuntite.controls.extended.skins.comboBoxRegisterationRequiredSkin" tabIndex="7"/>
+		<s:HGroup width="100%" paddingTop="5" paddingLeft="5">
+			<s:Label text="Discussed with Patient?" fontFamily="Calibri" fontSize="12" color="#FFFFFF" paddingRight="8" verticalAlign="bottom"/>
+			<s:HGroup gap="0" paddingLeft="5" verticalAlign="middle" horizontalAlign="center" >
+				<s:RadioButton id="id_Yes"  skinClass="com.adobe.Quivus.view.controls.skins.radioButtonSkins.YRadioButton" tabIndex="8" toolTip="Yes" buttonMode="true"/>
+				<s:RadioButton id="id_No"  skinClass="com.adobe.Quivus.view.controls.skins.radioButtonSkins.NRadioButton" toolTip="No" buttonMode="true"/>
+			</s:HGroup>
+			
+		</s:HGroup>
+		
+		
+		
+	</s:HGroup>
+	<components1:LabelTextArea id="id_DescriptionArea" prompt="Description" width="100%" height="50" change="DescriptionChangeHandler(event)"
+							  maxChars="1500" color="#000000"
+							  tabIndex="9" skinClass="com.adobe.Quivus.view.controls.skins.textAreaReqSkin"/>
+	
+	
+	<s:HGroup width="100%" paddingBottom="0" paddingTop="1">
+		<s:Button id="id_add" click="addRecordClickHandler()" enabled="{id_Add.enableAll}" buttonMode="true" useHandCursor="true"
+				  toolTip="Add Record" label="Add Recommendation" width="150"
+				  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.AddMoreTooltipBtn" tabIndex="10"/>
+		<s:SkinnableContainer skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.tooltipBG" visible="{!id_add.enabled}" width="100%" />
+		<mx:Spacer width="100%" />
+		<s:Button id="id_nextBtn" label="Next" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QInextBtnSkin"  buttonMode="true"
+				  toolTip="Next Section" enabled="true"/>
+		
+	</s:HGroup>
+	
+	<components1:LabelDataGrid id="id_RecommendationGrid" width="100%" includeInLayout="{includeGridInLayout}" visible="{includeGridInLayout}"
+							  editable="false" useRollOver="false" rowCount="{id_RecommendationGrid.dataProvider.length + 1}"
+							  itemEditBegin="recommendationItemEditBeginHandler(event)" 
+							  itemEditEnd="recommendationItemEditEndHandler(event)"
+							  dataProvider="{recommendationCollection}"
+							  verticalScrollPolicy="on"
+							  maxHeight="150" columnWidths="{[25,'10%','20%','12%','13%','10%','10%','20%',100]}">
+		<components:columns>
+			
+			<mx:DataGridColumn headerText="Sr.#" editable="false" labelFunction="GridRowNumber" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" />
+			<mx:DataGridColumn headerText="Visit Date" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" editable="false" labelFunction="{ValidationUtils.displayVisitDateForGrid}"/>
+			<mx:DataGridColumn headerText="Plan"  dataField="Plan.PlanName" editorDataField="editorText" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor  dataProvider="{outerDocument.model.planTypesList}" labelField="PlanName"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Method"  dataField="Method.MethodName" editorDataField="editorText"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.methodTypesList}" labelField="MethodName"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Links"  editable="true" dataField="Links" editorDataField="editorText" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true">
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor  dataProvider="{outerDocument.model.linksList}" labelField="Links"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Duration"  itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="Duration.DurationName" editorDataField="editorText" >
+				<mx:itemEditor>
+					<fx:Component>
+						<itemEditors:SparkComboBoxItemEditor  dataProvider="{outerDocument.model.durationTypesList}" labelField="DurationName"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Discussed " itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="IsDiscussedWithPatient" labelFunction="discussedWithPatientLabel" editorDataField="isYes">
+				<mx:itemEditor>
+					<fx:Component>
+						<diagnosis:YesNoItemEditor  height="100%"/>
+					</fx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Desc" dataField="Description"  width="25" wordWrap="true" >
+				<!--<mx:itemEditor>
+				<fx:Component>
+				<s:TextArea width="100%" height="100%" maxChars="1500" color="#000000" />
+				</fx:Component>
+				</mx:itemEditor>-->
+			</mx:DataGridColumn>
+			<commons:DataGridColumnEx data="{deleteColumnData}" headerText="" editable="false" itemRenderer="com.gazuntite.patient.visit.view.itemrenderers.DeleteRecordRenderer"/>
+		</components:columns>
+	</components1:LabelDataGrid>
+</s:Group>

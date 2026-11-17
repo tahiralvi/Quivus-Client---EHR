@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" paddingLeft="5" paddingRight="5" >
+
+	<fx:Metadata>
+		[Event(name="Edit", type="flash.events.Event")]
+		[Event(name="CreateClaim", type="flash.events.Event")]
+		[Event(name="PrintSend", type="flash.events.Event")]
+		[Event(name="Reprint", type="flash.events.Event")]
+		[Event(name="Delete", type="flash.events.Event")]
+		[Event(name="Close", type="flash.events.Event")]
+		[Event(name="BillingSummary", type="flash.events.Event")]
+		[Event(name="CMS1500", type="flash.events.Event")]
+		[Event(name="CMS1500PrePrinted", type="flash.events.Event")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			
+			
+			public static const EDIT				:String = "Edit";
+			public static const CREATE_CLAIM		:String = "CreateClaim";
+			public static const PRINT_SEND			:String = "PrintSend";
+			public static const REPRINT				:String = "Reprint";
+			public static const DELETE				:String = "Delete";
+			public static const CLOSE				:String = "Close";
+			public static const BILLING_SUMAARY		:String = "BillingSummary";
+			public static const CMS_1500			:String = "CMS1500";
+			public static const CMS_1500_PP			:String = "CMS1500PrePrinted";
+			
+			protected function clickHandler(event:MouseEvent):void
+			{
+				var btn:Button = event.currentTarget as Button;
+				switch( btn.id )
+				{
+					case "id_editBtn":
+						dispatchEvent( new Event( EDIT, true ) );
+						break;
+					case "id_createClaimBtn":
+						dispatchEvent( new Event( CREATE_CLAIM, true ) );
+						break;
+					case "id_printSendBtn":
+						dispatchEvent( new Event( PRINT_SEND, true ) );
+						break;		
+					case "id_reprintBtn":
+						dispatchEvent( new Event( REPRINT, true ) );
+						break;
+					case "id_deleteBtn":
+						dispatchEvent( new Event( DELETE, true ) );
+						break;
+					case "id_closeBtn":
+						dispatchEvent( new Event( CLOSE, true ) );
+						break;	
+					case "id_Billingsummary":
+						dispatchEvent( new Event( BILLING_SUMAARY, true ) );
+						break;	
+					case "id_CMS1500":
+						dispatchEvent( new Event( CMS_1500, true ) );
+						break;	
+					case "id_CMS1500pp":
+						dispatchEvent( new Event( CMS_1500_PP, true ) );
+						break;
+				}
+			}			
+			
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+			
+	<s:Button buttonMode="true" id="id_editBtn" label="Edit"  
+			  click="clickHandler(event)"  width="50" tabIndex="14"
+			  styleName="blackButtonSkin" toolTip="{id_editBtn.label}"/>
+	<s:Button buttonMode="true" id="id_createClaimBtn" label="Create " 
+			  click="clickHandler(event)" width="60" tabIndex="15"
+			  styleName="blackButtonSkin" toolTip="{id_createClaimBtn.label}"/>
+	<s:Button buttonMode="true" id="id_printSendBtn" label="Print/Send"  
+			  click="clickHandler(event)" width="75" tabIndex="16"
+			  styleName="blackButtonSkin" toolTip="{id_printSendBtn.label}"/>
+	<s:Button buttonMode="true" id="id_reprintBtn" label="Reprint Claim"  tabIndex="17"
+			  styleName="blackButtonSkin" toolTip="{id_reprintBtn.label}" width="80"/>
+	<s:Button id="id_CMS1500" width="100" useHandCursor="true" buttonMode="true" toolTip="View CMS 1500" 
+			  click="clickHandler(event)" tabIndex="18"
+			  label="View CMS " styleName="blackButtonSkin"  />
+	<s:Button id="id_CMS1500pp" width="100" useHandCursor="true" buttonMode="true" toolTip="Print CMS 1500" 
+			  click="clickHandler(event)" tabIndex="18" 
+			  includeInLayout="false" visible="false"
+			  label="Print CMS " styleName="blackButtonSkin"  />
+	<s:Button id="id_Billingsummary" width="100" useHandCursor="true" buttonMode="true"  toolTip="Billing Summary" 
+			  click="clickHandler(event)" tabIndex="19"
+			  label="Billing Summary" styleName="blackButtonSkin" />
+	<s:Button buttonMode="true" id="id_deleteBtn" label="Delete" 
+			  click="clickHandler(event)" width="55" tabIndex="20"
+			  styleName="blackButtonSkin" toolTip="{id_deleteBtn.label}"/>
+	<s:Button buttonMode="true" id="id_closeBtn" label="Close" 
+			  click="clickHandler(event)" width="55" tabIndex="21"
+			  styleName="blackButtonSkin" toolTip="{id_closeBtn.label}"/>
+	
+	
+</s:HGroup>

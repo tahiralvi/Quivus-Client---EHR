@@ -1,0 +1,956 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:CollapsiblePanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							 xmlns:s="library://ns.adobe.com/flex/spark" 
+							 xmlns:mx="library://ns.adobe.com/flex/mx" 
+							 width="100%" title="EDI Information"
+							 creationComplete="collapsiblepanel1_creationCompleteHandler(event)" 
+							 xmlns:components1="com.gazuntite.controls.extended.components.*"
+							 >
+	<components1:layout>
+		<s:VerticalLayout gap="1" paddingBottom="8" paddingLeft="8" paddingRight="8" paddingTop="8"/>
+	</components1:layout>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CalendarLayoutChangeEvent;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			[Bindable] private var assignmentIndictorList:ArrayCollection = null;
+			[Bindable] private var delayReasonCodeList:ArrayCollection = null;
+			[Bindable] private var CMSSecTypeList:ArrayCollection = null;
+			[Bindable] private var exceptionCodeList:ArrayCollection = null;
+			
+			
+			public function SetIsDirty():void 
+			{				
+				if(id_AssignmentIndicator.selectedIndex !=-1 && model.patientDTO.AcceptAssignmentTypeID != id_AssignmentIndicator.selectedItem.TypeID )
+				{
+					model.patientDTO.IsDirty = true;
+					return;
+				} 
+				if(id_delayReason.selectedIndex !=-1 && model.patientDTO.DelayReasonCodeTypeID != id_delayReason.selectedItem.TypeID )
+				{
+					model.patientDTO.IsDirty = true;
+					return;
+				} 
+				
+				if(id_delayReason.selectedIndex !=-1 && model.patientDTO.DelayReasonCodeTypeID != id_delayReason.selectedItem.TypeID )
+				{
+					model.patientDTO.IsDirty = true;
+					return;
+				} 
+				
+				if(id_secType.selectedIndex !=-1 && model.patientDTO.CMSSecondaryTypeID != id_secType.selectedItem.TypeID )
+				{
+					model.patientDTO.IsDirty = true;
+					return;
+				} 
+				
+				if(id_excpCode.selectedIndex !=-1 && model.patientDTO.ExceptionCodeTypeID != id_excpCode.selectedItem.TypeID )
+				{
+					model.patientDTO.IsDirty = true;
+					return;
+				} 
+				
+				if(id_signature.selected.toString().toLocaleLowerCase() != String(model.patientDTO.SignatureOnFile)  )
+				{
+					model.patientDTO.IsDirty = true;
+					return;
+				} 
+				
+				if(id_preg.selected.toString().toLocaleLowerCase() != String(model.patientDTO.PregnancyIndicator)  )
+				{
+					model.patientDTO.IsDirty = true;
+					return;
+				} 
+				
+				if(id_epsdt.selected.toString().toLocaleLowerCase() != String(model.patientDTO.EPSDT)  )
+				{
+					model.patientDTO.IsDirty = true;
+					return;
+				} 
+				
+				if(id_emergency.selected.toString().toLocaleLowerCase() != String(model.patientDTO.Emergency)  )
+				{
+					model.patientDTO.IsDirty = true;
+					return;
+				} 
+				
+				if(id_family.selected.toString().toLocaleLowerCase() != String(model.patientDTO.FamilyPlanning)  )
+				{
+					model.patientDTO.IsDirty = true;
+					return;
+				} 
+				
+				if( model.patientDTO.IDENumber != id_IDENumber.text || 
+					model.patientDTO.ReferralNumber != id_ReferralNumber.text ||
+					model.patientDTO.PriorAuthorizationNumber != id_PANumber.text 
+				 )
+				{
+					model.patientDTO.IsDirty = true;
+					return;
+				}
+				
+				if( (id_signDate.selectedDate && UtilityFunctions.IsNotNullOrEmpty(model.patientDTO.SignatureDate) ) 
+					&& UtilityFunctions.FormatDate(id_signDate.selectedDate,"MM/DD/YYYY") != UtilityFunctions.FormatDate(model.patientDTO.SignatureDate,"MM/DD/YYYY") )
+				{
+					model.patientDTO.IsDirty = true;
+					return;
+				}
+				
+				if( (id_expiryDate.selectedDate && UtilityFunctions.IsNotNullOrEmpty(model.patientDTO.ExpiryDate) ) 
+					&& UtilityFunctions.FormatDate(id_expiryDate.selectedDate,"MM/DD/YYYY") != UtilityFunctions.FormatDate(model.patientDTO.ExpiryDate,"MM/DD/YYYY") )
+				{
+					model.patientDTO.IsDirty = true;
+					return;
+				}
+				
+				if( (id_seenDate.selectedDate && UtilityFunctions.IsNotNullOrEmpty(model.patientDTO.LastSeenDate) ) 
+					&& UtilityFunctions.FormatDate(id_seenDate.selectedDate,"MM/DD/YYYY") != UtilityFunctions.FormatDate(model.patientDTO.LastSeenDate,"MM/DD/YYYY") )
+				{
+					model.patientDTO.IsDirty = true;
+					return;
+				}
+				
+				if( (id_illnessDate.selectedDate && UtilityFunctions.IsNotNullOrEmpty(model.patientDTO.IllnessDate) ) 
+					&& UtilityFunctions.FormatDate(id_illnessDate.selectedDate,"MM/DD/YYYY") != UtilityFunctions.FormatDate(model.patientDTO.IllnessDate,"MM/DD/YYYY") )
+				{
+					model.patientDTO.IsDirty = true;
+					return;
+				}
+				
+				if( (id_xrayDate.selectedDate && UtilityFunctions.IsNotNullOrEmpty(model.patientDTO.LastXRayDate) ) 
+					&& UtilityFunctions.FormatDate(id_xrayDate.selectedDate,"MM/DD/YYYY") != UtilityFunctions.FormatDate(model.patientDTO.LastXRayDate,"MM/DD/YYYY") )
+				{
+					model.patientDTO.IsDirty = true;
+					return;
+				}
+				
+				if( (id_workDate.selectedDate && UtilityFunctions.IsNotNullOrEmpty(model.patientDTO.LastWorkedDate) ) 
+					&& UtilityFunctions.FormatDate(id_workDate.selectedDate,"MM/DD/YYYY") != UtilityFunctions.FormatDate(model.patientDTO.LastWorkedDate,"MM/DD/YYYY") )
+				{
+					model.patientDTO.IsDirty = true;
+					return;
+				}
+				
+				if( (id_admissionDate.selectedDate && UtilityFunctions.IsNotNullOrEmpty(model.patientDTO.AdmissionDate) ) 
+					&& UtilityFunctions.FormatDate(id_admissionDate.selectedDate,"MM/DD/YYYY") != UtilityFunctions.FormatDate(model.patientDTO.AdmissionDate,"MM/DD/YYYY") )
+				{
+					model.patientDTO.IsDirty = true;
+					return;
+				}
+				
+				if( (id_dischargeDate.selectedDate && UtilityFunctions.IsNotNullOrEmpty(model.patientDTO.DischargeDate) ) 
+					&& UtilityFunctions.FormatDate(id_dischargeDate.selectedDate,"MM/DD/YYYY") != UtilityFunctions.FormatDate(model.patientDTO.DischargeDate,"MM/DD/YYYY") )
+				{
+					model.patientDTO.IsDirty = true;
+					return;
+				}
+								
+			}
+			
+			public function loadDataEDIInfo():void
+			{
+				try
+				{
+					 if( ! AppUtils.IsNullOrEmpty( model.patientProfileDTO._PatientDTO.AcceptAssignmentTypeID ) )
+						selectListItem(id_AssignmentIndicator, model.patientProfileDTO._PatientDTO.AcceptAssignmentTypeID );
+					 
+					 if( ! AppUtils.IsNullOrEmpty( model.patientProfileDTO._PatientDTO.ExceptionCodeTypeID ) )
+						 selectListItem(id_excpCode, model.patientProfileDTO._PatientDTO.ExceptionCodeTypeID );
+					 
+					 if( ! AppUtils.IsNullOrEmpty( model.patientProfileDTO._PatientDTO.CMSSecondaryTypeID ) )
+						 selectListItem(id_secType, model.patientProfileDTO._PatientDTO.CMSSecondaryTypeID );
+					 
+					 if( ! AppUtils.IsNullOrEmpty( model.patientProfileDTO._PatientDTO.DelayReasonCodeTypeID ) )
+						 selectListItem(id_delayReason, model.patientProfileDTO._PatientDTO.DelayReasonCodeTypeID );
+					
+					if( ! AppUtils.IsNullOrEmpty( model.patientProfileDTO._PatientDTO.IDENumber ) )
+						id_IDENumber.text = model.patientProfileDTO._PatientDTO.IDENumber; 	
+					
+					if( ! AppUtils.IsNullOrEmpty( model.patientProfileDTO._PatientDTO.ReferralNumber ) )
+						id_ReferralNumber.text = model.patientProfileDTO._PatientDTO.ReferralNumber; 
+					
+					if( ! AppUtils.IsNullOrEmpty( model.patientProfileDTO._PatientDTO.PriorAuthorizationNumber ) )
+						id_PANumber.text = model.patientProfileDTO._PatientDTO.PriorAuthorizationNumber;
+					
+					id_emergency.selected = model.patientProfileDTO._PatientDTO.Emergency; 
+					id_epsdt.selected = model.patientProfileDTO._PatientDTO.EPSDT; 
+					id_family.selected = model.patientProfileDTO._PatientDTO.FamilyPlanning; 
+					id_preg.selected = model.patientProfileDTO._PatientDTO.PregnancyIndicator; 
+					id_signature.selected = model.patientProfileDTO._PatientDTO.SignatureOnFile; 
+					
+					if( ! AppUtils.IsNullOrEmpty( model.patientProfileDTO._PatientDTO.ExpiryDate ) )
+					{
+						id_expiryDate.selectedDate = UtilityFunctions.toDate(model.patientProfileDTO._PatientDTO.ExpiryDate);
+						id_expiryDate.text = UtilityFunctions.FormatDate(id_expiryDate.selectedDate,"MM/DD/YYYY");
+					}
+					
+					if( ! AppUtils.IsNullOrEmpty( model.patientProfileDTO._PatientDTO.SignatureDate ) )
+					{
+						id_signDate.selectedDate = UtilityFunctions.toDate(model.patientProfileDTO._PatientDTO.SignatureDate);
+						id_signDate.text = UtilityFunctions.FormatDate(id_signDate.selectedDate,"MM/DD/YYYY");
+					}
+					
+					if( ! AppUtils.IsNullOrEmpty( model.patientProfileDTO._PatientDTO.LastSeenDate ) )
+					{
+						id_seenDate.selectedDate = UtilityFunctions.toDate(model.patientProfileDTO._PatientDTO.LastSeenDate);
+						id_seenDate.text = UtilityFunctions.FormatDate(id_seenDate.selectedDate,"MM/DD/YYYY");
+					}
+					
+					if( ! AppUtils.IsNullOrEmpty( model.patientProfileDTO._PatientDTO.IllnessDate ) )
+					{
+						id_illnessDate.selectedDate = UtilityFunctions.toDate(model.patientProfileDTO._PatientDTO.IllnessDate);
+						id_illnessDate.text = UtilityFunctions.FormatDate(id_illnessDate.selectedDate,"MM/DD/YYYY");
+					}
+					
+					if( ! AppUtils.IsNullOrEmpty( model.patientProfileDTO._PatientDTO.LastXRayDate ) )
+					{
+						id_xrayDate.selectedDate = UtilityFunctions.toDate(model.patientProfileDTO._PatientDTO.LastXRayDate);
+						id_xrayDate.text = UtilityFunctions.FormatDate(id_xrayDate.selectedDate,"MM/DD/YYYY");
+					}
+					
+					if( ! AppUtils.IsNullOrEmpty( model.patientProfileDTO._PatientDTO.LastWorkedDate ) )
+					{
+						id_workDate.selectedDate = UtilityFunctions.toDate(model.patientProfileDTO._PatientDTO.LastWorkedDate);
+						id_workDate.text = UtilityFunctions.FormatDate(id_workDate.selectedDate,"MM/DD/YYYY");
+					}
+					
+					if( ! AppUtils.IsNullOrEmpty( model.patientProfileDTO._PatientDTO.AdmissionDate ) )
+					{
+						id_admissionDate.selectedDate = UtilityFunctions.toDate(model.patientProfileDTO._PatientDTO.AdmissionDate);
+						id_admissionDate.text = UtilityFunctions.FormatDate(id_admissionDate.selectedDate,"MM/DD/YYYY");
+					}
+					
+					if( ! AppUtils.IsNullOrEmpty( model.patientProfileDTO._PatientDTO.DischargeDate ) )
+					{
+						id_dischargeDate.selectedDate = UtilityFunctions.toDate(model.patientProfileDTO._PatientDTO.DischargeDate);
+						id_dischargeDate.text = UtilityFunctions.FormatDate(id_dischargeDate.selectedDate,"MM/DD/YYYY");
+					}
+				}
+				catch(e:Error)
+				{
+					trace ( "EDIInfo::loadDataEPP", e.message );
+				}
+			}
+			
+			private function selectListItem(ddl:LabelComboBox, typeId:int):void
+			{
+				var list:ArrayCollection = ArrayCollection(ddl.dataProvider);
+				var i:int;
+				for( i = 0; i < list.length; i++ )
+				{					
+					if( typeId.toString() == String(list[i].TypeID) )
+					{
+						ddl.selectedIndex = i; 
+						hasChange = true;
+						break;
+					}
+				}
+			}
+			
+			private function collapseButtonMouseClickHandler(event:MouseEvent):void
+			{
+				/* if (collapsed)
+					hideAllPopUps();
+				else
+					showAllPopUps(); */
+			}
+			
+			
+			public function getEDIInformation():void 
+			{				
+				if(id_AssignmentIndicator.selectedIndex!=-1)				
+					model.patientDTO.AcceptAssignmentTypeID  = id_AssignmentIndicator.selectedItem.TypeID;				
+				else
+					model.patientDTO.AcceptAssignmentTypeID = 0;
+				
+				if(id_delayReason.selectedIndex!=-1)				
+					model.patientDTO.DelayReasonCodeTypeID  = id_delayReason.selectedItem.TypeID;
+				else
+					model.patientDTO.DelayReasonCodeTypeID = 0;
+				
+				if(id_secType.selectedIndex!=-1)				
+					model.patientDTO.CMSSecondaryTypeID  = id_secType.selectedItem.TypeID;
+				else
+					model.patientDTO.CMSSecondaryTypeID = 0;
+				
+				if(id_excpCode.selectedIndex!=-1)
+					model.patientDTO.ExceptionCodeTypeID  = id_excpCode.selectedItem.TypeID;
+				else
+					model.patientDTO.ExceptionCodeTypeID = 0;
+				
+				model.patientDTO.IDENumber = id_IDENumber.text;
+				model.patientDTO.ReferralNumber = id_ReferralNumber.text;
+				model.patientDTO.PriorAuthorizationNumber = id_PANumber.text;
+				
+				model.patientDTO.Emergency = id_emergency.selected; 
+				model.patientDTO.SignatureOnFile = id_signature.selected; 
+				if(model.isPatientFemale)
+					model.patientDTO.PregnancyIndicator = id_preg.selected; 
+				else
+					model.patientDTO.PregnancyIndicator = false;
+				
+				model.patientDTO.EPSDT = id_epsdt.selected; 
+				model.patientDTO.FamilyPlanning = id_family.selected; 
+				
+				if(id_expiryDate.selectedDate!=null)
+					model.patientDTO.ExpiryDate = UtilityFunctions.FormatDate(id_expiryDate.selectedDate);
+				else
+					model.patientDTO.ExpiryDate = null;
+				
+				if(id_signDate.selectedDate!=null)
+					model.patientDTO.SignatureDate = UtilityFunctions.FormatDate(id_signDate.selectedDate);
+				else
+					model.patientDTO.SignatureDate = null;
+				
+				if(id_seenDate.selectedDate!=null)
+					model.patientDTO.LastSeenDate = UtilityFunctions.FormatDate(id_seenDate.selectedDate);
+				else
+					model.patientDTO.LastSeenDate = null;
+				
+				if(id_illnessDate.selectedDate!=null)
+					model.patientDTO.IllnessDate = UtilityFunctions.FormatDate(id_illnessDate.selectedDate);
+				else
+					model.patientDTO.IllnessDate = null;
+				
+				if(id_xrayDate.selectedDate!=null)
+					model.patientDTO.LastXRayDate = UtilityFunctions.FormatDate(id_xrayDate.selectedDate);
+				else
+					model.patientDTO.LastXRayDate = null;
+				
+				if(id_workDate.selectedDate!=null)
+					model.patientDTO.LastWorkedDate = UtilityFunctions.FormatDate(id_workDate.selectedDate);
+				else
+					model.patientDTO.LastWorkedDate = null;
+				
+				if(id_admissionDate.selectedDate!=null)
+					model.patientDTO.AdmissionDate = UtilityFunctions.FormatDate(id_admissionDate.selectedDate);
+				else
+					model.patientDTO.AdmissionDate = null
+				
+				if(id_dischargeDate.selectedDate!=null)
+					model.patientDTO.DischargeDate = UtilityFunctions.FormatDate(id_dischargeDate.selectedDate);	
+				else
+					model.patientDTO.DischargeDate = null;
+				
+			}
+			
+			/* private function toDate(dateStr:String):Date
+			{
+				var result:Date;
+				
+				if (dateStr.length)
+				{
+					var dateFormat:String = "MM/DD/YYYY";
+					var delimiter:String = dateFormat.substring(dateFormat.indexOf("MM")+3,2); 
+					var dateArray:Array = dateStr.split(delimiter);
+					var formatArray:Array = dateFormat.split(delimiter);
+					
+					var dayNumber:int = 0;
+					var monthNumber:int = 0;
+					var yearNumber:int = 0;
+					for(var i:int = 0; i < formatArray.length; i++)
+					{
+						switch(formatArray[i])
+						{
+							case "MM":
+							{								
+								monthNumber = parseInt(dateArray[i]);								
+								break;
+							}
+							case "DD":
+							{
+								dayNumber = parseInt(dateArray[i]);	
+								break;
+							}
+							case "YYYY":
+							{
+								yearNumber = parseInt(dateArray[i]);	
+								break;
+							}							
+						}
+					}					
+					
+					result = new Date (yearNumber, monthNumber - 1, dayNumber);
+				}
+				return result;
+			} */
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			public function clearEDIInformation():void 
+			{	
+				id_AssignmentIndicator.selectedIndex	= -1;
+				id_delayReason.selectedIndex			= -1;
+				id_secType.selectedIndex				= -1;
+				id_excpCode.selectedIndex				= -1;
+				id_admissionDate.text					= "";
+				id_dischargeDate.text					= "";
+				id_emergency.selected					= false;
+				id_epsdt.selected						= false;
+				id_family.selected						= false;
+				id_signature.selected					= false;
+				id_preg.selected						= false;
+				id_IDENumber.text						= "";
+				id_PANumber.text						= "";
+				id_ReferralNumber.text					= "";
+				id_seenDate.text						= "";
+				id_signDate.text						= "";
+				id_workDate.text						= "";
+				id_xrayDate.text						= "";
+				id_illnessDate.text						= "";
+				
+				hasChange = false;
+			}
+			
+			public function isInvalid():Boolean
+			{
+				var isNotValid:Boolean = false;
+				var errorStr:String = "";
+				var toSetFocus:*;
+				ValidationUtils.Trim(id_IDENumber);
+				ValidationUtils.Trim(id_ReferralNumber);
+				ValidationUtils.Trim( id_PANumber );
+								
+				if (id_illnessDate.selectedDate != null && !ValidationUtils.isValidDateString(id_illnessDate.text))
+				{
+					isNotValid = true;
+					errorStr += "The data in Current Illness/LMP Date is invalid, valid format is [MM/DD/YYYY].\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_illnessDate;
+				}
+				else if(id_illnessDate.text != id_illnessDate.prompt && UtilityFunctions.IsNotNullOrEmpty(id_illnessDate.text) && !ValidationUtils.isValidDateString(id_illnessDate.text))
+				{
+					isNotValid = true;
+					errorStr += "The data in Current Illness/LMP Date is invalid, valid format is [MM/DD/YYYY].\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_illnessDate;
+				}
+				
+				if (id_seenDate.selectedDate != null && !ValidationUtils.isValidDate(id_seenDate))
+				{
+					isNotValid = true;
+					errorStr += "The data in Last Seen Date is invalid, valid format is [MM/DD/YYYY].\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_seenDate;
+				}
+				else if(id_seenDate.text != id_seenDate.prompt && UtilityFunctions.IsNotNullOrEmpty(id_seenDate.text) && !ValidationUtils.isValidDateString(id_seenDate.text))
+				{
+					isNotValid = true;
+					errorStr += "The data in Last Seen Date is invalid, valid format is [MM/DD/YYYY].\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_illnessDate;
+				}
+				
+				if (id_xrayDate.selectedDate != null && !ValidationUtils.isValidDate(id_xrayDate))
+				{
+					isNotValid = true;
+					errorStr += "The data in Last X-Ray Date is invalid, valid format is [MM/DD/YYYY].\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_xrayDate;
+				}
+				else if(id_xrayDate.text != id_xrayDate.prompt && UtilityFunctions.IsNotNullOrEmpty(id_xrayDate.text) && !ValidationUtils.isValidDateString(id_xrayDate.text))
+				{
+					isNotValid = true;
+					errorStr += "The data in Last X-Ray Date is invalid, valid format is [MM/DD/YYYY].\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_xrayDate;
+				}
+				
+				if (id_workDate.selectedDate != null && !ValidationUtils.isValidDate(id_workDate))
+				{
+					isNotValid = true;
+					errorStr += "The data in Last worked Date is invalid, valid format is [MM/DD/YYYY].\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_workDate;
+				}
+				else if(id_workDate.text != id_workDate.prompt && UtilityFunctions.IsNotNullOrEmpty(id_workDate.text) && !ValidationUtils.isValidDateString(id_workDate.text))
+				{
+					isNotValid = true;
+					errorStr += "The data in Last worked Date is invalid, valid format is [MM/DD/YYYY].\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_workDate;
+				}
+				
+				
+				if (id_admissionDate.selectedDate != null && !ValidationUtils.isValidDate(id_admissionDate))
+				{
+					isNotValid = true;
+					errorStr += "The data in Admission Date is invalid, valid format is [MM/DD/YYYY].\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_admissionDate;
+				}
+				else if(id_admissionDate.text != id_admissionDate.prompt && UtilityFunctions.IsNotNullOrEmpty(id_admissionDate.text) && !ValidationUtils.isValidDateString(id_admissionDate.text))
+				{
+					isNotValid = true;
+					errorStr += "The data in Admission Date is invalid, valid format is [MM/DD/YYYY].\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_admissionDate;
+				}
+				
+				if (id_admissionDate.selectedDate == null && id_dischargeDate.selectedDate != null )
+				{
+					isNotValid = true;
+					errorStr += "Discharge Date is selected but Admission Date is missing.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_admissionDate;
+				}
+				
+				
+				if (id_dischargeDate.selectedDate != null && !ValidationUtils.isValidDate(id_dischargeDate))
+				{
+					isNotValid = true;
+					errorStr += "The data in Discharge Date is invalid, valid format is [MM/DD/YYYY].\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_dischargeDate;
+				}
+				else if(id_dischargeDate.text != id_dischargeDate.prompt && UtilityFunctions.IsNotNullOrEmpty(id_dischargeDate.text) && !ValidationUtils.isValidDateString(id_dischargeDate.text))
+				{
+					isNotValid = true;
+					errorStr += "The data in Discharge Date is invalid, valid format is [MM/DD/YYYY].\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_dischargeDate;
+				}
+				
+				if (id_admissionDate.selectedDate != null && id_dischargeDate.selectedDate != null && !ValidationUtils.isValidDateRange(id_admissionDate.selectedDate,id_dischargeDate.selectedDate))
+				{
+					isNotValid = true;
+					errorStr += "Discharge Date should be equal or later than Admission Date.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_admissionDate;
+				}
+				
+				if (id_expiryDate.selectedDate != null && !ValidationUtils.isValidDate(id_expiryDate))
+				{
+					isNotValid = true;
+					errorStr += "The data in Expiry Date is invalid, valid format is [MM/DD/YYYY].\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_expiryDate;
+				}
+				else if(id_expiryDate.text != id_expiryDate.prompt && UtilityFunctions.IsNotNullOrEmpty(id_expiryDate.text) && !ValidationUtils.isValidDateString(id_expiryDate.text))
+				{
+					isNotValid = true;
+					errorStr += "The data in Expiry Date is invalid, valid format is [MM/DD/YYYY].\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_expiryDate;
+				}
+				
+				if (id_admissionDate.selectedDate != null && id_expiryDate.selectedDate != null && !ValidationUtils.isValidDateRange(id_admissionDate.selectedDate,id_expiryDate.selectedDate))
+				{
+					isNotValid = true;
+					errorStr += "Expiray Date should be equal or later than Admission Date.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_expiryDate;
+				}
+				
+				if (id_signature.selected == true && id_signDate.selectedDate == null  )
+				{
+					isNotValid = true;
+					errorStr += "Signature On File is selected, please select Signature Date.\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_signDate;
+				}
+				
+				if (id_signDate.selectedDate != null && !ValidationUtils.isValidDate(id_signDate))
+				{
+					isNotValid = true;
+					errorStr += "The data in Signature Date is invalid, valid format is [MM/DD/YYYY].\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_signDate;
+				}
+				else if(id_signDate.text != id_signDate.prompt && UtilityFunctions.IsNotNullOrEmpty(id_signDate.text) && !ValidationUtils.isValidDateString(id_signDate.text))
+				{
+					isNotValid = true;
+					errorStr += "The data in Signature Date is invalid, valid format is [MM/DD/YYYY].\n";
+					
+					if (!toSetFocus)
+						toSetFocus = id_signDate;
+				}
+				
+				if (id_AssignmentIndicator.selectedIndex != -1 && !ValidationUtils.isValidValueSelected(id_AssignmentIndicator))
+				{
+					isNotValid = true;
+					errorStr += "Select valid Assignment Indicator.\n";
+					if (!toSetFocus)
+						toSetFocus = id_AssignmentIndicator;
+				}
+				
+				if (id_delayReason.selectedIndex != -1 && !ValidationUtils.isValidValueSelected(id_delayReason))
+				{
+					isNotValid = true;
+					errorStr += "Select valid Timely Filing Indicator.\n";
+					if (!toSetFocus)
+						toSetFocus = id_delayReason;
+				}
+				
+				if (id_secType.selectedIndex != -1 && !ValidationUtils.isValidValueSelected(id_secType))
+				{
+					isNotValid = true;
+					errorStr += "Select valid CMS Secondary Type.\n";
+					if (!toSetFocus)
+						toSetFocus = id_secType;
+				}
+				
+				if (id_excpCode.selectedIndex != -1 && !ValidationUtils.isValidValueSelected(id_excpCode))
+				{
+					isNotValid = true;
+					errorStr += "Select valid Service Authorization Exception Code.\n";
+					if (!toSetFocus)
+						toSetFocus = id_excpCode;
+				}
+				
+				if (isNotValid)
+				{
+					Alert.show(errorStr, "Patient Registration Required Fields", 4, FlexGlobals.topLevelApplication.mainContainer, function(event:Event):void{
+						
+						if (toSetFocus)
+							toSetFocus.setFocus();
+					});
+				}
+				return isNotValid;
+			}
+			
+			private var _isChanged:Boolean;
+			[Bindable]
+			public function get isChanged():Boolean
+			{
+				return _isChanged;
+			}
+			
+			public function set isChanged(value:Boolean):void
+			{
+				_isChanged = value;
+				hasChange = value;
+				
+				/* if(id_MotherPhoneNumberAddmore.haschange || id_FatherPhoneNumberAddmore.haschange || id_LanguageAddMore.haschange)
+					hasChange = true;
+				else
+					hasChange = false; */
+			}
+			
+			protected function collapsiblepanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				setAssignmentList();
+				setReasonCodeList();
+				setCMSSecTypeList();
+				setExceptionCodeList();
+			}
+			
+			private function setAssignmentList():void
+			{
+				assignmentIndictorList = new ArrayCollection();
+				var obj:Object = new Object()
+				obj.TypeID = 1;
+				obj.TypeName = "A - Assigned";
+				assignmentIndictorList.addItem(obj);
+				
+				obj =  new Object();
+				obj.TypeID = 2;
+				obj.TypeName = "B - Assignment Accepted on Clinical Lab Services Only";
+				assignmentIndictorList.addItem(obj);
+				
+				obj =  new Object();
+				obj.TypeID = 3;
+				obj.TypeName = "C - Not Assigned";
+				assignmentIndictorList.addItem(obj);
+			}
+			
+			private function setReasonCodeList():void
+			{
+				delayReasonCodeList = new ArrayCollection();
+				var obj:Object = new Object()
+				obj.TypeID = 1;
+				obj.TypeName = "1 - Proof of Eligibility Unknown or Unavailable";
+				delayReasonCodeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 2;
+				obj.TypeName = "2 - Litigation";
+				delayReasonCodeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 3;
+				obj.TypeName = "3 - Authorization Delays";
+				delayReasonCodeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 4;
+				obj.TypeName = "4 - Delay in Certifying Provider";
+				delayReasonCodeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 5;
+				obj.TypeName = "5 - Delay in Supplying Billing Forms";
+				delayReasonCodeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 6;
+				obj.TypeName = "6 - Delay in Delivery of Custom-made Appliances";
+				delayReasonCodeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 7;
+				obj.TypeName = "7 - Third Party Processing Delay";
+				delayReasonCodeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 8;
+				obj.TypeName = "8 - Delay in Eligibility Determination";
+				delayReasonCodeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 9;
+				obj.TypeName = "9 - Original Claim Rejected or Denied Due to a Reason Unrelated to the Billing Limitation Rules";
+				delayReasonCodeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 10;
+				obj.TypeName = "10 - Administration Delay in the Prior Approval Process";
+				delayReasonCodeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 11;
+				obj.TypeName = "11 - Other";
+				delayReasonCodeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 12;
+				obj.TypeName = "15 - Natural Disaster";
+				delayReasonCodeList.addItem(obj);
+			}
+			
+			private function setCMSSecTypeList():void
+			{
+				CMSSecTypeList = new ArrayCollection();
+				var obj:Object = new Object()
+				obj.TypeID = 1;
+				obj.TypeName = "12 - Medicare Secondary Working Aged Beneficiary or Spouse with Employer Group Health Plan";
+				CMSSecTypeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 2;
+				obj.TypeName = "13 - Medicare Secondary End-Stage Renal Disease Beneficiary in the 12 month coordination period with an employer’s group health plan";
+				CMSSecTypeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 3;
+				obj.TypeName = "14 - Medicare Secondary, No-fault Insurance including Auto is Primary";
+				CMSSecTypeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 4;
+				obj.TypeName = "15 - Medicare Secondary Worker’s Compensation";
+				CMSSecTypeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 5;
+				obj.TypeName = "16 - Medicare Secondary Public Health Service (PHS) or Other Federal Agency";
+				CMSSecTypeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 6;
+				obj.TypeName = "41 - Medicare Secondary Black Lung";
+				CMSSecTypeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 7;
+				obj.TypeName = "42 - Medicare Secondary Veteran’s Administration";
+				CMSSecTypeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 8;
+				obj.TypeName = "43 - Medicare Secondary Disabled Beneficiary Under Age 65 with Large Group Health Plan (LGHP)";
+				CMSSecTypeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 9;
+				obj.TypeName = "47 - Medicare Secondary, Other Liability Insurance is Primary";
+				CMSSecTypeList.addItem(obj);
+			}
+			
+			private function setExceptionCodeList():void
+			{
+				exceptionCodeList = new ArrayCollection();
+				var obj:Object = new Object()
+				obj.TypeID = 1;
+				obj.TypeName = "1 - Immediate/Urgent Care";
+				exceptionCodeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 2;
+				obj.TypeName = "2 - Services Rendered in a Retroactive Period";
+				exceptionCodeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 3;
+				obj.TypeName = "3 - Emergency Care";
+				exceptionCodeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 4;
+				obj.TypeName = "4 - Client has Temporary Medicaid";
+				exceptionCodeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 5;
+				obj.TypeName = "5 - Request from County for Second Opinion to Determine if Recipient Can Work";
+				exceptionCodeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 6;
+				obj.TypeName = "6 - Request for Override Pending";
+				exceptionCodeList.addItem(obj);
+				
+				obj = new Object()
+				obj.TypeID = 7;
+				obj.TypeName = "7 - Special Handling";
+				exceptionCodeList.addItem(obj);
+			}
+			
+			protected function textInputChangeIndicator(event:TextOperationEvent):void 
+			{
+				if(id_PANumber.text.length>0 ||id_ReferralNumber.text.length >0 || id_IDENumber.text.length >0  )
+					hasChange= true;
+				else
+					hasChange= false;				
+			}
+			
+			protected function comboChangeIndicator(event:IndexChangeEvent):void 
+			{
+				if(id_AssignmentIndicator.selectedIndex >= 0 ||id_delayReason.selectedIndex >= 0 || id_secType.selectedIndex >= 0 || id_excpCode.selectedIndex >= 0 )
+					hasChange= true;
+				else
+					hasChange= false;
+			}
+			
+			protected function checkBox_changeHandler(event:Event):void
+			{
+				hasChange= true;
+				if(id_signature.selected == false)
+					id_signDate.selectedDate = null;
+			}
+			
+			protected function date_changeHandler(event:CalendarLayoutChangeEvent):void
+			{
+				hasChange= true;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:HGroup width="100%" gap="3">
+		<s:VGroup width="34%" gap="1">
+			<components1:LabelDateField id="id_illnessDate" prompt="Current Illness/LMP Date" selectableRange="{{rangeEnd:new Date()}}" width="100%" 									   
+									   tabIndex="4" toolTip="Select Current Illness/LMP Date" yearNavigationEnabled="true" editable="false"  change="date_changeHandler(event)"
+									   maxYear="{new Date().getFullYear()}" minYear="1901" restrict="[0-9 /]" IsEditAllow="false"  />
+			<components1:LabelDateField id="id_seenDate" prompt="Last Seen Date" selectableRange="{{rangeEnd:new Date()}}" width="100%" 									  
+									   tabIndex="4" toolTip="Select Last Seen Date" yearNavigationEnabled="true" editable="false"  change="date_changeHandler(event)"
+									   maxYear="{new Date().getFullYear()}" minYear="1901" restrict="[0-9 /]" IsEditAllow="false"   />
+			<components1:LabelDateField id="id_xrayDate" prompt="Last X-Ray Date" selectableRange="{{rangeEnd:new Date()}}" width="100%" 									   
+									   tabIndex="4" toolTip="Select Last X-Ray Date" yearNavigationEnabled="true" editable="false"  change="date_changeHandler(event)"
+									   maxYear="{new Date().getFullYear()}" minYear="1901" restrict="[0-9 /]" IsEditAllow="false"   />
+		</s:VGroup>
+		<s:VGroup width="33%" gap="1">
+			<components1:LabelDateField id="id_workDate" prompt="Last Worked Date" selectableRange="{{rangeEnd:new Date()}}" width="100%" 									   
+									   tabIndex="4" toolTip="Select Last Worked Date" yearNavigationEnabled="true" editable="false" change="date_changeHandler(event)"
+									   maxYear="{new Date().getFullYear()}" minYear="1901" restrict="[0-9 /]" IsEditAllow="false"   />
+			<components1:LabelDateField id="id_admissionDate" prompt="Admission Date" selectableRange="{{rangeEnd:new Date()}}" width="100%" 									  
+									   tabIndex="4" toolTip="Select Admission Date" yearNavigationEnabled="true" editable="false"  change="date_changeHandler(event)"
+									   maxYear="{new Date().getFullYear()}" minYear="1901" restrict="[0-9 /]" IsEditAllow="false"  />
+			<components1:LabelDateField id="id_dischargeDate" prompt="Discharge Date" selectableRange="{{rangeEnd:new Date()}}" width="100%" 									   
+									   tabIndex="4" toolTip="Select Discharge Date" yearNavigationEnabled="true" editable="false"  change="date_changeHandler(event)"
+									   maxYear="{new Date().getFullYear()}" minYear="1901" restrict="[0-9 /]" IsEditAllow="false"   />
+		</s:VGroup>
+		
+		<s:VGroup width="33%" gap="1">
+			<components1:LabelDateField id="id_expiryDate" prompt="Expiry Date" selectableRange="{{rangeEnd:new Date()}}" width="100%" 									   
+									   tabIndex="4" toolTip="Select Death Date" yearNavigationEnabled="true" editable="false" change="date_changeHandler(event)"
+									   maxYear="{new Date().getFullYear()}" minYear="1901" restrict="[0-9 /]" IsEditAllow="false"   />
+			<components1:LabelTextInput id="id_PANumber" width="100%" 
+									   change="textInputChangeIndicator(event)" maxChars="25"
+									   prompt="Prior Authorization Number" toolTip="Enter Prior Authorization Number"/>
+			<components1:LabelTextInput id="id_ReferralNumber" width="100%"
+									   change="textInputChangeIndicator(event)" maxChars="15"
+									   prompt="Referral Access#" tabIndex="20" toolTip="Enter Referral Access#"/>
+		</s:VGroup>		
+	</s:HGroup>
+	<s:HGroup width="100%" gap="3">
+		<s:VGroup width="34%" gap="1">
+			<components1:LabelTextInput id="id_IDENumber" width="100%"
+									   change="textInputChangeIndicator(event)" maxChars="30"
+									   prompt="IDE Number" tabIndex="20" toolTip="Enter IDE Number"/>
+			<s:HGroup width="100%">
+				<s:CheckBox id="id_signature" width="100%" label="Signature On File" change="checkBox_changeHandler(event)" />
+				<components1:LabelDateField id="id_signDate" prompt="Signature Date" selectableRange="{{rangeEnd:new Date()}}" width="100%" 									   
+										   tabIndex="4" toolTip="Select Signature Date" yearNavigationEnabled="true" editable="false" change="date_changeHandler(event)" 
+										   maxYear="{new Date().getFullYear()}" minYear="1901" restrict="[0-9 /]" IsEditAllow="false" enabled="{id_signature.selected}" />
+			</s:HGroup>
+			<components1:LabelComboBox id="id_AssignmentIndicator" width="100%" autoWidth="false"						  
+									   prompt="Assignment Indicator" dataProvider="{assignmentIndictorList}"
+									   labelField="TypeName" change="comboChangeIndicator(event)"
+									  toolTip="Assignment Indicator"/>			
+		</s:VGroup>
+		<s:VGroup width="33%" gap="1">
+			<components1:LabelComboBox id="id_delayReason" width="100%" autoWidth="false"						  
+									  prompt="Timely Filing Indicator" dataProvider="{delayReasonCodeList}"
+									  labelField="TypeName" change="comboChangeIndicator(event)"
+									  toolTip="Timely Filing Indicator"/>
+			<components1:LabelComboBox id="id_secType" width="100%" autoWidth="false"						  
+									  prompt="CMS Secondary Type" dataProvider="{CMSSecTypeList}"
+									  labelField="TypeName" change="comboChangeIndicator(event)"
+									  toolTip="CMS Secondary Type"/>
+			<components1:LabelComboBox id="id_excpCode" width="100%" autoWidth="false" dataProvider="{exceptionCodeList}"						  
+									  prompt="Service Authorization Exception Code" labelField="TypeName" change="comboChangeIndicator(event)"
+									  toolTip="Service Authorization Exception Code"/>
+			
+		</s:VGroup>
+		<s:VGroup width="33%" gap="1">			
+				<s:CheckBox id="id_family" width="100%" label="Family Planning" change="checkBox_changeHandler(event)" />
+				<s:CheckBox id="id_preg" width="100%" label="Pregnancy" enabled="{model.isPatientFemale}" 
+							change="checkBox_changeHandler(event)" selected="{ !model.isPatientFemale? false : id_preg.selected }" />		
+				<s:CheckBox id="id_emergency" width="100%" label="Emergency" change="checkBox_changeHandler(event)" />
+				<s:CheckBox id="id_epsdt" width="100%" label="EPSDT" change="checkBox_changeHandler(event)" />
+		</s:VGroup>
+	</s:HGroup>
+	
+</components1:CollapsiblePanel>

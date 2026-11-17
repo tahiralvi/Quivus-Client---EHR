@@ -1,0 +1,481 @@
+<?xml version="1.0" encoding="utf-8"?>
+<custom:PinableSlideOutPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							 xmlns:s="library://ns.adobe.com/flex/spark" 
+							 xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:custom="com.adobe.Quivus.view.controls.custom.*" 
+							 initialize="init()" 
+							 xmlns:quickInput="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.*" 
+							 xmlns:chiefComplaint="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.physical.chiefComplaint.*" 
+							 creationComplete="slideoutpanel1_creationCompleteHandler(event)"
+							 QSViewStateChange="pinableslideoutpanel1_QSViewStateChangeHandler(event)"
+							 move="pinableslideoutpanel1_moveHandler(event)" xmlns:notes="com.adobe.Quivus.view.controls.custom.patientExamView.notes.*"
+							 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.staticData.hpi.LoadAllHPIDetailTypesEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.DictationPopup;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPanel;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPopup;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.AddRecord;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.Quivus.view.controls.skins.QIinternalBarFocusSkin;
+			import com.adobe.Quivus.view.controls.skins.QIinternalBarSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridDictationButtonSelectedSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.gridDictationButtonSkin;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.ImmunizationNotesFilledBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.ImmunizationWriteNotesBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.VBIconsButton;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.writeNotesButton;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.writeNotesButtonSelected;
+			import com.adobe.Quivus.view.events.SelectSection;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.quivus.skins.chrome.buttonSkins.VBdictationBtnSelected;
+			import com.adobe.quivus.skins.chrome.buttonSkins.VBnotesBtnSelected;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.VBIconsBlackButton;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.VBIconsButtonFilled;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import flash.sampler.isGetterSetter;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.events.FlexEvent;
+			import mx.events.MoveEvent;
+			
+			import valueObjects.ModuleDictationDTO;
+			import valueObjects.ModuleNoteDTO;			
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var isSectionLevel:Boolean; //if true then notesPanel represents section Level notes otherwise record Level notes on form
+			private var notesPanel:NotesPanel;
+			
+			private var dictationPanel:DictationPopup;
+			
+			private var m_bHasChange:Boolean;
+			
+			[Bindable]
+			public function get hasChange():Boolean
+			{
+				return m_bHasChange;
+			}
+			
+			public function set hasChange(value:Boolean):void
+			{
+				m_bHasChange = value;
+				
+				if( value )
+				{
+					id_Header.id_ChangeIndicator.visible		 = true;
+					id_Header.id_ChangeIndicator.includeInLayout = true;
+				}
+				else
+				{
+					id_Header.id_ChangeIndicator.visible		 = false;
+					id_Header.id_ChangeIndicator.includeInLayout = false;
+				}
+			}
+			
+			private function UpdateChange():void
+			{
+				try
+				{
+					if( model.quickInputDTO.Physical && model.quickInputDTO.Physical.HPI_CC )
+					{
+						//hasChange = model.quickInputDTO.Physical.HPI_CC.length > 0;
+						if(model.quickInputDTO.Physical.HPI_CC.length > 0)
+						{
+							if(hasChange)
+								hasChange = false;
+							
+							hasChange = true;
+						}
+					}
+					
+				}
+				catch( e:Error )
+				{
+					trace( "UpdateChange -> QIPhysical::HPI_CC", e.message );
+				}
+			}
+			
+			public override function set AllowOtherPopup(value:Boolean):void
+			{
+				super.AllowOtherPopup = value;
+				
+				if( ! value && dictationPanel)
+					dictationPanel.removePopup();
+			}
+			
+			private function init():void
+			{
+			}
+			private var m_bIsModelUpdated:Boolean;
+			
+			private var moduleConstantName:String = Constants.CHIEF_COMPLAINT_MODULE_NAME;
+			public function get IsModelUpdated():Boolean
+			{
+				return m_bIsModelUpdated;
+			}
+			
+			public function set IsModelUpdated(value:Boolean):void
+			{
+				m_bIsModelUpdated = value;
+				
+				if( model.quickInputDTO.PMH && model.quickInputDTO.PMH.Immunization )
+					hasChange = model.quickInputDTO.Physical.HPI_CC.length > 0; //check if there is data for this current visit, then show check mark
+				
+				if( value )
+				{
+					
+					var module:ModuleDictationDTO = QSUtilityFunctions.getModuleDictationDTO(moduleConstantName);					
+					var noteDto:ModuleNoteDTO = QSUtilityFunctions.getModuleNoteDTO( moduleConstantName);
+					
+					if(module.DictationID && module.DictationID != Constants.GUID_FORMAT)
+					{
+						id_Header.id_Voice.setStyle("skinClass", VBdictationBtnSelected);
+						id_Header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+						//id_dictationIndicator.visible = true;
+					}
+					
+					if(noteDto.Note && noteDto.Note != "")
+					{
+						id_Header.id_NotesBtn.setStyle("skinClass", VBnotesBtnSelected);
+						id_Header.id_iconButtons.setStyle("skinClass", VBIconsButtonFilled);
+						//id_noteIndicator.visible = true;
+					}								
+					
+				}
+			}
+			
+			protected function slideoutpanel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if( model.quickInputDataLoadedFlag )
+					UpdateChange();
+				
+				id_Header.id_OptionPopUp.displayPopUp = true;
+				id_Header.id_iconButtons.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if(id_notesDictation.id_Area.visible)
+					{
+						
+						if(id_Header.id_OptionPopUp.displayPopUp)
+						{
+							id_Header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						}
+						else
+						{
+							id_Header.id_iconButtons.setStyle("skinClass", VBIconsButton);	
+						}
+					}
+					this.ExpandedView = true;
+					
+					event.stopImmediatePropagation();
+					
+				});	
+				
+				id_Header.id_Voice.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_CCHPI ) )
+					{
+						id_notesDictation.notesDTO = QSUtilityFunctions.getModuleNoteDTO( Constants.CHIEF_COMPLAINT_MODULE_NAME );
+						id_notesDictation.DictationDTO = QSUtilityFunctions.getModuleDictationDTO(Constants.CHIEF_COMPLAINT_MODULE_NAME);
+						
+						id_notesDictation.id_Area.visible 		= true;
+						id_notesDictation.id_Area.includeInLayout = true;		
+						id_notesDictation.id_VBViews.selectedIndex = 1;						
+						//id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						id_Header.id_iconButtons.selected = false;
+						id_Header.id_OptionPopUp.displayPopUp = false;
+						
+						id_notesDictation.dictationPanel.rec_btn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{													
+							id_Header.setIcons(true, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							hasChange = true;
+						});	
+						id_notesDictation.id_notesPanel.id_body.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{						
+							id_Header.setIcons(id_notesDictation.DictationDTO.DictationID && id_notesDictation.DictationDTO.DictationID != Constants.GUID_FORMAT, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							id_notesDictation.id_Area.visible 		= false;
+							id_notesDictation.id_Area.includeInLayout = false;
+						});
+						ExpandedView = true;
+						if(this.ExpandedView)
+						{
+							event.stopImmediatePropagation();
+						}
+					}
+				});			
+				
+				id_Header.id_NotesBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_CCHPI ) )
+					{
+						id_notesDictation.notesDTO = QSUtilityFunctions.getModuleNoteDTO( Constants.CHIEF_COMPLAINT_MODULE_NAME );
+						id_notesDictation.DictationDTO = QSUtilityFunctions.getModuleDictationDTO(Constants.CHIEF_COMPLAINT_MODULE_NAME);
+						
+						id_notesDictation.id_Area.visible 		= true;
+						id_notesDictation.id_Area.includeInLayout = true;						
+						id_notesDictation.id_VBViews.selectedIndex = 0;
+						//id_header.id_iconButtons.setStyle("skinClass", VBIconsBlackButton);
+						id_Header.id_iconButtons.selected = false;
+						id_Header.id_OptionPopUp.displayPopUp = false;
+						
+						
+						id_notesDictation.id_notesPanel.id_body.id_subject.setFocus();
+						
+						id_notesDictation.dictationPanel.rec_btn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{													
+							id_Header.setIcons(true, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							hasChange = true;
+						});	
+						id_notesDictation.id_notesPanel.id_body.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+						{						
+							id_Header.setIcons(id_notesDictation.DictationDTO.DictationID && id_notesDictation.DictationDTO.DictationID != Constants.GUID_FORMAT, 
+								id_notesDictation.id_notesPanel.id_body.id_message.text.length > 0);
+							id_notesDictation.id_Area.visible 		= false;
+							id_notesDictation.id_Area.includeInLayout = false;
+						});
+						ExpandedView = true;
+						if(this.ExpandedView)
+						{
+							event.stopImmediatePropagation();
+						}
+					}
+				});
+				
+				
+				
+				id_Header.id_slideoutBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					ToggleSlideOut();
+					event.stopImmediatePropagation();
+				});
+				id_Header.id_Pin.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_CCHPI ) )
+					{
+						PinView = event.currentTarget.selected;
+						//event.stopImmediatePropagation();
+					}
+				});
+				
+				
+				id_CCBodyView.addEventListener("addRecordClick", addRecordClickHandler, false, 0, true);
+				id_CCBodyView.addEventListener("writeNotesClick", writeRecordNotesClickHandler, false, 0, true);
+				//BindingUtils.bindProperty(this, "hasChange", id_CCBodyView, "hasViewChanged");
+				
+				id_Header.id_OptionPopUp.displayPopUp = false;
+			}
+			
+			
+			private function showSectionNotesIndicator():void
+			{
+				
+			}
+			
+			
+			
+			/**
+			 * Ayesha: 13th May 2011
+			 * remove record level notes component before adding record in grid
+			 * */
+			private function addRecordClickHandler(event:Event):void
+			{
+				if (!isSectionLevel)
+				{
+					var target:AddRecord = AddRecord(event.target);
+					target.id_WriteNotes.selected = false;
+					//removeNotesPanel();
+				}
+			}
+			/**
+			 * Ayesha: 14th April 2011
+			 * showing record level notes on form
+			 * */
+			private function writeRecordNotesClickHandler(event:Event):void
+			{
+				var target:AddRecord = AddRecord(event.target);
+				if (target.id_WriteNotes.selected)
+				{
+					var complaint:String = id_CCBodyView.id_ComplaintArea.text;
+					isSectionLevel = false;
+					//showNotes(target.notesDTO, complaint);
+				}
+				else
+				{
+					//removeNotesPanel();
+				}
+			}
+			
+			protected function pinableslideoutpanel1_QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( event.viewState == QSViewStateEvent.EXPANDED_VIEW )
+				{
+					if(model.hpiDetailTypesList==null || model.hpiDetailTypesList.length==0)
+					{
+						var hpidtEvent : LoadAllHPIDetailTypesEvent = new LoadAllHPIDetailTypesEvent();
+						CairngormEventDispatcher.getInstance().dispatchEvent( hpidtEvent );
+					}
+					
+					if( id_Header )
+					{
+						id_Header.HeadingLable = id_Header.HeadingLable.toUpperCase();
+						id_Header.id_pmhHeader.setStyle("skinClass", QIinternalBarFocusSkin);
+						id_Header.id_headingLbl.setStyle("color", 0xffffff);
+						id_Header.id_expandBtn.selected = true;
+						
+					}
+				}
+				else
+				{
+					if( id_Header )
+					{
+						id_Header.HeadingLable = AppUtils.TitleCase(id_Header.HeadingLable);
+						id_Header.id_pmhHeader.setStyle("skinClass", QIinternalBarSkin);
+						id_Header.id_headingLbl.setStyle("color", 0x000000);
+						id_Header.id_expandBtn.selected = false;
+						
+					}
+					
+					QIPopUpManager.hideAllSectionPopUps(QIPopUpManager.HPI_CC);
+				}
+			}
+			
+			
+			protected function pinableslideoutpanel1_moveHandler(event:MoveEvent):void
+			{
+				/*var loc:Point = getNotesPopupPosition();
+				
+				if (id_CCBodyView.recordNotesPanel)
+				{
+				id_CCBodyView.recordNotesPanel.move(loc.x, loc.y);
+				}*/
+			}
+			
+			protected function id_noteIndicator_clickHandler(event:MouseEvent):void
+			{
+				/* var popup:NotesPopup = new NotesPopup();
+				popup.height = 30;
+				popup.ShowPopup( this );
+				popup.HeaderLabel = "Notes";
+				
+				var noteDto:ModuleNoteDTO = QSUtilityFunctions.getModuleNoteDTO( Constants.CHIEF_COMPLAINT_MODULE_NAME );
+				if( noteDto.Note )
+				popup.id_message.text  = noteDto.Note;
+				
+				var pLoc:Point = id_IndicatorGrp.localToGlobal( new Point( id_noteIndicator.x - 15 +  (id_noteIndicator.width /2) , id_noteIndicator.y + 10) ); 
+				popup.move(pLoc.x,pLoc.y ); */
+				
+			}
+			
+			protected function id_dictationIndicator_clickHandler(event:MouseEvent):void
+			{
+				/* var module:ModuleDictationDTO = QSUtilityFunctions.getModuleDictationDTO(Constants.CHIEF_COMPLAINT_MODULE_NAME);
+				
+				if( dictationPanel )
+				{
+				dictationPanel.removePopup();					
+				}
+				
+				dictationPanel 					= new DictationPopup();
+				dictationPanel.width			= 200;
+				dictationPanel.height			= 75;
+				dictationPanel.HeadingLable 	= "Dictation";
+				dictationPanel.DictationID	 	= module.DictationID;
+				
+				dictationPanel.ModuleID	 		= module.ModuleTypeID.toString();
+				dictationPanel.ShowPopup( this );
+				
+				var pLoc:Point = id_IndicatorGrp.localToGlobal( new Point( id_dictationIndicator.x - 125 +  (id_dictationIndicator.width /2) , id_dictationIndicator.y + 14) );
+				dictationPanel.move( pLoc.x, pLoc.y ); */
+				
+			}
+			
+			public override function AllowMoveToNextPanel( callBack:Function ):void
+			{
+				if( id_CCBodyView.id_Add.enableAll )
+				{
+					UtilityFunctions.AskMessage( "There are changes in the form, do you still want to leave form in current state?", function ():void
+					{
+						callBack(); 
+					}); 
+				}
+				else
+				{
+					callBack();
+				}
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Binding source="model.quickInputDataLoadedFlag" destination="IsModelUpdated" /> 
+	<fx:Binding source="id_CCBodyView.hasViewChanged" destination="hasChange" /> 
+	
+	<custom:HeaderContents>
+		<s:Group width="100%" height="24" minWidth="{ChromeUtil.topLevelMainContainer.width - 70}">
+			<s:layout>
+				<s:VerticalLayout verticalAlign="bottom" />
+			</s:layout>
+			<quickInput:PMHSectionHeader id="id_Header" width="100%" height="22"  HeadingLable="Chief Complaint/HPI" SectionNameID="{QSSecurityUtil.QI_CCHPI}"/>
+		</s:Group>
+	</custom:HeaderContents>
+	<custom:SlideHeaderContents>
+		
+		<s:SkinnableContainer width="100%" minHeight="36" height="100%"  skinClass="com.adobe.Quivus.view.controls.skins.QISlideHeaderOuterSkin">						
+			<s:layout>
+				<s:HorizontalLayout horizontalAlign="center" verticalAlign="middle" paddingRight="5" />
+			</s:layout>
+			<custom:slideOutQIHeader Label="Cheif Complaint/HPI" width="100%" height="22" />								   
+		</s:SkinnableContainer>				   
+		
+	</custom:SlideHeaderContents>
+	<custom:Contents>
+		
+		<s:SkinnableContainer id="sc_CCHPI" skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.QISectionBGSkin" width="{id_Header.width}" 
+							  visible="{model.securityProxyObject.PatientExam.QuickInput.Physicals.CCHPI.IsViewAllowed}" includeInLayout="{sc_CCHPI.visible}">
+			<s:layout>
+				<s:VerticalLayout  verticalAlign="top" gap="0"   horizontalAlign="{isSlideOut? 'right':'center'}" paddingRight="3"
+								   paddingTop="{isSlideOut? -2:0}" paddingLeft="{isSlideOut? 1:5}"/>
+			</s:layout>
+			<!--<s:VGroup width="{id_Header.width}" verticalAlign="top" gap="0" 
+			horizontalAlign="{isSlideOut? 'right':'center'}" paddingTop="{isSlideOut? -2:0}" paddingLeft="{isSlideOut? 30:1}">-->
+			<notes:QISectionLevelNotesDictation id="id_notesDictation" width="100%" 
+												/>
+			
+			<!--	<s:BorderContainer width="{id_Header.width}" backgroundColor="#F8F8F8" borderWeight="2" borderAlpha="{isSlideOut?1:0}" borderColor="#368CC3">-->
+			<!--<s:SkinnableContainer skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.QISectionBGSkin"  width="{id_Header.width}">
+			
+			<s:layout>
+			<s:VerticalLayout gap="2" horizontalAlign="right"  paddingLeft="3" paddingRight="3" paddingTop="1" paddingBottom="5"/>
+			</s:layout>-->
+			<chiefComplaint:CCBodyView id="id_CCBodyView" width="100%"/>
+			<s:HGroup width="100%">					
+				<s:HGroup id="id_IndicatorGrp" width="100%" horizontalAlign="left" >
+					<s:Button id="id_noteIndicator" label="Notes" visible="false" includeInLayout="{id_noteIndicator.visible}"
+							  click="id_noteIndicator_clickHandler(event)" toolTip="View Notes" 
+							  useHandCursor="true" buttonMode="true" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.notesIndicatorBtnSkin" />
+					<s:Button id="id_dictationIndicator" label="Dictation" visible="false" includeInLayout="{id_dictationIndicator.visible}"
+							  click="id_dictationIndicator_clickHandler(event)" toolTip="Play Dictation" 
+							  useHandCursor="true" buttonMode="true" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.dictationIndicatorBtnSkin"/>
+				</s:HGroup>
+				<s:Group id="id_spacer" width="100%" height="2" />
+			</s:HGroup>
+			<!--</s:BorderContainer>-->
+		</s:SkinnableContainer>
+		
+		<!--</s:SkinnableContainer>-->
+		
+		
+	</custom:Contents>
+</custom:PinableSlideOutPanel>

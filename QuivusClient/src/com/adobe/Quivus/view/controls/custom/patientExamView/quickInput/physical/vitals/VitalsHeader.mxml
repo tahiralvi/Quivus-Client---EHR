@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<quickInput:PMHSectionHeader xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							 xmlns:s="library://ns.adobe.com/flex/spark" 
+							 xmlns:mx="library://ns.adobe.com/flex/mx" 
+							 xmlns:quickInput="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.*" 
+							 xmlns:comprehensiveHistory="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.comprehensiveHistory.*" 
+							 xmlns:buttonSeparators="com.adobe.Quivus.view.controls.skins.buttonSeparators.*" xmlns:buttonBarSkins="com.adobe.quivus.skins.chrome.buttonBarSkins.*"
+							 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.view.controls.custom.ComingSoon;
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			
+			
+			protected function id_SpinerList_clickHandler(event:MouseEvent):void
+			{
+				event.stopImmediatePropagation();
+			}
+			
+			
+			protected function id_import_clickHandler(event:MouseEvent):void
+			{
+				event.stopImmediatePropagation();
+				event.preventDefault();
+				dispatchEvent(new VitalsHeaderEvent(VitalsHeaderEvent.IMPORT_VITALS_CLICKED, true));
+			}
+			
+			
+			protected function id_clear_clickHandler(event:MouseEvent):void
+			{
+				event.stopImmediatePropagation();
+				event.preventDefault();
+				dispatchEvent(new VitalsHeaderEvent(VitalsHeaderEvent.CLEAR_CLICKED, true));
+			}
+			
+			
+			protected function id_english_clickHandler(event:MouseEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.QI_VITALS ) )
+				{
+					event.stopImmediatePropagation();
+					event.preventDefault();
+					dispatchEvent(new VitalsHeaderEvent(VitalsHeaderEvent.ENGLISH_UNIT_SELECTED, true));
+				}
+			}
+			
+			
+			protected function id_metric_clickHandler(event:MouseEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleViewable( QSSecurityUtil.QI_VITALS ) )
+				{
+					event.stopImmediatePropagation();
+					event.preventDefault();
+					
+					dispatchEvent(new VitalsHeaderEvent(VitalsHeaderEvent.METRIC_UNIT_SELECTED, true));
+				}
+				
+			}
+			
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				var popup:ComingSoon = new ComingSoon();
+				popup.ShowPopup( this );
+				popup.height = 200;
+				popup.width = 200;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:HGroup width="100%" horizontalAlign="left">
+		<s:HGroup paddingTop="1" horizontalAlign="left" gap="2">
+			
+			
+			<s:SkinnableContainer skinClass="com.adobe.quivus.skins.chrome.containerSkins.vitalsIconsBGSkin">
+				<s:layout>
+					<s:HorizontalLayout gap="1" />
+				</s:layout>
+				
+				
+				<s:ToggleButton id="id_import" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VitalsImportBtn" buttonMode="true" useHandCursor="true" toolTip="Import Previous Vitals"
+								click="id_import_clickHandler(event)" />
+				<buttonBarSkins:buttonSeparator_small  />
+				<s:Button skinClass="com.adobe.quivus.skins.chrome.buttonSkins.VitalsGraphBtnSkin" buttonMode="true" useHandCursor="true" toolTip="View Vital's Graph"
+						  click="button1_clickHandler(event)"/>
+				<buttonBarSkins:buttonSeparator_small  />
+				<s:Button id="id_clear" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VitalsClearBtn" buttonMode="true" useHandCursor="true" toolTip="Clear"
+						  click="id_clear_clickHandler(event)"/>			
+			</s:SkinnableContainer>
+			
+			
+			<s:HGroup gap="-1" paddingTop="0" verticalAlign="middle">
+				<s:RadioButton id="id_metric"  skinClass="com.adobe.quivus.skins.chrome.radioButtonSkins.metricBtnSkin" buttonMode="true" useHandCursor="true" toolTip="Conversion Types"
+							   click="id_metric_clickHandler(event)"/>	
+				<s:RadioButton id="id_english" skinClass="com.adobe.quivus.skins.chrome.radioButtonSkins.englishBtnSkin" buttonMode="true" useHandCursor="true" toolTip="Conversion Types" 
+							   click="id_english_clickHandler(event)" selected="true"/>
+				
+			</s:HGroup>  
+			
+		</s:HGroup>
+		<!--<s:HGroup width="100%" paddingTop="-3" horizontalAlign="right">			
+		<s:Button id="id_AllNormalBtn" textAlignLast="left" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.ROSallNormalBtn" />
+		</s:HGroup>-->
+	</s:HGroup>
+	
+	
+</quickInput:PMHSectionHeader>

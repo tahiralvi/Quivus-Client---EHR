@@ -1,0 +1,570 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group  xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:vitals="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.physical.vitals.*" 
+		 xmlns:labs="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.physical.labs.*" 
+		 xmlns:chiefComplaint="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.physical.chiefComplaint.*" 
+		 xmlns:ros="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.physical.ros.*" 
+		 xmlns:physical="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.physical.physical.*"
+		 xmlns:components="com.zigron.controls.extended.components.*"
+		 implements="com.adobe.Quivus.view.interfaces.IScrollableView"
+		 creationComplete="group1_creationCompleteHandler(event)"
+		 >
+	<s:layout>
+		<s:VerticalLayout gap="0" horizontalAlign="center"/>
+	</s:layout>
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.view.controls.custom.PinableSlideOutPanel;
+			import com.adobe.Quivus.view.controls.custom.SlideOutPanel;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.PMHButtonDeletedSkin;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.PMHButtonSkin;
+			import com.adobe.Quivus.view.events.SelectSection;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			
+			import mx.events.FlexEvent;
+			import mx.events.ItemClickEvent;
+			
+			private var currentExpandedPanel:SlideOutPanel ;
+			private var currentSlideOutPanel:SlideOutPanel ;
+			
+			private var currentIndex:int = 0;
+			
+			[Bindable]
+			public var ParentSlideOutPanel:SlideOutPanel;
+			
+			private var m_bHasChange:Boolean;
+			
+			public function get hasChange():Boolean
+			{
+				return m_bHasChange;
+			}
+			
+			[Bindable]
+			public function set hasChange(value:Boolean):void
+			{
+				m_bHasChange = value;
+				
+				if( value || id_VitalsPanel.hasChange || id_CCPanel.hasChange || id_ROSPanel.hasChange || id_PhysicalPanel.hasChange || id_LabsPanel.hasChange )
+				{
+					m_bHasChange = true;
+				}
+				else
+				{
+					m_bHasChange = false;
+				}
+			}
+			
+			protected function QSViewStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( currentExpandedPanel && currentExpandedPanel != event.currentTarget && 
+					event.viewState == QSViewStateEvent.EXPANDED_VIEW &&
+					!currentExpandedPanel.isSlideOut && !event.currentTarget.isSlideOut )
+					currentExpandedPanel.ExpandedView = false;
+				
+				//ignore state change if panel is in SlideOut state
+				if( currentExpandedPanel != event.currentTarget && !event.currentTarget.isSlideOut )
+				{
+					currentExpandedPanel = event.currentTarget as SlideOutPanel;
+					setSelectedById( currentExpandedPanel.id );
+				}
+			}
+			
+			protected function QSSlideStateChangeHandler(event:QSViewStateEvent):void
+			{
+				if( currentSlideOutPanel && currentSlideOutPanel != event.currentTarget && 
+					event.viewState == QSViewStateEvent.VIEW_SLIDE_OUT && currentSlideOutPanel.isSlideOut )
+				{
+					//currentSlideOutPanel.ToggleSlideOut();
+					//currentSlideOutPanel["IsNotesPanelVisible"] = false;
+				}
+				
+				currentSlideOutPanel = event.currentTarget as SlideOutPanel;
+				if( event.viewState == QSViewStateEvent.VIEW_SLIDE_IN )
+					currentSlideOutPanel.ExpandedView = true;
+			}
+
+
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				currentIndex ++ ;
+				SelectNextByIndex();
+
+				addEventListener("SelectSection", function(event:SelectSection):void
+				{
+					getCurrentSelectedPanel().AllowMoveToNextPanel( function():void
+					{
+						SelectNextByID( event.SectionID ) ;
+					});
+				});
+				
+				id_VitalsPanel.id_Header.id_CloseBtn.addEventListener( MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					event.stopImmediatePropagation();
+					currentIndex = 2 ;
+					SelectNextByIndex();
+					id_VitalsPanel.visible = !id_VitalsPanel.visible;
+					
+					id_VitalsBtn.setStyle("skinClass", PMHButtonDeletedSkin);
+				});
+				
+				id_CCPanel.id_Header.id_CloseBtn.addEventListener( MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					event.stopImmediatePropagation();
+					currentIndex = 3 ;
+					SelectNextByIndex();
+					id_CCPanel.visible = !id_CCPanel.visible;
+					
+					id_CCBtn.setStyle("skinClass", PMHButtonDeletedSkin);
+				});
+				
+				id_ROSPanel.id_Header.id_CloseBtn.addEventListener( MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					event.stopImmediatePropagation();
+					currentIndex = 4 ;
+					SelectNextByIndex();
+					id_ROSPanel.visible = !id_ROSPanel.visible;
+					
+					id_ROSBtn.setStyle("skinClass", PMHButtonDeletedSkin);
+				});
+				
+				id_PhysicalPanel.id_Header.id_CloseBtn.addEventListener( MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					event.stopImmediatePropagation();
+					currentIndex = 5 ;
+					SelectNextByIndex();
+					id_PhysicalPanel.visible = !id_PhysicalPanel.visible;
+					
+					id_PhysicalBtn.setStyle("skinClass", PMHButtonDeletedSkin);
+				});
+				
+				id_LabsPanel.id_Header.id_CloseBtn.addEventListener( MouseEvent.CLICK, function(event:MouseEvent):void
+				{
+					event.stopImmediatePropagation();
+					/* currentIndex += 1 ;
+					SelectNextByIndex(); */
+					id_LabsPanel.visible = !id_LabsPanel.visible;
+					
+					id_LabsBtn.setStyle("skinClass", PMHButtonDeletedSkin);
+				});
+			}
+			
+			private function ShowPanel(event:MouseEvent):void
+			{
+				getCurrentSelectedPanel().AllowMoveToNextPanel( function():void
+				{
+					event.currentTarget.selected = true;
+					
+					setSelectedById( event.currentTarget.id )
+				});
+			}
+			
+			private function inActivateBorders():void 
+			{				
+				/* id_VitalsBorder.setStyle("borderAlpha", false);
+				id_CCBorder.setStyle("borderAlpha", false);
+				id_ROSBorder.setStyle("borderAlpha", false);
+				id_PhysicalBorder.setStyle("borderAlpha", false);
+				id_LabsBorder.setStyle("borderAlpha", false); */
+				
+				
+				id_VitalsPanel.ShowFocusBorder 		= false;
+				id_CCPanel.ShowFocusBorder 			= false;
+				id_ROSPanel.ShowFocusBorder 		= false;
+				id_PhysicalPanel.ShowFocusBorder 	= false;
+				id_LabsPanel.ShowFocusBorder		= false;
+			}
+			public function setFirstTab():void
+			{
+				setSelectedById( "id_VitalsBtn" );	
+			}
+			private function setSelectedById(tabId:String):void
+			{
+				DeSelectAllNavButton();
+				
+				switch( tabId )
+				{
+					case "id_VitalsBtn":
+					case "id_VitalsPanel":
+						inActivateBorders();
+						id_VitalsBtn.selected				= true;
+						id_VitalsPanel.ExpandedView 		= true;
+						//id_VitalsPanel.ShowFocusBorder 		= true;
+						id_VitalsPanel.visible		 		= true;
+						id_VitalsPage.selected				= true;
+						
+						id_VitalsPanel.id_Height.firstNumericStepper.setFocus();
+						currentIndex						= 1;
+						//id_VitalsBorder.setStyle("borderAlpha", true);
+						id_VitalsBtn.setStyle("skinClass", PMHButtonSkin);
+						
+						id_Scroller.viewport.verticalScrollPosition = 5;
+						break;
+					
+					case "id_CCBtn":
+					case "id_CCPanel":
+						inActivateBorders();
+						id_CCBtn.selected					= true;
+						id_CCPanel.ExpandedView 			= true;
+						//id_CCPanel.ShowFocusBorder 			= true;
+						id_CCPanel.visible		 			= true;
+						id_CCPage.selected					= true;
+						
+						id_CCPanel.id_CCBodyView.id_ComplaintArea.setFocus();
+						currentIndex						= 2;
+						//id_CCBorder.setStyle("borderAlpha", true);
+						id_CCBtn.setStyle("skinClass", PMHButtonSkin);
+						
+						if( checkPinAll() )
+							id_Scroller.viewport.verticalScrollPosition = id_LabsPanel.height;
+						else
+							id_Scroller.viewport.verticalScrollPosition = id_LabsPanel.height + 25;
+						
+						break;
+					
+					case "id_ROSBtn":
+					case "id_ROSPanel":
+						inActivateBorders();
+						id_ROSBtn.selected					= true;
+						id_ROSPanel.ExpandedView 			= true;
+						//id_ROSPanel.ShowFocusBorder 		= true;
+						id_ROSPanel.visible		 			= true;
+						id_ROSPage.selected					= true;
+						
+						currentIndex						= 3;
+						//id_ROSBorder.setStyle("borderAlpha", true);
+						id_ROSBtn.setStyle("skinClass", PMHButtonSkin);
+						
+						if( checkPinAll() )
+							id_Scroller.viewport.verticalScrollPosition = id_VitalsPanel.height + id_LabsPanel.height;
+						else
+							id_Scroller.viewport.verticalScrollPosition = id_VitalsPanel.height + 45;
+						
+						break;
+					
+					case "id_PhysicalBtn":
+					case "id_PhysicalPanel":
+						inActivateBorders();
+						id_PhysicalBtn.selected				= true;
+						id_PhysicalPanel.ExpandedView 		= true;
+						//id_PhysicalPanel.ShowFocusBorder 	= true;
+						id_PhysicalPanel.visible		 	= true;
+						id_PhysicalPage.selected			= true;
+						currentIndex						= 4;
+					//	id_PhysicalBorder.setStyle("borderAlpha", true);
+						id_PhysicalBtn.setStyle("skinClass", PMHButtonSkin);
+						
+						if( checkPinAll() )
+							id_Scroller.viewport.verticalScrollPosition = id_VitalsPanel.height + id_LabsPanel.height + id_CCPanel.height;
+						else
+							id_Scroller.viewport.verticalScrollPosition = id_LabsPanel.height + 65;
+						
+						
+						break;
+					
+					case "id_LabsBtn":
+					case "id_LabsPanel":
+						inActivateBorders();
+						id_LabsBtn.selected					= true;
+						id_LabsPanel.ExpandedView 			= true;
+						//id_LabsPanel.ShowFocusBorder 		= true;
+						id_LabsPanel.visible		 		= true;
+						id_LabsPage.selected				= true;
+						
+						id_LabsPanel.id_LabInContents.id_TestCode.setFocus();
+						currentIndex						= 5;
+						//id_LabsBorder.setStyle("borderAlpha", true);
+						id_LabsBtn.setStyle("skinClass", PMHButtonSkin);
+						
+						if( checkPinAll() )
+							id_Scroller.viewport.verticalScrollPosition = id_VitalsPanel.height + id_LabsPanel.height + id_CCPanel.height + id_ROSPanel.height;
+						else
+							id_Scroller.viewport.verticalScrollPosition = id_CCPanel.height + 85;
+						
+						break;
+					
+				}
+			}
+			
+			private function SelectNextByIndex():void
+			{
+				if( currentIndex == 0 )
+					currentIndex = 5;
+				
+				switch( currentIndex )
+				{
+					case 1:
+						setSelectedById( "id_VitalsBtn" );
+						break;
+					case 2:
+						setSelectedById( "id_CCBtn" );
+						break;
+					case 3:
+						setSelectedById( "id_ROSBtn" );
+						break;
+					case 4:
+						setSelectedById( "id_PhysicalBtn" );
+						break;
+					case 5:
+						setSelectedById( "id_LabsBtn" );
+						break;
+					default:
+						setSelectedById( "id_VitalsBtn" );
+						break;
+				}
+			}
+			
+			private function SelectNextByID( sectionID:String ):void
+			{
+				removeAllPopups();
+				
+				switch( sectionID )
+				{
+					case "id_LabsPanel":
+						setSelectedById( "id_VitalsBtn" );
+						break;
+					case "id_VitalsPanel":
+						setSelectedById( "id_CCBtn" );
+						break;
+					case "id_CCPanel":
+						setSelectedById( "id_ROSBtn" );
+						break;
+					case "id_ROSPanel":
+						setSelectedById( "id_PhysicalBtn" );
+						break;
+					case "id_PhysicalPanel":
+						setSelectedById( "id_LabsBtn" );
+						break;
+					
+					default:
+						setSelectedById( "id_VitalsBtn" );
+						break;
+				}
+			}
+			private function DeSelectAllNavButton():void
+			{
+				id_VitalsBtn.selected		=	false;
+				id_CCBtn.selected			=	false;
+				id_ROSBtn.selected			=	false;
+				id_PhysicalBtn.selected		=	false;
+				id_LabsBtn.selected			=	false;
+			}
+			
+			
+			
+			protected function pagination_itemClickHandler(event:ItemClickEvent):void
+			{
+				getCurrentSelectedPanel().AllowMoveToNextPanel( function():void
+				{
+					setSelectedById( event.item as String );
+				});
+			}
+			
+			
+			protected function next_clickHandler(event:MouseEvent):void
+			{
+				currentIndex += 1 ;
+				SelectNextByIndex()
+			}
+			
+			
+			protected function previous_clickHandler(event:MouseEvent):void
+			{
+				currentIndex -= 1 ;
+				SelectNextByIndex()
+			}
+			
+			
+			public function ScrollUp():void
+			{
+				id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition + 15;
+				removeAllPopups();
+			}
+			
+			public function ScrollDown():void
+			{
+				id_Scroller.viewport.verticalScrollPosition = id_Scroller.viewport.verticalScrollPosition - 15;
+				removeAllPopups();
+			}
+			
+			public function removeAllPopups():void
+			{
+				id_VitalsPanel.AllowOtherPopup		= false;
+				id_CCPanel.AllowOtherPopup			= false;
+				id_ROSPanel.AllowOtherPopup			= false;
+				id_PhysicalPanel.AllowOtherPopup	= false;
+				id_LabsPanel.AllowOtherPopup		= false;
+			}
+			
+			public function PinAll( value:Boolean ):void
+			{
+				id_VitalsPanel.PinView 						= value;
+				id_VitalsPanel.id_Header.id_Pin.selected 		= value;
+				
+				id_CCPanel.PinView 						= value;
+				id_CCPanel.id_Header.id_Pin.selected 	= value;
+				
+				id_ROSPanel.PinView 							= value;
+				id_ROSPanel.id_Header.id_Pin.selected 		= value;
+				
+				id_PhysicalPanel.PinView 						= value;
+				id_PhysicalPanel.id_Header.id_Pin.selected 		= value;
+				
+				id_LabsPanel.PinView 						= value;
+				id_LabsPanel.id_Header.id_Pin.selected 		= value;
+				
+				if( !value )
+					currentExpandedPanel.ExpandedView = true;
+				
+				removeAllPopups();
+			}
+			
+			public function checkPinAll():Boolean
+			{
+				return id_VitalsPanel.PinView 	&&
+				id_CCPanel.PinView 				&&
+				id_ROSPanel.PinView				&&
+				id_PhysicalPanel.PinView		&&
+				id_LabsPanel.PinView			;
+				
+			}
+			
+			private function getCurrentSelectedPanel():PinableSlideOutPanel
+			{
+				if( id_VitalsPanel.ExpandedView )
+				{
+					return id_VitalsPanel;
+				}
+				else if( id_CCPanel.ExpandedView )
+				{
+					return id_CCPanel;
+				}
+				else if( id_ROSPanel.ExpandedView )
+				{
+					return id_ROSPanel;
+				}
+				else if( id_PhysicalPanel.ExpandedView )
+				{
+					return id_PhysicalPanel;
+				}
+				else if( id_LabsPanel.ExpandedView )
+				{
+					return id_LabsPanel;
+				}
+				
+				return id_VitalsPanel;
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<s:RadioButtonGroup id="pagination" itemClick="pagination_itemClickHandler(event)"/>
+	</fx:Declarations>
+	
+	
+	<fx:Binding source="id_VitalsPanel.hasChange" destination="hasChange" /> 
+	<fx:Binding source="id_CCPanel.hasChange" destination="hasChange"  /> 
+	<fx:Binding source="id_ROSPanel.hasChange" destination="hasChange"  /> 
+	<fx:Binding source="id_PhysicalPanel.hasChange" destination="hasChange"  /> 
+	<fx:Binding source="id_LabsPanel.hasChange" destination="hasChange"  /> 
+	
+	
+	<s:HGroup width="100%" horizontalAlign="center" height="40" verticalAlign="middle">
+		<s:Button skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBPMHPrevBtn"  click="previous_clickHandler(event)"
+				  toolTip="Previous Section" buttonMode="true"/>
+		
+		<s:HGroup width="100%" horizontalAlign="left">		
+		<s:ToggleButton id="id_VitalsBtn" width="65" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.PMHButtonSkin" label="VITALS"
+						selected="{ !id_VitalsPanel.visible}" click="ShowPanel(event)" buttonMode="true" useHandCursor="true"
+						/>
+		<s:ToggleButton id="id_CCBtn" width="115" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.PMHButtonSkin" label="CHIEF COMPLAINT/HPI"
+						selected="{ !id_CCPanel.visible}" click="ShowPanel(event)" buttonMode="true" useHandCursor="true"
+						 />
+		<s:ToggleButton id="id_ROSBtn" width="115" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.PMHButtonSkin" label="REVIEW OF SYSTEM"
+						selected="{ !id_ROSPanel.visible}" click="ShowPanel(event)" buttonMode="true" useHandCursor="true"
+						 />
+		<s:ToggleButton id="id_PhysicalBtn" width="70" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.PMHButtonSkin" label="PHYSICAL"
+						selected="{ !id_PhysicalPanel.visible}" click="ShowPanel(event)" buttonMode="true" useHandCursor="true"
+						 />
+		<s:ToggleButton id="id_LabsBtn" width="80" skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.PMHButtonSkin" label="IN-HOUSE LAB"
+						selected="{ !id_LabsPanel.visible}" click="ShowPanel(event)" buttonMode="true" useHandCursor="true"
+						 />
+			</s:HGroup>
+		<s:Button skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.VBPMHNextBtn" click="next_clickHandler(event)"
+				  toolTip="Next Section" buttonMode="true"/>
+	</s:HGroup>
+	
+	<s:BorderContainer width="100%" height="100%" cornerRadius="3" backgroundColor="#999AAA" 
+					   borderAlpha="0" borderColor="#999AAA" backgroundAlpha="0">
+		<s:layout>
+			<s:VerticalLayout paddingTop="0" horizontalAlign="left" gap="1"  />
+		</s:layout>
+		<s:Scroller id="id_Scroller" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off" >
+			<s:Group width="100%" height="100%" >
+				<s:layout>
+					<s:VerticalLayout paddingTop="2" horizontalAlign="center" verticalAlign="top" gap="1" clipAndEnableScrolling="true" />
+				</s:layout>
+				
+				
+				
+						
+		<vitals:VitalsPanel id="id_VitalsPanel" width="100%" allowSlideOut="true" ExpandedView="true" 
+							SlideOutXOffset="35" SlideOutYOffset="-8" 
+							includeInLayout="{id_VitalsPanel.visible}"
+							ParentSlideOutPanel="{this.ParentSlideOutPanel}"
+							QSViewStateChange="QSViewStateChangeHandler(event)"
+							QSSlideStateChange="QSSlideStateChangeHandler(event)" slideoutPanelName="Vitals" />
+					
+				
+		<chiefComplaint:CCPanel id="id_CCPanel" width="100%" allowSlideOut="true" ExpandedView="false" 
+								SlideOutXOffset="35" SlideOutYOffset="-7"
+								includeInLayout="{id_CCPanel.visible}"
+								ParentSlideOutPanel="{this.ParentSlideOutPanel}"
+								QSViewStateChange="QSViewStateChangeHandler(event)"
+								QSSlideStateChange="QSSlideStateChangeHandler(event)" slideoutPanelName="CC/Hpi" />
+				
+				
+		<ros:ROSPanel id="id_ROSPanel" width="100%" allowSlideOut="true" ExpandedView="false" 
+					  SlideOutXOffset="35" SlideOutYOffset="-7" 
+					  includeInLayout="{id_ROSPanel.visible}"
+					  ParentSlideOutPanel="{this.ParentSlideOutPanel}"
+					  QSViewStateChange="QSViewStateChangeHandler(event)"
+					  QSSlideStateChange="QSSlideStateChangeHandler(event)" slideoutPanelName="ROS" />
+				
+				
+		<physical:PhysicalPanel id="id_PhysicalPanel"  width="100%" allowSlideOut="true" ExpandedView="false" 
+								SlideOutXOffset="35" SlideOutYOffset="-7"  
+								includeInLayout="{id_PhysicalPanel.visible}"
+								ParentSlideOutPanel="{this.ParentSlideOutPanel}"
+								QSViewStateChange="QSViewStateChangeHandler(event)"
+								QSSlideStateChange="QSSlideStateChangeHandler(event)" slideoutPanelName="Physical" />
+				
+				
+		<labs:LabInPanel id="id_LabsPanel" width="100%" allowSlideOut="true" ExpandedView="false" 
+						SlideOutXOffset="35" SlideOutYOffset="-7"
+						includeInLayout="{id_LabsPanel.visible}"
+						ParentSlideOutPanel="{this.ParentSlideOutPanel}"
+						QSViewStateChange="QSViewStateChangeHandler(event)"
+						QSSlideStateChange="QSSlideStateChangeHandler(event)" slideoutPanelName="Lab" />
+				
+		
+				
+				
+				
+				
+			</s:Group>
+		</s:Scroller>
+
+		<s:HGroup width="100%" horizontalAlign="center" paddingTop="5">
+
+			<s:RadioButton id="id_VitalsPage" 		groupName="pagination" value="id_VitalsBtn" skinClass="com.adobe.Quivus.view.controls.skins.QIPaginationRadioBtn" buttonMode="true" useHandCursor="true" toolTip="Vitals"	/>
+			<s:RadioButton id="id_CCPage" 			groupName="pagination" value="id_CCBtn" 	skinClass="com.adobe.Quivus.view.controls.skins.QIPaginationRadioBtn"	buttonMode="true" useHandCursor="true" toolTip="Chief Compliant"/>
+			<s:RadioButton id="id_ROSPage" 			groupName="pagination" value="id_ROSBtn" 		skinClass="com.adobe.Quivus.view.controls.skins.QIPaginationRadioBtn" buttonMode="true" useHandCursor="true" toolTip="Review of System"/>
+			<s:RadioButton id="id_PhysicalPage" 	groupName="pagination" value="id_PhysicalBtn" 	skinClass="com.adobe.Quivus.view.controls.skins.QIPaginationRadioBtn" buttonMode="true" useHandCursor="true" toolTip="Physical"/>
+			<s:RadioButton id="id_LabsPage" 		groupName="pagination" value="id_LabsBtn" 		skinClass="com.adobe.Quivus.view.controls.skins.QIPaginationRadioBtn" buttonMode="true" useHandCursor="true" toolTip="In-house Lab"/>
+		</s:HGroup>
+		
+	</s:BorderContainer>
+</s:Group>

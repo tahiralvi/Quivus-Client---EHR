@@ -1,0 +1,924 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="group1_creationCompleteHandler(event)"
+		 move="OnContentMove(event)"
+		 resize="group1_resizeHandler(event)"
+		 remove="group1_removeHandler(event)"
+		 
+		 tabChildren="true"
+		 >
+	<fx:Metadata>
+		[DefaultProperty("Contents")]
+		[Event(name="QSViewStateChange", type="com.gazuntite.common.view.events.QSViewStateEvent")]
+		[Event(name="QSSlideStateChange", type="com.gazuntite.common.view.events.QSViewStateEvent")]
+		[Event(name="QSBroughtToFront", type="flash.events.Event")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.utils.AppEventStrings;
+			import com.adobe.Quivus.utils.ChromeUtil;
+			import com.gazuntite.common.view.events.QSViewStateEvent;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.core.IVisualElement;
+			import mx.core.UIComponent;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.events.MoveEvent;
+			import mx.events.ResizeEvent;
+			import mx.managers.CursorManager;
+			import mx.managers.PopUpManager;
+			import mx.states.OverrideBase;
+			
+			import spark.components.Label;
+			import spark.components.NavigatorContent;
+			import spark.effects.Resize;
+			import spark.filters.DropShadowFilter;
+			import spark.resize.MoveManager;
+			
+			private var m_oMoveManager:MoveManager;
+			
+			private var m_bIsSlideOut:Boolean;
+			private var m_bIsParentSlideOut:Boolean;
+			private var m_bExpandedView:Boolean;
+			
+			private var m_nPanelSheetHeight:Number;
+			private var m_nButtonAreaHeight:Number;
+			private var m_nButtonAreaWidth:Number;
+			private var m_cButtonAreaSource:Class;
+			private var m_cButtonAreaSourceOver:Class;
+			
+			
+			private var _headerOverBody:Boolean;
+			
+			
+			private var m_oParentSlideOutPanel:SlideOutPanel;
+			
+			
+			[Embed(source="assets/icons/cursor_drag_hand.png")]
+			[Bindable]
+			public var dragCursor:Class;
+	
+
+			 
+		 	[Bindable]
+			public function get headerOverBody():Boolean
+			{
+				return _headerOverBody;
+			}
+
+			public function set headerOverBody(value:Boolean):void
+			{
+				_headerOverBody = value;
+				if(value)
+				{
+					id_HeaderView.maxHeight  = 44;
+				}
+				else
+				{
+					id_HeaderView.maxHeight  = 22;
+				}
+			}  
+
+			public function changeCursor(e:MouseEvent):void{
+				CursorManager.setCursor(dragCursor);
+			}
+			public function restoreCursor(e:MouseEvent):void{
+				CursorManager.removeAllCursors();
+			}
+			
+			public function BringToFront():void
+			{
+				var index:int = id_PanelBody.parent.getChildIndex(id_PanelBody);
+				var last:int = id_PanelBody.parent.numChildren - 1;
+				if (index != last) {
+					id_PanelBody.parent.setChildIndex(id_PanelBody, last);
+					
+					var vse:Event 	= new Event( "QSBroughtToFront", true, true );
+					
+					id_PanelBody.dispatchEvent( vse );
+				}
+			}
+			/* [Bindable]
+			[Embed(source="com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf", symbol="right_arrow")]		
+			public var rightArrow:Class;
+			
+			[Bindable]
+			//[Embed(source='assets/icons/collapsePanelView.png')]
+			[Embed(source="com/adobe/Quivus/view/controls/skins/assets/mainContainer.swf", symbol="left_arrow")]
+			public var leftArrow:Class; */
+			
+			[ArrayElementType("mx.core.IDeferredInstance")]
+			public var Contents:Array;
+			
+			[ArrayElementType("mx.core.IDeferredInstance")]
+			public var HeaderContents:Array;
+			
+			[ArrayElementType("mx.core.IDeferredInstance")]
+			public var SlideHeaderContents:Array;
+			
+			public static var numSlideOut_Global:int 		= 0;
+			[Bindable]
+			public static var allowSlideOut_Global:Boolean 	= true;
+			public var allowSlideOut:Boolean 				= true;
+			public var allowExpandedView:Boolean 			= true;
+			private var showFocusBorder:Boolean 			= false;
+			
+			private var m_iSlideOutYOffset:Number = 0;
+			private var m_iSlideOutXOffset:Number = 0;
+			public var slideoutBG:SlideOutBG = new SlideOutBG();
+			
+			
+			private var _slideoutPanelIndex:Number;
+			
+			private var _slideoutPanelName:String;
+			[Bindable]
+			public function get slideoutPanelName():String
+			{
+				return _slideoutPanelName;
+			}
+			
+			public function set slideoutPanelName(value:String):void
+			{
+				_slideoutPanelName = value;
+			}
+			
+			[Bindable]
+			public function get slideoutPanelIndex():Number
+			{
+				return _slideoutPanelIndex;
+			}
+			
+			public function set slideoutPanelIndex(value:Number):void
+			{
+				_slideoutPanelIndex = value;
+			}
+			
+			[Bindable]
+			public var tooltipmsg:String = "Slide Out";
+			
+			
+			
+			public function get MovementManager():MoveManager
+			{
+				return m_oMoveManager;
+			}
+			
+			public function set MovementManager(value:MoveManager):void
+			{
+				m_oMoveManager = value;
+			}
+			
+			public function get ShowFocusBorder():Boolean
+			{				
+				return showFocusBorder;
+			}
+			
+			public function set ShowFocusBorder(value:Boolean):void
+			{
+				id_FocusBorder.visible 	= value;				
+				showFocusBorder 		= value;
+				var temp:int;
+				if(value)
+				{
+					temp = 1;
+				}
+				else
+				{
+					temp = 0;
+				}
+				id_glowFocus.alpha		= temp; 
+			}
+			
+			public function get SlideOutYOffset():Number
+			{
+				return m_iSlideOutYOffset;
+			}
+			
+			public function set SlideOutYOffset(value:Number):void
+			{
+				m_iSlideOutYOffset = value;
+			}
+			
+			public function get SlideOutXOffset():Number
+			{
+				return m_iSlideOutXOffset;
+			}
+			
+			public function set SlideOutXOffset(value:Number):void
+			{
+				m_iSlideOutXOffset = value;
+			}
+			
+			public function get ParentSlideOutPanel():SlideOutPanel
+			{
+				return m_oParentSlideOutPanel;
+			}
+			
+			public function set ParentSlideOutPanel(value:SlideOutPanel):void
+			{
+				m_oParentSlideOutPanel = value;
+				
+				if( value )
+				{
+					m_oParentSlideOutPanel.addEventListener( "QSSlideStateChange" , onParentSlideOut);
+				}
+			}
+			
+			public function get IsParentSlideOut():Boolean
+			{
+				return m_bIsParentSlideOut;
+			}
+			
+			public function set IsParentSlideOut(value:Boolean):void
+			{
+				m_bIsParentSlideOut = value;
+			}
+			
+			public static function get isSlideOut_Global():Boolean
+			{
+				return numSlideOut_Global != 0;
+			}
+			
+			[Bindable]
+			public function get isSlideOut():Boolean
+			{
+				return m_bIsSlideOut;
+			}
+			
+			public function set isSlideOut(value:Boolean):void
+			{
+				m_bIsSlideOut = value;
+				
+				if( value )
+				{
+					ExpandedView = value ;
+					numSlideOut_Global ++;
+				}
+				else
+				{
+					numSlideOut_Global --;
+				}
+				
+				var vstate:String 			= value ? QSViewStateEvent.VIEW_SLIDE_OUT : QSViewStateEvent.VIEW_SLIDE_IN
+				var vse:QSViewStateEvent 	= new QSViewStateEvent( AppEventStrings.QS_SLIDE_STATE_CHANGE, vstate );
+				dispatchEvent( vse );
+				
+				//id_PanelBody.invalidateDisplayList();
+			}
+			
+			
+			private function setSlideOutWidth(percentage:Number):void
+			{
+				this.id_PanelBody.percentWidth = percentage;
+			}
+			
+			/**
+			 * 
+			 * @true : panel will show its contents on start up
+			 * @false: contents will not be visible until header is clicked.
+			 * 
+			 */
+			public function get ExpandedView():Boolean
+			{
+				return m_bExpandedView;
+			}
+			
+			public function set ExpandedView(value:Boolean):void
+			{
+				if( ! allowExpandedView ) return;
+				m_bExpandedView = value;
+				ContentsVisible( value );
+				
+				/* if( isSlideOut && !value )
+				RemoveSlideOut(); */
+				
+				var vstate:String 			= value ? QSViewStateEvent.EXPANDED_VIEW : QSViewStateEvent.COLLAPSED_VIEW
+				var vse:QSViewStateEvent 	= new QSViewStateEvent( AppEventStrings.QS_VIEW_STATE_CHANGE, vstate );
+				dispatchEvent( vse );
+			}
+			
+			[Bindable]
+			public function get ButtonAreaSource():Class
+			{
+				return m_cButtonAreaSource;
+			}
+			
+			public function set ButtonAreaSource(value:Class):void
+			{
+				m_cButtonAreaSource = value;
+			}
+			
+			public function get ButtonAreaSourceOver():Class
+			{
+				return m_cButtonAreaSourceOver;
+			}
+			
+			public function set ButtonAreaSourceOver(value:Class):void
+			{
+				m_cButtonAreaSourceOver = value;
+			}
+			
+			[Bindable]
+			public function get ButtonAreaWidth():Number
+			{
+				return m_nButtonAreaWidth;
+			}
+			
+			public function set ButtonAreaWidth(value:Number):void
+			{
+				m_nButtonAreaWidth = value;
+			}
+			
+			[Bindable]
+			public function get ButtonAreaHeight():Number
+			{
+				return m_nButtonAreaHeight;
+			}
+			
+			public function set ButtonAreaHeight(value:Number):void
+			{
+				m_nButtonAreaHeight = value;
+			}
+			
+			public function get PanelSheetHeight():Number
+			{
+				return m_nPanelSheetHeight;
+			}
+			
+			public function set PanelSheetHeight(value:Number):void
+			{
+				m_nPanelSheetHeight = value;
+				
+				id_PanelBody.height = value;
+			}
+			
+			private function onParentSlideOut(event:QSViewStateEvent):void
+			{
+				if( event.viewState == QSViewStateEvent.VIEW_SLIDE_OUT )
+				{
+					trace("Parent is Slided out");					
+					if(  isSlideOut )// then remove child slide out, because rule is parent will contain all children( slide out or not ).
+					{
+						trace("-----REMOVE CHILD slideout-----");						
+						trace("this.slideoutPanelName: " +this.slideoutPanelName);
+						this.ToggleSlideOut();
+						this.RemoveSlideTab();
+					}
+					
+					allowSlideOut = false;
+				}
+				else
+				{
+					allowSlideOut = true;
+				}
+			}
+			
+			public function ToggleSlideOut():void
+			{
+				id_btnToggle_clickHandler( null );
+			}
+			
+			protected function id_btnToggle_clickHandler( event:MouseEvent ):void
+			{
+				if( ! allowSlideOut_Global || ! allowSlideOut ) return;
+				if( ! Contents ) return;
+				
+				var screenWidth:Number = ChromeUtil.getScreenRect().width / 2;
+				
+				ChromeUtil.restoreDefault();//restore functionality...functional requirement change
+				/* if( !ChromeUtil.isInConstraintWidth && !isSlideOut )
+				{
+				Alert.show("Unable to slide out, Set application to default size? ", "window was resized by user", Alert.YES|Alert.NO, this, function(event:CloseEvent):void
+				{
+				if (event.detail == Alert.YES) 
+				{
+				var screenWidth:Number = ChromeUtil.getScreenRect().width;
+				ChromeUtil.topLevelWindow.width = screenWidth;
+				if( ChromeUtil.isMaximized )
+				ChromeUtil.toggleMaximizeWindow();
+				InitBeforeSlideout();
+				} 
+				else 
+				{
+				trace( "You answered No" );
+				}
+				
+				});
+				return;
+				} */
+				
+				InitBeforeSlideout();
+			}
+			
+			private function InitBeforeSlideout():void
+			{
+				//var filters:Array = new Array();
+				
+				if( id_panelArea.contains( id_PanelBody ) )
+				{
+					id_PanelBody.includeInLayout 	= true;
+					id_PanelBody.visible			= true;
+					if(FlexGlobals.topLevelApplication.slideout_count < 3)
+					{
+						AddSlideOut();
+					}
+					callLater( AdjustSlideOutPosition );
+					tooltipmsg = "Slide In";
+				}
+				else
+				{
+					RemoveSlideOut();
+					tooltipmsg = "Slide Out";
+				}
+			}
+			
+			private function OnBroughtToFront( event:Event ):void
+			{
+				var vse:QSViewStateEvent = new QSViewStateEvent( AppEventStrings.QS_BROUGHT_TO_FRONT, QSViewStateEvent.IN_FRONT_VIEW );
+				dispatchEvent( vse );
+			}
+			
+			
+			private function AddSlideOut():void
+			{
+				
+				 trace("ADD SLIDE OUT :");
+				
+				 if(FlexGlobals.topLevelApplication.slideout_count < 4)
+				 {
+				 
+				 
+				FlexGlobals.topLevelApplication.id_slideout_main.visible = true;
+								
+				var s1:NavigatorContent = new NavigatorContent();
+				//s1.id = "id_nav1";
+				s1.label = slideoutPanelName;	
+				
+				
+				s1.percentWidth = 100;
+				s1.percentHeight = 100;
+				
+				s1.width = FlexGlobals.topLevelApplication.id_VS.width - 8;
+				//s1.maxHeight = FlexGlobals.topLevelApplication.id_VS.height - 5;
+				
+				//s1.height =  id_PanelBody.height + 50;
+				
+				//FlexGlobals.topLevelApplication.id_tabs.height  = s1.height + 50;
+				
+				
+				FlexGlobals.topLevelApplication.slideout_array.push(slideoutPanelName);
+				trace("Currently slided out panels "+ FlexGlobals.topLevelApplication.slideout_array);
+				
+				
+				//s1.width = id_HeaderView.width + 10;
+				
+				s1.minHeight = 140;
+								
+				//id_PanelBody.width = Capabilities.screenResolutionX / 2 - 10;							
+				
+				s1.addElement(id_PanelBody);
+											
+				id_PanelBody.width = id_HeaderView.width;
+				//id_PanelBody.percentHeight = 100;
+				//id_PanelBody.height = 140;
+				//id_PanelBody.minHeight = 40;
+				
+				
+				trace("s1.height: "+s1.height);
+				trace("s1.width: "+s1.width);
+				
+				trace("id_PanelBody.height: "+id_PanelBody.height);
+				trace("id_PanelBody.width: "+id_PanelBody.width);
+				
+				trace("FlexGlobals.topLevelApplication.id_tabs.height: "+FlexGlobals.topLevelApplication.id_tabs.height);
+				trace("id_sheetView.height: "+id_sheetView.height);
+				trace("id_panelArea.height: "+id_panelArea.height);
+				trace("FlexGlobals.topLevelApplication.id_VS.height: "+FlexGlobals.topLevelApplication.id_VS.height);
+							
+				
+				//add navigator content to view stack
+				FlexGlobals.topLevelApplication.id_tabs.addElement(s1);
+				
+				//select new tab as focused..
+				FlexGlobals.topLevelApplication.id_tabs.selectedIndex = FlexGlobals.topLevelApplication.id_tabs.length-1;
+				
+				
+				//assign new tab index with this slideout
+				slideoutPanelIndex = FlexGlobals.topLevelApplication.id_tabs.selectedIndex;				
+				
+				
+				//assign new count
+				FlexGlobals.topLevelApplication.slideout_count = FlexGlobals.topLevelApplication.id_tabs.length;
+				
+				
+				
+				// called when navigator content will be remove. 
+				// and it will be removed when we click on cross button.. so we acutally needs to call removeSlideout
+				
+				s1.addEventListener(Event.REMOVED_FROM_STAGE, function(evt:Event):void
+				{
+					trace("REMOVED_FROM_STAGE");
+					//if(slideoutPanelIndex == FlexGlobals.topLevelApplication.id_tabs.selectedIndex)
+					{
+						
+						if(FlexGlobals.topLevelApplication.slideout_crossed == true)
+						{
+							trace("REMOVED_FROM_STAGE --- cross button clicked --- ");
+							
+							//trace("VS length "+FlexGlobals.topLevelApplication.id_tabs.length);					
+							RemoveSlideOut();
+							FlexGlobals.topLevelApplication.slideout_crossed = false;
+							
+							trace("VS length after remove Slideout"+FlexGlobals.topLevelApplication.id_tabs.length);
+							//trace("tabbar length after remove Slideout "+FlexGlobals.topLevelApplication.id_TabBar.numChildren);
+							if(FlexGlobals.topLevelApplication.id_tabs.length == 1)
+							{
+								FlexGlobals.topLevelApplication.id_slideout_main.visible = false;
+							}
+						}
+					
+					}
+					
+				});							
+								
+										
+				ContentsVisible(true);
+							
+				id_sheetView.percentHeight = 100;
+	
+				var reqWidth:Number = this.width + id_PanelBody.width + 10;
+				if ( ChromeUtil.topLevelWindow.width < reqWidth )
+				{
+					ChromeUtil.topLevelWindow.width = reqWidth;
+				}
+		
+				
+							
+					isSlideOut = true;
+					ExpandedView = true;
+					scaleEffectX.play();
+									 	
+				
+				 }
+			}
+			
+			private function AdjustSlideOutPosition(event:Event = null):void
+			{
+				var loc:Point = new Point( id_panelArea.x + id_panelArea.width, 0 );
+				var gLoc:Point = localToGlobal( loc );
+				
+				var regHeight:int = gLoc.y + id_PanelBody.height;
+				var pos:int = Math.min( 500, regHeight )
+				if( regHeight > pos )
+					gLoc.y += getPositionOffset( gLoc.y, regHeight );
+				if( gLoc.y < 10 ) 
+					gLoc.y = 10;
+				
+				
+				
+				id_PanelBody.percentHeight = 100; 						
+				
+			}
+			
+			
+			
+			private function getPositionOffset( yPos:int, currentHeight:int ):int
+			{
+				var maxAvlblHeight:int = ChromeUtil.topLevelWindow.height;
+				var halfHeight:int = maxAvlblHeight / 2;
+				
+				if( ( currentHeight + yPos ) > maxAvlblHeight )
+					return -currentHeight / 2;
+				
+				return 10;
+				
+			}
+			
+			private function RemoveSlideOut():void
+			{
+				
+				// this is valid, if cross button is clicked.. or maybe both cases.. 
+				/* trace("Item to be removed: "+FlexGlobals.topLevelApplication.slideout_array[FlexGlobals.topLevelApplication.id_tabs.selectedIndex]);
+				
+				var ind:int = FlexGlobals.topLevelApplication.id_tabs.selectedIndex;
+				FlexGlobals.topLevelApplication.slideout_array.slice(ind, 1);
+				
+				trace("Currently slided out panels "+ FlexGlobals.topLevelApplication.slideout_array); */
+				//
+				
+				
+				FlexGlobals.topLevelApplication.slideout_count = FlexGlobals.topLevelApplication.id_tabs.length;
+											
+				//id_PanelBody.percentHeight = 100;
+				id_panelArea.addElement( id_PanelBody );
+				id_PanelBody.x = 0;
+				id_PanelBody.y = 20;
+				id_PanelBody.width = id_HeaderView.width;
+				
+				
+				id_SlideOutHeader00.includeInLayout = false;
+				id_SlideOutHeader00.visible		  = false;
+				isSlideOut = false;	
+				id_sheetView.paddingLeft = 0; 
+				//id_sheetView.y = 20;
+				
+				//update slideoutPanel Index after removal..
+				
+				
+										
+			}			
+			
+			private function RemoveSlideTab():void
+			{								
+				// this function should remove id_tabs[index] instead id_tabbar[index], because tab will update automatically.
+														
+				//FlexGlobals.topLevelApplication.id_tabs.removeElementAt(slideoutPanelIndex);
+				
+				trace("REMOVE SLIDE TAB");
+				trace("slideoutPanelIndex "+slideoutPanelIndex);
+				trace("FlexGlobals.topLevelApplication.id_TabBar.selectedIndex "+FlexGlobals.topLevelApplication.id_TabBar.selectedIndex);
+				
+				
+				
+				
+				if(FlexGlobals.topLevelApplication.id_TabBar.numChildren > 0)
+				{
+					FlexGlobals.topLevelApplication.id_TabBar.closeTab(slideoutPanelIndex, FlexGlobals.topLevelApplication.id_TabBar.selectedIndex);
+				}
+				
+				
+			/* 	if(FlexGlobals.topLevelApplication.id_TabBar.numChildren == 1)
+				{
+					trace("cond 1");
+					//update new tab index with this slideout
+					slideoutPanelIndex = FlexGlobals.topLevelApplication.id_tabs.selectedIndex;	
+				}
+				
+				if(slideoutPanelIndex > FlexGlobals.topLevelApplication.id_TabBar.numChildren)
+				{
+					trace("cond 2");
+					//update new tab index with this slideout
+					slideoutPanelIndex--;	
+				} */
+				
+				
+			}
+			
+			
+			protected function OnInitialize(event:FlexEvent):void
+			{
+				if( Contents )
+				{
+					for (var i:int = 0; i < Contents.length; i++)
+						id_sheetView.addElement(UIComponent(Contents[i].getInstance()));
+				}
+			}
+			
+			protected function OnHeaderInitialize(event:FlexEvent):void
+			{
+				return;// just to test, check createChildren();
+				if( HeaderContents )
+					for (var i:int = 0; i < HeaderContents.length; i++)
+						id_HeaderView.addElement(UIComponent(HeaderContents[i].getInstance()));
+				
+			}
+			
+			protected function OnSlideHeaderInitialize(event:FlexEvent):void
+			{
+				if( SlideHeaderContents )
+					for (var i:int = 0; i < SlideHeaderContents.length; i++)
+						id_SlideOutHeader00.addElement(UIComponent(SlideHeaderContents[i].getInstance()));
+				id_SlideOutHeader00.includeInLayout = false;
+				id_SlideOutHeader00.visible		  = false; 
+			}
+			
+			protected function group1_resizeHandler(event:ResizeEvent):void
+			{
+				if( id_PanelBody.width  != this.width )
+					id_PanelBody.percentWidth  = 100;
+				/* if( id_PanelBody.height != this.height )
+				id_PanelBody.height = this.height; */
+				if( ChromeUtil.topLevelWindow )
+					ChromeUtil.topLevelWindow.addEventListener( NativeWindowDisplayStateEvent.DISPLAY_STATE_CHANGE, function(event:NativeWindowDisplayStateEvent):void
+					{
+						if( event.afterDisplayState == "maximized" && isSlideOut)
+						{
+							RemoveSlideOut();
+						}
+					});
+			}
+			
+			override public function set visible(value:Boolean):void
+			{
+				super.visible = value;
+				if( ! value )
+				{
+					if( id_PanelBody.isPopUp && isSlideOut )
+					{
+						RemoveSlideOut();
+					}
+				}
+			}
+			
+			private function OnHeaderClick(event:MouseEvent):void
+			{
+				ExpandedView = !ExpandedView;				
+								
+			}
+			
+			private function OnSlideHeaderClick(event:MouseEvent):void
+			{
+				trace("clicked on slide header");										
+				BringToFront();			
+			}
+			
+			protected function ContentsVisible(value:Boolean):void
+			{
+				id_sheetView.includeInLayout 	= value;
+				id_sheetView.visible 			= value;
+				if(value)
+				{
+					fadeEffect.play();
+				}
+				/* id_sheetView.percentHeight = 100;
+				id_sheetView.percentWidth  = 100; */
+			}
+			
+			
+			private function OnPanelSheetCreation(event:Event):void
+			{
+				//ContentsVisible( ExpandedView );
+			}
+			
+			private function OnContentMove(event:MoveEvent):void 
+			{
+				if( isSlideOut )
+					AdjustSlideOutPosition();
+			}					
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				/* this.removeElement(id_HeaderView);
+				this.addElement(id_HeaderView); */
+				
+				// id_PanelBody.setElementIndex(id_HeaderView, id_PanelBody.getElementIndex(id_sheetView)); 		
+				
+				
+				/* trace("s1.height: "+s1.height);
+				trace("s1.width: "+s1.width);
+				
+				trace("id_PanelBody.height: "+id_PanelBody.height);
+				trace("id_PanelBody.width: "+id_PanelBody.width);
+				
+				trace("FlexGlobals.topLevelApplication.id_tabs.height: "+FlexGlobals.topLevelApplication.id_tabs.height);
+				trace("id_sheetView.height: "+id_sheetView.height);
+				trace("id_panelArea.height: "+id_panelArea.height);
+				trace("FlexGlobals.topLevelApplication.id_VS.height: "+FlexGlobals.topLevelApplication.id_VS.height); */
+				
+				
+			}
+			
+			
+			protected function group1_removeHandler(event:FlexEvent):void
+			{
+				if( isSlideOut )
+					RemoveSlideOut();
+			}
+			
+
+			protected function id_PanelBody_removeHandler(event:FlexEvent):void
+			{
+				if (isSlideOut)
+				{
+					trace("this panel is removed, while it was slided out");
+					//now remove its tab too..and navigator content..
+					
+					//make sure, this code is not executed when user clicked through cross button..
+					if(FlexGlobals.topLevelApplication.slideout_crossed == false)
+					{
+						//RemoveSlideTab();
+						if(FlexGlobals.topLevelApplication.id_TabBar.numChildren == 3)
+						{
+							trace("NUM children "+FlexGlobals.topLevelApplication.id_TabBar.numChildren);
+							FlexGlobals.topLevelApplication.id_TabBar.closeTab(0, FlexGlobals.topLevelApplication.id_TabBar.selectedIndex);
+							FlexGlobals.topLevelApplication.id_TabBar.closeTab(1, FlexGlobals.topLevelApplication.id_TabBar.selectedIndex);
+							FlexGlobals.topLevelApplication.id_TabBar.closeTab(2, FlexGlobals.topLevelApplication.id_TabBar.selectedIndex);
+							
+						}
+						if(FlexGlobals.topLevelApplication.id_TabBar.numChildren == 2)
+						{
+							trace("NUM children "+FlexGlobals.topLevelApplication.id_TabBar.numChildren);
+							FlexGlobals.topLevelApplication.id_TabBar.closeTab(0, FlexGlobals.topLevelApplication.id_TabBar.selectedIndex);
+							FlexGlobals.topLevelApplication.id_TabBar.closeTab(1, FlexGlobals.topLevelApplication.id_TabBar.selectedIndex);
+						}						
+						if(FlexGlobals.topLevelApplication.id_TabBar.numChildren == 1)
+						{
+							trace("NUM children "+FlexGlobals.topLevelApplication.id_TabBar.numChildren);
+							FlexGlobals.topLevelApplication.id_TabBar.closeTab(0, FlexGlobals.topLevelApplication.id_TabBar.selectedIndex);
+							FlexGlobals.topLevelApplication.id_slideout_main.visible = false;
+						}
+											
+					}
+					
+					
+				}
+			}
+
+
+			private function switchHeaderBody():void
+			{
+				if(_headerOverBody)
+				{
+					//id_panelArea.setElementIndex(id_PanelBody, id_panelArea.getElementIndex(id_HeaderView));
+					/* id_PanelBody.setElementIndex(id_HeaderView, id_PanelBody.getElementIndex(id_sheetView)); 		
+					
+					id_PanelBody.y = 0; */
+					id_HeaderView.maxHeight  = 44;
+				}
+				else if(_headerOverBody == false)
+				{
+					id_HeaderView.maxHeight  = 22;
+				}
+			}
+			
+			/*  override protected function createChildren():void
+			{
+				super.createChildren();
+				callLater( switchHeaderBody );
+			}  */
+			
+			protected override function createChildren():void
+			{
+				super.createChildren();
+				if( HeaderContents )
+					for (var i:int = 0; i < HeaderContents.length; i++)
+						id_HeaderView.addElement(UIComponent(HeaderContents[i].getInstance()));
+				
+			}
+	
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:Fade target="{id_sheetView}" id="fadeEffect" duration="600" alphaFrom="0" alphaTo="1" />
+		<!--<s:Resize target="{id_sheetView}" id="resizeEffect" repeatCount="1"  duration="2000" heightFrom="20" heightTo="500" />--> 
+		
+		<s:Animate id="scaleEffectX" repeatCount="1" target="{id_PanelBody}" duration="400">
+			
+			<s:SimpleMotionPath property="scaleX" valueFrom="0" valueTo="1" />
+			
+		</s:Animate>
+	</fx:Declarations>
+	
+	<s:Rect id="id_FocusBorder" visible="false" top="0" bottom="0" left="0" right="0" >
+		<s:stroke>
+			<s:SolidColorStroke color="#FF4F4F" alpha="1" weight="2" />
+		</s:stroke>
+		
+	</s:Rect>
+	
+	
+	<s:Group id="id_panelArea" height="100%" width="100%" 
+			 >
+		
+		<s:Group id="id_PanelBody" height="100%" width="100%" y="{isSlideOut || headerOverBody?0:20}" remove="id_PanelBody_removeHandler(event)" 
+				 initialize="OnInitialize(event);" clipAndEnableScrolling="false" 
+				 >
+			
+			<!--<s:VGroup id="id_SlideOutHeader00" gap="0" width="100%" initialize="OnSlideHeaderInitialize(event)" 
+			clipAndEnableScrolling="true" click="OnSlideHeaderClick(event)" />	-->
+			<!--<s:HGroup y="-5" width="100%" horizontalAlign="center">-->
+			
+			<s:Button id="id_dragArea"  mouseDown="{changeCursor(event)}" mouseUp="{restoreCursor(event)}" 
+					  visible="{id_SlideOutHeader00.visible}" includeInLayout="{id_SlideOutHeader00.visible}" alpha="0.4"
+					  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.Handle_dragBtnSkin" toolTip="Move"
+					  buttonMode="true" useHandCursor="true"/>
+			<!--</s:HGroup>-->
+			
+			
+			<s:VGroup id="id_sheetView" height="100%" width="100%" horizontalAlign="left" tabChildren="true" 
+					  initialize="OnInitialize(event);" clipAndEnableScrolling="true" 
+					  x="0" y="{isSlideOut?9:0}"
+					  />
+			<s:VGroup id="id_SlideOutHeader00" gap="0" width="100%" height="100%" initialize="OnSlideHeaderInitialize(event)" 
+					  clipAndEnableScrolling="true"  click="OnSlideHeaderClick(event)" visible="false" tabChildren="true" buttonMode="true" useHandCursor="true" />	
+			
+			
+		</s:Group>
+		<s:HGroup id="id_HeaderView" height="100%" width="100%" horizontalAlign="right" verticalAlign="middle" tabChildren="true"
+				  initialize="OnHeaderInitialize(event);" click="OnHeaderClick(event)" maxHeight="22" x="0" y="0" 
+				  />
+		
+	</s:Group>
+	<s:filters>
+		<s:GlowFilter id="id_glowFocus" strength="1"  blurX="12" blurY="10" alpha="0"  color="#bb0000" />
+	</s:filters>
+	
+</s:Group>

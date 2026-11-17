@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+	</s:states>
+	<s:Ellipse height="15" visible.up="false" width="15" x="0" y="0">
+		<s:fill>
+			<s:SolidColor color="#434343"/>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" includeIn="disabled,down" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+		<s:fill.over>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="#999999" alpha="1.0" ratio="0"/>
+				<s:GradientEntry color="#333333" alpha="1.0" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill.over>
+	</s:Ellipse>
+	<s:Path data="M 6.062 2.953 L 6.062 1.953 L 7.045 1.953 L 7.045 0 L 5.077 0 L 5.077 1.016 L 4.062 1.016 L 4.062 2.016 L 3.983 2.016 L 3.983 2 L 2.983 2 L 2.983 1 L 1.968 1 L 1.968 0 L 0 0 L 0 2.063 L 0.983 2.063 L 0.983 3.063 L 1.983 3.063 L 1.983 4.058 L 0.983 4.058 L 0.983 5.058 L 0 5.058 L 0 7.011 L 1.968 7.011 L 1.968 5.995 L 2.983 5.995 L 2.983 4.995 L 3.062 4.995 L 3.062 5.011 L 4.062 5.011 L 4.062 6.011 L 5.077 6.011 L 5.077 7.011 L 7.045 7.011 L 7.045 4.948 L 6.062 4.948 L 6.062 3.948 L 5.062 3.948 L 5.062 2.953 L 6.062 2.953 Z" winding="nonZero" x="4" y="4">
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1" color.over="#333333" color.up="#FFFFFF" color.down="#333333" color.disabled="#333333"/>
+		</s:filters>
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry ratio="0" color.over="#FFFFFF" color.up="#666666" color.down="#FFFFFF" alpha="1.0" color.disabled="#FFFFFF"/>
+				<s:GradientEntry ratio="1" color.over="#CCCCCC" color.up="#333333" color.down="#CCCCCC" alpha="1.0" color.disabled="#CCCCCC"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Path>
+</s:Skin>

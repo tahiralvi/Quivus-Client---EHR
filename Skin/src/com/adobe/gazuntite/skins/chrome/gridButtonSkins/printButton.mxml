@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/><s:State name="disabledWithPrompt"/>
+	</s:states>
+	<s:Rect height="18" includeIn="down,over,up" radiusX="2" width="18" visible.up="false" x="0.5" y="0.5">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#565656" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#292929" ratio="0.47058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#4A4A4A" ratio="0.5058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#737373" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:stroke>
+			<s:LinearGradientStroke caps="none" joints="miter" miterLimit="4" rotation="90" weight="1">
+				<s:GradientEntry alpha="1" color="#727272" ratio="0"/>
+				<s:GradientEntry alpha="1" color="#000000" ratio="0.5058823529411764"/>
+				<s:GradientEntry alpha="1.0" color="#727272" ratio="1"/>
+			</s:LinearGradientStroke>
+		</s:stroke>
+		<s:filters>
+			<s:DropShadowFilter includeIn="down" blurX="2" blurY="2" distance="2" hideObject="false" color="0x000000" inner="true" strength="1" alpha="0.5" quality="3" knockout="false" angle="90"/>
+		</s:filters>
+	</s:Rect>
+	<s:BitmapImage smooth="true" source="@Embed('com/adobe/gazuntite/skins/chrome/assets/icons/print_black.png')" x.over="5" x.down="5" x.up="4" x.disabled="4" y="4">
+		<s:filters>
+			<s:GlowFilter alpha="1.0" blurX="10" blurY="10" color="#CCCCCC" includeIn="disabled" inner="true" knockout="false" quality="2" strength="10"/>
+			<s:GlowFilter includeIn="over" blurX="6.0" blurY="6.0" color="#FFFFFF" inner="true" strength="6" alpha="1.0" quality="2" knockout="false"/>
+			<s:GlowFilter includeIn="down" blurX="6.0" blurY="6.0" color="#FFFFFF" inner="true" strength="6" alpha="1.0" quality="2" knockout="false"/>
+			<s:DropShadowFilter includeIn="down" blurX="1" blurY="1" distance="1" hideObject="false" color="0x000000" inner="false" strength="1" alpha="0.5" quality="3" knockout="false" angle="90"/>
+			<s:GlowFilter includeIn="up" blurX="6.0" blurY="6.0" color="#555555" inner="true" strength="6" alpha="1.0" quality="3" knockout="false"/>
+			<s:DropShadowFilter includeIn="up" blurX="1" blurY="1" distance="1" hideObject="false" color="#666666" inner="true" strength="1" alpha="0.98" quality="3" knockout="false" angle="90"/>
+		</s:filters>
+	</s:BitmapImage>
+</s:Skin>

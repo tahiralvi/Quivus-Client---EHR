@@ -1,0 +1,65 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+
+/*********************************************************************************************/
+/*Buttons
+/*Black background buttons*/
+
+.blackButtonSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.buttonSkins.blackButton");
+}
+
+/*Grey background buttons*/
+.greyButtonSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.buttonSkins.greyButton");
+}
+
+/*Update buttons*/
+.updateInfoButtonSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.buttonSkins.updateInfoButton");
+}
+/*Close buttons*/
+.closeButtonSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.buttonSkins.closeButton");
+}
+
+.popupCloseButtonSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.buttonSkins.popupCloseButton");
+}
+
+/*Search buttons*/
+.searchButtonSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.buttonSkins.searchButton");
+}
+
+/*Alert buttons*/
+.alertButtonSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.buttonSkins.alertButton");
+}
+
+/*Refresh buttons*/
+.refreshButtonSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.buttonSkins.refreshButton");
+}
+
+
+
+
+/*********************************************************************************************/
+/*Arrow Buttons
+White background arrow buttons*/
+
+.whiteArrButtonSkin
+{
+	skinClass : ClassReference("com.adobe.gazuntite.skins.chrome.arrowButtonSkins.whiteButton");
+}
+

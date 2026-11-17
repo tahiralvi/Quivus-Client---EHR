@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<s:Skin xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" 
+    xmlns:fb="http://ns.adobe.com/flashbuilder/2009" alpha.disabled="0.5">
+
+	<s:states>
+		<s:State name="up" />
+		<s:State name="over" />
+		<s:State name="down" />
+		<s:State name="disabled" />
+	</s:states>
+	
+    <!--- Defines the appearance of the SkinnableContainer class's background. -->
+    <s:Rect id="background" left="0" right="0" top="0" bottom="0" includeIn="up,disabled" radiusX="3">
+		
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#454B54" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#2B323B" ratio="0.5450980392156862"/>
+				<s:GradientEntry alpha="1.0" color="#363E46" ratio="0.5490196078431373"/>
+				<s:GradientEntry alpha="1.0" color="#6D7278" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="1" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect  includeIn="down,over" radiusX="3"  left="0" right="0" top="0" bottom="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#F4CF85" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#EFA74E" ratio="0.5137254901960784"/>
+				<s:GradientEntry alpha="1.0" color="#EC923A" ratio="0.5176470588235295"/>
+				<s:GradientEntry alpha="1.0" color="#F1983B" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.25" angle="90" blurX="1" blurY="1" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1" color.down="#333333" blurX.down="2" blurY.down="2" alpha.down="0.75"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+
+	<!--<s:RichText verticalCenter="0" horizontalCenter="0" id="labelDisplay" columnCount="1" fontFamily="CalibriCFF" fontSize="14"  kerning="on" text=""
+				whiteSpaceCollapse="preserve" color.over="#000000"  color.disabled="#999999" color.up="#C8CACB" color.down="#000000"  />-->
+    
+    <!--
+        Note: setting the minimum size to 0 here so that changes to the host component's
+        size will not be thwarted by this skin part's minimum size.   This is a compromise,
+        more about it here: http://bugs.adobe.com/jira/browse/SDK-21143
+    -->
+    <!--- @copy spark.components.SkinnableContainer#contentGroup -->
+    <s:Group id="contentGroup" left="0" right="0" top="0" bottom="0" minWidth="0" minHeight="0">
+        <s:layout>
+            <s:BasicLayout/>
+        </s:layout>
+    </s:Group>
+
+</s:Skin>

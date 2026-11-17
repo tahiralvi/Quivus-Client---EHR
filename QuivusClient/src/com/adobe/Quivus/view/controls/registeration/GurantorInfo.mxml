@@ -1,0 +1,778 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components3:CollapsiblePanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							 xmlns:s="library://ns.adobe.com/flex/spark" 
+							 xmlns:mx="library://ns.adobe.com/flex/mx" 
+							 title="Guarantor"
+							 xmlns:registeration="com.adobe.Quivus.view.controls.registeration.*"
+							 creationComplete="cc()"  
+							 width="100%" 
+							 xmlns:components2="com.gazuntite.common.view.components.*" 
+							 xmlns:components3="com.gazuntite.controls.extended.components.*"  >
+	<components3:layout>
+		<s:VerticalLayout paddingBottom="8" paddingLeft="8" paddingRight="8" paddingTop="8"/>
+	</components3:layout>
+	<fx:Declarations>
+		<mx:DateFormatter id="df" formatString="MM/DD/YYYY" />
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.AppUtils;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.DTOInitializationUtility;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.adobe.Quivus.view.events.GetBasicInfoEvent;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.gazuntite.skins.chrome.textInputSkins.textInput;
+			import com.gazuntite.common.dto.CitiesDTO;
+			import com.gazuntite.common.dto.StatesDTO;
+			import com.gazuntite.common.dto.ZipsDTO;
+			import com.gazuntite.common.event.GetStateCityZipCodeCombineEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Label;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			
+			import valueObjects.*;
+			
+			
+			[Bindable]
+			private var model : AppModelLocator = AppModelLocator.getInstance();
+			[Bindable] 
+			private	var isChanged:Boolean;
+			
+			private var guarantorPhoneNumberPopUp:PhoneNumberAddMoreTitleWindow;
+			private var guarantorPhoneNumbers:ArrayCollection;
+			private var isEditMode:Boolean = false;
+			private var isNotValid:Boolean = false;
+			//--------Creation Complete------------------------
+			private function cc():void
+			{
+				guarantorPhoneNumbers = new ArrayCollection();
+				id_GuarantorGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_ONLY_CLICK, deleteRecordClickHandler, false, 0, true); 
+				
+				enableDisableFields(false);
+				
+				id_PhoneNumberAddMore.id_TelNumber.required 	= true;
+				id_PhoneNumberAddMore.id_TelNumberKind.required = true;
+				//id_ZipCityStateCombine.id_ZIP.required 		= false;
+				//id_ZipCityStateCombine.id_City.required 		= false;
+				//id_ZipCityStateCombine.id_State.required 		= false;
+				id_ZipCityStateCombine.id_ZIP.prompt 			= 'Zip';
+				id_ZipCityStateCombine.id_City.prompt 			= 'City';
+				id_ZipCityStateCombine.id_State.prompt 			= 'State';
+			}
+			//----------- delete reord click handler ------------------------------------------
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+				
+				if (curTar.selectedItem)
+				{
+					var guarantorId:int = PatientGuarantorDTO(curTar.selectedItem).GuarantorId;
+					UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+					{
+						if (guarantorId == 0)
+						{
+							model.patientGuarantorDTOList.removeItemAt(curTar.selectedIndex);
+						}else
+						{
+							curTar.selectedItem.IsDeleted = true;
+							model.patientGuarantorDTOList.filterFunction = filterDeletedItems;
+							model.patientGuarantorDTOList.refresh();
+						}
+					});
+					
+					if(model.patientGuarantorDTOList.length <=0)
+					{
+						id_GuarantorGrid.visible	  = false; 
+						hasChange = false;
+					}
+				}
+			}
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			public function loadDataGurantor():void
+			{ 
+				if(id_Self.selected)
+					id_Self.selected = false;
+				try
+				{
+					if( model.patientProfileDTO.PatientGurantor && model.patientProfileDTO.PatientGurantor.length > 0 )
+					{
+						model.patientGuarantorDTOList = new ArrayCollection( model.patientProfileDTO.PatientGurantor.source );
+						id_GuarantorGrid.dataProvider = model.patientGuarantorDTOList;
+						id_GuarantorGrid.visible	  = true;
+						hasChange = true;
+					}
+				}
+				catch(e:Error)
+				{
+					//trace ( "GuarantorList::loadDataGurantor", e.message );
+				}
+			}
+			
+			private function clearAllPopUps():void
+			{
+				if (guarantorPhoneNumberPopUp)
+					guarantorPhoneNumberPopUp.clearPopUp();
+			}
+			
+			public function hideAllPopUps():void
+			{
+				if (guarantorPhoneNumberPopUp)
+					guarantorPhoneNumberPopUp.visible = false;
+				
+			}
+			
+			public function showAllPopUps():void
+			{
+				if (guarantorPhoneNumberPopUp && guarantorPhoneNumberPopUp.isAddPhoneNumberPopUpShown)
+				{
+					guarantorPhoneNumberPopUp.visible = true;
+				}
+			}
+			
+			private function addGurantor():void
+			{
+				isNotValid = false;
+				isInvalid();
+				
+				if(!isNotValid)
+					addGurantorRecord();
+			}
+			
+			public function clearGurantorRecords():void
+			{
+				clearGurantorInfo();
+				if (id_GuarantorGrid)
+				{
+					id_GuarantorGrid.dataProvider = null;
+				}
+				
+				if(id_GuarantorGrid.visible)
+				{
+					id_GuarantorGrid.visible	  = false;			
+				} 
+				hasChange = false;
+			}
+			
+			//Clear Form
+			public function clearGurantorInfo():void
+			{
+				id_FName.text									= "";
+				id_LName.text									= "";
+				id_Relation.selectedIndex						= -1;
+				id_DOB.clearDob();
+				/* if(!id_Relation.enabled)
+				id_Relation.enabled								= true; */
+				id_Gender.selectedIndex							= -1;
+				id_Address.text									= "";
+				id_ZipCityStateCombine.id_State.selectedIndex	= -1;
+				id_ZipCityStateCombine.id_State.textInput.text	= '';
+				id_ZipCityStateCombine.id_City.selectedIndex 	= -1;
+				id_ZipCityStateCombine.id_City.textInput.text 	= '';
+				id_ZipCityStateCombine.id_ZIP.selectedIndex		= -1;
+				id_ZipCityStateCombine.id_ZIP.textInput.text	= '';
+				id_PhoneNumberAddMore.resetFields();
+				guarantorPhoneNumbers = null;
+				clearAllPopUps();
+			}
+			
+			//validate before enter in grid/save
+			private function isInvalid():void
+			{
+				var errorStr:String = "";
+				var toSetFocus:*;
+				
+				ValidationUtils.Trim(id_FName);
+				ValidationUtils.Trim(id_LName);
+				ValidationUtils.Trim(id_Address);
+				
+				if( id_FName.text.length > 0  || id_DOB.text.length >0 || id_LName.text.length > 0 || id_Address.text.length > 0 ||
+					id_PhoneNumberAddMore.isGetEdited() || id_Relation.selectedIndex != -1 || id_Gender.selectedIndex != -1 || id_Address.text.length >0 ||
+					id_ZipCityStateCombine.id_State.selectedIndex != -1 || id_ZipCityStateCombine.id_City.selectedIndex != -1 || id_ZipCityStateCombine.id_ZIP.selectedIndex != -1)
+				{
+					if(id_FName.text.length == 0 ) //|| id_LName.text.length == 0
+					{
+						isNotValid = true;
+						errorStr += "Please enter data in first name.\n";
+						
+						if (!toSetFocus)
+						{
+							if (!id_FName.text.length)
+								toSetFocus = id_FName;
+							else
+								toSetFocus = id_LName;
+						}
+					}
+					else
+					{	//First Name validation - mandaotry
+						if (!ValidationUtils.isValidAlphaNumericWithSpaces(id_FName.text))
+						{
+							isNotValid = true;
+							errorStr += "The data in first name is invalid.\n";
+							
+							if (!toSetFocus)
+								toSetFocus = id_FName;
+						}
+						//Last Name validation - optional
+						if(id_LName.text.length > 0)
+						{
+							if (!ValidationUtils.isValidAlphaNumericWithSpaces2(id_LName.text))
+							{
+								isNotValid = true;
+								errorStr += "The data in last name is invalid.\n";
+								
+								if (!toSetFocus)
+									toSetFocus = id_LName;
+							}
+						}
+						//Relation validation - mandatery
+						if(!id_Self.selected)//Only when self is unchecked
+						{
+							if(!ValidationUtils.isValidValueSelected(id_Relation))
+							{
+								isNotValid = true;
+								errorStr += "The data in relation is invalid.\n";
+								
+								if (!toSetFocus)
+									toSetFocus = id_Relation;
+							}
+						}
+						//DOB Validation - optional
+						if(!id_Self.selected)// && id_DOB.text.length > 0)//only when select checkbox is not selected
+						{
+							if (!ValidationUtils.isValidStringDate(id_DOB.text))
+							{
+								isNotValid = true;
+								errorStr += "The data in date of birth is invalid.\n";
+								
+								if (!toSetFocus)
+									toSetFocus = id_DOB.id_dob;
+							}
+						}
+						//Gender Validation - optional
+						if(id_Gender.textInput.text.length > 0)
+						{
+							if(!ValidationUtils.isValidValueSelected(id_Gender))
+							{
+								isNotValid = true;
+								errorStr += "The data in gender is invalid.\n";
+								
+								if (!toSetFocus)
+									toSetFocus = id_Gender;
+							}
+						}
+						
+						//Address validation - optional
+						if(id_Address.text.length > 0)
+						{
+							if(id_Address.text.length == 0)
+							{
+								isNotValid = true;
+								errorStr += "The data in address is invalid.\n";
+								
+								if (!toSetFocus)
+									toSetFocus = id_Address;
+							}
+						}
+						//State validation - mandotory
+						if(!id_Self.selected)// && (id_ZipCityStateCombine.id_State.textInput.text.length >0 || id_ZipCityStateCombine.id_City.textInput.text.length >0 || id_ZipCityStateCombine.id_ZIP.textInput.text.length >0))
+						{
+							if(!ValidationUtils.isValidValueSelected(id_ZipCityStateCombine.id_ZIP))
+							{
+								isNotValid = true;
+								errorStr += "The data in zip is invalid.\n";
+								
+								if (!toSetFocus)
+									toSetFocus = id_ZipCityStateCombine.id_ZIP;
+							}
+							if(!ValidationUtils.isValidValueSelected(id_ZipCityStateCombine.id_City))
+							{
+								isNotValid = true;
+								errorStr += "The data in city is invalid.\n";
+								
+								if (!toSetFocus)
+									toSetFocus = id_ZipCityStateCombine.id_City;
+							}
+							if(!ValidationUtils.isValidValueSelected(id_ZipCityStateCombine.id_State))
+							{
+								isNotValid = true;
+								errorStr += "The data in state is invalid.\n";
+								
+								if (!toSetFocus)
+									toSetFocus = id_ZipCityStateCombine.id_State;
+							}
+						}
+						//Phone No validation
+						if(!id_Self.selected)//only when select checkbox is not selected
+						{
+							if (!guarantorPhoneNumbers || !guarantorPhoneNumbers.length)
+							{
+								var isPhNumValid:Object = id_PhoneNumberAddMore.isInValid(true, "Guarantor's");
+								
+								if (isPhNumValid.hasOwnProperty("isNotValid") && isPhNumValid.isNotValid)
+								{
+									isNotValid = true;
+									if (isPhNumValid.hasOwnProperty("errorStr") && isPhNumValid.errorStr.length)
+									{
+										errorStr += isPhNumValid.errorStr;
+										
+										if (!toSetFocus && isPhNumValid.hasOwnProperty("toSetFocus") && isPhNumValid.toSetFocus)
+											toSetFocus = isPhNumValid.toSetFocus;
+									}	
+								}
+							}
+						}
+					}
+				}
+				
+				if (isNotValid && errorStr.length)
+					Alert.show(errorStr,"Patient Registration Required Fields", 4, FlexGlobals.topLevelApplication.mainContainer, function(event:Event):void{
+						if (toSetFocus)
+							toSetFocus.setFocus();
+					});
+			}
+			
+			//Tahir Alvi - Fixing Revision
+			//13 April, 2012
+			private function setSelfGurantor():void
+			{
+				if(id_Self.selected)
+				{
+					clearGurantorInfo();
+					dispatchEvent(new GetBasicInfoEvent());
+					callLater(populateForm);
+					
+					enableDisableFields(true);
+					id_Relation.enabled = false;
+					
+					/* else
+					Alert.show('Your Old Guarantor information shell loss, do you want ?','Warning!',Alert.YES | Alert.NO, this, closeHandler); */
+				}else{
+					clearGurantorInfo();
+					id_Relation.enabled = true;
+				}
+			}
+			
+			private function closeHandler(event:CloseEvent):void
+			{
+				if(event.detail == Alert.YES){
+					populateForm();
+				}else{
+					return;
+				}
+			}
+			
+			private function populateForm():void
+			{
+				id_FName.text 											= model.patientBasicInfo.FirstName;
+				id_LName.text 											= model.patientBasicInfo.LastName;
+				id_DOB.text 											= model.patientBasicInfo.DOB;
+				id_Address.text 										= model.patientBasicInfo.Address;
+				id_Gender.selectedItem 									= model.patientBasicInfo.Gender as GenderTypeDTO;
+				id_ZipCityStateCombine.id_State.selectedItem 			= model.patientBasicInfo.State as StatesDTO;
+				id_ZipCityStateCombine.id_City.selectedItem 			= model.patientBasicInfo.City as CitiesDTO;
+				id_ZipCityStateCombine.id_ZIP.selectedItem 				= model.patientBasicInfo.Zip as ZipsDTO;
+				id_PhoneNumberAddMore.id_TelNumber.text 				= setPhoneNumberMasking(model.patientBasicInfo.PhoneNo);
+				id_PhoneNumberAddMore.id_ExtNumber.text 				= model.patientBasicInfo.PhoneEx;
+				//id_PhoneNumberAddMore.id_TelNumberKind.textInput.text 	= model.patientBasicInfo.PhoneType;
+				id_PhoneNumberAddMore.id_TelNumberKind.selectedItem		= model.patientBasicInfo.PhoneType as PhoneNumberTypeDTO;
+				id_Relation.enabled = false;
+			}
+			
+			//------ Adding Record in Grid -----------------------
+			private function addGurantorRecord():void
+			{
+				if(id_FName.text.length >0)
+				{
+					if(model.patientGuarantorDTO == null )
+						DTOInitializationUtility.InitializeRegistrationGuarantorDTOs();
+					
+					var patientGuarantorDTO:PatientGuarantorDTO	= new PatientGuarantorDTO();
+					patientGuarantorDTO.GurantorFirstName 	= id_FName.text;
+					patientGuarantorDTO.GuarantorLastName 	= id_LName.text;
+					
+					patientGuarantorDTO.RelationshipType = new RelationshipTypeDTO();
+					if(id_Self.selected)
+					{
+						var relationTypeDTO:RelationshipTypeDTO = new RelationshipTypeDTO();
+						relationTypeDTO.RelationshipId = 0;
+						patientGuarantorDTO.RelationshipType = relationTypeDTO; 
+					}
+					else if( id_Relation.selectedItem)
+						patientGuarantorDTO.RelationshipType = id_Relation.selectedItem as RelationshipTypeDTO; 
+					//Gender
+					if( id_Gender.selectedItem)
+						patientGuarantorDTO.GenderType = id_Gender.selectedItem as GenderTypeDTO;
+					
+					patientGuarantorDTO.StatusType 			= new StatusTypeDTO();
+					patientGuarantorDTO.StatusType.StatusID = Constants.ACTIVE_STATUS_ID;
+					patientGuarantorDTO.RecGuid 			= Constants.GUID_FORMAT;
+					patientGuarantorDTO.AddressBook 		= new AddressBookDTO();
+					patientGuarantorDTO.AddressBook.PartyID = Constants.GUID_FORMAT;
+					patientGuarantorDTO.AddressBook.AddressPartyTypeID = Constants.GUARANTOR_PARTY_TYPE_ID;
+					//Dob	
+					if(id_Self.selected){
+						patientGuarantorDTO.DOB = new Date(df.format(id_DOB.text));
+						patientGuarantorDTO.StrDOB = df.format(patientGuarantorDTO.DOB);
+					}
+					else
+					{
+						patientGuarantorDTO.DOB = new Date(df.format(id_DOB.text));
+						patientGuarantorDTO.StrDOB = df.format(patientGuarantorDTO.DOB);
+					}
+					
+					var addressDTO:AddressDTO =	new AddressDTO();
+					//Address	
+					addressDTO.StreetName 	 = id_Address.text;
+					addressDTO.IsPrimary 	 = true;
+					//State
+					if(id_ZipCityStateCombine.id_State.selectedItem ){
+						addressDTO.StateID 	 	 	 = int((id_ZipCityStateCombine.id_State.selectedItem as StatesDTO).StateID);
+						addressDTO.StateName 	 	 = (id_ZipCityStateCombine.id_State.selectedItem as StatesDTO).StateName;
+						addressDTO.StateCode 	 	 = (id_ZipCityStateCombine.id_State.selectedItem as StatesDTO).StateCode;
+					}
+					//City
+					if(id_ZipCityStateCombine.id_City.selectedItem){
+						addressDTO.CityName 	 = (id_ZipCityStateCombine.id_City.selectedItem as CitiesDTO).CityName; 
+					}
+					//Zip
+					if( id_ZipCityStateCombine.id_ZIP.selectedItem )
+						addressDTO.ZipCodeID 	 = int((id_ZipCityStateCombine.id_ZIP.selectedItem as ZipsDTO).ZipCodeID);
+					
+					
+					addressDTO.CountryID 	 = Constants.COUNTRY_USA_ID;
+					addressDTO.CreatedAt  	 = new Date();
+					addressDTO.UpdatedAt  	 = new Date();
+					patientGuarantorDTO.AddressBook.CreatedAt = new Date();
+					patientGuarantorDTO.AddressBook.UpdatedAt = new Date();
+					
+					patientGuarantorDTO.IsDirty = true;
+					patientGuarantorDTO.IsDeleted = false;
+					//If null then initlize AddressDTOlist	
+					if(patientGuarantorDTO.AddressBook.AddressDTOlist == null )
+						patientGuarantorDTO.AddressBook.AddressDTOlist = new ArrayCollection();
+					
+					patientGuarantorDTO.AddressBook.AddressDTOlist.addItem(addressDTO);
+					
+					var guarantorPhDetails:Object = id_PhoneNumberAddMore.getPhoneNumberDetails();
+					//If null then initlize PhoneDTOlist		
+					if(patientGuarantorDTO.AddressBook.PhoneDTOlist == null)
+						patientGuarantorDTO.AddressBook.PhoneDTOlist = new ArrayCollection();
+					
+					if (guarantorPhDetails)
+						patientGuarantorDTO.AddressBook.PhoneDTOlist.addItem(QSUtilityFunctions.makePhoneDTO(guarantorPhDetails, true, Constants.SELF_OWNER_TYPE_ID));
+					//Tahir Alvi - [22 june, 2012] - The patient should not be allowed to add self as guarantor for more than once.
+					if(id_Self.selected && model.patientGuarantorDTOList.length >0)
+					{
+						for(var g:uint=0; g<model.patientGuarantorDTOList.length; g++)
+						{
+							var temDTO:PatientGuarantorDTO = model.patientGuarantorDTOList.getItemAt(g) as PatientGuarantorDTO;
+							//temDTO.RelationshipType			= new RelationshipTypeDTO();
+							//temDTO  						= model.patientGuarantorDTOList[g];
+							//temDTO = model.patientGuarantorDTOList[g];
+							
+							if(temDTO.RelationshipType.RelationshipId == patientGuarantorDTO.RelationshipType.RelationshipId)
+							{
+								Alert.show('You already added self as guarantor','info');
+								return
+							}
+						}
+						model.patientGuarantorDTOList.addItem(patientGuarantorDTO);
+					}
+					else
+					{
+						model.patientGuarantorDTOList.addItem(patientGuarantorDTO);
+					}
+					
+					id_GuarantorGrid.dataProvider = model.patientGuarantorDTOList;
+					id_GuarantorGrid.visible	  = true;
+					hasChange 				  	  = true;
+					if(id_Self.selected)
+						id_Self.selected	= false;
+					
+					clearGurantorInfo();
+					id_FName.setFocus(); // //Alvi - Focus on first field after adding a record
+				}
+				else
+				{
+					id_FName.setFocus();
+				}
+				
+			}
+			//Return data fromat properly in Grid
+			private function getDate(item:Object,column:DataGridColumn):String
+			{
+				if(!item.DOB)
+					return '';
+				var dob:String = item.DOB;
+				//dob            = dob.substr(0,10);
+				dob            = df.format(dob).toString();
+				//2012-04-05T00:00:00
+				return dob;
+			}
+			private function getAddress(item:Object,column:DataGridColumn):String
+			{
+				var add:String = "";
+				if(!item.AddressBook)
+					return '';
+				if(!item.AddressBook.AddressDTOlist)
+					return '';
+				
+				if(item.AddressBook.AddressDTOlist.length > 0)
+				{
+					for(var i:uint=0; i<item.AddressBook.AddressDTOlist.length; i++)
+					{
+						var adDTO:AddressDTO = item.AddressBook.AddressDTOlist[i] as AddressDTO;
+						add                  = adDTO.StreetName;
+						break;
+					}
+				}
+				
+				return add;
+			}
+			private function getState(item:Object,column:DataGridColumn):String
+			{
+				var add:String = "";
+				if(!item.AddressBook)
+					return '';
+				if(!item.AddressBook.AddressDTOlist)
+					return '';
+				
+				if(item.AddressBook.AddressDTOlist.length > 0)
+				{
+					for(var i:uint=0; i<item.AddressBook.AddressDTOlist.length; i++)
+					{
+						var adDTO:AddressDTO = item.AddressBook.AddressDTOlist[i] as AddressDTO;
+						add                  = adDTO.StateName;
+						break;
+					}
+				}
+				
+				return add;
+			}
+			private function getCity(item:Object,column:DataGridColumn):String
+			{
+				var add:String = "";
+				if(!item.AddressBook)
+					return '';
+				if(!item.AddressBook.AddressDTOlist)
+					return '';
+				
+				if(item.AddressBook.AddressDTOlist.length > 0)
+				{
+					for(var i:uint=0; i<item.AddressBook.AddressDTOlist.length; i++)
+					{
+						var adDTO:AddressDTO = item.AddressBook.AddressDTOlist[i] as AddressDTO;
+						add                  = adDTO.CityName;
+						break;
+					}
+				}
+				
+				return add;
+			}
+			private function getZip(item:Object,column:DataGridColumn):String
+			{
+				var add:String = "";
+				if(!item.AddressBook)
+					return '';
+				if(!item.AddressBook.AddressDTOlist)
+					return '';
+				
+				if(item.AddressBook.AddressDTOlist.length > 0)
+				{
+					for(var i:uint=0; i<item.AddressBook.AddressDTOlist.length; i++)
+					{
+						var adDTO:AddressDTO = item.AddressBook.AddressDTOlist[i] as AddressDTO;
+						add                  = adDTO.ZipCodeID.toString();
+						break;
+					}
+				}
+				
+				return add;
+			}
+			private function getPhoneNo(item:Object,column:DataGridColumn):String
+			{
+				var add:String = "";
+				if(!item.AddressBook)
+					return '';
+				if(!item.AddressBook.PhoneDTOlist)
+					return '';
+				
+				if(item.AddressBook.PhoneDTOlist.length > 0)
+				{
+					for(var i:uint=0; i<item.AddressBook.PhoneDTOlist.length; i++)
+					{
+						var adDTO:PhoneDTO = item.AddressBook.PhoneDTOlist[i] as PhoneDTO;
+						add                  = ValidationUtils.setPhoneNumberMasking(adDTO.PhoneNumber);
+						break;
+					}
+				}
+				
+				return add;
+			}
+			private function getPhoneType(item:Object,column:DataGridColumn):String
+			{
+				var add:String = "";
+				if(!item.AddressBook)
+					return '';
+				if(!item.AddressBook.PhoneDTOlist)
+					return '';
+				
+				if(item.AddressBook.PhoneDTOlist.length > 0)
+				{
+					for(var i:uint=0; i<item.AddressBook.PhoneDTOlist.length; i++)
+					{
+						var adDTO:PhoneDTO = item.AddressBook.PhoneDTOlist[i] as PhoneDTO;
+						add                  = adDTO.NumberTypeName;
+						break;
+					}
+				}
+				
+				return add;
+			}
+			private function getPhoneExt(item:Object,column:DataGridColumn):String
+			{
+				var add:String = "";
+				if(!item.AddressBook)
+					return '';
+				if(!item.AddressBook.PhoneDTOlist)
+					return '';
+				
+				if(item.AddressBook.PhoneDTOlist.length > 0)
+				{
+					for(var i:uint=0; i<item.AddressBook.PhoneDTOlist.length; i++)
+					{
+						var adDTO:PhoneDTO = item.AddressBook.PhoneDTOlist[i] as PhoneDTO;
+						add                  = adDTO.Extension;
+						break;
+					}
+				}
+				
+				return add;
+			}
+			
+			protected function id_FName_changeHandler(event:TextOperationEvent):void
+			{
+				// TODO Auto-generated method stub
+				if(id_FName.text.length > 0)					
+				{
+					enableDisableFields(true);
+				}
+				else
+				{
+					
+					enableDisableFields(false);
+				}
+			}
+			
+			public function enableDisableFields(value:Boolean):void
+			{
+				id_DOB.enabled 								= value;
+				id_Gender.enabled 							= value;
+				id_ZipCityStateCombine.id_City.enabled		= value;
+				id_ZipCityStateCombine.id_ZIP.enabled		= value;					
+				id_ZipCityStateCombine.id_State.enabled 	= value;
+				id_LName.enabled 							= value;					
+				id_Address.enabled 							= value;					
+				id_PhoneNumberAddMore.enabled 				= value;					
+				id_Relation.enabled 						= value;					
+				id_addGBtn.enabled							= value;
+			}
+			
+			//Tahir Alvi - apply masking on the phone number at load time
+			public function setPhoneNumberMasking(val:String):String
+			{
+				var val_Format:String = '(' + val.substring(0,3) + ')' + val.substring(3,6) + '-' + val.substring(6,10);
+				return val_Format;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:CheckBox id="id_Self" 
+				label="Self as Guarantor" selected="false" click="setSelfGurantor()" toolTip="Select for Self as Guarantor"/>
+	<s:HGroup width="100%" >
+		<s:VGroup width="33%" >
+			<components3:LabelTextInput id="id_FName"
+									   width="100%"  prompt="First Name" fontFamily="Calibri" fontSize="11" tabIndex="1" restrict="[A-Z a-z , . 0-9]" maxChars="100" 
+									   toolTip="Enter first name" change="id_FName_changeHandler(event)" required="true"/>
+			<s:HGroup width="100%">
+				<components3:LabelMaskDate id="id_DOB" width="55%" tabIndex="4" />
+				<components3:LabelComboBox id="id_Gender" 
+										  prompt="Gender" width="45%" toolTip="Select gender"
+										  dataProvider="{model.registrationStaticDataDTO.GenderTypes}" 
+										  labelField="GenderName" autoWidth="false"
+										  fontFamily="Calibri" fontSize="11"  tabIndex="5"/>
+			</s:HGroup>	
+			<s:HGroup width="100%">
+				<components2:ZipCityStateCombine id="id_ZipCityStateCombine" width="100%" tabIndex="7"/>
+			</s:HGroup>
+		</s:VGroup>
+		<s:VGroup width="43%">
+			<components3:LabelTextInput id="id_LName" 
+									   prompt="Last Name" width="100%"  restrict="[A-Z a-z , . 0-9]" maxChars="50" toolTip="Enter last name"
+									   fontFamily="Calibri" fontSize="11" paddingTop="6" paddingBottom="6" paddingLeft="3" paddingRight="3"  tabIndex="2"/>
+			<components3:LabelTextInput id="id_Address" 
+									   prompt="Address" width="100%"   maxChars="200" toolTip="Enter Address"
+									   fontFamily="Calibri" fontSize="11"  tabIndex="6" paddingTop="6" paddingBottom="6" paddingLeft="3" paddingRight="3" />
+			<s:HGroup width="100%" >
+				<registeration:PhoneNumberAddMore id="id_PhoneNumberAddMore" width="100%" tabIndex="10"/>
+			</s:HGroup>
+		</s:VGroup>
+		<s:VGroup width="23%" >
+			<components3:LabelComboBox id="id_Relation" 
+									  prompt="Relation" width="100%" autoWidth="false" toolTip="Select relation"
+									  dataProvider="{model.registrationStaticDataDTO.RelationshipTypes}" 
+									  labelField="RelationshipName"  tabIndex="3" required="true"/>
+			
+			
+			<s:HGroup width="100%" verticalAlign="bottom">
+				<s:HGroup width="35%"  verticalAlign="bottom">
+					<s:Button id="id_addGBtn" 
+							  click="addGurantor()"  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.AddMoreTooltipBtn"
+							  buttonMode="true" useHandCursor="true" toolTip="Add Gurantor" tabIndex="13"  label="Add Gurantor" />
+					
+				</s:HGroup>	
+			</s:HGroup>
+		</s:VGroup>
+	</s:HGroup>
+	<components3:LabelDataGrid id="id_GuarantorGrid" 
+							  width="100%"
+							  visible="false"  includeInLayout="{id_GuarantorGrid.visible}"
+							  rowCount="{id_GuarantorGrid.dataProvider.length+1}"
+							  editable="false" sortableColumns="false" 
+							  columnWidths="{['10%','10%','8%','8%','10%','7%','7%','7%','7%','7%','5%','5%',15]}">
+		<components3:columns>
+			<mx:DataGridColumn headerText="First Name" dataField="GurantorFirstName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Last Name" dataField="GuarantorLastName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Relation" dataField="RelationshipType.RelationshipName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="DOB" dataField="DOB" labelFunction="getDate" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Gender" dataField="GenderType.GenderName" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Address" dataField="AddressBook.AddressDTO.StreetName" labelFunction="getAddress" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="State" dataField="AddressBookDTO.AddressDTO.StateName" labelFunction="getState" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="City" dataField="AddressBookDTO.AddressDTO.CityName" labelFunction="getCity" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Zip" dataField="AddressBookDTO.AddressDTO.ZipCodeID" labelFunction="getZip" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="PhoneNumber" dataField="AddressBookDTO.PhoneDTO.PhoneNumber" labelFunction="getPhoneNo" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Ext" dataField="AddressBookDTO.PhoneDTO.Extension" labelFunction="getPhoneExt" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn headerText="Phone Type" dataField="AddressBookDTO.PhoneDTO.NumberTypeName" labelFunction="getPhoneType" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+			<mx:DataGridColumn itemRenderer="com.adobe.Quivus.view.controls.registeration.DeleteRecordRendererOnly" />
+		</components3:columns>
+	</components3:LabelDataGrid>
+</components3:CollapsiblePanel>

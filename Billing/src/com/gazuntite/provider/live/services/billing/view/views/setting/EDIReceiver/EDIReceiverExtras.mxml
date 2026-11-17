@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%"
+		 paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" 
+		 xmlns:components="com.zigron.controls.extended.components.*"
+		 creationComplete="vgroup1_creationCompleteHandler(event)" xmlns:components1="com.gazuntite.controls.extended.components.*"
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			[Bindable]
+			private var ReceiverTypes:ArrayCollection = new ArrayCollection(["C - Medicare", "D - Medicaid",
+																			 "F - Commercials or NM sending all claims in one batch",
+																			 "G - Blue Cross/Blue Shield","H - TRICARE/Champus",
+																			 "Z = All claims (Texas only)"]);
+			
+			protected function textchangeHandler(event:TextOperationEvent):void
+			{
+				var txt:TextInput  = event.target as TextInput;
+				
+				switch(txt.id)
+				{
+					case "id_appReceiverCode":
+					{
+						model.CurrentEDIReceiver.ApplicationReceiverCode = txt.text;
+						break;
+					}
+					case "id_appSenderCode":
+					{
+						model.CurrentEDIReceiver.ApplicationSenderCode = txt.text;
+						break;
+					}
+					case "id_extra1":
+					{
+						model.CurrentEDIReceiver.Extra1 = txt.text;
+						break;
+					}
+					case "id_extra2":
+					{
+						model.CurrentEDIReceiver.Extra2 = txt.text;
+						break;
+					}
+					case "id_extra3":
+					{
+						model.CurrentEDIReceiver.Extra3 = txt.text;
+						break;
+					}
+					case "id_julianDate":
+					{
+						model.CurrentEDIReceiver.JulianDate = txt.text;
+						break;
+					}
+					case "id_officeContact":
+					{
+						model.CurrentEDIReceiver.OfficeContact = txt.text;
+						break;
+					}
+					case "id_receiverType":
+					{
+						model.CurrentEDIReceiver.ReceiverType = txt.text;
+						break;
+					}
+					case "id_region":
+					{
+						model.CurrentEDIReceiver.Region = txt.text;
+						break;
+					}	
+					case "id_reportFileType":
+					{
+						model.CurrentEDIReceiver.ReportFileType = txt.text;
+						break;
+					}
+				}
+				
+			}
+			
+			protected function id_par_changeHandler(event:Event):void
+			{
+				model.CurrentEDIReceiver.Participating = id_par.selected.toString();
+			}
+			
+			protected function id_codeMatch_changeHandler(event:Event):void
+			{
+				model.CurrentEDIReceiver.CodeMatch = id_codeMatch.selected.toString();
+			}
+			
+			protected function id_receiverType_changeHandler(event:IndexChangeEvent):void
+			{
+				if(id_receiverType.selectedIndex > -1)
+				{
+					model.CurrentEDIReceiver.ReceiverType = String(id_receiverType.selectedItem).substring(0,1);
+					id_receiverType.textInput.text = model.CurrentEDIReceiver.ReceiverType;
+				}
+				else
+				{
+					model.CurrentEDIReceiver.ReceiverType = "";
+					id_receiverType.textInput.text = "";
+				}
+			}
+			
+			protected function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				for (var i:int = 0; i < ReceiverTypes.length; i++) 
+				{
+					if( String(ReceiverTypes[i]).substring(0,1) == model.CurrentEDIReceiver.ReceiverType)
+						id_receiverType.selectedIndex = i;
+				}
+				
+				id_officeContact.setFocus();
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:VGroup width="100%">
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Office Contact:" width="140" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_officeContact" text="{model.CurrentEDIReceiver.OfficeContact}" width="100%" change="textchangeHandler(event)" restrict="[a-z A-Z 0-9]"	maxChars="20" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Application Receiver Code:" width="140" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_appReceiverCode" text="{model.CurrentEDIReceiver.ApplicationReceiverCode}" width="100%" change="textchangeHandler(event)" restrict="[a-z A-Z 0-9]"	maxChars="15" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Application Sender Code:" width="140" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_appSenderCode" text="{model.CurrentEDIReceiver.ApplicationSenderCode}" width="100%" change="textchangeHandler(event)" restrict="[a-z A-Z 0-9]"	maxChars="15" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Region:" width="140" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_region" text="{model.CurrentEDIReceiver.Region}" width="100%" change="textchangeHandler(event)" restrict="[a-z A-Z 0-9]"	maxChars="5" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Receiver Type:" width="140" fontFamily="Calibri" fontSize="12" />
+			<components1:LabelComboBox id="id_receiverType" width="100%" dataProvider="{ReceiverTypes}" change="id_receiverType_changeHandler(event)" />
+		</s:HGroup>
+	</s:VGroup>
+	<s:VGroup width="100%">
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Report File Type:" width="140" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_reportFileType" text="{model.CurrentEDIReceiver.ReportFileType}" width="100%" change="textchangeHandler(event)" restrict="[a-z A-Z 0-9]"	maxChars="15"  />			
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="JulianDate:" width="140" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_julianDate" text="{model.CurrentEDIReceiver.JulianDate}" width="100%" change="textchangeHandler(event)" restrict="[a-z A-Z 0-9]"	maxChars="15" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Participating:" fontFamily="Calibri" fontSize="12" width="140" />
+			<s:CheckBox id="id_par" selected="{model.CurrentEDIReceiver.Participating == 'true' ? true:false }"  change="id_par_changeHandler(event)" width="300"  />
+			<s:Label text="Code Match:"  fontFamily="Calibri" fontSize="12" width="140" />
+			<s:CheckBox id="id_codeMatch" selected="{model.CurrentEDIReceiver.CodeMatch == 'true' ? true:false }" width="100%" change="id_codeMatch_changeHandler(event)"  />
+		</s:HGroup>
+		
+	</s:VGroup>
+	<s:VGroup width="100%">
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Extra 1:" width="140" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_extra1" text="{model.CurrentEDIReceiver.Extra1}" width="100%" change="textchangeHandler(event)"  restrict="[a-z A-Z 0-9]"	maxChars="20"/>
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Extra 2:" width="140" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_extra2" text="{model.CurrentEDIReceiver.Extra2}" width="100%" change="textchangeHandler(event)" restrict="[a-z A-Z 0-9]"	maxChars="20" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="Extra 3:" width="140" fontFamily="Calibri" fontSize="12" />
+			<s:TextInput id="id_extra3" text="{model.CurrentEDIReceiver.Extra3}" width="100%" change="textchangeHandler(event)" restrict="[a-z A-Z 0-9]"	maxChars="20" />
+		</s:HGroup>
+	</s:VGroup>
+	
+</s:VGroup>

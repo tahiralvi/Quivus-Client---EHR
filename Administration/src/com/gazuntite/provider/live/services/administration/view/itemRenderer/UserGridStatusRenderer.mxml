@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:MXAdvancedDataGridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+								  xmlns:s="library://ns.adobe.com/flex/spark" 
+								  xmlns:mx="library://ns.adobe.com/flex/mx" 
+								  >
+	
+	
+	<s:layout>
+		<s:HorizontalLayout horizontalAlign="center" verticalAlign="middle"/>
+	</s:layout>
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			
+			import mx.core.FlexGlobals;
+			
+			import com.gazuntite.common.util.xml.XmlConstants;
+			import com.gazuntite.provider.live.services.administration.event.userManagement.UpdateUserStatusEvent;
+			import com.gazuntite.provider.live.services.administration.util.AdminConstant;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			[Bindable]
+			private var actionValue:String;
+			
+			// Check box click handler
+			protected function checkbox1_changeHandler(event:Event):void
+			{
+				//data.IsActive = event.currentTarget.selected?"1":"0";
+				if(id_statusCheckBox.selected)
+					actionValue = '1';
+				else
+					actionValue = '0';
+				
+				Alert.show('Are you sure to change status', 'Confirmation', Alert.YES | Alert.NO, this, confirmAction)
+			}
+			//Corfirmation message before any action 
+			protected function confirmAction(event:CloseEvent):void
+			{
+				if(event.detail == Alert.YES)
+				{
+					var LE:UpdateUserStatusEvent = new UpdateUserStatusEvent(data.UserId, AdminConstant.ACTIVE_STATUS, actionValue);
+					CairngormEventDispatcher.getInstance().dispatchEvent( LE );	
+					cursorManager.setBusyCursor();
+				}
+				else
+				{
+					if(actionValue == '1')
+						id_statusCheckBox.selected = false;
+					
+					if(actionValue == '0')
+						id_statusCheckBox.selected = true;
+				}
+			}
+		]]>
+	</fx:Script>
+
+	<s:CheckBox id="id_statusCheckBox"
+				label="Active"  selected="{data.IsActive}" width="72" change="checkbox1_changeHandler(event)" 
+				buttonMode="true" useHandCursor="true" toolTip="check for active"/>
+	
+	
+</s:MXAdvancedDataGridItemRenderer>

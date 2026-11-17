@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+
+    ADOBE SYSTEMS INCORPORATED
+    Copyright 2008 Adobe Systems Incorporated
+    All Rights Reserved.
+
+    NOTICE: Adobe permits you to use, modify, and distribute this file
+    in accordance with the terms of the license agreement accompanying it.
+
+-->
+
+<!--- The default skin class for the Spark Button component.  
+
+       @see spark.components.Button
+        
+      @langversion 3.0
+      @playerversion Flash 10
+      @playerversion AIR 1.5
+      @productversion Flex 4
+-->
+<s:SparkButtonSkin xmlns:fx="http://ns.adobe.com/mxml/2009" 
+             xmlns:s="library://ns.adobe.com/flex/spark" 
+             xmlns:fb="http://ns.adobe.com/flashbuilder/2009"
+             minWidth="21" minHeight="21" 
+             alpha.disabled="0.5">
+     
+    <fx:Metadata>
+        <![CDATA[ 
+        /** 
+         * @copy spark.skins.spark.ApplicationSkin#hostComponent
+         */
+        [HostComponent("spark.components.Button")]
+        ]]>
+    </fx:Metadata>
+    
+    <!-- states -->
+    <s:states>
+        <s:State name="up" />
+        <s:State name="over" />
+        <s:State name="down" />
+        <s:State name="disabled" />
+    </s:states>
+    
+    <!-- layer 1: shadow -->
+    <!--- @private -->
+	<s:Path data="M 7.998 3.896 L 7.998 2.577 L 9.295 2.577 L 9.295 0 L 6.699 0 L 6.699 1.34 L 5.358 1.34 L 5.358 2.66 L 5.256 2.66 L 5.256 2.639 L 3.937 2.639 L 3.937 1.319 L 2.597 1.319 L 2.597 0 L 0 0 L 0 2.721 L 1.298 2.721 L 1.298 4.041 L 2.617 4.041 L 2.617 5.354 L 1.298 5.354 L 1.298 6.673 L 0 6.673 L 0 9.25 L 2.597 9.25 L 2.597 7.91 L 3.937 7.91 L 3.937 6.591 L 4.039 6.591 L 4.039 6.611 L 5.358 6.611 L 5.358 7.931 L 6.699 7.931 L 6.699 9.25 L 9.295 9.25 L 9.295 6.529 L 7.998 6.529 L 7.998 5.209 L 6.679 5.209 L 6.679 3.896 L 7.998 3.896 Z" winding="nonZero" x="29.946" y="115.623">
+		<s:fill>
+			<s:SolidColor color="#EE0202"/>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="#666666" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Path>
+    
+</s:SparkButtonSkin>

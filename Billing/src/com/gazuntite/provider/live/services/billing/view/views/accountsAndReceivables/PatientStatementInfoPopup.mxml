@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components:PopupWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						xmlns:s="library://ns.adobe.com/flex/spark" 
+						xmlns:mx="library://ns.adobe.com/flex/mx" 
+						xmlns:components="com.gazuntite.controls.extended.components.*"
+						creationComplete="popupwindow1_creationCompleteHandler(event)"						
+						>
+	<fx:Script>
+		<![CDATA[
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			private var _SubmissionCount:String;
+			private var _Response:String;
+			private var _LastSubmissionDate:String;
+			
+			[Bindable]
+			public function get Response():String
+			{
+				return _Response;
+			}
+
+			public function set Response(value:String):void
+			{
+				_Response = value;
+			}
+
+			[Bindable]
+			public function get SubmissionCount():String
+			{
+				return _SubmissionCount;
+			}
+			
+			public function set SubmissionCount(value:String):void
+			{
+				_SubmissionCount = value;
+			}
+			
+			[Bindable]
+			public function get LastSubmissionDate():String
+			{
+				return _LastSubmissionDate;
+			}
+			
+			public function set LastSubmissionDate(value:String):void
+			{
+				_LastSubmissionDate = value;
+			}				
+			
+			protected function popupwindow1_creationCompleteHandler(event:FlexEvent):void
+			{
+				/* FlexGlobals.topLevelApplication.addEventListener(MouseEvent.CLICK, function(event:Event):void
+				{					
+					if( isPopUp )
+					{						
+						var e:Event = new Event('closePopup', true);
+						dispatchEvent( e);
+					}
+				});	 */	
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+		
+	<s:VGroup width="100%">
+		<s:HGroup width="100%">
+			<s:Label text="Billed:" width="150"/>
+			<s:Label text="{SubmissionCount + ' times' }" width="100"/>
+		</s:HGroup>
+		<s:HGroup width="100%">
+			<s:Label text="Response:" width="150"/>
+			<s:Label text="{Response}" width="100"/>
+		</s:HGroup>
+		<s:HGroup width="100%">
+			<s:Label text="Last Billed:" width="150"/>
+			<s:Label text="{LastSubmissionDate}" width="100"/>
+		</s:HGroup>
+		
+	</s:VGroup>
+	
+</components:PopupWindow>

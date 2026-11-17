@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:ATE="http://ns.adobe.com/ate/2009" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:flm="http://ns.adobe.com/flame/2008" xmlns:lib="assets.graphics.*" xmlns:fc="http://ns.adobe.com/flashcatalyst/2009"
+		 minWidth="142" >
+	<fx:Metadata>[HostComponent("com.gazuntite.controls.extended.components.CheckButtonBarButton")]</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Path data="M 0 0 L 0 45 L 135.786 45 L 150 22.499 L 135.786 0" height="45" includeIn="disabledAndSelected,down,downAndSelected,over,overAndSelected,upAndSelected" width="140" winding="nonZero" x="0" y="0" visible.downAndSelected="false">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#B3B6B9" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#A1A7AD" ratio="0.3607843137254902"/>
+				<s:GradientEntry alpha="1.0" color="#D1D1D1" ratio="0.8117647058823529"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.75" angle="90" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.75" angle="90" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" includeIn="down" inner="true" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Path>
+	<s:Path data="M 0 0 L 0 45 L 135.786 45 L 150 22.499 L 135.786 0" height="45" includeIn="downAndSelected,overAndSelected" width="140" winding="nonZero" x="0" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#B4C9DD" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#7B98B7" ratio="0.3607843137254902"/>
+				<s:GradientEntry alpha="1.0" color="#D1D1D1" ratio="0.8117647058823529"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.75" angle="90" blurX="2" blurY="2" color="0x000000" distance="2" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter includeIn="downAndSelected" blurX="2" blurY="2" distance="2" hideObject="false" color="0x000000" inner="true" strength="1" alpha="0.75" quality="3" knockout="false" angle="90"/>
+		</s:filters>
+	</s:Path>
+	
+	<s:ToggleButton id="id_ChangeIndicator" styleName="checkButtonSkin"
+					includeInLayout="{hostComponent.hasChange}" visible="{hostComponent.hasChange}" x="1" y="1"/>
+	
+	<s:Rect height="26" width="1" x="-10" includeIn="up,over,down">
+		<s:fill>
+			<s:SolidColor color="#585860"/>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.3" angle="0" blurX="1" blurY="1" color="#FFFFFF" distance="0" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	
+	<s:RichText color="#333333" color.up="#ffffff" color.over="#ffffff" color.down="#ffffff" fontSize="13" id="labelDisplay"  kerning="off"  text="BASIC INFORMATION" x="11" y="16" y.up="12" y.over="12" y.down="12" fontFamily="Calibri" fontWeight="bold" typographicCase.upAndSelected="uppercase" typographicCase.overAndSelected="uppercase" typographicCase.downAndSelected="uppercase">
+		<s:filters>
+			<s:DropShadowFilter alpha="0.25" angle="90" blurX="1" blurY="1" color="#000000" color.upAndSelected="#ffffff" color.downAndSelected="#ffffff" color.overAndSelected="#ffffff" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:RichText>
+</s:Skin>

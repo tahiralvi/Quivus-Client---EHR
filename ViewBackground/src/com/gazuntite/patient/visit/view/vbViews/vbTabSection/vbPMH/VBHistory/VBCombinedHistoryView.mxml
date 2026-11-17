@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					  xmlns:s="library://ns.adobe.com/flex/spark" 
+					  xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:VBHistory="com.gazuntite.patient.visit.view.vbViews.vbTabSection.vbPMH.VBHistory.*"
+					  >
+	
+	<fx:Script>
+		<![CDATA[
+			
+
+			private var m_bShowEditControls:Boolean = true;
+			
+			[Bindable]
+			public function get ShowEditControls():Boolean
+			{
+				return m_bShowEditControls;
+			}
+			
+			public function set ShowEditControls(value:Boolean):void
+			{
+				m_bShowEditControls = value;
+			}
+			
+
+		]]>
+	</fx:Script>
+	
+	
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="left" verticalAlign="top" gap="1" paddingLeft="0" paddingRight="0" paddingBottom="0" />
+	</s:layout>
+	<!--<s:HGroup id="id_NotesArea" width="100%" paddingTop="0" />-->
+	<!--<viewBackground:VBSectionLevelNotesDictation id="id_notesDictation" width="100%" />-->
+	
+	<s:VGroup width="100%" gap="-4" paddingTop="5">									
+		<s:TabBar id="id_TabBar2" dataProvider="{id_tabs}" buttonMode="true" 				  
+				  skinClass="com.adobe.gazuntite.skins.chrome.tabBarSkins.VBrecordingsTabBar"/>
+		<s:SkinnableContainer id="id_VS" width="100%" skinClass="com.adobe.gazuntite.skins.QuickInput.ros.QISectionBGSkin">			
+			<s:layout>
+				<s:VerticalLayout paddingBottom="3" paddingLeft="3" paddingRight="3" paddingTop="3" />
+			</s:layout>
+			
+			<mx:ViewStack id="id_tabs" width="100%" minWidth="500" resizeToContent="true">
+				<s:NavigatorContent width="100%" label="General History" >
+					<VBHistory:VBGeneralGridView width="100%" id="id_gen" ShowEditControls="{ShowEditControls}"/>
+				</s:NavigatorContent>
+				<s:NavigatorContent width="100%" label="Family History" >											
+					<VBHistory:VBFamilyGridView width="100%" id="id_fam" ShowEditControls="{ShowEditControls}"/>
+				</s:NavigatorContent>
+				<s:NavigatorContent width="100%" label="Social History" >											
+					<VBHistory:VBSocialGridView width="100%" id="id_sol" ShowEditControls="{ShowEditControls}"/>
+				</s:NavigatorContent>
+			</mx:ViewStack>
+		</s:SkinnableContainer>
+	</s:VGroup>
+</s:SkinnableContainer>

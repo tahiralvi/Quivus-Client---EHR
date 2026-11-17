@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt">
+	<fx:Metadata>[HostComponent("spark.components.ToggleButton")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/>
+		<s:State name="upAndSelected"/>
+		<s:State name="overAndSelected"/>
+		<s:State name="downAndSelected"/>
+		<s:State name="disabledAndSelected"/>
+	</s:states>
+	<s:Rect height="22" radiusX="10" width="100%" x="0" y="0" visible.up="false" visible.over="false" visible.down="false" visible.disabled="false">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#70A3F6" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#537CE6" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="22" includeIn="disabled,down,over,up,upAndSelected" radiusX="10" visible.over="false" visible.upAndSelected="false" width="100%" x="0" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#9EA3A9" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#90949C" ratio="0.4980392156862745"/>
+				<s:GradientEntry alpha="1.0" color="#878B93" ratio="0.5019607843137255"/>
+				<s:GradientEntry alpha="1.0" color="#878B93" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="22" includeIn="over" radiusX="10" width="100%" x="0" y="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#BAC5D3" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#758CBA" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:RichText id="richtext58"  horizontalCenter="0" verticalCenter="0"  tabStops="S0 S50" typographicCase="uppercase"  whiteSpaceCollapse="preserve" color="#FFFFFF" fontSize="11" kerning="off" lineHeight="100%" text="{hostComponent.label}" visible.up="false" visible.over="false" visible.down="false" visible.disabled="false" fontFamily="Calibri Bold">
+		<s:filters>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="1" blurY="1" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:RichText>
+	<s:RichText id="richtext0" horizontalCenter="0" verticalCenter="0"  includeIn="disabled,down,over,up" tabStops="S0 S50" typographicCase="uppercase" d:userLabel="Text" whiteSpaceCollapse="preserve"  color="#555555" fontSize="11" kerning="off" lineHeight="100%" text="{hostComponent.label}" fontFamily="Calibri Bold">
+		<s:filters>
+			<s:DropShadowFilter alpha="0.25" angle="90" blurX="1" blurY="1" color="#FFFFFF" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:RichText>
+</s:Skin>

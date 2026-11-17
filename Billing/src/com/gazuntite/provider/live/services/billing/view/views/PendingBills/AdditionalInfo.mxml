@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  creationComplete="CC()" xmlns:components="com.zigron.controls.extended.components.*"
+		   borderColor="#666666" borderAlpha="1" backgroundColor="#ffffff"
+		   cornerRadius="4" width="100%" xmlns:components1="com.gazuntite.controls.extended.components.*"
+		  >
+	<s:layout>
+		<s:VerticalLayout  paddingLeft="3" paddingRight="5" paddingTop="4" paddingBottom="3" />
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.FrequencyCodeTypeDTO;
+			import com.gazuntite.provider.live.services.billing.dto.SuperBill.StateCodeDTO;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.validators.DateValidator;
+			
+			import spark.events.IndexChangeEvent;
+			[Bindable]
+			public var model:BillingModelLocator = BillingModelLocator.getInstance();			
+			
+			
+			protected function id_AIPriInsurance_focusOutHandler(event:FocusEvent):void
+			{
+				model.PrimaryResponsibility = Number(id_AIPriInsurance.text);	
+				model.CalculateSuperBill();
+			}
+			protected function id_AIsecInsurance_focusOutHandler(event:FocusEvent):void
+			{
+				model.SecondaryResponsibility = Number(id_AISecInsurance.text);	
+				model.CalculateSuperBill();
+			}
+			
+			protected function id_AIBillingDisallowed_focusOutHandler(event:FocusEvent):void
+			{
+				model.BillingDisallowed = Number(id_AIBillingDisallowed.text);	
+				model.CalculateSuperBill();
+			}
+			protected function id_AIAdditionalPayment_focusOutHandler(event:FocusEvent):void
+			{
+				model.AdditionalPayment = Number(id_AIAdditionalPayment.text);	
+				model.CalculateSuperBill();
+			}
+			
+			protected function id_AIWriteOff_focusOutHandler(event:FocusEvent):void
+			{
+				model.WriteOff = Number(id_AIWriteOff.text);	
+				model.CalculateSuperBill();
+			}
+
+			
+			public var LastChildTabIndex:int = 0;
+			protected function CC():void
+			{
+				var incrementer:int = 0;
+				id_AIPriInsurance.tabIndex = tabIndex + (++incrementer);
+				id_AISecInsurance.tabIndex = tabIndex + (++incrementer);
+				id_AIBillingDisallowed.tabIndex = tabIndex + (++incrementer);
+				
+				id_AIAdditionalPayment.tabIndex = tabIndex + (++incrementer);
+				id_AIWriteOff.tabIndex = tabIndex + (++incrementer);
+				
+				id_10aYes.tabIndex = tabIndex + (++incrementer);				
+				id_10aNo.tabIndex = tabIndex + (++incrementer);
+				
+				id_10bYes.tabIndex = tabIndex + (++incrementer);
+				id_10BState.tabIndex = tabIndex + (++incrementer);
+				id_10bNo.tabIndex = tabIndex + (++incrementer);
+				
+				id_10cYes.tabIndex = tabIndex + (++incrementer);				
+				id_10cNo.tabIndex = tabIndex + (++incrementer);
+				
+				id_DisabledFrom.tabIndex = 	tabIndex + (++incrementer);	
+				id_DisabledTo.tabIndex = 	tabIndex + (++incrementer);	
+				
+				id_HospitalizedFrom.tabIndex = 	tabIndex + (++incrementer);	
+				id_HospitalizedTo.tabIndex = 	tabIndex + (++incrementer);	
+				
+				id_Q20Yes.tabIndex = tabIndex + (++incrementer);				
+				id_Q20No.tabIndex = tabIndex + (++incrementer);	
+				
+				id_FrequencyCodes.tabIndex = tabIndex + (++incrementer);				
+				id_Q22RefCode.tabIndex = tabIndex + (++incrementer);	
+				
+				id_Q32.tabIndex = tabIndex + (++incrementer);
+				
+				LastChildTabIndex = ++incrementer;
+			}
+
+
+			protected function RadioChangeHandler(event:Event):void
+			{
+				var rdo:RadioButton = event.currentTarget as RadioButton;
+				
+				switch(rdo.id)
+				{
+					case "id_10aYes":
+						if(rdo.selected == true)
+							model.CMS1500Info.Block10A = "true";
+						//else model.CMS1500Info.Block10A = "false";
+						break;
+					
+					case "id_10aNo":
+						if(rdo.selected == true)
+							model.CMS1500Info.Block10A = "false";
+						//else model.CMS1500Info.Block10A = "true";
+						break;
+					
+					case "id_10bYes":
+						if(rdo.selected == true)
+						{
+							model.CMS1500Info.Block10B = "true";
+							id_10BState.setFocus();
+							id_10BState.enabled = true;
+						}
+						/*else
+						{
+							model.CMS1500Info.Block10B = "false";
+							id_10BState.text = "";
+							id_10BState.editable = false;
+						}*/
+						break;					
+					case "id_10bNo":
+						if(rdo.selected == true)
+						{
+							model.CMS1500Info.Block10B = "false";
+							id_10BState.textInput.text = "";
+							id_10BState.enabled = false;
+							model.CMS1500StateCodeIndex = -1;
+							model.CMS1500Info.BlockBStateCode = "";
+						}
+						//else model.CMS1500Info.Block10B = "true";
+						break;					
+					case "id_10cYes":
+						if(rdo.selected == true)
+							model.CMS1500Info.Block10C = "true";						
+						break;					
+					case "id_10cNo":
+						if(rdo.selected == true)
+							model.CMS1500Info.Block10C = "false";						
+						break;
+					case "id_Q20Yes":
+						if(rdo.selected == true)
+						{
+							model.CMS1500Info.Block20 = "true";
+							id_OSLabcharge.editable = true;
+							id_OSLabcharge.setFocus();
+						}
+						break;					
+					case "id_Q20No":
+						if(rdo.selected == true)
+						{
+							model.CMS1500Info.Block20 = "false";
+							id_OSLabcharge.editable = false;
+							id_OSLabcharge.text = "";
+						}						
+						break;
+				}
+			}
+
+
+			/* protected function id_10BState_focusOutHandler(event:FocusEvent):void
+			{
+				if(id_10BState.editable == true && id_10BState.text != "State")
+					model.CMS1500Info.BlockBStateCode = id_10BState.text;
+			} */
+
+
+			protected function id_OSLabcharge_focusOutHandler(event:FocusEvent):void
+			{
+				if(id_OSLabcharge.editable == true)
+					model.CMS1500Info.Block20Charges = id_OSLabcharge.text;
+			}
+
+			private var vResult:ValidationResultEvent;
+			protected function id_DisabledFrom_focusOutHandler(event:FocusEvent):void
+			{	
+				if(UtilityFunctions.IsNullOrEmpty(id_DisabledFrom.text) == false && id_DisabledFrom.text != "From")
+				{
+					vResult = dateVal.validate(id_DisabledFrom.text);
+					if(vResult.type == ValidationResultEvent.VALID)					
+					{
+						model.CMS1500Info.Block16DateFrom = id_DisabledFrom.text;
+					}
+					else
+					{
+						Alert.show('Please write date in following format'+'\n'+'MM/DD/YYYY', 'Disabled From: Wrong date/format',4,FlexGlobals.topLevelApplication.mainContainer);						
+					}
+				}
+			}
+
+
+			protected function id_DisabledTo_focusOutHandler(event:FocusEvent):void
+			{
+				if(UtilityFunctions.IsNullOrEmpty(id_DisabledTo.text) == false  && id_DisabledTo.text != "To")
+				{
+					vResult = dateVal.validate(id_DisabledTo.text);
+					if(vResult.type == ValidationResultEvent.VALID)					
+					{
+						model.CMS1500Info.Block16DateTo = id_DisabledTo.text;
+					}
+					else
+					{
+						Alert.show('Please write date in following format'+'\n'+'MM/DD/YYYY', 'Disabled To: Wrong date/format',4,FlexGlobals.topLevelApplication.mainContainer);						
+					}
+				}
+			}
+
+			protected function id_HospitalizedFrom_focusOutHandler(event:FocusEvent):void
+			{
+				if(UtilityFunctions.IsNullOrEmpty(id_HospitalizedFrom.text) == false && id_HospitalizedFrom.text != "From")
+				{
+					vResult = dateVal.validate(id_HospitalizedFrom.text);
+					if(vResult.type == ValidationResultEvent.VALID)					
+					{
+						model.CMS1500Info.Block18DateFrom = id_HospitalizedFrom.text;
+					}
+					else
+					{
+						Alert.show('Please write date in following format'+'\n'+'MM/DD/YYYY', 'Hospitalized From: Wrong date/format',4,FlexGlobals.topLevelApplication.mainContainer);						
+					}
+				}				
+			}
+
+
+			protected function id_HospitalizedTo_focusOutHandler(event:FocusEvent):void
+			{
+				if(UtilityFunctions.IsNullOrEmpty(id_HospitalizedTo.text) == false   && id_HospitalizedTo.text != "To")
+				{
+					vResult = dateVal.validate(id_HospitalizedTo.text);
+					if(vResult.type == ValidationResultEvent.VALID)					
+					{
+						model.CMS1500Info.Block18DateTo = id_HospitalizedTo.text;
+					}
+					else
+					{
+						Alert.show('Please write date in following format'+'\n'+'MM/DD/YYYY', 'Hospitalized To: Wrong date/format',4,FlexGlobals.topLevelApplication.mainContainer);						
+					}
+				}
+			}
+			
+			protected function id_Q22RefCode_focusOutHandler(event:FocusEvent):void
+			{
+				if(id_FrequencyCodes.selectedIndex > -1 && id_Q22RefCode.text != "Ref. Code")
+					model.CMS1500Info.Block22RefNumber = id_Q22RefCode.text;
+			}
+
+
+			protected function id_Q24b_valueCommitHandler(event:FlexEvent):void
+			{
+				model.CMS1500Info.Block24B = id_Q24b.text;
+			}
+
+
+			protected function id_Q32_focusOutHandler(event:FocusEvent):void
+			{
+				model.CMS1500Info.Block32 = id_Q32.text;
+			}		
+
+
+			protected function id_FrequencyCodes_changeHandler(event:IndexChangeEvent):void
+			{
+				var selectedCode:FrequencyCodeTypeDTO = id_FrequencyCodes.selectedItem as FrequencyCodeTypeDTO;
+				id_FrequencyCodes.textInput.text = selectedCode.FrequencyCode.split("\-")[0];
+				model.CMS1500Info.Block22 = selectedCode.FrequencyTypeID;
+			}
+			
+			private function doLabelDate(item:Date):String 
+			{
+				return dateFormatter.format(item);
+			}
+
+			protected function id_10BState_changeHandler(event:IndexChangeEvent):void
+			{
+				var selectedState:StateCodeDTO = id_10BState.selectedItem as StateCodeDTO;				
+				if(selectedState != null)
+					model.CMS1500Info.BlockBStateCode = selectedState.StateCode;
+				else
+					id_10BState.textInput.text = "";
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:DateFormatter id="dateFormatter" formatString="MM/DD/YYYY"/>
+		<mx:DateValidator id="dateVal"  inputFormat="MM/DD/YYYY"  />
+		<!--<mx:DateFormatter id="dateFormatter" formatString=""YYYY-MM-DD"/>
+		<mx:DateValidator id="dateVal"  inputFormat="YYYY-MM-DD"  />-->
+	</fx:Declarations>
+	
+	<s:HGroup width="100%">
+		<s:VGroup width="55">
+			<s:Label width="55" text="Total Charges" fontFamily="Calibri" fontSize="11" color="#666666"/>
+			<s:TextInput id="id_AITotalCharges" width="55" editable="false" text="{model.TotalCharges}"/>
+		</s:VGroup>
+		<s:VGroup width="50">
+			<s:Label width="50" text="Co-Pay" height="25" fontFamily="Calibri" fontSize="11" color="#666666"/>
+			<s:TextInput width="50" id="id_AICopay" editable="false" text="{model.Copay}"/>
+		</s:VGroup>
+		<s:VGroup width="55">
+			<s:Label width="55" text="Mode" height="25" fontFamily="Calibri" fontSize="11" color="#666666"/>
+			<s:TextInput width="55" id="id_AIMode" editable="false" text="{model.ModeOfPayment}"/>
+		</s:VGroup>
+		<s:VGroup width="60">
+			<s:Label width="60" text="Pri. Insurance" height="25" fontFamily="Calibri" fontSize="11" color="#666666"/>
+			<s:TextInput width="60"  text="{model.PrimaryResponsibility.toString()}" id="id_AIPriInsurance" focusOut="id_AIPriInsurance_focusOutHandler(event)" restrict="[0-9]\." />
+		</s:VGroup>
+		<s:VGroup width="60">
+			<s:Label width="60" text="Sec. Insurance" height="25" fontFamily="Calibri" fontSize="11" color="#666666"/>
+			<s:TextInput width="60" text="{model.SecondaryResponsibility.toString()}" id="id_AISecInsurance" focusOut="id_AIsecInsurance_focusOutHandler(event)" restrict="[0-9]\." />
+		</s:VGroup>
+		<s:VGroup width="65">
+			<s:Label width="65" text="Billing Disallowed" fontFamily="Calibri" fontSize="11" color="#666666"/>
+			<s:TextInput width="65"  text="{model.BillingDisallowed.toString()}" id="id_AIBillingDisallowed" focusOut="id_AIBillingDisallowed_focusOutHandler(event)" restrict="[0-9]\."  />
+		</s:VGroup>
+		<s:VGroup width="65">
+			<s:Label width="65" text="Additional Payment" fontFamily="Calibri" fontSize="11" color="#666666"/>
+			<s:TextInput width="65"  text="{model.AdditionalPayment.toString()}" id="id_AIAdditionalPayment" focusOut="id_AIAdditionalPayment_focusOutHandler(event)" restrict="[0-9]\."  />
+		</s:VGroup>
+		<s:VGroup width="40">
+			<s:Label width="40" text="Write Off" height="25" fontFamily="Calibri" fontSize="11" color="#666666"/>
+			<s:TextInput width="40" text="{model.WriteOff.toString()}" id="id_AIWriteOff" focusOut="id_AIWriteOff_focusOutHandler(event)" restrict="[0-9]\." />
+		</s:VGroup>
+		<s:VGroup width="60">
+			<s:Label width="60" text="Patient Balance" fontFamily="Calibri" fontSize="11" color="#666666"/>
+			<s:TextInput width="60" id="id_AIPatientBalance" editable="false" text="{model.PatientBalance}"/>
+		</s:VGroup>			
+	</s:HGroup>	
+	<s:HGroup width="100%">
+		<s:VGroup width="50%">
+			<s:HGroup width="100%">
+				<s:Label width="100" text="Additional Questions" fontFamily="Calibri" fontSize="11" color="#666666"/>
+				<s:Label width="80" text="CMS 1500 Form" color="Red" fontFamily="Calibri Bold" fontSize="11"/>
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<s:Label width="237" text="Question 10: Is Patient's conditions related to:" fontFamily="Calibri" fontSize="11" color="#666666"/>				
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<s:VGroup width="50%" height="70">
+					<s:Label width="230" text="10a: Employment? (Current or Previous)" height="34%" fontFamily="Calibri" fontSize="11" color="#666666"/>
+					<s:HGroup width="230" height="33%">
+						<s:Label width="170" text="10b: Auto Accident?(state)" height="100%" fontFamily="Calibri" fontSize="11" color="#666666"/>
+						<components1:LabelComboBox id="id_10BState" prompt="State" width="50" enabled="{model.CMS1500Info.Block10B == 'true' ? true : false }" dataProvider="{model.StateCodeList}" 
+												  labelField="StateCode" change="id_10BState_changeHandler(event)"
+												  focusAlpha="0" focusEnabled="false" focusRect="false"	selectedIndex="{model.CMS1500StateCodeIndex}"
+												  />
+						<!--<s:TextInput id="id_10BState" text="{model.CMS1500Info.BlockBStateCode}" width="50" editable="false"
+									 restrict="A-Z a-z"
+									 focusOut="id_10BState_focusOutHandler(event)"/>-->
+					</s:HGroup>					
+					<s:Label width="230" text="10c: Other Accident?" height="33%" fontFamily="Calibri" fontSize="11" color="#666666"/>
+				</s:VGroup>
+				<s:VGroup width="25%">
+					<s:HGroup width="100%" >
+						<s:RadioButton id="id_10aYes" width="40" label="Yes" groupName="10A" change="RadioChangeHandler(event)" selected="{model.CMS1500Info.Block10A == 'true' ? true:false}" /> 
+						<s:RadioButton id="id_10aNo" width="40" label="No" groupName="10A" change="RadioChangeHandler(event)" selected="{model.CMS1500Info.Block10A == 'false' ? true:false}"  /> 
+					</s:HGroup>
+					<s:HGroup width="100%" >
+						<s:RadioButton id="id_10bYes" width="40" label="Yes" groupName="10B" change="RadioChangeHandler(event)" selected="{model.CMS1500Info.Block10B == 'true' ? true:false}" /> 
+						<s:RadioButton id="id_10bNo" width="40" label="No" groupName="10B" change="RadioChangeHandler(event)" selected="{model.CMS1500Info.Block10B == 'false' ? true:false}" /> 
+					</s:HGroup>
+					<s:HGroup width="100%" >
+						<s:RadioButton id="id_10cYes" width="40" label="Yes" groupName="10C" change="RadioChangeHandler(event)" selected="{model.CMS1500Info.Block10C == 'true' ? true:false}" /> 
+						<s:RadioButton id="id_10cNo" width="40" label="No" groupName="10C" change="RadioChangeHandler(event)" selected="{model.CMS1500Info.Block10C == 'false' ? true:false}" /> 
+					</s:HGroup>
+				</s:VGroup>				
+			</s:HGroup>
+		</s:VGroup>
+		<s:VGroup width="50%">
+			<s:HGroup width="100%">
+				<s:Label width="70" text="Medicare ABN:" fontFamily="Calibri" fontSize="11" color="#666666"/>
+				<s:Label id="id_MCRABN" width="70" text="12/18/2011" color="Red" fontFamily="Calibri Bold" fontSize="11"/>
+				<s:Label width="62" text="HIPAA NOPP:" fontFamily="Calibri" fontSize="11" color="#666666"/>
+				<s:Label id="id_HIPAANOP" width="60" text="12/18/2011" color="Red" fontFamily="Calibri Bold" fontSize="11"/>
+			</s:HGroup>
+			<s:HGroup width="50%">
+				<s:VGroup width="100%">
+					<s:HGroup width="100%">
+						<s:Label width="70" text="Question 16:" fontFamily="Calibri" fontSize="11" color="#666666"/>
+						<s:Label width="70" text="Question 18:" fontFamily="Calibri" fontSize="11" color="#666666"/>
+					</s:HGroup>
+					<s:HGroup width="100%">
+						<s:Label width="70" text="Disabled" fontFamily="Calibri Bold"/>
+						<s:Label width="70" text="Hospitalized" fontFamily="Calibri Bold"/>
+					</s:HGroup>
+					<s:HGroup width="100%">
+						<components1:LabelDateField id="id_DisabledFrom" prompt="From" 
+												   right="8" top="21" width="70" selectableRange ="{{rangeStart: new Date(1912,03,31),  rangeEnd: new Date(2099,11,31)}}"
+												   editable="false"  labelFunction="doLabelDate" height="19"
+												   focusOut="id_DisabledFrom_focusOutHandler(event)" text="{model.CMS1500Info.Block16DateFrom}"
+												   />
+						<components1:LabelDateField id="id_HospitalizedFrom" prompt="From" 
+												   right="8" top="21" width="70" selectableRange ="{{rangeStart: new Date(1912,03,31),  rangeEnd: new Date(2099,11,31)}}"
+												   editable="false"  labelFunction="doLabelDate" height="19"
+												   focusOut="id_HospitalizedFrom_focusOutHandler(event)" text="{model.CMS1500Info.Block18DateFrom}"
+												   />
+					</s:HGroup>
+					<s:HGroup width="100%">
+						<components1:LabelDateField id="id_DisabledTo" prompt="To" 
+												   right="8" top="21" width="70" selectableRange ="{{rangeStart: new Date(1912,03,31),  rangeEnd: new Date(2099,11,31)}}"
+												   editable="false"  labelFunction="doLabelDate" height="19"
+												   focusOut="id_DisabledTo_focusOutHandler(event)" text="{model.CMS1500Info.Block16DateTo}"
+												   />
+						<components1:LabelDateField id="id_HospitalizedTo" prompt="To" 
+												   right="8" top="21" width="70" selectableRange ="{{rangeStart: new Date(1912,03,31),  rangeEnd: new Date(2099,11,31)}}"
+												   editable="false"  labelFunction="doLabelDate" height="19"
+												   focusOut="id_HospitalizedTo_focusOutHandler(event)" text="{model.CMS1500Info.Block18DateTo}"
+												   />
+					</s:HGroup>
+				</s:VGroup>
+				<s:VGroup width="100%">
+					<s:HGroup width="100%">
+						<s:Label width="62" text="Question 20:" fontFamily="Calibri" fontSize="11" color="#666666"/>
+						<s:Label width="60" text="Outsite Lab" fontFamily="Calibri Bold"/>
+					</s:HGroup>
+					<s:HGroup width="100%">
+						<s:RadioButton  id="id_Q20Yes" label="Yes" groupName="Q20" change="RadioChangeHandler(event)"
+									   fontFamily="Calibri" fontSize="11" color="#666666" selected="{model.CMS1500Info.Block20 == 'true' ? true:false}" />
+						<s:RadioButton  id="id_Q20No" label="No" groupName="Q20" change="RadioChangeHandler(event)" selected="{model.CMS1500Info.Block20 == 'false' ? true:false}"
+									   fontFamily="Calibri" fontSize="11" color="#666666" />
+						<s:TextInput width="50" id="id_OSLabcharge" restrict="[0-9]\."
+									 focusOut="id_OSLabcharge_focusOutHandler(event)" text="{model.CMS1500Info.Block20Charges}" />
+					</s:HGroup>
+					<s:HGroup width="100%"> 
+						<s:Label width="75"  text="Question 22:" fontFamily="Calibri" fontSize="11" color="#666666"/>						
+					</s:HGroup>
+					<s:HGroup width="100%">
+						<components1:LabelComboBox id="id_FrequencyCodes"  labelField="FrequencyCode" width="62" 
+												  dataProvider="{model.FrequencyCodeList}"											  
+												  change="id_FrequencyCodes_changeHandler(event)"
+												  prompt="MCD" focusAlpha="0" focusEnabled="false" focusRect="false" 
+												  textInput ="{model.CMS1500Info.Block22}"
+												  />
+						<!-- <s:TextInput width="85" id="id_Q22MCDCode" text="Medicaid Code" focusOut="id_Q22MCDCode_focusOutHandler(event)"/> -->
+						<s:TextInput width="55" id="id_Q22RefCode"  focusOut="id_Q22RefCode_focusOutHandler(event)" text="{model.CMS1500Info.Block22RefNumber}" />
+					</s:HGroup>
+				</s:VGroup>						
+			</s:HGroup>
+		</s:VGroup>
+	</s:HGroup>
+	<s:HGroup width="600">
+		<s:HGroup width="50%">
+			<s:Label width="100" text="Question 24b:" fontFamily="Calibri" fontSize="11" color="#666666"/>
+			<s:TextInput width="100%" id="id_Q24b" text="{model.CurrentPOSCode}" editable="false" valueCommit="id_Q24b_valueCommitHandler(event)" />
+		</s:HGroup>
+		<s:HGroup width="50%">
+			<s:Label width="100" text="Question 32:" fontFamily="Calibri" fontSize="11" color="#666666"/>
+			<s:TextInput width="100%" id="id_Q32" text="{model.CMS1500Info.Block32}" focusOut="id_Q32_focusOutHandler(event)" />			
+		</s:HGroup>
+	</s:HGroup>	
+</s:BorderContainer>

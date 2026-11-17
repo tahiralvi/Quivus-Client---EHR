@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<flexLibProperties includeAllClasses="true" useMultiPlatformConfig="false" version="3">
+  <includeClasses>
+    <classEntry path="com.zigron.common.util.QSConstants"/>
+    <classEntry path="com.zigron.common.view.components.ZipCityStateCombine"/>
+    <classEntry path="com.zigron.common.event.QSAllergyEvent"/>
+    <classEntry path="com.zigron.common.command.QSAllergyCommand"/>
+    <classEntry path="com.zigron.common.delegate.QSAllergyDelegate"/>
+    <classEntry path="com.zigron.common.event.LoadPatientbyPatientIDEvent"/>
+    <classEntry path="com.zigron.common.command.LoadPatientbyPatientIDCommand"/>
+    <classEntry path="com.zigron.common.delegate.LoadPatientbyPatientIDDelegate"/>
+    <classEntry path="com.zigron.common.event.visit.GenerateSoapNotePreviewCommonEvent"/>
+    <classEntry path="com.zigron.common.command.visit.GenerateSoapNotePreviewCommonCommand"/>
+    <classEntry path="com.zigron.common.delegate.visit.GenerateSoapNotePreviewCommonDelegate"/>
+  </includeClasses>
+  <includeResources/>
+  <namespaceManifests/>
+</flexLibProperties>

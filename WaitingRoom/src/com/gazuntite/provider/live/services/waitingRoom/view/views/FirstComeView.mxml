@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%"
+		  creationComplete="creComp()"
+		  >
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.provider.live.services.waitingRoom.view.components.FirstComeGrid;
+			
+
+			protected function creComp():void
+			{
+				var firstcomeGrid:FirstComeGrid = new FirstComeGrid();
+				firstcomeGrid.width = vgFirstCome.width;
+				vgFirstCome.addElement(firstcomeGrid);
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:layout>
+		<s:VerticalLayout paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5" />
+	</s:layout>
+	
+	<s:VGroup id="vgFirstCome" width="100%" height="100%" />		
+</s:Group>

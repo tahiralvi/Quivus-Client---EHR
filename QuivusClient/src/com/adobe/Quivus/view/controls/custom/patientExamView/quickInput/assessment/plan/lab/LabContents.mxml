@@ -1,0 +1,1463 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:components="com.zigron.controls.extended.components.*" 
+		 xmlns:commons="com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.*" xmlns:styles="com.adobe.fiber.styles.*"
+		 xmlns:validators="com.adobe.Quivus.utils.validators.*"
+		 xmlns:itemEditors="com.adobe.Quivus.view.controls.custom.itemEditors.*"
+		 creationComplete="cc()" xmlns:components1="com.gazuntite.controls.extended.components.*" 
+		 >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<validators:ComboValidator id="testTypeMethodValidator" source="{id_TestType}" property="selectedItem" error="Select valid test type"/>
+		<validators:ComboValidator id="orderMethodValidator" source="{id_OrderMethod}" property="selectedItem" error="Select valid order method"/>
+		<validators:ComboValidator id="comboValidator"/>
+		<validators:ComboValidator id="associatedDiagnosisValidator" source="{id_AssociatedDiagnosis}" property="selectedItem" error="Select valid associated diagnosis"/>
+		<validators:ComboValidator id="priorityValidator" source="{id_Priority}" property="selectedItem" error="Select valid priority"/>
+		<validators:ComboValidator id="specimenValidator" source="{id_Specimen}" property="selectedItem" error="Select valid specimen"/>
+		<validators:FutureDateValidator id="collectionDateValidator" source="{id_CollectionDate}" property="text" error="Select valid collection date"/>
+		<validators:ComboValidator id="laboratoryValidator" source="{id_Laboratory}" property="selectedItem" error="Select valid laboratory"/>
+		
+		<s:RadioButtonGroup id="testTypeGrp"/>
+		<s:RadioButtonGroup id="fastingGrp"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.Quivus.events.staticData.lab.LoadICDCodeEvent;
+			import com.adobe.Quivus.utils.security.QSSecurityUtil;
+			import com.adobe.Quivus.events.staticData.lab.LoadLIONICLabTestTypeEvent;
+			import com.adobe.Quivus.events.staticData.lab.LoadLabTestOrderMethodTypeStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.lab.LoadLabTestPriorityTypeStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.lab.LoadLabTestSpecimenTypeStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.lab.LoadLabTestTypeStaticDataEvent;
+			import com.adobe.Quivus.events.staticData.lab.LoadLabTypeStaticDataEvent;
+			import com.adobe.Quivus.model.AppModelLocator;
+			import com.adobe.Quivus.utils.Constants;
+			import com.adobe.Quivus.utils.MyFonts;
+			import com.adobe.Quivus.utils.QSUtilityFunctions;
+			import com.adobe.Quivus.utils.ValidationUtils;
+			import com.adobe.Quivus.view.controls.custom.DictationPopup;
+			import com.adobe.Quivus.view.controls.custom.itemEditors.ComboBoxItemEditor;
+			import com.adobe.Quivus.view.controls.custom.itemEditors.SparkComboBoxItemEditor;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.notes.NotesPanel;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.DataGridActionsEvent;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.QIPopUpManager;
+			import com.adobe.Quivus.view.controls.custom.patientExamView.quickInput.commons.manager.dictation.QIDictationManager;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.ImmunizationSpeakerBtn;
+			import com.adobe.Quivus.view.controls.skins.buttonSkins.QIDictationBtn;
+			import com.adobe.Quivus.view.controls.skins.textInputSkins.LabeltextAreaSkin;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.ImmunizationNotesFilledBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.ImmunizationWriteNotesBtn;
+			import com.adobe.Quivus.view.controls.skins.toggleButtonSkins.QIWriteNotes;
+			import com.adobe.quivus.skins.chrome.toggleButtonSkins.QIWriteNotesSelected;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.adobe.quivus.skins.chrome.textInputSkins.LabeltextAreaSkin;
+			import com.adobe.quivus.skins.chrome.textInputSkins.optionalTextArea;
+			import com.adobe.quivus.skins.chrome.textInputSkins.requiredTextArea;
+			import com.gazuntite.patient.visit.view.itemrenderers.DeleteRecordRenderer;
+			import com.gazuntite.controls.extended.skins.LabelTextAreaSkin;
+			import com.gazuntite.controls.skins.LabelTextAreaSkin;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import flashx.textLayout.factory.TruncationOptions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.controls.Label;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.events.CloseEvent;
+			import mx.events.CollectionEvent;
+			import mx.events.DataGridEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.events.RSLEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.managers.ToolTipManager;
+			import mx.validators.ValidationResult;
+			
+			import spark.components.ComboBox;
+			import spark.events.DropDownEvent;
+			import spark.events.IndexChangeEvent;
+			
+			import valueObjects.ICDCodeDTO;
+			import valueObjects.LIONICLabTestTypeDTO;
+			import valueObjects.LabDTO;
+			import valueObjects.LabNatureTypeDTO;
+			import valueObjects.LabTestOrderMethodTypeDTO;
+			import valueObjects.LabTestPriorityTypeDTO;
+			import valueObjects.LabTestSpecimenTypeDTO;
+			import valueObjects.LabTestTypeDTO;
+			import valueObjects.LabTypeDTO;
+			import valueObjects.ModuleDictationDTO;
+			import valueObjects.ModuleNoteDTO;
+			import valueObjects.PhysicalDTO;
+			
+			
+			[Bindable]
+			public var model : AppModelLocator = AppModelLocator.getInstance();
+			
+			private var _isNotValid:Boolean = false;
+			
+			private var recordNotesDTO:ModuleNoteDTO;
+			public var recordNotesPanel:NotesPanel;
+			
+			private var _hasGridChanged:Boolean;
+			private var _hasViewChanged:Boolean;
+			
+			private var _includeInLayout:Boolean = false;
+			private var _includeInLayoutChanged:Boolean = true;
+			private var m_bIsModelUpdated:Boolean;
+			[Bindable]
+			public var deleteColumnData:Object;
+			
+			[Bindable]
+			public function get hasViewChanged():Boolean
+			{
+				return _hasViewChanged;
+			}
+			
+			public function set hasViewChanged(value:Boolean):void
+			{
+				_hasViewChanged = value;
+			}
+			
+			[Bindable]
+			public function get isNotValid():Boolean
+			{
+				return _isNotValid;
+			}
+			
+			public function set isNotValid(value:Boolean):void
+			{
+				_isNotValid = value;
+				
+				id_Add.enabled = !_isNotValid;
+			}
+			public function get IsModelUpdated():Boolean
+			{
+				return m_bIsModelUpdated;
+			}
+			
+			public function set IsModelUpdated(value:Boolean):void
+			{
+				m_bIsModelUpdated = value;
+				
+				if( value )
+				{
+					
+					var module:ModuleDictationDTO = QSUtilityFunctions.getModuleDictationDTO(Constants.LAB_IN_MODULE_NAME);					
+					var noteDto:ModuleNoteDTO = QSUtilityFunctions.getModuleNoteDTO( Constants.LAB_IN_MODULE_NAME );
+					
+					if(module.DictationID && module.DictationID != Constants.GUID_FORMAT)
+					{
+						//id_Voice.setStyle("skinClass", gridDictationButtonSelectedSkin);
+						//id_dictationIndicator.visible = true;
+					}
+					
+					if(noteDto.Note && noteDto.Note != "")
+					{
+						//id_header.id_NotesBtn.setStyle("skinClass", writeNotesButtonSelected);
+						//id_noteIndicator.visible = true;
+					}
+					
+				}
+			}
+			
+			public function isGetEdited():Boolean
+			{
+				var edited:Boolean = false;
+				
+				if ((id_TestType.selectedIndex != -1  || id_TestType.textInput.text.length) || 
+					(id_OrderMethod.selectedIndex != -1  || id_OrderMethod.textInput.text.length) ||
+					(id_TestCode.selectedIndex != -1 || id_TestCode.textInput.text.length) ||
+					(id_TestName.selectedIndex != -1 || id_TestName.textInput.text.length) ||
+					id_Description.text.length ||
+					(id_AssociatedDiagnosis.selectedIndex != -1 || id_AssociatedDiagnosis.textInput.text.length) ||
+					(id_Specimen.selectedIndex != -1 || id_Specimen.textInput.text.length) ||
+					(id_Priority.selectedIndex != -1 || id_Priority.textInput.text.length) ||
+					(id_Laboratory.selectedIndex != -1 || id_Laboratory.textInput.text.length))
+				{
+					
+					edited = true;
+				}
+				
+				//hasViewChanged = (_hasGridChanged)? _hasGridChanged : edited;
+				
+				return edited;
+			}
+			
+			public function isInValid():Boolean
+			{	
+				var notValid:Boolean = false;
+				
+				if (!ValidationUtils.isValidValueSelected(id_TestType))
+					notValid = true;
+				
+				if (id_OrderMethod.selectedIndex != -1 && !ValidationUtils.isValidValueSelected(id_OrderMethod))
+					notValid = true;
+					
+				else if (!ValidationUtils.isValidValueSelected(id_TestCode))
+					notValid = true;
+					
+				else if (!ValidationUtils.isValidValueSelected(id_TestName))
+					notValid = true;
+					
+				else if (id_AssociatedDiagnosis.selectedIndex != -1 && !ValidationUtils.isValidValueSelected(id_AssociatedDiagnosis))
+					notValid = true;
+					
+				else if (id_Priority.selectedIndex != -1 && !ValidationUtils.isValidValueSelected(id_Priority))
+					notValid = true;
+					
+				else if (id_Specimen.selectedIndex != -1 && !ValidationUtils.isValidValueSelected(id_Specimen))
+					notValid = true;
+					
+					//commented due to date to string converion
+					/* else if (!ValidationUtils.isValidFutureDate(id_CollectionDate))
+					notValid = true; */
+					
+				else if (!ValidationUtils.isValidValueSelected(id_Laboratory))
+					notValid = true;
+				
+				return notValid;
+			}
+			
+			public function areRequiredFieldsProvided():Boolean
+			{	
+				var result:Boolean = true;
+				
+				id_TestType.errorString 			= "";
+				id_TestType.errorString 			= "";
+				id_Laboratory.errorString 			= "";
+				id_Specimen.errorString 			= "";
+				id_Priority.errorString 			= "";
+				id_AssociatedDiagnosis.errorString 	= "";
+				id_TestName.errorString 			= "";
+				id_TestCode.errorString 			= "";
+				id_OrderMethod.errorString 			= "";
+				
+				if (!UtilityFunctions.IsNullOrEmpty(id_TestType.selectedItem))
+				{
+					id_TestType.errorString = "invalid Test Type value";
+					id_TestType.setFocus();
+					result = false;
+				}
+				if (UtilityFunctions.IsNullOrEmpty(id_OrderMethod.selectedItem))
+				{
+					id_OrderMethod.errorString = "invalid OrderMethod value";
+					id_OrderMethod.setFocus();
+					result = false;
+				}
+				else if (UtilityFunctions.IsNullOrEmpty(id_TestCode.selectedItem))
+				{
+					id_TestCode.errorString = "invalid Test Code value";
+					id_TestCode.setFocus();
+					result = false;
+				}
+				else if (UtilityFunctions.IsNullOrEmpty(id_TestName.selectedItem))
+				{
+					id_TestName.errorString = "invalid Test Name value";
+					id_TestName.setFocus();
+					result = false;
+				}
+				else if (UtilityFunctions.IsNullOrEmpty(id_AssociatedDiagnosis.selectedItem))
+				{
+					id_AssociatedDiagnosis.errorString = "invalid Associated Diagnosis value";
+					id_AssociatedDiagnosis.setFocus();
+					result = false;
+				}
+				else if (UtilityFunctions.IsNullOrEmpty(id_Priority.selectedItem))
+				{
+					id_Priority.errorString = "invalid Test Priority";
+					id_Priority.setFocus();
+					result = false;
+				}
+				else if (UtilityFunctions.IsNullOrEmpty(id_Specimen.selectedItem))
+				{
+					id_Specimen.errorString = "invalid Specimen value";
+					id_Specimen.setFocus();
+					result = false;
+				}
+				else if (UtilityFunctions.IsNullOrEmpty(id_Laboratory.selectedItem))
+				{
+					id_Laboratory.errorString = "invalid Laboratory value";
+					id_Laboratory.setFocus();
+					result = false;
+				}
+				
+				return result;
+			}
+			
+			public function showNotes(loc:Point):void
+			{
+				if (loc)
+				{
+					if( recordNotesPanel )
+						recordNotesPanel.removePopup();
+					
+					if (!recordNotesDTO)
+						recordNotesDTO = new ModuleNoteDTO();
+					
+					recordNotesPanel 					= new NotesPanel();
+					recordNotesPanel.width				= 550
+					recordNotesPanel.height				= 150
+					recordNotesPanel.HeadingLable 		= id_TestName.textInput.text;
+					recordNotesPanel.VisitDateLable 	= model.FormatedVisitDate;
+					recordNotesPanel.notesDTO			= recordNotesDTO;
+					recordNotesPanel.ShowPopup( this );
+					recordNotesPanel.move( loc.x, loc.y );
+					
+					
+					recordNotesPanel.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						if(recordNotesPanel.id_body.id_message.text.length > 0)
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", ImmunizationNotesFilledBtn);
+							
+						}
+						else
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", ImmunizationWriteNotesBtn);
+						}
+					});
+					
+					recordNotesPanel.id_header.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						recordNotesPanel.SaveNotes();
+						recordNotesPanel.removePopup();
+						event.stopImmediatePropagation();
+						
+						
+						if(recordNotesPanel.id_body.id_message.text.length > 0)
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", ImmunizationNotesFilledBtn);							
+						}
+						else
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", ImmunizationWriteNotesBtn);
+						}
+						
+					});
+				}
+			}
+			
+			/* private var _labCollection:ArrayCollection;
+			[Bindable]
+			public function get labCollection():ArrayCollection
+			{
+				return _labCollection;
+			}
+			
+			public function  set labCollection(value:ArrayCollection):void
+			{
+				_labCollection = value;
+				
+				if (_labCollection)
+				{
+					_labCollection.addEventListener(CollectionEvent.COLLECTION_CHANGE, collectionChangeHandler, false, 0, true);
+					
+					if (_labCollection.length)
+						includeGridInLayout = true;
+						
+					else
+						includeGridInLayout = false;
+				}
+				else
+					includeGridInLayout = false;
+				
+			}
+			
+			private function collectionChangeHandler(event:CollectionEvent):void
+			{
+				if (_labCollection && _labCollection.length >0)
+				{	
+					includeGridInLayout = true;
+					if(hasViewChanged)
+						hasViewChanged = false;
+					
+					hasViewChanged = true;
+				}
+				else if(_labCollection.length < 1)
+				{
+					includeGridInLayout = false;
+					hasViewChanged = false;
+				}
+			} */
+			
+			private function cc():void
+			{
+				//addEventListener("writeDictationClick", writeDictationClickHandler, false, 0, true);
+				
+				id_LabsRecordGrid.addEventListener(DataGridActionsEvent.ITEM_EDIT_KEY_UP, itemEditKeyUpHandler, false, 0, true);
+				id_LabsRecordGrid.addEventListener(DataGridActionsEvent.EDIT_RECORD_CLICK, editRecordClickHandler, false, 0, true);
+				id_LabsRecordGrid.addEventListener(DataGridActionsEvent.DELETE_RECORD_CLICK, deleteRecordClickHandler, true, 0, false);
+				id_LabsRecordGrid.addEventListener(DataGridActionsEvent.WRITE_NOTES_CLICK, writeNotesClickHandler, false, 0, true);
+				
+				if (!deleteColumnData)
+					deleteColumnData = {};
+				
+				deleteColumnData["noteDataFields"] = {subject: "NoteSubject", note: "LabNote", header: "LIONICLabTestType.SHORTNAME"};
+				deleteColumnData["dictationDataField"] = "DictationID";
+				deleteColumnData["recordIDField"] = "PatientLabID";
+				deleteColumnData["section"] = QIPopUpManager.LAB_OUT;
+			}
+			
+			private function itemEditKeyUpHandler(event:DataGridActionsEvent):void
+			{
+				if (event.data)
+				{
+					var testTypeId:int = LabDTO(event.data).LabTestType.LabTestTypeID;
+					var lblFld:String = SparkComboBoxItemEditor(event.target).labelField;
+					
+					if (lblFld == "LOINC_NUM" || lblFld == "SHORTNAME")
+					{
+						if(event.searchString.length > 2)
+						{
+							var loinCodeEvent : LoadLIONICLabTestTypeEvent = new LoadLIONICLabTestTypeEvent(event.searchString, testTypeId);
+							CairngormEventDispatcher.getInstance().dispatchEvent( loinCodeEvent );
+						}
+					}
+				}
+			}
+			
+			private function writeNotesClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_LAB_OUT ) )//Tahir Alvi - implement security check 
+				{
+					
+				}
+			}
+			
+			///Author Mansoor
+			///Date 17 Mar 2011
+			protected function id_AssociatedDiagnosis_keyUpHandler(event:KeyboardEvent):void
+			{
+				var searchString:String = id_AssociatedDiagnosis.textInput.text;
+				if(searchString.length > 2)
+				{
+					var icdEvent : LoadICDCodeEvent = new LoadICDCodeEvent(searchString);
+					CairngormEventDispatcher.getInstance().dispatchEvent( icdEvent );
+				}
+				
+				id_Add.enabled = isGetEdited();
+			}
+			
+			///Author Mansoor
+			///Date 17 Mar 2011
+			private function AddLab():void
+			{
+				var labObj:LabDTO = new LabDTO();
+				
+				if (id_TestType.selectedIndex >= 0)
+					labObj.LabTestType = id_TestType.selectedItem as LabTestTypeDTO;
+				
+				if(id_OrderMethod.selectedIndex >= 0 )
+					labObj.LabTestOrderMethodType = id_OrderMethod.selectedItem as LabTestOrderMethodTypeDTO;
+				
+				labObj.IsLabIn = false;
+				
+				if(id_TestCode.selectedIndex >= 0)
+					labObj.LIONICLabTestType = id_TestCode.selectedItem as LIONICLabTestTypeDTO;
+				
+				labObj.Description = id_Description.text;
+				
+				if(id_AssociatedDiagnosis.selectedIndex >= 0)
+					labObj.ICDCode = id_AssociatedDiagnosis.selectedItem as ICDCodeDTO;
+				
+				if(id_Priority.selectedIndex >= 0)
+					labObj.LabTestPriorityType = id_Priority.selectedItem as LabTestPriorityTypeDTO;
+				
+				if(id_Specimen.selectedIndex >= 0)
+					labObj.LabTestSpecimenType = id_Specimen.selectedItem as LabTestSpecimenTypeDTO;
+				
+				if(id_CollectionDate.text != '')					
+					labObj.CollectionDate = id_CollectionDate.text;//selectedDate;
+				/* else
+				labObj.CollectionDate = Constants.NULL_DATE.toDateString(); */
+				
+				if(id_Laboratory.selectedIndex >= 0)
+					labObj.LabType = id_Laboratory.selectedItem as LabTypeDTO;
+				
+				labObj.CreatedAt = new Date();
+				
+				if( id_Yes.selected)
+					labObj.IsFasting = Constants.STRING_TRUE;
+					
+				else if (id_No.selected)
+					labObj.IsFasting = Constants.STRING_FALSE;
+				
+				labObj.VisitDate = model.visitDTO.VisitDate;
+				
+				labObj.DictationID = Constants.GUID_FORMAT;				
+				
+				labObj.VisitID = model.visitId;
+				
+				labObj.CreatedAt = new Date();
+				labObj.CreatedBy = model.loggedInUserDTO.UserId;
+				
+				labObj.ModifiedAt = Constants.NULL_DATE;
+				labObj.OrderDate = Constants.NULL_DATE.toDateString();
+				labObj.Onset = Constants.NULL_DATE.toDateString();
+				
+				if(model.quickInputDTO.Physical==null)
+					model.quickInputDTO.Physical= new PhysicalDTO();
+				
+				if (id_Add.notesDTO)
+				{
+					labObj.LabNote = id_Add.notesDTO.Note;
+					labObj.NoteSubject = id_Add.notesDTO.NoteSubject;
+				}
+				
+				if (id_Add.dictationDTO != null && id_Add.dictationDTO.DictationID != null)
+				{
+					labObj.DictationID = id_Add.dictationDTO.DictationID;
+				}
+				
+				if(model.quickInputDTO.Physical.Labs==null)
+					model.quickInputDTO.Physical.Labs = new ArrayCollection();
+				
+				//Start Comment - Tahir Alvi - set three properties for HL7
+				labObj.PatientID    		= model.loadedPatientId;
+				labObj.ClinicBranchID    	= model.userSelectedClinicBranchDTO.ClinicBranch.ClinicBranchIdSeq;
+				labObj.StationID    		= model.userSelectedStationDTO.StationID;
+				labObj.UserID    		    = model.loggedInUserDTO.UserId;
+				//END Comment - Tahir Alvi - set three properties for HL7
+				
+				model.quickInputDTO.Physical.Labs.addItem(labObj);
+				
+				resetFields();
+			}
+			
+			///Author Mansoor
+			///Date 17 Mar 2011
+			private function resetFields():void
+			{
+				id_TestType.textInput.text 				= "All";
+				id_TestType.selectedIndex 				= 0;//-1; //all is selected
+				
+				id_OrderMethod.textInput.text			= "";
+				id_OrderMethod.selectedIndex			= -1;
+				
+				id_TestCode.textInput.text				= "";
+				id_TestCode.selectedIndex				= -1;
+				
+				id_TestName.textInput.text				= "";
+				id_TestName.selectedIndex				= -1;
+				
+				id_Description.text 					= "";
+				
+				id_AssociatedDiagnosis.textInput.text 	= "";
+				id_AssociatedDiagnosis.selectedIndex	= -1;
+				
+				id_Priority.textInput.text 				= "";
+				id_Priority.selectedIndex				= -1;
+				
+				id_Specimen.textInput.text				= "";
+				id_Specimen.selectedIndex				= -1;
+				
+				id_CollectionDate.selectedDate			= null;
+				id_CollectionDate.text					= "";
+				
+				id_Laboratory.textInput.text			= "";
+				id_Laboratory.selectedIndex				= -1;
+				
+				id_Yes.selected							= false;
+				id_No.selected							= false;
+				
+				id_Add.enabled							= false;
+				id_Add.enableAll						= false;
+				
+				id_Add.notesDTO = new ModuleNoteDTO();
+				id_Add.dictationDTO = new ModuleDictationDTO();
+				
+				recordNotesDTO = new ModuleNoteDTO();
+				
+				if (recordNotesPanel)
+					recordNotesPanel.removePopup();
+				
+				//id_Add.id_WriteNotes.setStyle("skinClass", ImmunizationWriteNotesBtn);
+				//id_Add.id_WriteDictation.setStyle("skinClass", ImmunizationDictationBtn);
+			}
+			
+			private function editRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				id_LabsRecordGrid.editable = true;
+				
+				var rowIndex:int = id_LabsRecordGrid.selectedIndex;
+				var itemToSetInEditableMode:IListItemRenderer = id_LabsRecordGrid.indexToItemRenderer(rowIndex);
+				
+				var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+				ev.columnIndex = 2;
+				ev.rowIndex = rowIndex;
+				ev.itemRenderer = itemToSetInEditableMode;
+				ev.dataField = "CollectionDate";
+				id_LabsRecordGrid.dispatchEvent(ev);
+			}
+			
+			private function deleteRecordClickHandler(event:DataGridActionsEvent):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_LAB_OUT ) )//Tahir Alvi - implement security check 
+				{
+					var curTar:LabelDataGrid = LabelDataGrid(event.currentTarget);
+					
+					var labID:int = LabDTO(event.currentTarget.selectedItem).PatientLabID;
+					UtilityFunctions.AskMessage(  "Do you want to delete selected record", function():void
+					{
+						if (labID == 0)
+						{
+							model.quickInputDTO.Physical.Labs.removeItemAt(curTar.selectedIndex);
+							if (model.quickInputDTO.Physical.Labs.length <= 0)
+							{
+								_hasGridChanged = false;
+								hasViewChanged = isGetEdited();
+							}
+						}
+						else
+						{
+							curTar.selectedItem.IsDeleted = true;
+							model.quickInputDTO.Physical.Labs.filterFunction = filterDeletedItems;
+							model.quickInputDTO.Physical.Labs.refresh();
+							
+							hasViewChanged = _hasGridChanged = true;
+						}
+					});
+				}
+			}
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			private function onAddRecordClick(event:Event):void
+			{
+				if( QSSecurityUtil.Security.IsModuleEditable( QSSecurityUtil.QI_LAB_OUT ) )//Tahir Alvi - implement security check 
+				{
+					id_Add.enableAll = !areRequiredFieldsProvided();
+					if( ! id_add.enabled )
+					{
+						return; // invalid data
+					}
+					
+					AddLab();
+					
+					hasViewChanged = _hasGridChanged = true;
+					id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotes);
+					id_Add.id_WriteDictation.setStyle("skinClass", QIDictationBtn);
+				}
+			}
+			
+			private var recordLevelDicPanel:DictationPopup;
+			private function writeDictationClickHandler(event:Event):void
+			{
+				var addRecord:AddRecord = AddRecord(event.target);
+				
+				recordLevelDicPanel = QIDictationManager.show(addRecord, recordLevelDicPanel, addRecord.dictationDTO, addRecord.id_WriteDictation);
+				
+				QIPopUpManager.addPopUp(recordLevelDicPanel, QIPopUpManager.LAB_OUT);
+				recordLevelDicPanel.move( recordLevelDicPanel.x - 81, recordLevelDicPanel.y);
+				recordLevelDicPanel.addEventListener(MouseEvent.CLICK, function():void
+				{
+					QIPopUpManager.removePopUp(recordLevelDicPanel, QIPopUpManager.LAB_OUT);
+					
+					if(recordLevelDicPanel && recordLevelDicPanel.DictationID)
+					{
+						id_Add.id_WriteDictation.setStyle("skinClass", ImmunizationSpeakerBtn);
+					}
+					
+				}, true, 0, false);
+				
+				
+			}
+			
+			private function validateTestCode():void
+			{
+				//testCodeValidator.validate(id_TestCode.selectedItem);
+				
+				isNotValid = isInValid();
+			}
+			
+			private function validateTestType():void
+			{
+				areRequiredFieldsProvidedAndValid();
+				if (id_TestType.selectedIndex != -1)
+				{
+					testTypeMethodValidator.validate(id_TestType.selectedItem);
+					
+					isNotValid = isInValid();
+				}
+			}
+			
+			private function validateOrderMethod():void
+			{
+				areRequiredFieldsProvidedAndValid();
+				
+				if (id_OrderMethod.selectedIndex != -1)
+				{
+					orderMethodValidator.validate(id_OrderMethod.selectedItem);
+					
+					isNotValid = isInValid();
+				}
+			}
+			
+			private function validateTestName():void
+			{
+				//testNameValidator.validate(id_TestName.selectedItem);
+				
+				isNotValid = isInValid();
+			}
+			
+			private function validateAssociatedDiagnosis():void
+			{
+				if (id_AssociatedDiagnosis.selectedIndex != -1)
+				{
+					associatedDiagnosisValidator.validate(id_AssociatedDiagnosis.selectedItem);
+					
+					isNotValid = isInValid();
+				}
+			}
+			
+			private function validateSpecimen():void
+			{
+				if (id_Specimen.selectedIndex != -1)
+				{
+					//specimenValidator.validate(id_Specimen.selectedItem);
+					
+					isNotValid = isInValid();
+				}
+			}
+			
+			private function validateCollectionDate():void
+			{
+				//commented due to date to string converion
+				/* collectionDateValidator.source = id_CollectionDate;
+				collectionDateValidator.validate(id_CollectionDate.text); */
+				
+				isNotValid = isInValid();
+			}
+			
+			private function validatePriority():void
+			{
+				if (id_Priority.selectedIndex != -1)
+				{
+					priorityValidator.validate(id_Priority.selectedItem);
+					
+					isNotValid = isInValid();
+				}
+			}
+			
+			private function validateLaboratory():void
+			{
+				if (id_Laboratory.selectedIndex != -1)
+				{
+					laboratoryValidator.validate(id_Laboratory.selectedItem);
+					
+					isNotValid = isInValid();
+				}
+			}
+			
+			
+			protected function combo_openHandler(event:DropDownEvent):void
+			{
+				var combo:LabelComboBox = LabelComboBox(event.currentTarget);
+				var searchString:String = event.currentTarget.textInput.text; 
+				var testType:LabTestTypeDTO;
+				var testTypeId:int = 0;
+				
+				if(id_TestType.selectedIndex >= 0)
+				{
+					testType = id_TestType.selectedItem as LabTestTypeDTO;
+					testTypeId = testType.LabTestTypeID;							
+				}
+				
+				if (combo.id == "id_TestName")
+				{
+					if(searchString.length >= 2 )
+					{
+						/* var icdEvent : LoadICDCodeEvent = new LoadICDCodeEvent(searchString);
+						CairngormEventDispatcher.getInstance().dispatchEvent( icdEvent );	 */	
+						var loinCodeEvent : LoadLIONICLabTestTypeEvent = new LoadLIONICLabTestTypeEvent(searchString, testTypeId);
+						CairngormEventDispatcher.getInstance().dispatchEvent( loinCodeEvent );
+					}
+				}
+				else if (combo.id == "id_TestCode")
+				{
+					if(searchString.length > 2)
+					{
+						var loinCodeEvent : LoadLIONICLabTestTypeEvent = new LoadLIONICLabTestTypeEvent(searchString, testTypeId);
+						CairngormEventDispatcher.getInstance().dispatchEvent( loinCodeEvent );
+					}
+				}
+				
+			}
+			
+			private function comboKeyUpHandler(event:Event):void
+			{
+				var combo:LabelComboBox = LabelComboBox(event.currentTarget);
+				var testType:LabTestTypeDTO;
+				var testTypeId:int = 0;
+				
+				id_Add.enabled = isGetEdited();
+				
+				if (combo.id == "id_AssociatedDiagnosis")
+				{
+					var searchString:String = id_AssociatedDiagnosis.textInput.text;
+					if(searchString.length == 2 || searchString.length == 5 || searchString.length == 7 || searchString.length >= 9 )
+					{
+						var icdEvent : LoadICDCodeEvent = new LoadICDCodeEvent(searchString);
+						CairngormEventDispatcher.getInstance().dispatchEvent( icdEvent );					
+						
+					}
+				}
+				else if (combo.id == "id_TestCode")
+				{	
+					if(id_TestType.selectedIndex >= 0)
+					{
+						testType = id_TestType.selectedItem as LabTestTypeDTO;
+						testTypeId = testType.LabTestTypeID;							
+					}
+					
+					var searchCodeString:String = id_TestCode.textInput.text;
+					if(searchCodeString.length > 2)
+					{
+						var loinCodeEvent : LoadLIONICLabTestTypeEvent = new LoadLIONICLabTestTypeEvent(searchCodeString, testTypeId);
+						CairngormEventDispatcher.getInstance().dispatchEvent( loinCodeEvent );
+					}
+				}				
+				else if (combo.id == "id_TestName")
+				{
+					if(id_TestType.selectedIndex >= 0)
+					{
+						testType = id_TestType.selectedItem as LabTestTypeDTO;
+						testTypeId = testType.LabTestTypeID;							
+					}
+					
+					var searchNameString:String = id_TestName.textInput.text;
+					if(searchNameString.length > 2)
+					{
+						var loinNameEvent : LoadLIONICLabTestTypeEvent = new LoadLIONICLabTestTypeEvent(searchNameString, testTypeId);
+						CairngormEventDispatcher.getInstance().dispatchEvent( loinNameEvent );
+					}
+				}
+			}
+			
+			private function comboChangeHandler(event:Event):void
+			{
+				var combo:LabelComboBox = LabelComboBox(event.currentTarget);
+				
+				id_Add.enabled = isGetEdited();
+				
+				if (combo.id == "id_TestType")
+				{
+					id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+				}
+					
+				else if (combo.id == "id_TestCode")
+				{
+					id_TestName.textInput.text = "";
+					
+					var selectedCodeDTO:LIONICLabTestTypeDTO = id_TestCode.selectedItem as LIONICLabTestTypeDTO;
+					id_TestName.selectedItem = selectedCodeDTO;
+					
+					if (id_TestName.dataProvider)
+						id_TestName.selectedIndex = id_TestName.dataProvider.getItemIndex(selectedCodeDTO);
+					
+					if (id_TestCode.dataProvider)
+						id_TestCode.selectedIndex = id_TestCode.dataProvider.getItemIndex(selectedCodeDTO);
+					
+					id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+				}
+					
+				else if (combo.id == "id_TestName")
+				{
+					id_TestCode.textInput.text = "";
+					
+					var selectedNameDTO:LIONICLabTestTypeDTO = id_TestName.selectedItem as LIONICLabTestTypeDTO;
+					id_TestCode.selectedItem = selectedNameDTO;
+					
+					if (id_TestCode.dataProvider)
+						id_TestCode.selectedIndex = id_TestCode.dataProvider.getItemIndex(selectedNameDTO);
+					
+					if (id_TestName.dataProvider)
+						id_TestName.selectedIndex = id_TestName.dataProvider.getItemIndex(selectedNameDTO);
+					
+					id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+				}
+					
+				else if (combo.id == "id_Laboratory")
+				{
+					id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+				}
+				else if(combo.id == "id_OrderMethod")
+				{
+					id_Add.enableAll = areRequiredFieldsProvidedAndValid();
+				}
+			}
+			
+			public function areRequiredFieldsProvidedAndValid():Boolean
+			{
+				/* calling isGetEdited() to check whether is there any change in view or not
+				just to set hasViewChanged boolean
+				*/
+				isGetEdited();
+				
+				if ((id_TestType.selectedIndex != -1 || id_TestType.selectedItem != null) &&
+					(id_OrderMethod.selectedIndex != -1 || id_OrderMethod.selectedItem != null) &&
+					(id_TestCode.selectedIndex != -1 || id_TestCode.selectedItem != null) &&
+					(id_TestName.selectedIndex != -1 || id_TestName.selectedItem != null) &&
+					(id_Laboratory.selectedIndex != -1 || id_Laboratory.selectedItem != null))
+					return true;
+				
+				return false;
+			}
+			
+			private var columnIndex:int;
+			private function alertCloseHandler(event:CloseEvent):void
+			{
+				id_LabsRecordGrid.editable = true;
+				
+				var rowIndex:int = id_LabsRecordGrid.selectedIndex;
+				var itemToSetInEditableMode:IListItemRenderer = id_LabsRecordGrid.indexToItemRenderer(rowIndex);
+				
+				var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+				ev.columnIndex = 4;
+				ev.rowIndex = rowIndex;
+				ev.itemRenderer = itemToSetInEditableMode;
+				ev.dataField = "LIONICLabTestType.LOINC_NUM";
+				id_LabsRecordGrid.dispatchEvent(ev);
+			}
+			
+			private function createItemEditorForCell(iRow:int, iCol:int):void
+			{
+				var itemToSetInEditableMode:IListItemRenderer = id_LabsRecordGrid.indexToItemRenderer(iRow);
+				
+				var ev:DataGridEvent = new DataGridEvent(DataGridEvent.ITEM_EDIT_BEGINNING, true);
+				ev.columnIndex = iCol;
+				ev.rowIndex = iRow;
+				ev.itemRenderer = itemToSetInEditableMode;
+				ev.dataField = id_LabsRecordGrid.columns[iCol].dataField;
+				id_LabsRecordGrid.dispatchEvent(ev);
+			}
+			
+			private function labsRecordItemEditBegin(event:DataGridEvent):void
+			{
+				trace("Item edit begining: " + event.columnIndex);
+			}
+			
+			private function processData(event:DataGridEvent):void
+			{
+				var labID:int = LabDTO(event.currentTarget.selectedItem).PatientLabID;
+				var res:ValidationResultEvent;
+				
+				if (event.dataField == "CollectionDate")
+				{
+					//commented due to date to string converion
+					/* var dateEditor:DateField = DateField(id_LabsRecordGrid.itemEditorInstance); 
+					
+					collectionDateValidator.source = dateEditor;
+					res = collectionDateValidator.validate(dateEditor.text);
+					
+					if (res && !res.results)
+					{
+					event.itemRenderer.data.CollectionDate = dateEditor.selectedDate;
+					
+					if (labID != 0)
+					event.itemRenderer.data.IsDirty = true;
+					
+					hasViewChanged = _hasGridChanged = true;
+					} */
+					/*else
+					{
+					id_LabsRecordGrid.destroyItemEditor();
+					event.stopImmediatePropagation();
+					event.preventDefault();
+					}*/
+					/* id_LabsRecordGrid.destroyItemEditor(); //commented due to date to string converion
+					event.stopImmediatePropagation();
+					event.preventDefault(); */
+				}
+					
+				else if (event.dataField == "LabTestType.TestTypeName")
+				{
+					var editor:LabelComboBox = SparkComboBoxItemEditor(id_LabsRecordGrid.itemEditorInstance).id_ComboEditor;
+					
+					comboValidator.source = editor;
+					comboValidator.property = "selectedItem";
+					
+					comboValidator.error = "Select valid test type name";
+					
+					res = comboValidator.validate(editor.selectedItem);
+					
+					if (res && !res.results && editor.selectedItem != event.itemRenderer.data.LabTestType)
+					{
+						event.itemRenderer.data.LabTestType = editor.selectedItem;
+						createItemEditorForCell(event.rowIndex, event.columnIndex + 1);
+						event.itemRenderer.data.LIONICLabTestType = null;
+						model.lionicLabTestTypeDTOList = null;
+						//Alert.show("Please enter lab code", "Required field missing", Alert.OK, FlexGlobals.topLevelApplication.mainContainer, alertCloseHandler);
+						
+						if (labID != 0)
+							event.itemRenderer.data.IsDirty = true;
+						
+						hasViewChanged = _hasGridChanged = true;
+					}
+					/*else
+					{
+					id_LabsRecordGrid.destroyItemEditor();
+					event.stopImmediatePropagation();
+					event.preventDefault();
+					}*/
+					id_LabsRecordGrid.destroyItemEditor();
+					event.stopImmediatePropagation();
+					event.preventDefault();
+				}
+					
+				else if (event.dataField == "LIONICLabTestType.LOINC_NUM" || event.dataField == "LIONICLabTestType.SHORTNAME")
+				{
+					var lionicEditor:LabelComboBox = SparkComboBoxItemEditor(id_LabsRecordGrid.itemEditorInstance).id_ComboEditor;
+					
+					comboValidator.source = lionicEditor;
+					comboValidator.property = "selectedItem";
+					
+					res = comboValidator.validate(lionicEditor.selectedItem);
+					
+					if (res && !res.results && lionicEditor.selectedItem != event.itemRenderer.data.LIONICLabTestType)
+					{
+						event.itemRenderer.data.LIONICLabTestType = lionicEditor.selectedItem;
+						
+						if (labID != 0)
+							event.itemRenderer.data.IsDirty = true;
+						
+						hasViewChanged = _hasGridChanged = true;
+						
+						id_LabsRecordGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+					}
+					else
+					{
+						/**
+						 * Ayesha: 24th May 2011
+						 * validation check for LIONICLabTestType everytime user ends editing
+						 * 
+						 * columnIndex for LIONICLabTestType.LOINC_NUM is 4..if columnIndex changes then index should also be updated everyever used in class
+						 * */
+						id_LabsRecordGrid.destroyItemEditor();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+						
+						if (!event.itemRenderer.data.LIONICLabTestType)
+						{
+							Alert.show("Please select lab test code.", "Lab code missing", Alert.OK, FlexGlobals.topLevelApplication.mainContainer, function(ev:CloseEvent):void
+							{
+								createItemEditorForCell(event.rowIndex, 4);
+							});
+						}
+					}
+				}
+					
+				else if (event.dataField == "LabType.LabName")
+				{
+					var editor:LabelComboBox = SparkComboBoxItemEditor(id_LabsRecordGrid.itemEditorInstance).id_ComboEditor;
+					
+					comboValidator.source = editor;
+					comboValidator.property = "selectedItem";
+					
+					res = comboValidator.validate(editor.selectedItem);
+					
+					if (res && !res.results && editor.selectedItem != event.itemRenderer.data.LabType)
+					{
+						event.itemRenderer.data.LabType = editor.selectedItem;
+						
+						if (labID != 0)
+							event.itemRenderer.data.IsDirty = true;
+						
+						hasViewChanged = _hasGridChanged = true;
+					}
+					/*else
+					{
+					id_LabsRecordGrid.destroyItemEditor();
+					event.stopImmediatePropagation();
+					event.preventDefault();
+					}*/
+					id_LabsRecordGrid.destroyItemEditor();
+					event.stopImmediatePropagation();
+					event.preventDefault();
+				}
+			}
+			/* changes by baber waqas 
+			*/
+			/* public function displayRowNum(oItem:Object,iCol:int):String
+			{
+			var rowNumber:int = id_LabsRecordGrid.dataProvider.getItemIndex(oItem) + 1;
+			return String(rowNumber);
+			} */
+			/*
+			changes end 
+			*/
+			
+			public function GridRowNumber(oItem:Object, iCol:int):String
+			{
+				var ret:String;
+				try
+				{
+					var rowNumber:int = id_LabsRecordGrid.dataProvider.getItemIndex(oItem) + 1; //Sort able column fails some how, don't know why?
+					ret = String(rowNumber);
+				}
+				catch(e:Error )
+				{
+					ret = "##";
+				}
+				return ret;
+			}
+			
+			public function associatedDiagnosisLabel(oItem:Object):String
+			{
+				var label:String = "";
+				
+				if (oItem && oItem.ICDCode)
+				{
+					if (oItem.ICDCode.hasOwnProperty("IcdCodeName"))
+					{
+						label += oItem.ICDCode.IcdCodeName + ", ";
+					}
+					
+					if (oItem.ICDCode.hasOwnProperty("IcdCodeDescription"))
+					{
+						label += oItem.ICDCode.IcdCodeDescription;
+					}
+					
+					label += oItem.IsChronic ? " (Chronic) " : " (Acute) ";
+				}
+				return label;
+			}
+			
+			/* override protected function commitProperties():void
+			{
+				super.commitProperties();
+				
+				if (_includeInLayoutChanged)
+				{
+					_includeInLayoutChanged = false;
+					
+					if (_includeInLayout)
+					{
+						id_LabsRecordGrid.horizontalScrollPolicy="on";
+						id_LabsRecordGrid.columns[0].width = 50;
+						id_LabsRecordGrid.columns[1].width = 60;
+						id_LabsRecordGrid.columns[2].width = 60;
+						id_LabsRecordGrid.columns[3].width = 100;
+						id_LabsRecordGrid.columns[4].width = 60;
+						id_LabsRecordGrid.columns[5].width = 150;
+						id_LabsRecordGrid.columns[6].width = 60;
+						id_LabsRecordGrid.columns[7].width = 85;
+						id_LabsRecordGrid.horizontalScrollPolicy="off";
+					}
+				}
+			} */
+			
+			/* [Bindable]
+			public function get includeGridInLayout():Boolean
+			{
+				return _includeInLayout;
+			}
+			
+			public function set includeGridInLayout(value:Boolean):void
+			{
+				_includeInLayout = value;
+				_includeInLayoutChanged = true;
+				
+				invalidateProperties();
+				invalidateSize();
+				invalidateDisplayList();
+			} */
+			
+			private var recordGridNotesPopUp:NotesPanel;
+			private var section:String = QIPopUpManager.LAB_OUT;;
+			
+			private function onWriteNotesClick(event:Event):void
+			{
+				if (!recordGridNotesPopUp)
+					recordGridNotesPopUp = new NotesPanel();
+				
+				if (!recordGridNotesPopUp.isPanelShown)
+				{
+					//gridNotesDTO = new ModuleNoteDTO();
+					var headingLabel:String = "";
+					
+					//extractDataForNotes();
+					
+					
+					var addRecord:AddRecord = AddRecord(event.target);
+					
+					//recordLevelDicPanel = QIDictationManager.show(addRecord, recordLevelDicPanel, addRecord.dictationDTO, addRecord.id_WriteDictation);
+					
+					//headingLabel = deriveComplexData(headerField);
+					recordGridNotesPopUp 				= new NotesPanel();
+					recordGridNotesPopUp.width			= 250;
+					recordGridNotesPopUp.height			= 110;
+					recordGridNotesPopUp.HeadingLable 	= id_TestName.textInput.text;
+					recordGridNotesPopUp.VisitDateLable = model.FormatedVisitDate;//new Date().toDateString();
+					recordGridNotesPopUp.ShowPopup(this);
+					
+					
+					
+					recordGridNotesPopUp.notesDTO		=  addRecord.notesDTO; //gridNotesDTO;
+					//recordGridNotesPopUp.onNotesSaved = updateNotesData;
+					
+					QIPopUpManager.addPopUp(recordGridNotesPopUp, section);
+					
+					//var pt:Point = localToGlobal(new Point(recordGridNotesPopUp.x, recordGridNotesPopUp.y));
+					
+					var pt:Point = id_Add.localToGlobal(new Point(id_Add.id_WriteNotes.x ,id_Add.id_WriteNotes.y));
+					
+					recordGridNotesPopUp.move(pt.x - 195, pt.y + 20);
+					
+					//recordGridNotesPopUp.move( recordGridNotesPopUp.x , recordGridNotesPopUp.y);
+					/*recordGridNotesPopUp.addEventListener("notesSaved", function(event:Event):void
+					{
+					updateNotesData();
+					
+					}, false, 0, true);*/
+					
+					recordGridNotesPopUp.id_header.id_CloseBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						//recordGridNotesPopUp.removePopup();
+						QIPopUpManager.removePopUp(recordGridNotesPopUp, section);
+						
+					}, false, 0, true);
+					
+					recordGridNotesPopUp.id_header.id_SaveBtn.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void
+					{
+						recordGridNotesPopUp.SaveNotes();
+						//if(recordNotesDTO)
+						if(recordGridNotesPopUp.id_body.id_message.text.length > 0)
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotesSelected);
+							
+						}
+						else
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotes);
+							
+						}
+						recordGridNotesPopUp.removeNotePanel();
+						QIPopUpManager.removePopUp(recordGridNotesPopUp, section);
+					});
+					
+					
+					recordGridNotesPopUp.addEventListener("notesSaved", function(event:Event):void
+					{
+						if(recordGridNotesPopUp.id_body.id_message.text.length > 0)
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotesSelected);								
+						}
+						else
+						{
+							id_Add.id_WriteNotes.setStyle("skinClass", QIWriteNotes);
+						}
+					});
+				}
+			}
+			
+			
+			public function AllowMoveToNextPanel( callBack:Function ):void
+			{
+				if( id_Add.enableAll )
+				{
+					UtilityFunctions.AskMessage( "There are changes in the form, do you still want to leave form in current state?", function ():void
+					{
+						callBack(); 
+					}); 
+				}
+				else
+				{
+					callBack();
+				}
+			}
+			
+			public function loadtaticData():void
+			{
+				if(model.labTestTypeDTOList==null || model.labTestTypeDTOList.length==0)
+				{
+					var llttEvent : LoadLabTestTypeStaticDataEvent = new LoadLabTestTypeStaticDataEvent();
+					CairngormEventDispatcher.getInstance().dispatchEvent( llttEvent );
+				}
+				
+				if(model.labTypeDTOList==null || model.labTypeDTOList.length==0)
+				{
+					var lltEvent : LoadLabTypeStaticDataEvent = new LoadLabTypeStaticDataEvent();
+					CairngormEventDispatcher.getInstance().dispatchEvent( lltEvent );
+				}
+				
+				if(model.labTestOrderMethodTypeDTOList==null || model.labTestOrderMethodTypeDTOList.length==0)
+				{
+					var lltoEvent : LoadLabTestOrderMethodTypeStaticDataEvent = new LoadLabTestOrderMethodTypeStaticDataEvent();
+					CairngormEventDispatcher.getInstance().dispatchEvent( lltoEvent );
+				}
+				
+				if(model.labTestPriorityTypeDTOList==null || model.labTestPriorityTypeDTOList.length==0)
+				{
+					var llptEvent : LoadLabTestPriorityTypeStaticDataEvent	 = new LoadLabTestPriorityTypeStaticDataEvent();
+					CairngormEventDispatcher.getInstance().dispatchEvent( llptEvent );
+				}
+				
+				if(model.labTestSpecimenTypeDTOList==null || model.labTestSpecimenTypeDTOList.length==0)
+				{
+					var lltsEvent : LoadLabTestSpecimenTypeStaticDataEvent = new LoadLabTestSpecimenTypeStaticDataEvent();
+					CairngormEventDispatcher.getInstance().dispatchEvent( lltsEvent );
+				}
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<!--<fx:Binding source="model.quickInputDTO.Physical.Labs" destination="labCollection"  />-->
+	<fx:Binding source="model.quickInputDataLoadedFlag" destination="IsModelUpdated" /> 
+	<s:layout>
+		<s:VerticalLayout gap="2" paddingLeft="3" paddingRight="5" paddingTop="3" paddingBottom="0"/>
+	</s:layout>
+	
+	<s:HGroup width="100%">
+		<s:VGroup width="87%" gap="2">
+			<s:HGroup width="100%" verticalAlign="middle" gap="1">
+				<components1:LabelComboBox id="id_TestType" prompt="Test type" width="40%" toolTip="Test type" 
+										  dataProvider="{model.labTestTypeDTOList}" labelField="TestTypeName" focusOut="validateTestType()" 
+										  change="comboChangeHandler(event)" keyUp="comboKeyUpHandler(event)" open="combo_openHandler(event)"
+										  skinClass="com.gazuntite.controls.extended.skins.comboBoxRegisterationRequiredSkin" tabIndex="1" />
+				<components1:LabelComboBox id="id_OrderMethod" prompt="Order Method" width="60%" toolTip="Order Method" 
+										  dataProvider="{model.labTestOrderMethodTypeDTOList}" labelField="OrderMethodTypeName"				  
+										  focusOut="validateOrderMethod()" change="comboChangeHandler(event)" keyUp="comboKeyUpHandler(event)"
+										  skinClass="com.gazuntite.controls.extended.skins.comboBoxRegisterationRequiredSkin" tabIndex="2" >
+				</components1:LabelComboBox>
+			</s:HGroup>
+			<s:HGroup width="100%" gap="1">
+				<components1:LabelComboBox id="id_TestCode" prompt="Test Code" width="40%" toolTip="Test Code" 
+										  focusOut="areRequiredFieldsProvidedAndValid()"
+										  dataProvider="{model.lionicLabTestTypeDTOList}" labelField="LOINC_NUM"
+										  change="comboChangeHandler(event)" keyUp="comboKeyUpHandler(event)" open="combo_openHandler(event)"
+										  skinClass="com.gazuntite.controls.extended.skins.comboBoxRegisterationRequiredSkin" tabIndex="5" />
+				<components1:LabelComboBox id="id_TestName" prompt="Test Name" width="60%" toolTip="Test Name" 
+										  focusOut="areRequiredFieldsProvidedAndValid()"
+										  dataProvider="{model.lionicLabTestTypeDTOList}" labelField="SHORTNAME"
+										  change="comboChangeHandler(event)" keyUp="comboKeyUpHandler(event)" open="combo_openHandler(event)"
+										  skinClass="com.gazuntite.controls.extended.skins.comboBoxRegisterationRequiredSkin" tabIndex="6" />
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<components1:LabelTextArea id="id_Description" prompt="Description/Instructions" width="100%" height="50" fontFamily="calibri" fontSize="11" toolTip="Description"  
+										  keyUp="{id_Add.enabled = isGetEdited();}" tabIndex="7" skinClass="com.adobe.quivus.skins.chrome.textInputSkins.optionalTextArea" />
+			</s:HGroup>
+		</s:VGroup>
+		<s:VGroup gap="2" horizontalAlign="left">
+			<s:HGroup width="100%">
+				<commons:AddRecord id="id_Add" writeNotesClick="onWriteNotesClick(event)"  writeDictationClick="writeDictationClickHandler(event)" enabled="false" tabIndex="3" horizontalAlign="center" paddingLeft="10" />
+			</s:HGroup>
+			<mx:Spacer height="1" />
+			<s:HGroup  width="100%" gap="3" verticalAlign="middle" paddingLeft="2">
+				<s:Label id="id_Fasting" text="Fasting:" fontFamily="Calibri" fontSize="11" verticalAlign="middle" color="#FFFFFF"/>
+				<s:HGroup gap="0" verticalAlign="middle">
+					<s:RadioButton id="id_Yes" groupName="fastingGrp" skinClass="com.adobe.Quivus.view.controls.skins.radioButtonSkins.YRadioButton" tabIndex="13" buttonMode="true" toolTip="Yes"  />
+					<s:RadioButton id="id_No" groupName="fastingGrp" skinClass="com.adobe.Quivus.view.controls.skins.radioButtonSkins.NRadioButton" buttonMode="true"  toolTip="No"/>
+				</s:HGroup>
+			</s:HGroup>
+		</s:VGroup>
+	</s:HGroup>
+	<s:HGroup width="100%" gap="2">
+		<s:VGroup width="87%" gap="2">
+			
+			<!--dataProvider="{model.icdCodeDTOList}" labelField="IcdCodeDescription"  {id_AssociatedDiagnosis, ,  dataProvider="{model.icdCodeDTOList} }"-->
+			<s:HGroup width="100%" gap="1">
+				
+				<components1:LabelComboBox id="id_AssociatedDiagnosis" prompt="Associated Diagnosis" width="70%" dataProvider="{model.quickInputDTO.Assessment.Diagnosis}"
+										  labelFunction="associatedDiagnosisLabel" change="comboChangeHandler(event)" keyUp="comboKeyUpHandler(event)"
+										  focusOut="validateAssociatedDiagnosis()" tabIndex="8" toolTip="Associated Diagnosis" />
+				<components1:LabelComboBox id="id_Priority" prompt="Priority" width="30%" 
+										  dataProvider="{model.labTestPriorityTypeDTOList}" labelField="PriorityName" toolTip="Priority"
+										  focusOut="validatePriority()" change="comboChangeHandler(event)" keyUp="comboKeyUpHandler(event)" tabIndex="9" />
+				
+			</s:HGroup>
+			<s:HGroup width="100%" gap="1">
+				<components1:LabelComboBox id="id_Specimen" prompt="Specimen" width="35%"  toolTip="Specimen"
+										  dataProvider="{model.labTestSpecimenTypeDTOList}" labelField="SpecimenName"
+										  focusOut="validateSpecimen()" change="comboChangeHandler(event)" 
+										  keyUp="comboKeyUpHandler(event)" tabIndex="10" />
+				<components1:LabelDateField id="id_CollectionDate" prompt="Collection Date" editable="true" width="35%" fontFamily="calibri" toolTip="Collection Date"
+										   change="validateCollectionDate()" keyUp="validateCollectionDate()" yearNavigationEnabled="true"
+										   tabIndex="11"  /> <!--selectableRange="{{rangeStart : new Date()}}"-->
+				
+				<components1:LabelComboBox id="id_Laboratory" prompt="Laboratory" width="30%" toolTip="Laboratory" 
+										  focusOut="validateLaboratory()" 
+										  dataProvider="{model.labTypeDTOList}" labelField="LabName" 
+										  change="comboChangeHandler(event)" keyUp="comboKeyUpHandler(event)"
+										  skinClass="com.gazuntite.controls.extended.skins.comboBoxRegisterationRequiredSkin" tabIndex="12"/>
+			</s:HGroup>
+		</s:VGroup>
+		
+	</s:HGroup>
+	
+	<s:HGroup width="100%" paddingBottom="0">
+		<s:Button id="id_add" click="onAddRecordClick(event)" enabled="{id_Add.enableAll}" buttonMode="true"  label="Add Lab Out " useHandCursor="true" toolTip="Add Record"
+				  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.AddMoreTooltipBtn" tabIndex="14"  />
+		<s:SkinnableContainer skinClass="com.adobe.Quivus.view.controls.skins.SkinnableContainers.tooltipBG" visible="{!id_add.enabled}" width="100%"/>
+		
+		<mx:Spacer width="100%"/>
+		<s:Button id="id_nextBtn" label="Next" toolTip="Next Section" enabled="true" buttonMode="true"
+				  skinClass="com.adobe.Quivus.view.controls.skins.buttonSkins.QInextBtnSkin" />
+	</s:HGroup>
+	
+	<s:HGroup width="100%">
+		<components1:LabelDataGrid id="id_LabsRecordGrid" width="100%" includeInLayout="{id_LabsRecordGrid.visible}" visible="{id_LabsRecordGrid.dataProvider.length >=1 ? true : false}"
+								  editable="true" useRollOver="false"
+								  itemEditBegin="labsRecordItemEditBegin(event)" itemEditEnd="processData(event);"
+								  dataProvider="{model.quickInputDTO.Physical.Labs}" rowCount="{id_LabsRecordGrid.dataProvider.length + 1}"
+								  verticalScrollPolicy="on"					
+								  maxHeight="150" columnWidths="{[25, '12%', '13%','15%','15%','15%','15%',100]}">
+			
+			<components:columns>
+				
+				<mx:DataGridColumn headerText="Sr.#" editable="false" labelFunction="GridRowNumber" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"/>
+				<mx:DataGridColumn id="visitDate" headerText="Visit Date" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"  dataField="VisitDate" labelFunction="{ValidationUtils.displayVisitDateForGrid}" editable="false"/>
+				<mx:DataGridColumn id="collectionDate" headerText="Col. Date" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true"  dataField="CollectionDate" > 
+					<!-- editorDataField="selectedDate" itemRenderer="com.adobe.Quivus.view.controls.custom.itemRenderer.DateRenderer4DG">-->
+					<!--<mx:itemEditor>
+					<fx:Component>
+					<mx:DateField width="100%" editable="true" selectedDate="{outerDocument.id_CollectionDate.selectedDate}"
+					selectableRange="{{rangeStart : new Date()}}"/>
+					</fx:Component>
+					</mx:itemEditor>-->
+				</mx:DataGridColumn>
+				<mx:DataGridColumn id="testType" headerText="Test Type" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="LabTestType.TestTypeName" editable="true" editorDataField="editorText">
+					<mx:itemEditor>
+						<fx:Component>
+							<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.labTestTypeDTOList}" labelField="TestTypeName" width="80"/>
+						</fx:Component>
+					</mx:itemEditor>
+				</mx:DataGridColumn>
+				<mx:DataGridColumn id="testCode" headerText="Code" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="LIONICLabTestType.LOINC_NUM" editorDataField="editorText">
+					<mx:itemEditor>
+						<fx:Component>	
+							<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.lionicLabTestTypeDTOList}" labelField="LOINC_NUM" width="50"/>
+						</fx:Component>
+					</mx:itemEditor>
+				</mx:DataGridColumn>
+				<mx:DataGridColumn id="testName" headerText="Test" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="LIONICLabTestType.SHORTNAME" editable="true" editorDataField="editorText">
+					<mx:itemEditor>
+						<fx:Component>
+							<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.lionicLabTestTypeDTOList}" labelField="SHORTNAME" />
+						</fx:Component>
+					</mx:itemEditor>
+				</mx:DataGridColumn>
+				<mx:DataGridColumn id="lab" headerText="Laboratory" itemRenderer="mx.controls.Label" headerRenderer="mx.controls.Label" wordWrap="true" dataField="LabType.LabName" editorDataField="editorText" >
+					<mx:itemEditor>
+						<fx:Component>
+							<itemEditors:SparkComboBoxItemEditor dataProvider="{outerDocument.model.labTypeDTOList}" labelField="LabName"/>
+						</fx:Component>
+					</mx:itemEditor>
+				</mx:DataGridColumn>
+				<commons:DataGridColumnEx data="{deleteColumnData}" headerText="" id="buttons" itemRenderer="com.gazuntite.patient.visit.view.itemrenderers.DeleteRecordRenderer" editable="false"/>
+			</components:columns>
+		</components1:LabelDataGrid>
+	</s:HGroup>
+</s:Group>

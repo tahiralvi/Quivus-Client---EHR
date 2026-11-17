@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:views="com.gazuntite.provider.live.services.scheduler.view.views.*"
+	     width="100%"
+		 initialize="init()" minHeight="375" creationComplete="creComp()">
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.provider.live.services.scheduler.event.LoadAllAppointmentCurrentStatusTypesEvent;
+			import com.gazuntite.provider.live.services.scheduler.event.LoadAllAppointmentRequestStatusTypesEvent;
+			import com.gazuntite.provider.live.services.scheduler.event.LoadAllAppointmentTypesEvent;
+			import com.gazuntite.provider.live.services.scheduler.event.LoadAllProviderByClinicBranchIdEvent;
+			import com.gazuntite.provider.live.services.scheduler.event.LoadAllSearchFieldTypesEvent;
+			import com.gazuntite.provider.live.services.scheduler.event.LoadAllStationsByClinicIdEvent;
+			import com.gazuntite.provider.live.services.scheduler.event.LoadClinicRoomByStationIdSCEvent;
+			import com.gazuntite.provider.live.services.scheduler.model.SchedulerModelLocator;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			
+			[Bindable]
+			private var model:SchedulerModelLocator = SchedulerModelLocator.getInstance();
+			private var stationCounter:int = 0;
+			
+			// ********** initlize method *********
+			private function init():void
+			{
+				//if(model.ClinicRoomList != null)
+					//model.ClinicRoomList.removeAll();
+				
+			}
+			private function creComp():void
+			{
+				loadAllProviders();
+				//getRoomsList();
+				loadAllStationsByClinicId();
+			}
+			private function loadAllStationsByClinicId():void
+			{
+				var LASCIdEvent:LoadAllStationsByClinicIdEvent  = new LoadAllStationsByClinicIdEvent(LASCIdEvent_callBack);
+				CairngormEventDispatcher.getInstance().dispatchEvent(LASCIdEvent);
+			}
+			private function LASCIdEvent_callBack():void
+			{
+				if(model.ClinicRoomList == null)
+					model.ClinicRoomList = new ArrayCollection();
+				else
+					model.ClinicRoomList.removeAll();
+				
+				getRoomsList();
+			}
+			//*********** Get rooms list *********************************
+			private function getRoomsList():void
+			{
+				if(model.StaticData.StationsByClinicIDList != null)
+				{
+					if(model.StaticData.StationsByClinicIDList.length >0)
+					{
+						if(stationCounter >= model.StaticData.StationsByClinicIDList.length)
+							return;
+						
+						var CREvent:LoadClinicRoomByStationIdSCEvent = new LoadClinicRoomByStationIdSCEvent(model.StaticData.StationsByClinicIDList[stationCounter].ID, getRoomsList_callback);
+						CairngormEventDispatcher.getInstance().dispatchEvent(CREvent);
+						stationCounter ++;
+					}
+					else
+					{
+						return;
+					}
+				}
+			}
+			//************* rome list call back handler
+			private function getRoomsList_callback ():void
+			{
+				if(stationCounter < model.StaticData.StationsByClinicIDList.length)
+					getRoomsList();// call again for next station
+				else
+					return;
+			}
+			//********* load all providers *******************
+			private function loadAllProviders():void
+			{
+				var LAPCIdEvent:LoadAllProviderByClinicBranchIdEvent            = new LoadAllProviderByClinicBranchIdEvent(model.loggedInUserSelectedBranchId, model.loggedInUserSelectedStationId, true);
+				CairngormEventDispatcher.getInstance().dispatchEvent(LAPCIdEvent);
+				cursorManager.setBusyCursor();
+			}
+			//*********** Refresh View on tab Change********************************
+			protected function viewStack_changeHandler(event:IndexChangedEvent):void
+			{
+				switch(viewStack.selectedIndex)
+				{
+					case 0:
+						scView.creComp();
+						break;
+					case 1:
+						appView.creComp();
+						break;
+					case 2:
+						searchView.creComp();
+						break;
+					case 3:
+						reqView.creComp();
+						break;
+					default:
+						break;
+				}
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:BorderContainer width="100%" height="100%"  styleName="greyBGContainerSkin">
+		<s:layout>
+			<s:VerticalLayout gap="-2" />				
+		</s:layout>
+		<s:Group width="100%">
+			<s:ButtonBar width="450"   dataProvider="{viewStack}" left="0"   styleName="blackButtonBarSkin"  buttonMode="true" useHandCursor="true"/>
+			<!--<s:Button id="id_RefreshButton" label="Refresh" right="0" click="refresh_handler()" visible="{viewStack.selectedIndex == 2?false:true}"/>-->
+		</s:Group>
+		<mx:ViewStack id="viewStack" width="100%" height="100%" change="viewStack_changeHandler(event)" styleName="blackTitleBGContainerSkin">
+			<mx:VBox label="{'Schedule'+' '+ '('+model.totalRecords_AllApp.toString()+')'}" toolTip="Schedule"  >				
+				<views:ScheduleView id="scView" width="100%" height="100%"/>
+			</mx:VBox>
+			<mx:VBox label="Create an Appointment" toolTip="Create an Appointment" >
+				<views:AppointmentView id="appView" width="100%" height="100%"/>
+			</mx:VBox>
+			<mx:VBox label="{'Search'+' '+ '('+model.totalRecords_SearchApp.toString()+')'}" toolTip="Search"  >
+				<views:SearchView id="searchView" width="100%" height="100%"/>
+			</mx:VBox>
+			<mx:VBox label="{'Pending Requests' +' '+ '('+model.totalRecords_PendReq.toString()+')'}"  >
+				<views:RequestView id="reqView" width="100%" height="100%"/>
+			</mx:VBox>
+		</mx:ViewStack>
+	</s:BorderContainer>
+
+</s:Group>

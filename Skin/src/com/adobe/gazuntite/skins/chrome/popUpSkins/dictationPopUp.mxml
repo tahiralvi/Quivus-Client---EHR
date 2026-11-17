@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" 
+    xmlns:fb="http://ns.adobe.com/flashbuilder/2009" alpha.disabled="0.5">
+
+    <fx:Metadata>
+    <![CDATA[ 
+        /** 
+         * @copy spark.skins.spark.ApplicationSkin#hostComponent
+         */
+        [HostComponent("spark.components.SkinnableContainer")]
+    ]]>
+    </fx:Metadata> 
+    
+    <s:states>
+        <s:State name="normal" /><s:State name="normalWithControlBar" />
+        <s:State name="disabled" />
+    </s:states>
+    
+    <!--- Defines the appearance of the SkinnableContainer class's background. -->
+	<s:Group id="group45">
+		<s:Group x="0" y="0">
+			<s:filters>
+				<s:DropShadowFilter alpha="0.5" angle="90" blurX="8" blurY="8" color="0x000000" distance="0" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+			</s:filters>
+			<!--<s:Rect height="85" id="rect89" radiusX="5" width="250" x="0" y="8">
+				<s:fill>
+					<s:LinearGradient rotation="90">
+						<s:GradientEntry alpha="1.0" color="0xF27100" ratio="0"/>
+						<s:GradientEntry alpha="1.0" color="#FFCB00" ratio="0.7568627450980392"/>
+						<s:GradientEntry alpha="1.0" color="0xCD6E17" ratio="1"/>
+					</s:LinearGradient>
+				</s:fill>
+			</s:Rect>-->
+			<s:Rect height="85" id="rect89" radiusX="5" width="250" x="0" y="8">
+				<s:filters>
+					<s:DropShadowFilter alpha="1" angle="90" blurX="0" blurY="0" color="#FFFFFF" distance="2" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+				</s:filters>
+				<s:fill>
+					<s:LinearGradient rotation="90">
+						<s:GradientEntry alpha="1.0" color="#F4F5F5" ratio="0"/>
+						<s:GradientEntry alpha="1.0" color="#C2C8D3" ratio="1"/>
+					</s:LinearGradient>
+				</s:fill>
+				<s:stroke>
+					<s:SolidColorStroke caps="none" color="#FFFFFF" joints="miter" miterLimit="4" weight="2"/>
+				</s:stroke>
+			</s:Rect>
+
+			
+			<!--<s:Path data="M 16.37 14.17 L 0.03 14.17 8.20 0.02 Z " height="9.15" width="18.35" x="115.8" y="0.55">
+				<s:fill>
+					<s:SolidColor color="0xF27100"/>
+				</s:fill>
+			</s:Path>-->
+			<s:Path data="M 16.37 14.17 L 0.03 14.17 8.20 0.02 Z " height="9.15" width="18.35"  x="115.8" y="0.55" x.normal="194">
+				<s:fill>
+					<s:LinearGradient rotation="270">
+						<s:GradientEntry alpha="1" color="#FFFFFF" ratio="0"/>
+						<s:GradientEntry alpha="1.0" color="#CCCCCC" ratio="1"/>
+					</s:LinearGradient>
+				</s:fill>
+			</s:Path>
+		</s:Group>
+		<!--<s:Rect height="74" id="rect90" width="240" x="5" y="13" height.normal="18">
+			<s:fill>
+				<s:LinearGradient rotation="90">
+					<s:GradientEntry alpha="1.0" color="#509BCB" ratio="0"/>
+					<s:GradientEntry alpha="1.0" color="#2181BD" ratio="0.2196078431372549"/>
+				</s:LinearGradient>
+			</s:fill>
+		</s:Rect>-->
+		<s:Rect height="25" radiusX="3" width="240" x="5" y="13">
+			<s:fill>
+				<s:LinearGradient rotation="270">
+					<s:GradientEntry alpha="1.0" color="#6F85A2" ratio="0"/>
+					<s:GradientEntry alpha="1.0" color="#7D92AF" ratio="0.5294117647058824"/>
+					<s:GradientEntry alpha="1.0" color="#899BB3" ratio="0.5333333333333333"/>
+					<s:GradientEntry alpha="1.0" color="#B4BFCD" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+		</s:Rect>
+		<s:RichText color="#000000" fontFamily="Calibri Bold" fontSize="13" id="richtext27" kerning="off" tabStops="S0 S50" text="Record Dictation" x="12" y="20"/>
+		
+		<s:Group id="group46" x="8" y="35">
+			
+			<!--	<s:Rect height="49" width="234" x="0" y="0">
+					<s:filters>
+						<s:DropShadowFilter alpha="1" angle="90" blurX="0" blurY="0" color="#999999" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+					</s:filters>
+					<s:fill>
+						<s:SolidColor color="#FFFFFF"/>
+					</s:fill>
+				</s:Rect>-->
+			
+		</s:Group>
+	</s:Group>
+    
+    <!--
+        Note: setting the minimum size to 0 here so that changes to the host component's
+        size will not be thwarted by this skin part's minimum size.   This is a compromise,
+        more about it here: http://bugs.adobe.com/jira/browse/SDK-21143
+    -->
+    <!--- @copy spark.components.SkinnableContainer#contentGroup -->
+    <s:Group id="contentGroup" left="0" right="0" top="0" bottom="0" minWidth="0" minHeight="0">
+        <s:layout>
+            <s:BasicLayout/>
+        </s:layout>
+    </s:Group>
+
+</s:Skin>

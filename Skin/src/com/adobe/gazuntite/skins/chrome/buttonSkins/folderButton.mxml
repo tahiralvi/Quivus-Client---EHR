@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:s="library://ns.adobe.com/flex/spark" xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:flm="http://ns.adobe.com/flame/2008">
+	<fx:Metadata>[HostComponent("spark.components.Button")]</fx:Metadata>
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over"/>
+		<s:State name="down"/>
+		<s:State name="disabled"/>
+	</s:states>
+	<s:Rect height="23" includeIn="disabled,over,up" radiusX="3" visible.over="false" width="25" y="0" x="0">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry alpha="1.0" color="#454B54" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#2B323B" ratio="0.5450980392156862"/>
+				<s:GradientEntry alpha="1.0" color="#363E46" ratio="0.5490196078431373"/>
+				<s:GradientEntry alpha="1.0" color="#6D7278" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.25" angle="90" blurX="1" blurY="1" color="#FFFFFF" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="3" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:Rect height="23" includeIn="down,over,up" radiusX="3" width="25" y="0" visible.up="false" x="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry alpha="1.0" color="#F4CF85" ratio="0"/>
+				<s:GradientEntry alpha="1.0" color="#EFA74E" ratio="0.5137254901960784"/>
+				<s:GradientEntry alpha="1.0" color="#EC923A" ratio="0.5176470588235295"/>
+				<s:GradientEntry alpha="1.0" color="#F1983B" ratio="1"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter alpha="0.25" alpha.down="0.5" angle="90" blurX="1" blurX.down="2" blurY="1" blurY.down="2" color="#FFFFFF" color.down="#000000" distance="1" hideObject="false" inner="true" knockout="false" quality="2" strength="1"/>
+			<s:DropShadowFilter alpha="0.5" angle="90" blurX="2" blurY="2" color="0x000000" distance="1" hideObject="false" inner="false" knockout="false" quality="2" strength="1"/>
+		</s:filters>
+	</s:Rect>
+	<s:BitmapImage smooth="true" source="@Embed('../assets/icons/folder.png')" y="5" x="5"/>
+</s:Skin>

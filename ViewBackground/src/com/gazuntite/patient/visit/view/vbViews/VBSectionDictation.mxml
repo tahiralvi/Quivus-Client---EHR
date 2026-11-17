@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<components1:PopupGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						xmlns:s="library://ns.adobe.com/flex/spark" 
+						xmlns:mx="library://ns.adobe.com/flex/mx"
+						preinitialize="preInitialize()" 
+						xmlns:components1="com.gazuntite.controls.extended.components.*" xmlns:grid="com.gazuntite.common.view.components.grid.*"
+						>
+	
+	
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			
+			private var m_dictationDTOList:ArrayCollection;
+			
+			private var m_sDictationID:String;
+			
+			
+			
+			public var deleteColumnData:Object;
+			
+			public function get DictationID():String
+			{
+				trace("get DictationID " + m_sDictationID);
+				
+				return m_sDictationID;
+			}
+			
+			public function set DictationID(value:String):void
+			{
+				trace("set DictationID " + value);
+				
+				m_sDictationID = value;
+			}
+			
+			public function displayRowNum(oItem:Object,iCol:int):String
+			{
+				var rowNumber:int = id_SectionDictations.dataProvider.getItemIndex(oItem) + 1;
+				return String(rowNumber);
+			}
+			
+			[Bindable]
+			public function get DictationDTOList():ArrayCollection
+			{
+				return m_dictationDTOList;
+			}
+			
+			public function set DictationDTOList(value:ArrayCollection):void
+			{
+				m_dictationDTOList = value;
+			}
+			
+			private function preInitialize():void
+			{
+				if (!deleteColumnData)
+					deleteColumnData = {};
+				
+				//deleteColumnData["noteDataFields"] = {subject: "NoteSubject", note: "Note", header: "ImmunizationType.ImmunizationTypeName"};
+				deleteColumnData["dictationDataField"] = "DictationID";
+				//deleteColumnData["recordIDField"] = "PatientImmunizationId";
+				//deleteColumnData["section"] = QIPopUpManager.IMMUNIZATION;
+			}
+			/*
+			private var recordLevelDicPanel:DictationPopup;
+			private function writeDictationClickHandler(event:Event):void
+			{
+			var addRecord:AddRecord = AddRecord(event.target);
+			
+			recordLevelDicPanel = QIDictationManager.show(addRecord, recordLevelDicPanel, addRecord.dictationDTO, addRecord.id_WriteDictation);
+			QIPopUpManager.addPopUp(recordLevelDicPanel, QIPopUpManager.IMMUNIZATION);
+			
+			recordLevelDicPanel.addEventListener(MouseEvent.CLICK, function():void
+			{
+			QIPopUpManager.removePopUp(recordLevelDicPanel, QIPopUpManager.IMMUNIZATION);
+			}, true, 0, false);
+			}*/
+			
+		]]>
+		
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<components1:layout>
+		<s:VerticalLayout gap="0" paddingBottom="5" paddingLeft="0" paddingRight="5" paddingTop="5" />
+	</components1:layout>
+	
+	
+	<!--<notes:NotesHeader id="id_header" width="100%" height="25" HeadingLable="Vitals" CenterLable="IMPORT" HideSaveButton="true"/>-->
+	
+	
+	<s:Group width="100%">
+		<s:layout>
+			<s:VerticalLayout gap="-2" paddingBottom="5" paddingLeft="0" paddingRight="0" paddingTop="-5" />
+		</s:layout>
+		
+		<s:SkinnableContainer height="100" minWidth="100" width="100%" skinClass="com.adobe.gazuntite.skins.notesBodyOrangeLargeSkin">
+			
+			<s:layout>
+				<s:VerticalLayout gap="-1" paddingBottom="5" paddingLeft="0" paddingRight="5" paddingTop="5" />
+			</s:layout>	
+			<mx:DataGrid id="id_SectionDictations" width="100%" maxWidth="300" minHeight="90" height="100%" dataProvider="{DictationDTOList}"					 
+						 variableRowHeight="true" maxHeight="150" verticalScrollPolicy="off"
+						 verticalScrollBarStyleName="VScrollBar">
+				
+				<mx:columns>					
+					
+					<grid:DataGridColumnEx headerText="Dictation" editable="false" data="{deleteColumnData}" dataField="Dictation" property="" section=""
+											  headerRenderer="mx.controls.Label"
+											  itemRenderer="com.gazuntite.patient.visit.view.itemrenderer.VBDeleteRecordRenderer" />					
+				</mx:columns>
+			</mx:DataGrid>
+		</s:SkinnableContainer>
+		
+	</s:Group>
+	
+</components1:PopupGroup>

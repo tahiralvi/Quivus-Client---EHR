@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark"  width="100%"
+		 xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:document="com.gazuntite.provider.live.services.documentMgmt.view.document.*"
+		 creationComplete="group1_creationCompleteHandler(event)"
+		 >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.gazuntite.common.dto.PatientDocumentDTO;
+			import com.gazuntite.provider.live.services.documentMgmt.event.ManagePatientDocumentEvent;
+			import com.gazuntite.provider.live.services.documentMgmt.model.DMAppModelLocator;
+			import com.gazuntite.provider.live.services.documentMgmt.util.DMEventStrings;
+			import com.gazuntite.provider.live.services.documentMgmt.view.event.DMActionsEvent;
+			import com.gazuntite.utils.UtilityFunctions;
+			
+			import mx.events.FlexEvent;
+			
+			
+			[Bindable]
+			public var model : DMAppModelLocator = DMAppModelLocator.getInstance();
+			
+			protected function id_NewDocument_clickHandler(event:MouseEvent):void
+			{
+				//QuivusCombineEventDispatcher.LoadDMStaticData();
+				
+				if( id_AddNewDocument.visible )
+				{
+					id_NewDocument.label = "New Document";
+					id_AddNewDocument.visible = false;
+				}
+				else
+				{
+					id_AddNewDocument.visible = true;
+				    id_NewDocument.label = "NEW DOCUMENT";
+					id_AddNewDocument.id_SearchPatientView.id_textInput.setFocus();
+				}
+				
+				//id_AddNewDocument.clearData();
+			}
+			
+			
+			private function onEditClick(event:Event):void
+			{
+				var docDto:PatientDocumentDTO = event.target.data as PatientDocumentDTO;
+				
+				id_AddNewDocument.LoadData( docDto );
+				id_NewDocument.label = "EDIT DOCUMENT";
+				id_AddNewDocument.visible = true;
+			}
+			
+			private function onDeleteClick(event:Event):void
+			{
+				UtilityFunctions.AskMessage(  "Do you want to delete selected document", function():void
+				{
+					var docDto:PatientDocumentDTO = event.target.data as PatientDocumentDTO;
+					docDto.IsDeleted = true;
+					
+					var mpd:ManagePatientDocumentEvent = new ManagePatientDocumentEvent(docDto);
+					CairngormEventDispatcher.getInstance().dispatchEvent( mpd );
+				});
+				/* var docDto:PatientDocumentDTO = event.target.data as PatientDocumentDTO;
+				docDto.IsDeleted = true;
+				var mpd:ManagePatientDocumentEvent = new ManagePatientDocumentEvent(docDto);
+				CairngormEventDispatcher.getInstance().dispatchEvent( mpd );  */
+				
+				//call is already sent, no need to filter here ( @client side ), 
+				/* if( null == model.patientDocumentDTOList.filterFunction )
+				{
+					model.patientDocumentDTOList.filterFunction = filterDeletedItems;
+				}
+				
+				model.patientDocumentDTOList.refresh(); */
+			}
+			
+			
+
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				addEventListener( DMActionsEvent.EDIT_RECORD_CLICK, onEditClick );
+				addEventListener( DMActionsEvent.DELETE_RECORD_CLICK, onDeleteClick );
+				addEventListener( DMEventStrings.DOCUMENT_CLOSE, function(event:Event):void
+				{
+					id_NewDocument.label = "New Document";
+					id_AddNewDocument.visible = false;
+				});
+				
+			}
+			
+			private function filterDeletedItems(item:Object):Boolean
+			{
+				var b:Boolean = item["IsDeleted"];
+				return (!b);
+			}
+			
+			
+			public function removeAllPopUp():void 
+			{
+				id_DocumentGridView.removeAllPopUp();
+			}
+
+		]]>
+	</fx:Script>
+	
+	
+	
+	
+	<!--<s:layout>
+		<s:VerticalLayout gap="0" paddingLeft="0" paddingRight="0" />
+	</s:layout>-->
+	
+	<s:SkinnableContainer width="100%" styleName="lightGreyBGContainerSkin">
+	<s:layout>
+			<s:VerticalLayout gap="1" paddingTop="4" paddingBottom="4" paddingLeft="4" paddingRight="4" />
+	</s:layout>
+	<!--<s:Rect height="100%" width="100%" >
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color="#A0521C" joints="miter" miterLimit="4" weight="2"/>
+		</s:stroke>
+	</s:Rect>-->
+	<document:DocumentGridView id="id_DocumentGridView" width="100%" DataProvider="{model.patientDocumentDTOList}" />
+	<s:Group width="100%" >
+		<document:AddNewDocument id="id_AddNewDocument" width="100%" visible="false" includeInLayout="{id_AddNewDocument.visible}"/>
+		<s:HGroup  verticalAlign="middle" paddingTop="4" horizontalAlign="right" width="100%" paddingRight="25">			
+		<s:Button id="id_NewDocument" label="New Document" toolTip="{id_NewDocument.label=='Edit Document'?'Edit Document':'New Document'}" 
+				  styleName="addMoreToggleButtonSkin" width="115" click="id_NewDocument_clickHandler(event)"
+				  buttonMode="true" />
+		</s:HGroup>
+	</s:Group>
+	
+	
+	
+	</s:SkinnableContainer>
+	
+</s:Group>

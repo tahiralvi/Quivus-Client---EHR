@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.gazuntite.provider.live.services.billing.dto.accountsAndReceiveables.AgingDTO;
+			import com.gazuntite.provider.live.services.billing.model.BillingModelLocator;
+			
+			[Bindable]
+			private var model:BillingModelLocator = BillingModelLocator.getInstance();
+			
+			private var _IsPatientAging:Boolean;
+			private var _Aging:AgingDTO;
+			
+			[Bindable]			
+			public function get Aging():AgingDTO
+			{
+				return _Aging;
+			}
+
+			public function set Aging(value:AgingDTO):void
+			{
+				_Aging = value;
+			}
+
+			public function get IsPatientAging():Boolean
+			{
+				return _IsPatientAging;
+			}
+
+			public function set IsPatientAging(value:Boolean):void
+			{
+				_IsPatientAging = value;
+			}
+
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:HGroup width="100%">
+		<s:Label width="60" text="0-30" />
+		<s:Label width="60" text="31-60" />
+		<s:Label width="60" text="61-90" />
+		<s:Label width="60" text="90+" />
+	</s:HGroup>
+	<s:HGroup width="100%">
+		<s:Line width="100%">
+			<s:stroke>
+				<s:SolidColorStroke color="#000000" weight="1" caps="round"/>
+			</s:stroke>
+		</s:Line>	
+	</s:HGroup>
+	<s:HGroup width="100%">
+		<s:Label width="60" text="{Number(Aging.OneMonth).toFixed(2)}"/>
+		<s:Label width="60" text="{Number(Aging.TwoMonth).toFixed(2)}"/>
+		<s:Label width="60" text="{Number(Aging.ThreeMonth).toFixed(2)}"/>
+		<s:Label width="60" text="{Number(Aging.ThreeMonthPlus).toFixed(2)}"/>
+	</s:HGroup>	
+	<s:HGroup width="100%">
+		<s:Label width="104" text="Total Aging:"/>
+		<s:Label width="60" text="{Number(Aging.TotaAging).toFixed(2)}"/>
+		<s:Label width="60" text="TNB:"/>
+		<s:Label width="60" text="{Number(Aging.TotalNotBilled).toFixed(2)}"/>
+	</s:HGroup>
+		
+</s:VGroup>
